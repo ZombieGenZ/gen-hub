@@ -10,24 +10,18 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 
 @Module({
-    imports: [
-        ConfigModule,
-        PrismaModule,
-        SystemLogModule,
-    ],
-    controllers: [DatabaseAdminController],
-    providers: [
-        DatabaseAdminService,
-        DatabaseAdminGuard,
-        DatabaseLogService,
-        LogRotationService,
-    ],
-    exports: [DatabaseLogService, LogRotationService],
+  imports: [ConfigModule, PrismaModule, SystemLogModule],
+  controllers: [DatabaseAdminController],
+  providers: [
+    DatabaseAdminService,
+    DatabaseAdminGuard,
+    DatabaseLogService,
+    LogRotationService,
+  ],
+  exports: [DatabaseLogService, LogRotationService],
 })
 export class DatabaseAdminModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(DatabaseAdminCorsMiddleware)
-            .forRoutes('api/admin');
-    }
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(DatabaseAdminCorsMiddleware).forRoutes('api/admin');
+  }
 }

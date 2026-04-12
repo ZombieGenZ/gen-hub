@@ -97,9 +97,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
           params: sanitizeHttpValue(request.params),
           query: sanitizeHttpValue(request.query),
           body: sanitizeHttpValue(request.body),
-          headers: sanitizeHeaders(
-            request.headers as Record<string, unknown>,
-          ),
+          headers: sanitizeHeaders(request.headers as Record<string, unknown>),
           user: sanitizeHttpValue(request.user),
           apiKey: sanitizeHttpValue(request.apiKey),
         },

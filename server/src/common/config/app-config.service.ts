@@ -4,7 +4,11 @@ import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { RedisService } from '../../modules/redis/redis.service';
-import { IAppConfig, IAppColors, IPaginationConfig } from './types/app-config.type';
+import {
+  IAppConfig,
+  IAppColors,
+  IPaginationConfig,
+} from './types/app-config.type';
 import { AppConfigCacheKeys } from './helpers/cache-keys.helper';
 
 // Re-export for backward compatibility
@@ -46,10 +50,10 @@ export class AppConfigService implements OnModuleInit {
 
   private getDefaultConfig(): IAppConfig {
     return {
-      brandName:
-        this.configService.get<string>('BRAND_NAME') || 'GEN-HUB',
+      brandName: this.configService.get<string>('BRAND_NAME') || 'GEN-HUB',
       supportEmail:
-        this.configService.get<string>('SUPPORT_EMAIL') || 'support@gen-hub.com',
+        this.configService.get<string>('SUPPORT_EMAIL') ||
+        'support@gen-hub.com',
       supportPhone:
         this.configService.get<string>('SUPPORT_PHONE') || '1900-xxxx',
       colors: {
@@ -61,16 +65,11 @@ export class AppConfigService implements OnModuleInit {
           this.configService.get<string>('COLOR_PRIMARY_DARK') || '#0D5A52',
 
         // Neutral / Greys
-        gray900:
-          this.configService.get<string>('COLOR_GRAY_900') || '#1E293B',
-        gray700:
-          this.configService.get<string>('COLOR_GRAY_700') || '#334155',
-        gray500:
-          this.configService.get<string>('COLOR_GRAY_500') || '#64748B',
-        gray300:
-          this.configService.get<string>('COLOR_GRAY_300') || '#CBD5E1',
-        gray100:
-          this.configService.get<string>('COLOR_GRAY_100') || '#F1F5F9',
+        gray900: this.configService.get<string>('COLOR_GRAY_900') || '#1E293B',
+        gray700: this.configService.get<string>('COLOR_GRAY_700') || '#334155',
+        gray500: this.configService.get<string>('COLOR_GRAY_500') || '#64748B',
+        gray300: this.configService.get<string>('COLOR_GRAY_300') || '#CBD5E1',
+        gray100: this.configService.get<string>('COLOR_GRAY_100') || '#F1F5F9',
 
         // Background & Surface
         background:
@@ -81,10 +80,8 @@ export class AppConfigService implements OnModuleInit {
           this.configService.get<string>('COLOR_SIDEBAR_BG') || '#F1F5F9',
 
         // Accent Colors
-        success:
-          this.configService.get<string>('COLOR_SUCCESS') || '#10B981',
-        warning:
-          this.configService.get<string>('COLOR_WARNING') || '#F59E0B',
+        success: this.configService.get<string>('COLOR_SUCCESS') || '#10B981',
+        warning: this.configService.get<string>('COLOR_WARNING') || '#F59E0B',
         error: this.configService.get<string>('COLOR_ERROR') || '#EF4444',
         info: this.configService.get<string>('COLOR_INFO') || '#0EA5E9',
 
@@ -167,12 +164,10 @@ export class AppConfigService implements OnModuleInit {
   private async updateRedisCache(config: IAppConfig): Promise<void> {
     const ttl = this.getCacheTtl();
     const cacheKey = this.cacheKeys.key;
-    await this.redisService.set(
-      cacheKey,
-      JSON.stringify(config),
-      ttl,
+    await this.redisService.set(cacheKey, JSON.stringify(config), ttl);
+    this.logger.debug(
+      `Config cached in Redis with key: ${cacheKey}, TTL: ${ttl}s`,
     );
-    this.logger.debug(`Config cached in Redis with key: ${cacheKey}, TTL: ${ttl}s`);
   }
 
   /**
@@ -195,7 +190,10 @@ export class AppConfigService implements OnModuleInit {
   /**
    * Deep merge hai object, tự động merge nested objects
    */
-  private deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  private deepMerge<T extends Record<string, any>>(
+    target: T,
+    source: Partial<T>,
+  ): T {
     const result = { ...target };
     for (const key in source) {
       if (source[key] !== undefined) {

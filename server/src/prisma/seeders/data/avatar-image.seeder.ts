@@ -9,32 +9,38 @@ const AVATAR_SAMPLES = [
   {
     name: 'Avatar Mặc Định 01',
     description: 'Ảnh đại diện mẫu phong cách minh họa hiện đại',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-01',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-01',
   },
   {
     name: 'Avatar Mặc Định 02',
     description: 'Ảnh đại diện mẫu cho người dùng doanh nghiệp',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-02',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-02',
   },
   {
     name: 'Avatar Mặc Định 03',
     description: 'Ảnh đại diện mẫu phong cách tối giản',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-03',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-03',
   },
   {
     name: 'Avatar Mặc Định 04',
     description: 'Ảnh đại diện mẫu cho khách hàng cá nhân',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-04',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-04',
   },
   {
     name: 'Avatar Mặc Định 05',
     description: 'Ảnh đại diện mẫu tông màu trung tính',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-05',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-05',
   },
   {
     name: 'Avatar Mặc Định 06',
     description: 'Ảnh đại diện mẫu phù hợp hồ sơ nhân viên',
-    image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-06',
+    image_url:
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-avatar-06',
   },
 ];
 
@@ -76,7 +82,8 @@ export class AvatarImageSeeder extends BaseSeeder {
     const created = await this.prisma.avatarImage.create({
       data: {
         name: process.env.SEED_DEFAULT_AVATAR_NAME || 'Default Avatar',
-        description: process.env.SEED_DEFAULT_AVATAR_DESCRIPTION || 'Default avatar image',
+        description:
+          process.env.SEED_DEFAULT_AVATAR_DESCRIPTION || 'Default avatar image',
         image_url:
           process.env.SEED_DEFAULT_AVATAR_IMAGE_URL ||
           'https://api.dicebear.com/7.x/avataaars/svg?seed=genhub-default-avatar',
@@ -125,7 +132,8 @@ export class AvatarImageSeeder extends BaseSeeder {
       await this.seedDefaultAvatar();
       await this.seedMultipleAvatars();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to seed avatar images: ${errorMessage}`);
     }
   }

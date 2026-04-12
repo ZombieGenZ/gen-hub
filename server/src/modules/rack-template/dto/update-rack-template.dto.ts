@@ -4,4 +4,4 @@ import { CreateRackTemplateDto } from './create-rack-template.dto';
 /**
  * DTO cập nhật RackTemplate
  */
-export class UpdateRackTemplateDto extends PartialType(CreateRackTemplateDto) { }
+export class UpdateRackTemplateDto extends PartialType(CreateRackTemplateDto) {}

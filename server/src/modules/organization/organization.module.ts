@@ -12,28 +12,26 @@ import { OrganizationEmailValidatorService } from './organization-email-validato
 import { OrganizationUpdateRequestModule } from '../organization-update-request/organization-update-request.module';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        NotificationModule,
-        forwardRef(() => OrganizationUpdateRequestModule),
-    ],
-    controllers: [
-        OrganizationController,
-    ],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    NotificationModule,
+    forwardRef(() => OrganizationUpdateRequestModule),
+  ],
+  controllers: [OrganizationController],
 
-    providers: [
-        OrganizationService,
-        OrganizationRepository,
-        OrganizationAuditLogService,
-        OrganizationEmailValidatorService,
-    ],
-    exports: [
-        OrganizationService,
-        OrganizationRepository,
-        OrganizationAuditLogService,
-    ],
+  providers: [
+    OrganizationService,
+    OrganizationRepository,
+    OrganizationAuditLogService,
+    OrganizationEmailValidatorService,
+  ],
+  exports: [
+    OrganizationService,
+    OrganizationRepository,
+    OrganizationAuditLogService,
+  ],
 })
-export class OrganizationModule { }
+export class OrganizationModule {}

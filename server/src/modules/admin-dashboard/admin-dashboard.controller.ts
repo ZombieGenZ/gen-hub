@@ -57,7 +57,8 @@ export class AdminDashboardController {
             pendingApprovals: {
               type: 'number',
               example: 8,
-              description: 'Tong so don dang cho duyet (hop dong + tu van + cap nhat to chuc + lich hen)',
+              description:
+                'Tong so don dang cho duyet (hop dong + tu van + cap nhat to chuc + lich hen)',
             },
             totalCustomers: {
               type: 'number',
@@ -67,7 +68,8 @@ export class AdminDashboardController {
             monthlyRevenue: {
               type: 'number',
               example: 48000000,
-              description: 'Doanh thu thang hien tai (VND) - tong giao dich da thanh toan',
+              description:
+                'Doanh thu thang hien tai (VND) - tong giao dich da thanh toan',
             },
             updatedAt: {
               type: 'string',

@@ -41,7 +41,7 @@ import {
 @Controller('organizations/:orgId/api-keys')
 @UseGuards(PermissionGuard)
 export class OrganizationApiKeyController {
-  constructor(private readonly service: OrganizationApiKeyService) { }
+  constructor(private readonly service: OrganizationApiKeyService) {}
 
   @Post()
   @RequirePermission('organization.read')

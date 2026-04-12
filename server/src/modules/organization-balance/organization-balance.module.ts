@@ -10,15 +10,15 @@ import { SystemLogModule } from '../system-log/system-log.module';
 import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        forwardRef(() => PaymentModule),
-    ],
-    controllers: [OrganizationBalanceController],
-    providers: [OrganizationBalanceService, OrganizationBalanceRepository],
-    exports: [OrganizationBalanceService, OrganizationBalanceRepository],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    forwardRef(() => PaymentModule),
+  ],
+  controllers: [OrganizationBalanceController],
+  providers: [OrganizationBalanceService, OrganizationBalanceRepository],
+  exports: [OrganizationBalanceService, OrganizationBalanceRepository],
 })
-export class OrganizationBalanceModule { }
+export class OrganizationBalanceModule {}

@@ -6,9 +6,9 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-    imports: [PrismaModule, RedisModule],
-    controllers: [WarehouseManagerRoleController],
-    providers: [WarehouseManagerRoleService, WarehouseManagerRoleRepository],
-    exports: [WarehouseManagerRoleService],
+  imports: [PrismaModule, RedisModule],
+  controllers: [WarehouseManagerRoleController],
+  providers: [WarehouseManagerRoleService, WarehouseManagerRoleRepository],
+  exports: [WarehouseManagerRoleService],
 })
-export class WarehouseManagerRoleModule { }
+export class WarehouseManagerRoleModule {}

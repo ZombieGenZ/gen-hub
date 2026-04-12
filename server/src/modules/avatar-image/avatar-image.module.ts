@@ -6,7 +6,11 @@ import { AvatarImageService } from './avatar-image.service';
 
 @Module({
   controllers: [AvatarImageController],
-  providers: [AvatarImageService, AvatarImageRepository, AvatarImageCacheKeysHelper],
+  providers: [
+    AvatarImageService,
+    AvatarImageRepository,
+    AvatarImageCacheKeysHelper,
+  ],
   exports: [AvatarImageService],
 })
 export class AvatarImageModule {}

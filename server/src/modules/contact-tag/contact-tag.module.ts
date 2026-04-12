@@ -5,9 +5,12 @@ import { ContactTagRepository } from './contact-tag.repository';
 import { ContactTagCacheKeysHelper } from './helpers/contact-tag-cache-keys.helper';
 
 @Module({
-    controllers: [ContactTagController],
-    providers: [ContactTagService, ContactTagRepository, ContactTagCacheKeysHelper],
-    exports: [ContactTagService, ContactTagRepository, ContactTagCacheKeysHelper],
+  controllers: [ContactTagController],
+  providers: [
+    ContactTagService,
+    ContactTagRepository,
+    ContactTagCacheKeysHelper,
+  ],
+  exports: [ContactTagService, ContactTagRepository, ContactTagCacheKeysHelper],
 })
-export class ContactTagModule { }
-
+export class ContactTagModule {}

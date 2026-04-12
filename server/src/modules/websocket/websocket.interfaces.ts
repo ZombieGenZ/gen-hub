@@ -480,4 +480,3 @@ export interface WarningCategoryDeletedManyEvent {
   deletedBy: string;
   timestamp: string;
 }
-

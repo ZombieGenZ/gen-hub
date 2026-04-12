@@ -14,19 +14,19 @@ import { ContactListModule } from '../contact-list/contact-list.module';
 import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
 
 @Module({
-    imports: [
-        PrismaModule,
-        RedisModule,
-        forwardRef(() => WebsocketModule),
-        SystemLogModule,
-        NotificationModule,
-        UserModule,
-        SharedModule,
-        AiHubModule,
-        ContactListModule,
-    ],
-    controllers: [ContactController],
-    providers: [ContactService, ContactRepository, ContactCacheKeysHelper],
-    exports: [ContactService, ContactRepository, ContactCacheKeysHelper],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    forwardRef(() => WebsocketModule),
+    SystemLogModule,
+    NotificationModule,
+    UserModule,
+    SharedModule,
+    AiHubModule,
+    ContactListModule,
+  ],
+  controllers: [ContactController],
+  providers: [ContactService, ContactRepository, ContactCacheKeysHelper],
+  exports: [ContactService, ContactRepository, ContactCacheKeysHelper],
 })
-export class ContactModule { }
+export class ContactModule {}

@@ -11,9 +11,9 @@ import { WebsocketModule } from '../websocket/websocket.module';
  * Quản lý roles trong hệ thống và gán roles/permissions cho users
  */
 @Module({
-    imports: [RedisModule, SystemLogModule, WebsocketModule],
-    controllers: [RoleController],
-    providers: [RoleService, RoleRepository],
-    exports: [RoleService, RoleRepository],
+  imports: [RedisModule, SystemLogModule, WebsocketModule],
+  controllers: [RoleController],
+  providers: [RoleService, RoleRepository],
+  exports: [RoleService, RoleRepository],
 })
-export class RoleModule { }
+export class RoleModule {}

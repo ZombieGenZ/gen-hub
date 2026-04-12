@@ -9,9 +9,9 @@ import { AnalyticsCacheHelper } from './constants/analytics-cache.helper';
  * Module cho các chức năng analytics và thống kê
  */
 @Module({
-    imports: [RedisModule],
-    controllers: [AnalyticsController],
-    providers: [CloudflareAnalyticsService, AnalyticsCacheHelper],
-    exports: [CloudflareAnalyticsService],
+  imports: [RedisModule],
+  controllers: [AnalyticsController],
+  providers: [CloudflareAnalyticsService, AnalyticsCacheHelper],
+  exports: [CloudflareAnalyticsService],
 })
-export class AnalyticsModule { }
+export class AnalyticsModule {}

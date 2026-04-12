@@ -7,7 +7,9 @@ export class PhoneCodeCacheKeysHelper {
   constructor(private readonly configService: ConfigService) {}
 
   get listTtl(): number {
-    return this.configService.get<number>('REDIS_PHONE_CODE_LIST_CACHE_TTL') || 60;
+    return (
+      this.configService.get<number>('REDIS_PHONE_CODE_LIST_CACHE_TTL') || 60
+    );
   }
 
   get detailTtl(): number {
@@ -15,15 +17,24 @@ export class PhoneCodeCacheKeysHelper {
   }
 
   private get prefix(): string {
-    return this.configService.get<string>('REDIS_PHONE_CODE_KEY_PREFIX') || 'phone-code';
+    return (
+      this.configService.get<string>('REDIS_PHONE_CODE_KEY_PREFIX') ||
+      'phone-code'
+    );
   }
 
   private get listPrefix(): string {
-    return this.configService.get<string>('REDIS_PHONE_CODE_LIST_KEY_PREFIX') || 'phone-code:list';
+    return (
+      this.configService.get<string>('REDIS_PHONE_CODE_LIST_KEY_PREFIX') ||
+      'phone-code:list'
+    );
   }
 
   private get detailPrefix(): string {
-    return this.configService.get<string>('REDIS_PHONE_CODE_DETAIL_KEY_PREFIX') || 'phone-code:detail';
+    return (
+      this.configService.get<string>('REDIS_PHONE_CODE_DETAIL_KEY_PREFIX') ||
+      'phone-code:detail'
+    );
   }
 
   list(query: QueryPhoneCodeDto): string {

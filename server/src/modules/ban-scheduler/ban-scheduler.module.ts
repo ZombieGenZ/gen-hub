@@ -12,8 +12,8 @@ import { UserModule } from '../user/user.module';
  * - Lên lịch gỡ ban cho các ban chưa hết hạn
  */
 @Module({
-    imports: [ScheduleModule.forRoot(), UserModule],
-    providers: [BanSchedulerService],
-    exports: [BanSchedulerService],
+  imports: [ScheduleModule.forRoot(), UserModule],
+  providers: [BanSchedulerService],
+  exports: [BanSchedulerService],
 })
-export class BanSchedulerModule { }
+export class BanSchedulerModule {}

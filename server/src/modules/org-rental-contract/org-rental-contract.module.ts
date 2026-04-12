@@ -15,21 +15,21 @@ import { OrgRentalContractController } from './org-rental-contract.controller';
 import { OrgRentalContractService } from './org-rental-contract.service';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        OrganizationModule,
-        NotificationModule,
-        UserNotificationModule,
-        RentalContractSharedModule,
-        PublicCouponModule,
-        forwardRef(() => PaymentModule),
-        forwardRef(() => WarehouseTemplateModule),
-    ],
-    controllers: [OrgRentalContractController],
-    providers: [OrgRentalContractService],
-    exports: [OrgRentalContractService],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    OrganizationModule,
+    NotificationModule,
+    UserNotificationModule,
+    RentalContractSharedModule,
+    PublicCouponModule,
+    forwardRef(() => PaymentModule),
+    forwardRef(() => WarehouseTemplateModule),
+  ],
+  controllers: [OrgRentalContractController],
+  providers: [OrgRentalContractService],
+  exports: [OrgRentalContractService],
 })
-export class OrgRentalContractModule { }
+export class OrgRentalContractModule {}

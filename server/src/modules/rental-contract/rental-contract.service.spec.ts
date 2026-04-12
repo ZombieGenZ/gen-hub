@@ -80,7 +80,13 @@ const mockContractCompleted = {
 // ─── Mock factories ────────────────────────────────────────────
 const createMockRepository = () => ({
   createWithDetails: jest.fn().mockResolvedValue(mockContract),
-  findMany: jest.fn().mockResolvedValue({ items: [mockContract], total: 1, limit: 10, offset: 0, hasMore: false }),
+  findMany: jest.fn().mockResolvedValue({
+    items: [mockContract],
+    total: 1,
+    limit: 10,
+    offset: 0,
+    hasMore: false,
+  }),
   findById: jest.fn().mockResolvedValue(mockContract),
   findByIdWithOrganization: jest.fn().mockResolvedValue(mockContract),
   findByIds: jest.fn().mockResolvedValue([mockContract]),
@@ -184,7 +190,9 @@ const createMockPaymentScheduler = () => ({
 });
 
 const createMockSignatureService = () => ({
-  uploadSignature: jest.fn().mockResolvedValue({ url: 'https://example.com/sig.png' }),
+  uploadSignature: jest
+    .fn()
+    .mockResolvedValue({ url: 'https://example.com/sig.png' }),
 });
 
 // ─── Test Suite ────────────────────────────────────────────────
@@ -217,12 +225,18 @@ describe('RentalContractService', () => {
         { provide: RedisService, useValue: redis },
         { provide: WebsocketGateway, useValue: websocket },
         { provide: SystemLogService, useValue: createMockSystemLogService() },
-        { provide: OrganizationAuditLogService, useValue: createMockAuditLogService() },
+        {
+          provide: OrganizationAuditLogService,
+          useValue: createMockAuditLogService(),
+        },
         { provide: ConfigService, useValue: createMockConfigService() },
         { provide: I18nService, useValue: createMockI18nService() },
         { provide: EmailService, useValue: createMockEmailService() },
         { provide: SepayService, useValue: sepay },
-        { provide: PaymentSchedulerService, useValue: createMockPaymentScheduler() },
+        {
+          provide: PaymentSchedulerService,
+          useValue: createMockPaymentScheduler(),
+        },
         { provide: SignatureService, useValue: createMockSignatureService() },
       ],
     }).compile();
@@ -291,7 +305,11 @@ describe('RentalContractService', () => {
 
     it('should create ACTIVE contract for CASH payment type', async () => {
       const cashDto = { ...baseDto, type: AdminPaymentType.CASH };
-      const result = await service.createByAdmin(cashDto as any, 'user-1', 'vi');
+      const result = await service.createByAdmin(
+        cashDto as any,
+        'user-1',
+        'vi',
+      );
 
       expect(result).toBeDefined();
       expect(result.contract).toBeDefined();
@@ -303,10 +321,18 @@ describe('RentalContractService', () => {
     it('should create PENDING contract and payment for TRANSFER type', async () => {
       const transferDto = { ...baseDto, type: AdminPaymentType.TRANSFER };
       // Repository returns PENDING contract for transfer
-      const pendingContract = { ...mockContract, status: ContractStatus.PENDING, final_price: new Prisma.Decimal(30000000) };
+      const pendingContract = {
+        ...mockContract,
+        status: ContractStatus.PENDING,
+        final_price: new Prisma.Decimal(30000000),
+      };
       repository.createWithDetails.mockResolvedValue(pendingContract);
 
-      const result = await service.createByAdmin(transferDto as any, 'user-1', 'vi');
+      const result = await service.createByAdmin(
+        transferDto as any,
+        'user-1',
+        'vi',
+      );
 
       expect(result).toBeDefined();
       expect(sepay.createContractPayment).toHaveBeenCalled();
@@ -339,24 +365,40 @@ describe('RentalContractService', () => {
           { provide: RedisService, useValue: redis },
           { provide: WebsocketGateway, useValue: websocket },
           { provide: SystemLogService, useValue: createMockSystemLogService() },
-          { provide: OrganizationAuditLogService, useValue: createMockAuditLogService() },
+          {
+            provide: OrganizationAuditLogService,
+            useValue: createMockAuditLogService(),
+          },
           { provide: ConfigService, useValue: createMockConfigService() },
           { provide: I18nService, useValue: createMockI18nService() },
           { provide: EmailService, useValue: createMockEmailService() },
           { provide: SepayService, useValue: sepay },
-          { provide: PaymentSchedulerService, useValue: createMockPaymentScheduler() },
+          {
+            provide: PaymentSchedulerService,
+            useValue: createMockPaymentScheduler(),
+          },
           { provide: SignatureService, useValue: sigService },
         ],
       }).compile();
 
       const svc = module.get(RentalContractService);
-      const fakeFile = { buffer: Buffer.from('fake-sig') } as Express.Multer.File;
+      const fakeFile = {
+        buffer: Buffer.from('fake-sig'),
+      } as Express.Multer.File;
 
-      const result = await svc.createByAdmin(baseDto as any, 'user-1', 'vi', fakeFile);
+      const result = await svc.createByAdmin(
+        baseDto as any,
+        'user-1',
+        'vi',
+        fakeFile,
+      );
 
       expect(result.signature).toBeDefined();
       expect(sigService.uploadSignature).toHaveBeenCalledWith(
-        mockContract.id, fakeFile.buffer, 'user-1', 'vi',
+        mockContract.id,
+        fakeFile.buffer,
+        'user-1',
+        'vi',
       );
     });
   });
@@ -366,7 +408,13 @@ describe('RentalContractService', () => {
     const query = { limit: 10, offset: 0 };
 
     it('should return cached result when available', async () => {
-      const cached = JSON.stringify({ items: [mockContract], total: 1, limit: 10, offset: 0, hasMore: false });
+      const cached = JSON.stringify({
+        items: [mockContract],
+        total: 1,
+        limit: 10,
+        offset: 0,
+        hasMore: false,
+      });
       redis.get.mockResolvedValue(cached);
 
       const result = await service.findMany(query as any, 'user-1', true, 'vi');
@@ -396,7 +444,12 @@ describe('RentalContractService', () => {
     it('should return empty when user has no orgs and no list-all', async () => {
       orgRepo.findOrgIdsByUser.mockResolvedValue([]);
 
-      const result = await service.findMany(query as any, 'user-1', false, 'vi');
+      const result = await service.findMany(
+        query as any,
+        'user-1',
+        false,
+        'vi',
+      );
 
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
@@ -426,10 +479,13 @@ describe('RentalContractService', () => {
 
       await service.update('contract-1', dto as any, 'user-1', 'vi');
 
-      expect(repository.update).toHaveBeenCalledWith('contract-1', expect.objectContaining({
-        name: 'Updated Name',
-        notes: 'Updated notes',
-      }));
+      expect(repository.update).toHaveBeenCalledWith(
+        'contract-1',
+        expect.objectContaining({
+          name: 'Updated Name',
+          notes: 'Updated notes',
+        }),
+      );
     });
 
     it('should throw NotFoundException when contract not found', async () => {
@@ -441,7 +497,9 @@ describe('RentalContractService', () => {
     });
 
     it('should throw BadRequestException when extending non-ACTIVE contract', async () => {
-      repository.findByIdWithOrganization.mockResolvedValue(mockContractPending);
+      repository.findByIdWithOrganization.mockResolvedValue(
+        mockContractPending,
+      );
 
       const dto = { extend_duration_tier_id: 'tier-1' };
 
@@ -465,7 +523,9 @@ describe('RentalContractService', () => {
         ...mockContract,
         expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // tomorrow
       };
-      repository.findByIdWithOrganization.mockResolvedValue(contractExpiringTomorrow);
+      repository.findByIdWithOrganization.mockResolvedValue(
+        contractExpiringTomorrow,
+      );
 
       const dto = { reduce_months: 12 }; // reducing more than remaining
 
@@ -475,7 +535,12 @@ describe('RentalContractService', () => {
     });
 
     it('should invalidate cache after update', async () => {
-      await service.update('contract-1', { name: 'New' } as any, 'user-1', 'vi');
+      await service.update(
+        'contract-1',
+        { name: 'New' } as any,
+        'user-1',
+        'vi',
+      );
 
       expect(redis.del).toHaveBeenCalled();
     });
@@ -492,7 +557,10 @@ describe('RentalContractService', () => {
       await service.delete('contract-1', cancelDto as any, 'user-1', 'vi');
 
       expect(repository.cancelContract).toHaveBeenCalledWith(
-        'contract-1', 'user-1', ContractCancelType.PROVIDER_REQUEST, 'Admin decision',
+        'contract-1',
+        'user-1',
+        ContractCancelType.PROVIDER_REQUEST,
+        'Admin decision',
       );
     });
 
@@ -505,7 +573,9 @@ describe('RentalContractService', () => {
     });
 
     it('should throw BadRequestException when cancelling COMPLETED contract', async () => {
-      repository.findByIdWithOrganization.mockResolvedValue(mockContractCompleted);
+      repository.findByIdWithOrganization.mockResolvedValue(
+        mockContractCompleted,
+      );
 
       await expect(
         service.delete('contract-3', cancelDto as any, 'user-1', 'vi'),
@@ -523,7 +593,11 @@ describe('RentalContractService', () => {
   describe('deleteMany', () => {
     it('should cancel multiple contracts', async () => {
       const items = [
-        { id: 'contract-1', cancel_type: ContractCancelType.PROVIDER_REQUEST, cancel_reason: 'Batch cancel' },
+        {
+          id: 'contract-1',
+          cancel_type: ContractCancelType.PROVIDER_REQUEST,
+          cancel_reason: 'Batch cancel',
+        },
       ];
 
       await service.deleteMany(items as any, 'user-1', 'vi');
@@ -540,12 +614,16 @@ describe('RentalContractService', () => {
     });
 
     it('should throw BadRequestException if any contract is COMPLETED', async () => {
-      repository.findByIds.mockResolvedValue([mockContract, mockContractCompleted]);
+      repository.findByIds.mockResolvedValue([
+        mockContract,
+        mockContractCompleted,
+      ]);
 
       await expect(
         service.deleteMany(
           [{ id: 'contract-1' }, { id: 'contract-3' }] as any,
-          'user-1', 'vi',
+          'user-1',
+          'vi',
         ),
       ).rejects.toThrow(BadRequestException);
     });

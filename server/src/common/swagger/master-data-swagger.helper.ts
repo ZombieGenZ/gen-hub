@@ -13,7 +13,9 @@ interface ErrorSchemaOptions {
   errorsExample?: Array<{ field: string; message: string }>;
 }
 
-export function buildSuccessSchema(options: SuccessSchemaOptions): SwaggerSchema {
+export function buildSuccessSchema(
+  options: SuccessSchemaOptions,
+): SwaggerSchema {
   return {
     type: 'object',
     properties: {

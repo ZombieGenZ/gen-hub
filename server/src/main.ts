@@ -7,7 +7,10 @@ import { I18nValidationPipe, I18nService } from 'nestjs-i18n';
 import { join } from 'path';
 import { Response } from 'express';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter, CustomValidationExceptionFilter } from './common/filters';
+import {
+  GlobalExceptionFilter,
+  CustomValidationExceptionFilter,
+} from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
 
@@ -54,7 +57,8 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'public'));
   const configService = app.get(ConfigService);
   const systemLogService = app.get(SystemLogService);
-  const i18nService = app.get<I18nService<Record<string, unknown>>>(I18nService);
+  const i18nService =
+    app.get<I18nService<Record<string, unknown>>>(I18nService);
 
   app.useGlobalPipes(
     new I18nValidationPipe({
@@ -87,13 +91,17 @@ async function bootstrap() {
 
   // Add default CORS origins from environment
   if (process.env.CORS_ORIGINS) {
-    const defaultOrigins = process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean);
+    const defaultOrigins = process.env.CORS_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
     corsOrigins.push(...defaultOrigins);
   }
 
   // Get PrismaService for database queries
   const { PrismaService } = require('./prisma/prisma.service');
-  const { getApiKeyModules } = require('./common/config/api-key-modules.config');
+  const {
+    getApiKeyModules,
+  } = require('./common/config/api-key-modules.config');
   const prismaService = app.get(PrismaService);
 
   // Add allowed_origins from active API keys to CORS
@@ -108,9 +116,11 @@ async function bootstrap() {
       select: { allowed_origins: true },
     });
   } catch (error) {
-    console.error('⚠️ Warning: Failed to fetch API keys for CORS configuration. Database might be unreachable.');
+    console.error(
+      '⚠️ Warning: Failed to fetch API keys for CORS configuration. Database might be unreachable.',
+    );
     console.error(error.message);
-    // Proceed with empty list or exit? 
+    // Proceed with empty list or exit?
     // Proceeding might be safer for debugging, but security-wise it means no API keys allow origins. Default is fine.
   }
 
@@ -189,7 +199,7 @@ async function bootstrap() {
     'Contact Tags',
     'Contact List (Blacklist/Whitelist)',
     'Contact & Live Chat',
-    "Consultation Request",
+    'Consultation Request',
     'Admin Refund Requests',
     'Warning Category',
     'Warn Penalty',
@@ -288,25 +298,31 @@ async function bootstrap() {
   // Query permissions with allow_api_key = true from database
   let permissionKeys: string[] = [];
   try {
-    const apiKeyPermissions = await prismaService.organizationPermission.findMany({
-      where: {
-        is_deleted: false,
-        is_active: true,
-        allow_api_key: true,
-      },
-      select: { key: true },
-    });
+    const apiKeyPermissions =
+      await prismaService.organizationPermission.findMany({
+        where: {
+          is_deleted: false,
+          is_active: true,
+          allow_api_key: true,
+        },
+        select: { key: true },
+      });
     permissionKeys = apiKeyPermissions.map((p: { key: string }) => p.key);
   } catch (error) {
-    console.error('⚠️ Warning: Failed to fetch API Key permissions. Using default modules.');
+    console.error(
+      '⚠️ Warning: Failed to fetch API Key permissions. Using default modules.',
+    );
   }
 
   // Get enabled modules based on DB permissions
-  const { modules: includeModules, enabledModuleNames } = getApiKeyModules(permissionKeys);
+  const { modules: includeModules, enabledModuleNames } =
+    getApiKeyModules(permissionKeys);
 
   const apiKeyConfig = new DocumentBuilder()
     .setTitle('GEN-HUB API Key Documentation')
-    .setDescription('API documentation cho các chức năng hổ trợ API Key của GEN-HUB')
+    .setDescription(
+      'API documentation cho các chức năng hổ trợ API Key của GEN-HUB',
+    )
     .setVersion('1.0')
     .addApiKey(
       {
@@ -372,7 +388,8 @@ async function bootstrap() {
       favicon: '/genhub.svg',
       metaData: {
         title: 'GEN-HUB API Key Documentation',
-        description: 'API documentation cho các chức năng hổ trợ API Key của GEN-HUB',
+        description:
+          'API documentation cho các chức năng hổ trợ API Key của GEN-HUB',
         ogDescription: 'API Key documentation for GEN-HUB system',
         ogTitle: 'GEN-HUB API Key',
       },
@@ -385,7 +402,9 @@ async function bootstrap() {
   });
 
   // Count endpoints from Swagger documents
-  const countEndpoints = (doc: any): { total: number; byMethod: Record<string, number> } => {
+  const countEndpoints = (
+    doc: any,
+  ): { total: number; byMethod: Record<string, number> } => {
     const byMethod: Record<string, number> = {};
     let total = 0;
 
@@ -393,8 +412,19 @@ async function bootstrap() {
       for (const path of Object.keys(doc.paths)) {
         const methods = doc.paths[path];
         for (const method of Object.keys(methods)) {
-          if (['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) {
-            byMethod[method.toUpperCase()] = (byMethod[method.toUpperCase()] || 0) + 1;
+          if (
+            [
+              'get',
+              'post',
+              'put',
+              'patch',
+              'delete',
+              'head',
+              'options',
+            ].includes(method)
+          ) {
+            byMethod[method.toUpperCase()] =
+              (byMethod[method.toUpperCase()] || 0) + 1;
             total++;
           }
         }
@@ -416,24 +446,45 @@ async function bootstrap() {
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
   console.log(`📚 Scalar API Docs: ${backendUrl}/api-docs`);
   console.log(`📄 API JSON: ${backendUrl}/api-docs-json`);
-  console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
+  console.log(
+    `🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`,
+  );
   console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
-  console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
+  console.log(
+    `📊 Main API: ${mainStats.total} endpoints (${Object.entries(
+      mainStats.byMethod,
+    )
+      .map(([m, c]) => `${m}: ${c}`)
+      .join(', ')})`,
+  );
 
   // Sync Feature Flags (run in background to not block server startup)
   setImmediate(async () => {
     try {
-      const { FeatureFlagService } = require('./modules/feature-flag/feature-flag.service');
+      const {
+        FeatureFlagService,
+      } = require('./modules/feature-flag/feature-flag.service');
       const featureFlagService = app.get(FeatureFlagService);
 
       // Extract routes from Swagger document
-      const discoveredRoutes: { module: string; method: any; path: string }[] = [];
+      const discoveredRoutes: { module: string; method: any; path: string }[] =
+        [];
 
       if (document.paths) {
         for (const path of Object.keys(document.paths)) {
           const methods = document.paths[path] as Record<string, any>;
           for (const method of Object.keys(methods)) {
-            if (['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) {
+            if (
+              [
+                'get',
+                'post',
+                'put',
+                'patch',
+                'delete',
+                'head',
+                'options',
+              ].includes(method)
+            ) {
               const tags = methods[method]?.tags || ['Unknown'];
               discoveredRoutes.push({
                 module: tags[0] || 'Unknown',
@@ -499,4 +550,3 @@ async function bootstrap() {
   });
 }
 bootstrap();
-

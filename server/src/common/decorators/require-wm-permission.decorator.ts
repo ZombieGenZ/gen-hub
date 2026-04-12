@@ -10,4 +10,4 @@ export const WM_PERMISSION_KEY = 'wm_permission';
  * @example @RequireWMPermission('warehouse.view')
  */
 export const RequireWMPermission = (permission: string) =>
-    SetMetadata(WM_PERMISSION_KEY, permission);
+  SetMetadata(WM_PERMISSION_KEY, permission);

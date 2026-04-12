@@ -11,17 +11,17 @@ import { OrganizationModule } from '../organization/organization.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [
-        PrismaModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        OrganizationModule,
-        ApiKeyVerificationModule,
-        OrganizationBalanceModule,
-    ],
-    controllers: [RefundRequestController],
-    providers: [RefundRequestService, RefundRequestRepository],
-    exports: [RefundRequestService],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    OrganizationModule,
+    ApiKeyVerificationModule,
+    OrganizationBalanceModule,
+  ],
+  controllers: [RefundRequestController],
+  providers: [RefundRequestService, RefundRequestRepository],
+  exports: [RefundRequestService],
 })
-export class RefundRequestModule { }
+export class RefundRequestModule {}

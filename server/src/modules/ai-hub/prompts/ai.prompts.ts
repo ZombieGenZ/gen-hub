@@ -67,35 +67,35 @@ JSON Response:`;
  * Hàm build prompt từ template
  */
 export function buildEmailClassificationPrompt(
-    senderEmail: string,
-    senderName: string,
-    subject: string,
-    content: string,
+  senderEmail: string,
+  senderName: string,
+  subject: string,
+  content: string,
 ): string {
-    return EMAIL_CLASSIFICATION_PROMPT
-        .replace('{{senderName}}', senderName)
-        .replace('{{senderEmail}}', senderEmail)
-        .replace('{{subject}}', subject)
-        .replace('{{content}}', content.substring(0, 1000));
+  return EMAIL_CLASSIFICATION_PROMPT.replace('{{senderName}}', senderName)
+    .replace('{{senderEmail}}', senderEmail)
+    .replace('{{subject}}', subject)
+    .replace('{{content}}', content.substring(0, 1000));
 }
 
 /**
  * Hàm build prompt cho webform classification
  */
 export function buildWebformClassificationPrompt(
-    senderEmail: string,
-    senderName: string,
-    company: string | undefined,
-    phone: string | undefined,
-    subject: string,
-    message: string,
+  senderEmail: string,
+  senderName: string,
+  company: string | undefined,
+  phone: string | undefined,
+  subject: string,
+  message: string,
 ): string {
-    return WEBFORM_CLASSIFICATION_PROMPT
-        .replace('{{senderName}}', senderName || 'Không có')
-        .replace('{{senderEmail}}', senderEmail || 'Không có')
-        .replace('{{company}}', company || 'Không có')
-        .replace('{{phone}}', phone || 'Không có')
-        .replace('{{subject}}', subject || 'Không có')
-        .replace('{{message}}', message.substring(0, 1000));
+  return WEBFORM_CLASSIFICATION_PROMPT.replace(
+    '{{senderName}}',
+    senderName || 'Không có',
+  )
+    .replace('{{senderEmail}}', senderEmail || 'Không có')
+    .replace('{{company}}', company || 'Không có')
+    .replace('{{phone}}', phone || 'Không có')
+    .replace('{{subject}}', subject || 'Không có')
+    .replace('{{message}}', message.substring(0, 1000));
 }
-

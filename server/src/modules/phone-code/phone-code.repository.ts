@@ -23,7 +23,12 @@ export class PhoneCodeRepository {
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; where?: any; orderBy?: any }) {
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: any;
+    orderBy?: any;
+  }) {
     return this.prisma.phoneCode.findMany({
       ...params,
       select: phoneCodeListSelect,
@@ -39,7 +44,10 @@ export class PhoneCodeRepository {
     if (!hasReadAllPermission && userId) {
       where.created_by = userId;
     }
-    return this.prisma.phoneCode.findFirst({ where, select: phoneCodeDetailSelect });
+    return this.prisma.phoneCode.findFirst({
+      where,
+      select: phoneCodeDetailSelect,
+    });
   }
 
   async findByName(name: string, excludeId?: string) {
@@ -64,14 +72,17 @@ export class PhoneCodeRepository {
     });
   }
 
-  async update(id: string, data: {
-    name?: string;
-    description?: string;
-    code?: string;
-    flag_url?: string;
-    is_active?: boolean;
-    updated_by: string;
-  }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      code?: string;
+      flag_url?: string;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
     return this.prisma.phoneCode.update({
       where: { id },
       data,
@@ -90,13 +101,20 @@ export class PhoneCodeRepository {
     });
   }
 
-  async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+  async findByIds(
+    ids: string[],
+    userId?: string,
+    hasDeleteAllPermission?: boolean,
+  ) {
     const where: any = { id: { in: ids }, is_deleted: false };
     if (!hasDeleteAllPermission && userId) {
       where.created_by = userId;
     }
 
-    return this.prisma.phoneCode.findMany({ where, select: phoneCodeListSelect });
+    return this.prisma.phoneCode.findMany({
+      where,
+      select: phoneCodeListSelect,
+    });
   }
 
   async softDeleteMany(ids: string[], deletedBy: string) {

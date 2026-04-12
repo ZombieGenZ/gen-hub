@@ -50,7 +50,10 @@ export class ConsultationRequestController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId },
       include: {
@@ -74,9 +77,16 @@ export class ConsultationRequestController {
       },
     });
     if (!user) return false;
-    if (user.system_permissions.some((item) => item.permission.key === permissionKey)) return true;
+    if (
+      user.system_permissions.some(
+        (item) => item.permission.key === permissionKey,
+      )
+    )
+      return true;
     return user.system_roles.some((role) =>
-      role.role.permissions.some((item) => item.permission.key === permissionKey),
+      role.role.permissions.some(
+        (item) => item.permission.key === permissionKey,
+      ),
     );
   }
 
@@ -131,21 +141,73 @@ export class ConsultationRequestController {
   @Get()
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @ApiBearerAuth('JWT-auth')
-  @RequireAnyPermission('consultation-request.list', 'consultation-request.list.all')
+  @RequireAnyPermission(
+    'consultation-request.list',
+    'consultation-request.list.all',
+  )
   @ApiOperation({
     summary: 'Lấy danh sách yêu cầu tư vấn',
     description:
       'Trả về danh sách yêu cầu tư vấn có phân trang và bộ lọc. Người có quyền `.list.all` xem toàn bộ hệ thống, còn quyền `.list` chỉ xem dữ liệu do mình tạo.',
   })
   @ApiAuthResponses()
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Trang hiện tại.', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi trên mỗi trang.', example: 10 })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Từ khóa tìm kiếm theo tên, email, số điện thoại hoặc mã yêu cầu.', example: 'Nguyễn Thị Lan' })
-  @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc theo trạng thái xử lý.', example: 'PENDING' })
-  @ApiQuery({ name: 'source', required: false, type: String, description: 'Lọc theo nguồn tạo yêu cầu.', example: 'WEB_FORM' })
-  @ApiQuery({ name: 'assigned_to', required: false, type: String, description: 'Lọc theo nhân viên phụ trách.', example: '660e8400-e29b-41d4-a716-446655440111' })
-  @ApiQuery({ name: 'sort_by', required: false, type: String, description: 'Trường dùng để sắp xếp.', example: 'created_at' })
-  @ApiQuery({ name: 'sort_order', required: false, type: String, description: 'Thứ tự sắp xếp.', example: 'desc' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Trang hiện tại.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi trên mỗi trang.',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description:
+      'Từ khóa tìm kiếm theo tên, email, số điện thoại hoặc mã yêu cầu.',
+    example: 'Nguyễn Thị Lan',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Lọc theo trạng thái xử lý.',
+    example: 'PENDING',
+  })
+  @ApiQuery({
+    name: 'source',
+    required: false,
+    type: String,
+    description: 'Lọc theo nguồn tạo yêu cầu.',
+    example: 'WEB_FORM',
+  })
+  @ApiQuery({
+    name: 'assigned_to',
+    required: false,
+    type: String,
+    description: 'Lọc theo nhân viên phụ trách.',
+    example: '660e8400-e29b-41d4-a716-446655440111',
+  })
+  @ApiQuery({
+    name: 'sort_by',
+    required: false,
+    type: String,
+    description: 'Trường dùng để sắp xếp.',
+    example: 'created_at',
+  })
+  @ApiQuery({
+    name: 'sort_order',
+    required: false,
+    type: String,
+    description: 'Thứ tự sắp xếp.',
+    example: 'desc',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách yêu cầu tư vấn thành công.',
@@ -171,7 +233,10 @@ export class ConsultationRequestController {
     @Query() query: QueryConsultationRequestDto,
     @CurrentUser('userId') userId: string,
   ) {
-    const hasAll = await this.hasPermission(userId, 'consultation-request.list.all');
+    const hasAll = await this.hasPermission(
+      userId,
+      'consultation-request.list.all',
+    );
     return new GetResponse(
       'consultation-request.list_success',
       await this.service.findAllRequests(query, hasAll ? undefined : userId),
@@ -181,7 +246,10 @@ export class ConsultationRequestController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @ApiBearerAuth('JWT-auth')
-  @RequireAnyPermission('consultation-request.read', 'consultation-request.read.all')
+  @RequireAnyPermission(
+    'consultation-request.read',
+    'consultation-request.read.all',
+  )
   @ApiOperation({
     summary: 'Lấy chi tiết yêu cầu tư vấn',
     description:
@@ -220,8 +288,15 @@ export class ConsultationRequestController {
       },
     },
   })
-  async findOne(@Param('id') id: string, @CurrentUser('userId') userId: string, @Request() req: any) {
-    const hasAll = await this.hasPermission(userId, 'consultation-request.read.all');
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @Request() req: any,
+  ) {
+    const hasAll = await this.hasPermission(
+      userId,
+      'consultation-request.read.all',
+    );
     return new GetResponse(
       'consultation-request.get_success',
       await this.service.findRequestById(
@@ -235,7 +310,10 @@ export class ConsultationRequestController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @ApiBearerAuth('JWT-auth')
-  @RequireAnyPermission('consultation-request.update', 'consultation-request.update.all')
+  @RequireAnyPermission(
+    'consultation-request.update',
+    'consultation-request.update.all',
+  )
   @ApiOperation({
     summary: 'Cập nhật yêu cầu tư vấn',
     description:
@@ -283,7 +361,10 @@ export class ConsultationRequestController {
     @CurrentUser('userId') userId: string,
     @Request() req: any,
   ) {
-    const hasAll = await this.hasPermission(userId, 'consultation-request.update.all');
+    const hasAll = await this.hasPermission(
+      userId,
+      'consultation-request.update.all',
+    );
     return new UpdatedResponse(
       'consultation-request.update_success',
       await this.service.updateRequest(
@@ -361,7 +442,10 @@ export class ConsultationRequestController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @ApiBearerAuth('JWT-auth')
-  @RequireAnyPermission('consultation-request.delete', 'consultation-request.delete.all')
+  @RequireAnyPermission(
+    'consultation-request.delete',
+    'consultation-request.delete.all',
+  )
   @ApiOperation({
     summary: 'Xóa mềm yêu cầu tư vấn',
     description:
@@ -385,8 +469,15 @@ export class ConsultationRequestController {
       },
     },
   })
-  async remove(@Param('id') id: string, @CurrentUser('userId') userId: string, @Request() req: any) {
-    const hasAll = await this.hasPermission(userId, 'consultation-request.delete.all');
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @Request() req: any,
+  ) {
+    const hasAll = await this.hasPermission(
+      userId,
+      'consultation-request.delete.all',
+    );
     await this.service.softDeleteRequest(
       id,
       userId,

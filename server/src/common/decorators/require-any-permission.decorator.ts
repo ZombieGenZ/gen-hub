@@ -8,4 +8,4 @@ export const PERMISSIONS_ANY_KEY = 'permissions_any';
  * @example @RequireAnyPermission('backup.admin', 'backup.trigger')
  */
 export const RequireAnyPermission = (...permissions: string[]) =>
-    SetMetadata(PERMISSIONS_ANY_KEY, permissions);
+  SetMetadata(PERMISSIONS_ANY_KEY, permissions);

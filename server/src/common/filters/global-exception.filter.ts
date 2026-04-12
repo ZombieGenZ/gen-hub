@@ -57,7 +57,7 @@ function extractIpAddress(request: Request): string {
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('ExceptionFilter');
 
-  constructor(private readonly systemLogService: SystemLogService) { }
+  constructor(private readonly systemLogService: SystemLogService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -241,7 +241,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       case 'P2002': {
         const target = error.meta?.target;
         const fieldName = Array.isArray(target) ? target[0] : target;
-        const fieldLabel = typeof fieldName === 'string' ? fieldName : 'unknown';
+        const fieldLabel =
+          typeof fieldName === 'string' ? fieldName : 'unknown';
         const message =
           fieldLabel !== 'unknown'
             ? `Giá trị ${fieldLabel} đã tồn tại`
@@ -345,7 +346,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private toSnakeCase(str: string): string {
-    return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+    return str
+      .replace(/([A-Z])/g, '_$1')
+      .toLowerCase()
+      .replace(/^_/, '');
   }
 
   private extractEntityName(meta?: Record<string, unknown>): string | null {

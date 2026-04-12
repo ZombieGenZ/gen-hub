@@ -39,7 +39,12 @@ const mockPayment = (overrides: Record<string, any> = {}) => ({
   expired_at: new Date(Date.now() + 3600000), // 1 hour from now
   sepay_transaction_id: null,
   is_deleted: false,
-  rental_contract: { id: 'contract-1', code: 'GENHUB-ABC', status: 'PENDING', organization_id: 'org-1' },
+  rental_contract: {
+    id: 'contract-1',
+    code: 'GENHUB-ABC',
+    status: 'PENDING',
+    organization_id: 'org-1',
+  },
   ...overrides,
 });
 
@@ -50,11 +55,17 @@ const createMockPrisma = () => ({
     create: jest.fn().mockResolvedValue(mockPayment()),
     findUnique: jest.fn().mockResolvedValue(null), // no duplicate by default
     findMany: jest.fn().mockResolvedValue([mockPayment()]),
-    update: jest.fn().mockResolvedValue(mockPayment({ status: PaymentStatus.PAID })),
+    update: jest
+      .fn()
+      .mockResolvedValue(mockPayment({ status: PaymentStatus.PAID })),
     count: jest.fn().mockResolvedValue(1),
   },
   rentalContract: {
-    findUnique: jest.fn().mockResolvedValue({ id: 'contract-1', code: 'GENHUB-ABC', organization_id: 'org-1' }),
+    findUnique: jest.fn().mockResolvedValue({
+      id: 'contract-1',
+      code: 'GENHUB-ABC',
+      organization_id: 'org-1',
+    }),
     update: jest.fn(),
   },
   user: {
@@ -128,7 +139,9 @@ describe('SepayService', () => {
     });
 
     it('should generate unique codes', () => {
-      const codes = new Set(Array.from({ length: 100 }, () => service.generatePaymentCode()));
+      const codes = new Set(
+        Array.from({ length: 100 }, () => service.generatePaymentCode()),
+      );
       // Statistically very unlikely to have duplicates in 100 codes
       expect(codes.size).toBeGreaterThan(90);
     });
@@ -216,7 +229,10 @@ describe('SepayService', () => {
       });
 
       expect(websocket.server.to).toHaveBeenCalledWith('user:user-1');
-      expect(mockEmit).toHaveBeenCalledWith('payment:created', expect.any(Object));
+      expect(mockEmit).toHaveBeenCalledWith(
+        'payment:created',
+        expect.any(Object),
+      );
     });
   });
 
@@ -271,7 +287,9 @@ describe('SepayService', () => {
 
     it('should ignore duplicate transactions', async () => {
       // Make isDuplicateTransaction return true
-      prisma.payment.findUnique.mockResolvedValue(mockPayment({ sepay_transaction_id: BigInt(99999) }));
+      prisma.payment.findUnique.mockResolvedValue(
+        mockPayment({ sepay_transaction_id: BigInt(99999) }),
+      );
 
       const result = await service.handlePaymentWebhook(baseWebhookData as any);
 
@@ -287,7 +305,9 @@ describe('SepayService', () => {
     });
 
     it('should return expired when payment is past expiry', async () => {
-      const expiredPayment = mockPayment({ expired_at: new Date('2020-01-01') });
+      const expiredPayment = mockPayment({
+        expired_at: new Date('2020-01-01'),
+      });
       prisma.payment.findMany.mockResolvedValue([expiredPayment]);
 
       const result = await service.handlePaymentWebhook(baseWebhookData as any);
@@ -324,7 +344,9 @@ describe('SepayService', () => {
           data: { status: 'ACTIVE' },
         }),
       );
-      expect(contractService.cancelConflictingContracts).toHaveBeenCalledWith('contract-1');
+      expect(contractService.cancelConflictingContracts).toHaveBeenCalledWith(
+        'contract-1',
+      );
       expect(contractService.activateContractWarehouses).toHaveBeenCalled();
     });
 
@@ -340,7 +362,11 @@ describe('SepayService', () => {
 
       expect(result.success).toBe(true);
       expect(balanceService.processDepositSuccess).toHaveBeenCalledWith(
-        'org-1', 30000000, 'payment-1', 'GH12345678', 'user-1',
+        'org-1',
+        30000000,
+        'payment-1',
+        'GH12345678',
+        'user-1',
       );
     });
 
@@ -427,7 +453,10 @@ describe('SepayService', () => {
     it('should cancel payment and associated PENDING contract', async () => {
       prisma.payment.findUnique.mockResolvedValue(mockPayment());
       prisma.rentalContract.findUnique.mockResolvedValue({
-        id: 'contract-1', code: 'GENHUB-ABC', status: 'PENDING', created_by: 'user-1',
+        id: 'contract-1',
+        code: 'GENHUB-ABC',
+        status: 'PENDING',
+        created_by: 'user-1',
       });
 
       const result = await service.manualRejectPayment('payment-1', 'admin-1');
@@ -448,7 +477,9 @@ describe('SepayService', () => {
     it('should not cancel contract if already ACTIVE', async () => {
       prisma.payment.findUnique.mockResolvedValue(mockPayment());
       prisma.rentalContract.findUnique.mockResolvedValue({
-        id: 'contract-1', code: 'GENHUB-ABC', status: 'ACTIVE',
+        id: 'contract-1',
+        code: 'GENHUB-ABC',
+        status: 'ACTIVE',
       });
 
       await service.manualRejectPayment('payment-1', 'admin-1');
@@ -464,20 +495,29 @@ describe('SepayService', () => {
     it('should emit payment:cancelled and contract:cancelled events', async () => {
       prisma.payment.findUnique.mockResolvedValue(mockPayment());
       prisma.rentalContract.findUnique.mockResolvedValue({
-        id: 'contract-1', code: 'GENHUB-ABC', status: 'PENDING', created_by: 'user-1',
+        id: 'contract-1',
+        code: 'GENHUB-ABC',
+        status: 'PENDING',
+        created_by: 'user-1',
       });
 
       await service.manualRejectPayment('payment-1', 'admin-1');
 
       // Check that emit was called for both events
-      expect(mockEmit).toHaveBeenCalledWith('contract:cancelled', expect.objectContaining({
-        contractId: 'contract-1',
-        reason: 'payment_rejected_by_admin',
-      }));
-      expect(mockEmit).toHaveBeenCalledWith('payment:cancelled', expect.objectContaining({
-        paymentId: 'payment-1',
-        manuallyRejected: true,
-      }));
+      expect(mockEmit).toHaveBeenCalledWith(
+        'contract:cancelled',
+        expect.objectContaining({
+          contractId: 'contract-1',
+          reason: 'payment_rejected_by_admin',
+        }),
+      );
+      expect(mockEmit).toHaveBeenCalledWith(
+        'payment:cancelled',
+        expect.objectContaining({
+          paymentId: 'payment-1',
+          manuallyRejected: true,
+        }),
+      );
     });
   });
 

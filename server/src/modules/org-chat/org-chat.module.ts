@@ -10,12 +10,21 @@ import { OrganizationModule } from '../organization/organization.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 import { OrgChatCacheKeys } from './constants/cache-keys.helper';
 
-
 @Module({
-    imports: [PrismaModule, WebsocketModule, RedisModule, OrganizationModule, ApiKeyVerificationModule],
-    controllers: [OrgChatController],
-    providers: [OrgChatService, OrgChatRepository, AgoraService, OrgChatCacheKeys],
-    exports: [OrgChatService, AgoraService, OrgChatCacheKeys],
-
+  imports: [
+    PrismaModule,
+    WebsocketModule,
+    RedisModule,
+    OrganizationModule,
+    ApiKeyVerificationModule,
+  ],
+  controllers: [OrgChatController],
+  providers: [
+    OrgChatService,
+    OrgChatRepository,
+    AgoraService,
+    OrgChatCacheKeys,
+  ],
+  exports: [OrgChatService, AgoraService, OrgChatCacheKeys],
 })
-export class OrgChatModule { }
+export class OrgChatModule {}

@@ -5,9 +5,16 @@ import { ContactListRepository } from './contact-list.repository';
 import { ContactListCacheKeysHelper } from './helpers/contact-list-cache-keys.helper';
 
 @Module({
-    controllers: [ContactListController],
-    providers: [ContactListService, ContactListRepository, ContactListCacheKeysHelper],
-    exports: [ContactListService, ContactListRepository, ContactListCacheKeysHelper],
+  controllers: [ContactListController],
+  providers: [
+    ContactListService,
+    ContactListRepository,
+    ContactListCacheKeysHelper,
+  ],
+  exports: [
+    ContactListService,
+    ContactListRepository,
+    ContactListCacheKeysHelper,
+  ],
 })
-export class ContactListModule { }
-
+export class ContactListModule {}

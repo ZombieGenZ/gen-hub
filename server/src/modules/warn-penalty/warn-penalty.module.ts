@@ -8,14 +8,9 @@ import { SystemLogModule } from '../system-log/system-log.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 
 @Module({
-    imports: [
-        PrismaModule,
-        RedisModule,
-        SystemLogModule,
-        WebsocketModule,
-    ],
-    controllers: [WarnPenaltyController],
-    providers: [WarnPenaltyService, WarnPenaltyRepository],
-    exports: [WarnPenaltyService, WarnPenaltyRepository],
+  imports: [PrismaModule, RedisModule, SystemLogModule, WebsocketModule],
+  controllers: [WarnPenaltyController],
+  providers: [WarnPenaltyService, WarnPenaltyRepository],
+  exports: [WarnPenaltyService, WarnPenaltyRepository],
 })
-export class WarnPenaltyModule { }
+export class WarnPenaltyModule {}

@@ -4,4 +4,6 @@ import { CreateOrgNotificationDto } from './create-org-notification.dto';
 /**
  * DTO cập nhật OrganizationNotification
  */
-export class UpdateOrgNotificationDto extends PartialType(CreateOrgNotificationDto) { }
+export class UpdateOrgNotificationDto extends PartialType(
+  CreateOrgNotificationDto,
+) {}

@@ -8,15 +8,15 @@ import { OrganizationModule } from '../organization/organization.module';
 import { InventoryRequestModule } from '../inventory-request/inventory-request.module';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        OrganizationModule,
-        InventoryRequestModule,
-    ],
-    controllers: [WarehouseManagerInventoryController],
-    providers: [WarehouseManagerInventoryService],
-    exports: [WarehouseManagerInventoryService],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    OrganizationModule,
+    InventoryRequestModule,
+  ],
+  controllers: [WarehouseManagerInventoryController],
+  providers: [WarehouseManagerInventoryService],
+  exports: [WarehouseManagerInventoryService],
 })
-export class WarehouseManagerInventoryModule { }
+export class WarehouseManagerInventoryModule {}

@@ -7,8 +7,14 @@ import { DifyService } from './services/dify.service';
 import { GeminiService } from './services/gemini.service';
 
 @Module({
-    imports: [PrismaModule],
-    providers: [AiContextRepository, AiHubService, GeminiService, CozeService, DifyService],
-    exports: [AiHubService],
+  imports: [PrismaModule],
+  providers: [
+    AiContextRepository,
+    AiHubService,
+    GeminiService,
+    CozeService,
+    DifyService,
+  ],
+  exports: [AiHubService],
 })
-export class AiHubModule { }
+export class AiHubModule {}

@@ -11,15 +11,23 @@ import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verifi
 import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        OrganizationModule,
-        ApiKeyVerificationModule,
-    ],
-    controllers: [InventoryRequestController],
-    providers: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
-    exports: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    OrganizationModule,
+    ApiKeyVerificationModule,
+  ],
+  controllers: [InventoryRequestController],
+  providers: [
+    InventoryRequestService,
+    InventoryRequestRepository,
+    InventoryRequestCacheKeys,
+  ],
+  exports: [
+    InventoryRequestService,
+    InventoryRequestRepository,
+    InventoryRequestCacheKeys,
+  ],
 })
-export class InventoryRequestModule { }
+export class InventoryRequestModule {}

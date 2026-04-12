@@ -13,426 +13,525 @@ import { GetResponse } from '../../common/responses';
  */
 @Injectable()
 export class WarehouseManagerViewService {
-    constructor(
-        private readonly repository: WarehouseManagerViewRepository,
-        private readonly i18n: I18nService,
-        private readonly redisService: RedisService,
-        private readonly configService: ConfigService,
-    ) {
-        this.WM_VIEW_WAREHOUSE_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_WAREHOUSE_KEY_PREFIX') || 'wm:view:warehouse';
-        this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX') || 'wm:view:warehouses';
-        this.WM_VIEW_ROW_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_ROW_LIST_KEY_PREFIX') || 'wm:view:rows';
-        this.WM_VIEW_RACK_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_RACK_LIST_KEY_PREFIX') || 'wm:view:racks';
-        this.WM_VIEW_SHELF_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_SHELF_LIST_KEY_PREFIX') || 'wm:view:shelves';
-        this.WM_VIEW_BLOCK_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_BLOCK_LIST_KEY_PREFIX') || 'wm:view:blocks';
+  constructor(
+    private readonly repository: WarehouseManagerViewRepository,
+    private readonly i18n: I18nService,
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
+  ) {
+    this.WM_VIEW_WAREHOUSE_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WM_VIEW_WAREHOUSE_KEY_PREFIX') ||
+      'wm:view:warehouse';
+    this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX =
+      this.configService.get<string>(
+        'REDIS_WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX',
+      ) || 'wm:view:warehouses';
+    this.WM_VIEW_ROW_LIST_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WM_VIEW_ROW_LIST_KEY_PREFIX') ||
+      'wm:view:rows';
+    this.WM_VIEW_RACK_LIST_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WM_VIEW_RACK_LIST_KEY_PREFIX') ||
+      'wm:view:racks';
+    this.WM_VIEW_SHELF_LIST_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WM_VIEW_SHELF_LIST_KEY_PREFIX') ||
+      'wm:view:shelves';
+    this.WM_VIEW_BLOCK_LIST_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WM_VIEW_BLOCK_LIST_KEY_PREFIX') ||
+      'wm:view:blocks';
+  }
+
+  private readonly WM_VIEW_WAREHOUSE_KEY_PREFIX: string;
+  private readonly WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX: string;
+  private readonly WM_VIEW_ROW_LIST_KEY_PREFIX: string;
+  private readonly WM_VIEW_RACK_LIST_KEY_PREFIX: string;
+  private readonly WM_VIEW_SHELF_LIST_KEY_PREFIX: string;
+  private readonly WM_VIEW_BLOCK_LIST_KEY_PREFIX: string;
+
+  /**
+   * Lấy danh sách warehouse theo template
+   */
+  async findWarehousesByTemplate(
+    templateId: string,
+    query: QueryWarehouseManagerViewDto,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<IPaginatedResponse<Warehouse>>> {
+    // Check cache
+    const cacheKey = `${this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX}:${templateId}:${JSON.stringify(query)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return new GetResponse(
+        'warehouse_manager.warehouse_view_list_success',
+        JSON.parse(cached),
+        await this.i18n.translate(
+          'warehouse_manager.warehouse_view_list_success',
+          { lang },
+        ),
+      );
     }
 
-    private readonly WM_VIEW_WAREHOUSE_KEY_PREFIX: string;
-    private readonly WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX: string;
-    private readonly WM_VIEW_ROW_LIST_KEY_PREFIX: string;
-    private readonly WM_VIEW_RACK_LIST_KEY_PREFIX: string;
-    private readonly WM_VIEW_SHELF_LIST_KEY_PREFIX: string;
-    private readonly WM_VIEW_BLOCK_LIST_KEY_PREFIX: string;
+    const result = await this.repository.findWarehousesByTemplateId(
+      templateId,
+      query,
+    );
 
-    /**
-     * Lấy danh sách warehouse theo template
-     */
-    async findWarehousesByTemplate(
-        templateId: string,
-        query: QueryWarehouseManagerViewDto,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<Warehouse>>> {
-        // Check cache
-        const cacheKey = `${this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX}:${templateId}:${JSON.stringify(query)}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return new GetResponse(
-                'warehouse_manager.warehouse_view_list_success',
-                JSON.parse(cached),
-                await this.i18n.translate('warehouse_manager.warehouse_view_list_success', { lang }),
-            );
-        }
+    // Cache result
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
-        const result = await this.repository.findWarehousesByTemplateId(templateId, query);
+    return new GetResponse(
+      'warehouse_manager.warehouse_view_list_success',
+      result,
+      await this.i18n.translate(
+        'warehouse_manager.warehouse_view_list_success',
+        { lang },
+      ),
+    );
+  }
 
-        // Cache result
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
-
-        return new GetResponse(
-            'warehouse_manager.warehouse_view_list_success',
-            result,
-            await this.i18n.translate('warehouse_manager.warehouse_view_list_success', { lang }),
+  /**
+   * Lấy chi tiết warehouse
+   */
+  async findWarehouseDetail(
+    templateId: string,
+    warehouseId: string,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<Warehouse>> {
+    // Check cache
+    const cacheKey = `${this.WM_VIEW_WAREHOUSE_KEY_PREFIX}:${warehouseId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      const warehouse = JSON.parse(cached);
+      // Verify warehouse belongs to template
+      if (warehouse.warehouse_template_id !== templateId) {
+        throw new NotFoundException(
+          await this.i18n.translate(
+            'warehouse_manager.errors.warehouse_not_found',
+            { lang },
+          ),
         );
+      }
+      return new GetResponse(
+        'warehouse_manager.warehouse_view_detail_success',
+        warehouse,
+        await this.i18n.translate(
+          'warehouse_manager.warehouse_view_detail_success',
+          { lang },
+        ),
+      );
     }
 
-    /**
-     * Lấy chi tiết warehouse
-     */
-    async findWarehouseDetail(
-        templateId: string,
-        warehouseId: string,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<Warehouse>> {
-        // Check cache
-        const cacheKey = `${this.WM_VIEW_WAREHOUSE_KEY_PREFIX}:${warehouseId}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            const warehouse = JSON.parse(cached);
-            // Verify warehouse belongs to template
-            if (warehouse.warehouse_template_id !== templateId) {
-                throw new NotFoundException(
-                    await this.i18n.translate('warehouse_manager.errors.warehouse_not_found', { lang })
-                );
-            }
-            return new GetResponse(
-                'warehouse_manager.warehouse_view_detail_success',
-                warehouse,
-                await this.i18n.translate('warehouse_manager.warehouse_view_detail_success', { lang }),
-            );
-        }
-
-        const warehouse = await this.repository.findWarehouseById(warehouseId);
-        if (!warehouse) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.warehouse_not_found', { lang })
-            );
-        }
-
-        // Verify warehouse belongs to template
-        if (warehouse.warehouse_template_id !== templateId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.warehouse_not_found', { lang })
-            );
-        }
-
-        // Cache result
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(warehouse), ttl);
-
-        return new GetResponse(
-            'warehouse_manager.warehouse_view_detail_success',
-            warehouse,
-            await this.i18n.translate('warehouse_manager.warehouse_view_detail_success', { lang }),
-        );
+    const warehouse = await this.repository.findWarehouseById(warehouseId);
+    if (!warehouse) {
+      throw new NotFoundException(
+        await this.i18n.translate(
+          'warehouse_manager.errors.warehouse_not_found',
+          { lang },
+        ),
+      );
     }
 
-    /**
-     * Lấy danh sách rows trong warehouse
-     */
-    async findRowsByWarehouse(
-        templateId: string,
-        warehouseId: string,
-        query: QueryWarehouseManagerViewDto,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<Row>>> {
-        // Verify warehouse belongs to template
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-
-        const cacheKey = `${this.WM_VIEW_ROW_LIST_KEY_PREFIX}:${warehouseId}:${JSON.stringify(query)}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return new GetResponse(
-                'warehouse_manager.row_view_list_success',
-                JSON.parse(cached),
-                await this.i18n.translate('warehouse_manager.row_view_list_success', { lang }),
-            );
-        }
-
-        const result = await this.repository.findRowsByWarehouseId(warehouseId, query);
-
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
-
-        return new GetResponse(
-            'warehouse_manager.row_view_list_success',
-            result,
-            await this.i18n.translate('warehouse_manager.row_view_list_success', { lang }),
-        );
+    // Verify warehouse belongs to template
+    if (warehouse.warehouse_template_id !== templateId) {
+      throw new NotFoundException(
+        await this.i18n.translate(
+          'warehouse_manager.errors.warehouse_not_found',
+          { lang },
+        ),
+      );
     }
 
-    /**
-     * Lấy chi tiết row
-     */
-    async findRowDetail(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<Row>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    // Cache result
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(warehouse), ttl);
 
-        const row = await this.repository.findRowById(rowId);
-        if (!row || row.warehouse_id !== warehouseId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.row_not_found', { lang })
-            );
-        }
+    return new GetResponse(
+      'warehouse_manager.warehouse_view_detail_success',
+      warehouse,
+      await this.i18n.translate(
+        'warehouse_manager.warehouse_view_detail_success',
+        { lang },
+      ),
+    );
+  }
 
-        return new GetResponse(
-            'warehouse_manager.row_view_detail_success',
-            row,
-            await this.i18n.translate('warehouse_manager.row_view_detail_success', { lang }),
-        );
+  /**
+   * Lấy danh sách rows trong warehouse
+   */
+  async findRowsByWarehouse(
+    templateId: string,
+    warehouseId: string,
+    query: QueryWarehouseManagerViewDto,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<IPaginatedResponse<Row>>> {
+    // Verify warehouse belongs to template
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+
+    const cacheKey = `${this.WM_VIEW_ROW_LIST_KEY_PREFIX}:${warehouseId}:${JSON.stringify(query)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return new GetResponse(
+        'warehouse_manager.row_view_list_success',
+        JSON.parse(cached),
+        await this.i18n.translate('warehouse_manager.row_view_list_success', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy danh sách racks trong row
-     */
-    async findRacksByRow(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        query: QueryWarehouseManagerViewDto,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<Rack>>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    const result = await this.repository.findRowsByWarehouseId(
+      warehouseId,
+      query,
+    );
 
-        const cacheKey = `${this.WM_VIEW_RACK_LIST_KEY_PREFIX}:${rowId}:${JSON.stringify(query)}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return new GetResponse(
-                'warehouse_manager.rack_view_list_success',
-                JSON.parse(cached),
-                await this.i18n.translate('warehouse_manager.rack_view_list_success', { lang }),
-            );
-        }
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
-        const result = await this.repository.findRacksByRowId(rowId, query);
+    return new GetResponse(
+      'warehouse_manager.row_view_list_success',
+      result,
+      await this.i18n.translate('warehouse_manager.row_view_list_success', {
+        lang,
+      }),
+    );
+  }
 
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+  /**
+   * Lấy chi tiết row
+   */
+  async findRowDetail(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<Row>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.rack_view_list_success',
-            result,
-            await this.i18n.translate('warehouse_manager.rack_view_list_success', { lang }),
-        );
+    const row = await this.repository.findRowById(rowId);
+    if (!row || row.warehouse_id !== warehouseId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.row_not_found', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy chi tiết rack
-     */
-    async findRackDetail(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        rackId: string,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<Rack>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    return new GetResponse(
+      'warehouse_manager.row_view_detail_success',
+      row,
+      await this.i18n.translate('warehouse_manager.row_view_detail_success', {
+        lang,
+      }),
+    );
+  }
 
-        const rack = await this.repository.findRackById(rackId);
-        if (!rack || rack.row_id !== rowId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.rack_not_found', { lang })
-            );
-        }
+  /**
+   * Lấy danh sách racks trong row
+   */
+  async findRacksByRow(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    query: QueryWarehouseManagerViewDto,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<IPaginatedResponse<Rack>>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.rack_view_detail_success',
-            rack,
-            await this.i18n.translate('warehouse_manager.rack_view_detail_success', { lang }),
-        );
+    const cacheKey = `${this.WM_VIEW_RACK_LIST_KEY_PREFIX}:${rowId}:${JSON.stringify(query)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return new GetResponse(
+        'warehouse_manager.rack_view_list_success',
+        JSON.parse(cached),
+        await this.i18n.translate('warehouse_manager.rack_view_list_success', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy danh sách shelves trong rack
-     */
-    async findShelvesByRack(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        rackId: string,
-        query: QueryWarehouseManagerViewDto,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<Shelf>>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
-        await this.verifyRackBelongsToRow(rackId, rowId, lang);
+    const result = await this.repository.findRacksByRowId(rowId, query);
 
-        const cacheKey = `${this.WM_VIEW_SHELF_LIST_KEY_PREFIX}:${rackId}:${JSON.stringify(query)}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return new GetResponse(
-                'warehouse_manager.shelf_view_list_success',
-                JSON.parse(cached),
-                await this.i18n.translate('warehouse_manager.shelf_view_list_success', { lang }),
-            );
-        }
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
-        const result = await this.repository.findShelvesByRackId(rackId, query);
+    return new GetResponse(
+      'warehouse_manager.rack_view_list_success',
+      result,
+      await this.i18n.translate('warehouse_manager.rack_view_list_success', {
+        lang,
+      }),
+    );
+  }
 
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+  /**
+   * Lấy chi tiết rack
+   */
+  async findRackDetail(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    rackId: string,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<Rack>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.shelf_view_list_success',
-            result,
-            await this.i18n.translate('warehouse_manager.shelf_view_list_success', { lang }),
-        );
+    const rack = await this.repository.findRackById(rackId);
+    if (!rack || rack.row_id !== rowId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.rack_not_found', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy chi tiết shelf
-     */
-    async findShelfDetail(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        rackId: string,
-        shelfId: string,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<Shelf>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
-        await this.verifyRackBelongsToRow(rackId, rowId, lang);
+    return new GetResponse(
+      'warehouse_manager.rack_view_detail_success',
+      rack,
+      await this.i18n.translate('warehouse_manager.rack_view_detail_success', {
+        lang,
+      }),
+    );
+  }
 
-        const shelf = await this.repository.findShelfById(shelfId);
-        if (!shelf || shelf.rack_id !== rackId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.shelf_not_found', { lang })
-            );
-        }
+  /**
+   * Lấy danh sách shelves trong rack
+   */
+  async findShelvesByRack(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    rackId: string,
+    query: QueryWarehouseManagerViewDto,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<IPaginatedResponse<Shelf>>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    await this.verifyRackBelongsToRow(rackId, rowId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.shelf_view_detail_success',
-            shelf,
-            await this.i18n.translate('warehouse_manager.shelf_view_detail_success', { lang }),
-        );
+    const cacheKey = `${this.WM_VIEW_SHELF_LIST_KEY_PREFIX}:${rackId}:${JSON.stringify(query)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return new GetResponse(
+        'warehouse_manager.shelf_view_list_success',
+        JSON.parse(cached),
+        await this.i18n.translate('warehouse_manager.shelf_view_list_success', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy danh sách blocks trong shelf
-     */
-    async findBlocksByShelf(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        rackId: string,
-        shelfId: string,
-        query: QueryWarehouseManagerViewDto,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<Block>>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
-        await this.verifyRackBelongsToRow(rackId, rowId, lang);
-        await this.verifyShelfBelongsToRack(shelfId, rackId, lang);
+    const result = await this.repository.findShelvesByRackId(rackId, query);
 
-        const cacheKey = `${this.WM_VIEW_BLOCK_LIST_KEY_PREFIX}:${shelfId}:${JSON.stringify(query)}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return new GetResponse(
-                'warehouse_manager.block_view_list_success',
-                JSON.parse(cached),
-                await this.i18n.translate('warehouse_manager.block_view_list_success', { lang }),
-            );
-        }
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
-        const result = await this.repository.findBlocksByShelfId(shelfId, query);
+    return new GetResponse(
+      'warehouse_manager.shelf_view_list_success',
+      result,
+      await this.i18n.translate('warehouse_manager.shelf_view_list_success', {
+        lang,
+      }),
+    );
+  }
 
-        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL', 300);
-        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+  /**
+   * Lấy chi tiết shelf
+   */
+  async findShelfDetail(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    rackId: string,
+    shelfId: string,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<Shelf>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    await this.verifyRackBelongsToRow(rackId, rowId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.block_view_list_success',
-            result,
-            await this.i18n.translate('warehouse_manager.block_view_list_success', { lang }),
-        );
+    const shelf = await this.repository.findShelfById(shelfId);
+    if (!shelf || shelf.rack_id !== rackId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.shelf_not_found', {
+          lang,
+        }),
+      );
     }
 
-    /**
-     * Lấy chi tiết block
-     */
-    async findBlockDetail(
-        templateId: string,
-        warehouseId: string,
-        rowId: string,
-        rackId: string,
-        shelfId: string,
-        blockId: string,
-        userId: string,
-        lang: string,
-    ): Promise<GetResponse<Block>> {
-        await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
-        await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
-        await this.verifyRackBelongsToRow(rackId, rowId, lang);
-        await this.verifyShelfBelongsToRack(shelfId, rackId, lang);
+    return new GetResponse(
+      'warehouse_manager.shelf_view_detail_success',
+      shelf,
+      await this.i18n.translate('warehouse_manager.shelf_view_detail_success', {
+        lang,
+      }),
+    );
+  }
 
-        const block = await this.repository.findBlockById(blockId);
-        if (!block || block.shelf_id !== shelfId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.block_not_found', { lang })
-            );
-        }
+  /**
+   * Lấy danh sách blocks trong shelf
+   */
+  async findBlocksByShelf(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    rackId: string,
+    shelfId: string,
+    query: QueryWarehouseManagerViewDto,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<IPaginatedResponse<Block>>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    await this.verifyRackBelongsToRow(rackId, rowId, lang);
+    await this.verifyShelfBelongsToRack(shelfId, rackId, lang);
 
-        return new GetResponse(
-            'warehouse_manager.block_view_detail_success',
-            block,
-            await this.i18n.translate('warehouse_manager.block_view_detail_success', { lang }),
-        );
+    const cacheKey = `${this.WM_VIEW_BLOCK_LIST_KEY_PREFIX}:${shelfId}:${JSON.stringify(query)}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return new GetResponse(
+        'warehouse_manager.block_view_list_success',
+        JSON.parse(cached),
+        await this.i18n.translate('warehouse_manager.block_view_list_success', {
+          lang,
+        }),
+      );
     }
 
-    private async verifyWarehouseBelongsToTemplate(
-        warehouseId: string,
-        templateId: string,
-        lang: string,
-    ): Promise<void> {
-        const warehouse = await this.repository.findWarehouseById(warehouseId);
-        if (!warehouse || warehouse.warehouse_template_id !== templateId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.warehouse_not_found', { lang })
-            );
-        }
+    const result = await this.repository.findBlocksByShelfId(shelfId, query);
+
+    const ttl = this.configService.get<number>(
+      'REDIS_WAREHOUSE_MANAGER_VIEW_CACHE_TTL',
+      300,
+    );
+    await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+
+    return new GetResponse(
+      'warehouse_manager.block_view_list_success',
+      result,
+      await this.i18n.translate('warehouse_manager.block_view_list_success', {
+        lang,
+      }),
+    );
+  }
+
+  /**
+   * Lấy chi tiết block
+   */
+  async findBlockDetail(
+    templateId: string,
+    warehouseId: string,
+    rowId: string,
+    rackId: string,
+    shelfId: string,
+    blockId: string,
+    userId: string,
+    lang: string,
+  ): Promise<GetResponse<Block>> {
+    await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
+    await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
+    await this.verifyRackBelongsToRow(rackId, rowId, lang);
+    await this.verifyShelfBelongsToRack(shelfId, rackId, lang);
+
+    const block = await this.repository.findBlockById(blockId);
+    if (!block || block.shelf_id !== shelfId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.block_not_found', {
+          lang,
+        }),
+      );
     }
 
-    private async verifyRowBelongsToWarehouse(
-        rowId: string,
-        warehouseId: string,
-        lang: string,
-    ): Promise<void> {
-        const row = await this.repository.findRowById(rowId);
-        if (!row || row.warehouse_id !== warehouseId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.row_not_found', { lang })
-            );
-        }
-    }
+    return new GetResponse(
+      'warehouse_manager.block_view_detail_success',
+      block,
+      await this.i18n.translate('warehouse_manager.block_view_detail_success', {
+        lang,
+      }),
+    );
+  }
 
-    private async verifyRackBelongsToRow(
-        rackId: string,
-        rowId: string,
-        lang: string,
-    ): Promise<void> {
-        const rack = await this.repository.findRackById(rackId);
-        if (!rack || rack.row_id !== rowId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.rack_not_found', { lang })
-            );
-        }
+  private async verifyWarehouseBelongsToTemplate(
+    warehouseId: string,
+    templateId: string,
+    lang: string,
+  ): Promise<void> {
+    const warehouse = await this.repository.findWarehouseById(warehouseId);
+    if (!warehouse || warehouse.warehouse_template_id !== templateId) {
+      throw new NotFoundException(
+        await this.i18n.translate(
+          'warehouse_manager.errors.warehouse_not_found',
+          { lang },
+        ),
+      );
     }
+  }
 
-    private async verifyShelfBelongsToRack(
-        shelfId: string,
-        rackId: string,
-        lang: string,
-    ): Promise<void> {
-        const shelf = await this.repository.findShelfById(shelfId);
-        if (!shelf || shelf.rack_id !== rackId) {
-            throw new NotFoundException(
-                await this.i18n.translate('warehouse_manager.errors.shelf_not_found', { lang })
-            );
-        }
+  private async verifyRowBelongsToWarehouse(
+    rowId: string,
+    warehouseId: string,
+    lang: string,
+  ): Promise<void> {
+    const row = await this.repository.findRowById(rowId);
+    if (!row || row.warehouse_id !== warehouseId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.row_not_found', {
+          lang,
+        }),
+      );
     }
+  }
+
+  private async verifyRackBelongsToRow(
+    rackId: string,
+    rowId: string,
+    lang: string,
+  ): Promise<void> {
+    const rack = await this.repository.findRackById(rackId);
+    if (!rack || rack.row_id !== rowId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.rack_not_found', {
+          lang,
+        }),
+      );
+    }
+  }
+
+  private async verifyShelfBelongsToRack(
+    shelfId: string,
+    rackId: string,
+    lang: string,
+  ): Promise<void> {
+    const shelf = await this.repository.findShelfById(shelfId);
+    if (!shelf || shelf.rack_id !== rackId) {
+      throw new NotFoundException(
+        await this.i18n.translate('warehouse_manager.errors.shelf_not_found', {
+          lang,
+        }),
+      );
+    }
+  }
 }

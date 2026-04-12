@@ -4,8 +4,8 @@ import { BlockTemplateService } from './block-template.service';
 import { BlockTemplateRepository } from './block-template.repository';
 
 @Module({
-    controllers: [BlockTemplateController],
-    providers: [BlockTemplateService, BlockTemplateRepository],
-    exports: [BlockTemplateService, BlockTemplateRepository],
+  controllers: [BlockTemplateController],
+  providers: [BlockTemplateService, BlockTemplateRepository],
+  exports: [BlockTemplateService, BlockTemplateRepository],
 })
-export class BlockTemplateModule { }
+export class BlockTemplateModule {}

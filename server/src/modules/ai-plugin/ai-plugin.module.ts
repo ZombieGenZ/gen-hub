@@ -9,9 +9,14 @@ import { AiPluginService } from './ai-plugin.service';
 import { AiPluginRepository } from './ai-plugin.repository';
 
 @Module({
-    imports: [PrismaModule, RedisModule, WarehouseVisitModule, ConsultationRequestModule],
-    controllers: [AiPluginController],
-    providers: [AiPluginService, AiPluginRepository],
-    exports: [AiPluginService],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    WarehouseVisitModule,
+    ConsultationRequestModule,
+  ],
+  controllers: [AiPluginController],
+  providers: [AiPluginService, AiPluginRepository],
+  exports: [AiPluginService],
 })
-export class AiPluginModule { }
+export class AiPluginModule {}

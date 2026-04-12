@@ -5,16 +5,9 @@ import { ApiKeyVerifyController } from './api-key-verification.controller';
 import { ApiKeyVerificationService } from './api-key-verification.service';
 
 @Module({
-    imports: [
-        SharedModule,
-        OrganizationApiKeyModule,
-    ],
-    controllers: [ApiKeyVerifyController],
-    providers: [
-        ApiKeyVerificationService,
-    ],
-    exports: [
-        ApiKeyVerificationService,
-    ],
+  imports: [SharedModule, OrganizationApiKeyModule],
+  controllers: [ApiKeyVerifyController],
+  providers: [ApiKeyVerificationService],
+  exports: [ApiKeyVerificationService],
 })
-export class ApiKeyVerificationModule { }
+export class ApiKeyVerificationModule {}

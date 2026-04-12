@@ -29,24 +29,73 @@ import {
   RequirePermission,
 } from '../../common/decorators';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { CreatedResponse, DeletedResponse, GetResponse, UpdatedResponse } from '../../common/responses';
-import { buildErrorSchema, buildSuccessSchema } from '../../common/swagger/master-data-swagger.helper';
+import {
+  CreatedResponse,
+  DeletedResponse,
+  GetResponse,
+  UpdatedResponse,
+} from '../../common/responses';
+import {
+  buildErrorSchema,
+  buildSuccessSchema,
+} from '../../common/swagger/master-data-swagger.helper';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CoverImageService } from './cover-image.service';
-import { CreateCoverImageDto, QueryCoverImageDto, UpdateCoverImageDto } from './dto';
+import {
+  CreateCoverImageDto,
+  QueryCoverImageDto,
+  UpdateCoverImageDto,
+} from './dto';
 import { ICoverImage, IPaginatedResponse } from './types';
 
 const coverImageItemSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', format: 'uuid', description: 'ID ảnh bìa', example: '550e8400-e29b-41d4-a716-446655440101' },
-    name: { type: 'string', description: 'Tên ảnh bìa', example: 'Cover mặc định xanh biển' },
-    description: { type: 'string', nullable: true, description: 'Mô tả ngắn về ảnh bìa', example: 'Ảnh bìa mặc định cho hồ sơ người dùng' },
-    image_url: { type: 'string', description: 'Đường dẫn ảnh bìa', example: 'https://cdn.genhub.dev/covers/default-ocean.png' },
-    is_default: { type: 'boolean', description: 'Đánh dấu ảnh bìa mặc định', example: true },
-    is_active: { type: 'boolean', description: 'Trạng thái hoạt động', example: true },
-    created_at: { type: 'string', format: 'date-time', description: 'Thời điểm tạo', example: '2026-03-13T09:00:00.000Z' },
-    updated_at: { type: 'string', format: 'date-time', nullable: true, description: 'Thời điểm cập nhật gần nhất', example: '2026-03-13T10:30:00.000Z' },
+    id: {
+      type: 'string',
+      format: 'uuid',
+      description: 'ID ảnh bìa',
+      example: '550e8400-e29b-41d4-a716-446655440101',
+    },
+    name: {
+      type: 'string',
+      description: 'Tên ảnh bìa',
+      example: 'Cover mặc định xanh biển',
+    },
+    description: {
+      type: 'string',
+      nullable: true,
+      description: 'Mô tả ngắn về ảnh bìa',
+      example: 'Ảnh bìa mặc định cho hồ sơ người dùng',
+    },
+    image_url: {
+      type: 'string',
+      description: 'Đường dẫn ảnh bìa',
+      example: 'https://cdn.genhub.dev/covers/default-ocean.png',
+    },
+    is_default: {
+      type: 'boolean',
+      description: 'Đánh dấu ảnh bìa mặc định',
+      example: true,
+    },
+    is_active: {
+      type: 'boolean',
+      description: 'Trạng thái hoạt động',
+      example: true,
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      description: 'Thời điểm tạo',
+      example: '2026-03-13T09:00:00.000Z',
+    },
+    updated_at: {
+      type: 'string',
+      format: 'date-time',
+      nullable: true,
+      description: 'Thời điểm cập nhật gần nhất',
+      example: '2026-03-13T10:30:00.000Z',
+    },
   },
 };
 
@@ -88,7 +137,10 @@ export class CoverImageController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     if (!userId) return false;
 
     const user = await this.prisma.user.findFirst({
@@ -116,10 +168,14 @@ export class CoverImageController {
 
     if (!user) return false;
 
-    const hasDirect = user.system_permissions.some((p) => p.permission.key === permissionKey);
+    const hasDirect = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
     if (hasDirect) return true;
 
-    return user.system_roles.some((ur) => ur.role.permissions.some((rp) => rp.permission.key === permissionKey));
+    return user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
   }
 
   @Post()
@@ -192,10 +248,34 @@ export class CoverImageController {
     description:
       'Lấy danh sách ảnh bìa có phân trang, hỗ trợ tìm kiếm theo tên hoặc mô tả và lọc theo trạng thái hoạt động. Người có quyền `cover-image.list.all` xem được toàn bộ dữ liệu, ngược lại chỉ xem dữ liệu do mình tạo.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên hoặc mô tả ảnh bìa', example: 'mặc định' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái hoạt động', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên hoặc mô tả ảnh bìa',
+    example: 'mặc định',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Lọc theo trạng thái hoạt động',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách ảnh bìa thành công',
@@ -205,9 +285,21 @@ export class CoverImageController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: coverImageItemSchema, description: 'Danh sách ảnh bìa' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: coverImageItemSchema,
+            description: 'Danh sách ảnh bìa',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -234,10 +326,34 @@ export class CoverImageController {
     description:
       'API public trả về danh sách ảnh bìa đang bật để ứng dụng client hiển thị trong phần lựa chọn ảnh bìa hồ sơ hoặc giao diện trang cá nhân.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên hoặc mô tả ảnh bìa', example: 'thành phố' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Tham số lọc bổ sung, thông thường luôn là true với API này', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên hoặc mô tả ảnh bìa',
+    example: 'thành phố',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Tham số lọc bổ sung, thông thường luôn là true với API này',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách ảnh bìa đang hoạt động thành công',
@@ -247,9 +363,21 @@ export class CoverImageController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: coverImageItemSchema, description: 'Danh sách ảnh bìa đang hoạt động' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: coverImageItemSchema,
+            description: 'Danh sách ảnh bìa đang hoạt động',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -257,7 +385,9 @@ export class CoverImageController {
     }),
   })
   @ApiValidationErrorResponse()
-  async findAllActive(@Query() query: QueryCoverImageDto): Promise<GetResponse<IPaginatedResponse<ICoverImage>>> {
+  async findAllActive(
+    @Query() query: QueryCoverImageDto,
+  ): Promise<GetResponse<IPaginatedResponse<ICoverImage>>> {
     const result = await this.service.findAllActive(query);
     return new GetResponse('cover-image.list.success', result);
   }
@@ -268,7 +398,12 @@ export class CoverImageController {
     description:
       'Lấy thông tin chi tiết một ảnh bìa theo ID. Người có quyền `cover-image.read.all` xem được mọi bản ghi, ngược lại chỉ xem được dữ liệu do mình tạo.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID ảnh bìa cần lấy chi tiết', example: '550e8400-e29b-41d4-a716-446655440101' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID ảnh bìa cần lấy chi tiết',
+    example: '550e8400-e29b-41d4-a716-446655440101',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy chi tiết ảnh bìa thành công',
@@ -315,7 +450,12 @@ export class CoverImageController {
     description:
       'Cập nhật một phần hoặc toàn bộ thông tin ảnh bìa. Có thể đặt ảnh thành mặc định mới, nhưng không được bỏ cờ mặc định của ảnh mặc định hiện tại nếu chưa có ảnh khác thay thế.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID ảnh bìa cần cập nhật', example: '550e8400-e29b-41d4-a716-446655440101' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID ảnh bìa cần cập nhật',
+    example: '550e8400-e29b-41d4-a716-446655440101',
+  })
   @ApiBody({
     type: UpdateCoverImageDto,
     description: 'Các trường cần cập nhật cho ảnh bìa',
@@ -369,7 +509,8 @@ export class CoverImageController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Tên ảnh bìa đã tồn tại hoặc thao tác cập nhật xung đột với ảnh mặc định',
+    description:
+      'Tên ảnh bìa đã tồn tại hoặc thao tác cập nhật xung đột với ảnh mặc định',
     schema: buildErrorSchema({
       code: 'error.conflict',
       message: 'Không thể bỏ trạng thái mặc định của ảnh bìa mặc định hiện tại',
@@ -386,8 +527,17 @@ export class CoverImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<ICoverImage>> {
-    const hasUpdateAll = await this.hasPermission(userId, 'cover-image.update.all');
-    const result = await this.service.update(id, dto, userId, hasUpdateAll, lang);
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'cover-image.update.all',
+    );
+    const result = await this.service.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAll,
+      lang,
+    );
     return new UpdatedResponse('cover-image.update.success', result);
   }
 
@@ -418,7 +568,11 @@ export class CoverImageController {
     schema: buildSuccessSchema({
       code: 'cover-image.delete.success',
       message: 'Xóa nhiều ảnh bìa thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -448,7 +602,10 @@ export class CoverImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'cover-image.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'cover-image.delete.all',
+    );
     await this.service.deleteMany(dto.ids, userId, hasDeleteAll, lang);
     return new DeletedResponse('cover-image.delete.success', null);
   }
@@ -459,14 +616,23 @@ export class CoverImageController {
     description:
       'Soft delete một ảnh bìa theo ID. Hệ thống không cho phép xóa ảnh bìa đang là ảnh mặc định hiện tại.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID ảnh bìa cần xóa', example: '550e8400-e29b-41d4-a716-446655440102' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID ảnh bìa cần xóa',
+    example: '550e8400-e29b-41d4-a716-446655440102',
+  })
   @ApiResponse({
     status: 200,
     description: 'Xóa ảnh bìa thành công',
     schema: buildSuccessSchema({
       code: 'cover-image.delete.success',
       message: 'Xóa ảnh bìa thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -503,7 +669,10 @@ export class CoverImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'cover-image.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'cover-image.delete.all',
+    );
     await this.service.delete(id, userId, hasDeleteAll, lang);
     return new DeletedResponse('cover-image.delete.success', null);
   }

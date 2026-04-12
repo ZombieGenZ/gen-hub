@@ -1,8 +1,8 @@
 import {
-    Injectable,
-    CanActivate,
-    ExecutionContext,
-    ForbiddenException,
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,183 +12,197 @@ import { ResponseCode } from '../responses';
 
 @Injectable()
 export class WarehouseManagerPermissionGuard implements CanActivate {
-    constructor(
-        private readonly reflector: Reflector,
-        private readonly prisma: PrismaService,
-        private readonly redisService: RedisService,
-    ) { }
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
+  ) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest();
-        const user = request.user as { userId: string } | undefined;
-        const templateId = request.params?.templateId as string | undefined;
-        const requiredPermission = this.reflector.getAllAndOverride<string>(
-            WM_PERMISSION_KEY,
-            [context.getHandler(), context.getClass()],
-        );
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user as { userId: string } | undefined;
+    const templateId = request.params?.templateId as string | undefined;
+    const requiredPermission = this.reflector.getAllAndOverride<string>(
+      WM_PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-        if (!user?.userId) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN,
-                message: 'Không có quyền truy cập',
-                success: false,
-            });
-        }
-
-        const userRecord = await this.prisma.user.findUnique({
-            where: { id: user.userId },
-            select: { is_verified: true, is_banned: true },
-        });
-
-        if (!userRecord) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND,
-                message: 'Tài khoản không tồn tại',
-                success: false,
-            });
-        }
-
-        if (userRecord.is_banned) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
-                message: 'Tài khoản đã bị khóa',
-                success: false,
-            });
-        }
-
-        if (!userRecord.is_verified) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
-                message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
-                success: false,
-            });
-        }
-
-        const warehouseIds = await this.getManagedWarehouseIds(user.userId, templateId);
-        request.warehouseIds = warehouseIds;
-
-        // Inventory APIs của warehouse manager không truyền templateId.
-        // Chúng chỉ cần scope warehouseIds để service lọc đúng phiếu.
-        if (!requiredPermission) {
-            return true;
-        }
-
-        if (!templateId) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN,
-                message: 'Thiếu thông tin kho mẫu',
-                success: false,
-            });
-        }
-
-        const hasPermission = await this.checkManagerPermission(
-            user.userId,
-            templateId,
-            requiredPermission,
-        );
-
-        if (!hasPermission) {
-            throw new ForbiddenException({
-                code: ResponseCode.ERROR_FORBIDDEN_NO_PERMISSION,
-                message: 'Bạn không phải quản lý của kho mẫu này hoặc không có quyền thực hiện thao tác này',
-                success: false,
-            });
-        }
-
-        request.warehouseManager = { templateId, warehouseIds };
-        return true;
+    if (!user?.userId) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN,
+        message: 'Không có quyền truy cập',
+        success: false,
+      });
     }
 
-    private async getManagedWarehouseIds(userId: string, templateId?: string): Promise<string[]> {
-        const cacheKey = `wm:warehouses:${userId}:${templateId || 'all'}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached) as string[];
-        }
+    const userRecord = await this.prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { is_verified: true, is_banned: true },
+    });
 
-        const managers = await this.prisma.warehouseTemplateManager.findMany({
-            where: {
-                user_id: userId,
-                is_active: true,
-                is_deleted: false,
-                ...(templateId ? { warehouse_template_id: templateId } : {}),
-            },
-            select: { warehouse_template_id: true },
-        });
-
-        if (managers.length === 0) {
-            await this.redisService.set(cacheKey, JSON.stringify([]), 300);
-            return [];
-        }
-
-        const warehouseTemplateIds = managers.map((manager) => manager.warehouse_template_id);
-        const warehouses = await this.prisma.warehouse.findMany({
-            where: {
-                warehouse_template_id: { in: warehouseTemplateIds },
-                is_active: true,
-                is_deleted: false,
-            },
-            select: { id: true },
-        });
-
-        const warehouseIds = warehouses.map((warehouse) => warehouse.id);
-        await this.redisService.set(cacheKey, JSON.stringify(warehouseIds), 300);
-        return warehouseIds;
+    if (!userRecord) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND,
+        message: 'Tài khoản không tồn tại',
+        success: false,
+      });
     }
 
-    private async checkManagerPermission(
-        userId: string,
-        templateId: string,
-        requiredPermission: string,
-    ): Promise<boolean> {
-        const cacheKey = `wm:perm:${userId}:${templateId}:${requiredPermission}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached !== null) {
-            return cached === 'true';
-        }
+    if (userRecord.is_banned) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
+        message: 'Tài khoản đã bị khóa',
+        success: false,
+      });
+    }
 
-        const manager = await this.prisma.warehouseTemplateManager.findUnique({
-            where: {
-                warehouse_template_id_user_id: {
-                    warehouse_template_id: templateId,
-                    user_id: userId,
-                },
-            },
-            include: {
-                roles: {
-                    where: { is_active: true },
-                    include: {
-                        role: {
-                            include: {
-                                permissions: {
-                                    where: { is_active: true },
-                                    include: {
-                                        permission: {
-                                            select: { key: true, is_active: true },
-                                        },
-                                    },
-                                },
-                            },
-                        },
+    if (!userRecord.is_verified) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
+        message:
+          'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+        success: false,
+      });
+    }
+
+    const warehouseIds = await this.getManagedWarehouseIds(
+      user.userId,
+      templateId,
+    );
+    request.warehouseIds = warehouseIds;
+
+    // Inventory APIs của warehouse manager không truyền templateId.
+    // Chúng chỉ cần scope warehouseIds để service lọc đúng phiếu.
+    if (!requiredPermission) {
+      return true;
+    }
+
+    if (!templateId) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN,
+        message: 'Thiếu thông tin kho mẫu',
+        success: false,
+      });
+    }
+
+    const hasPermission = await this.checkManagerPermission(
+      user.userId,
+      templateId,
+      requiredPermission,
+    );
+
+    if (!hasPermission) {
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_NO_PERMISSION,
+        message:
+          'Bạn không phải quản lý của kho mẫu này hoặc không có quyền thực hiện thao tác này',
+        success: false,
+      });
+    }
+
+    request.warehouseManager = { templateId, warehouseIds };
+    return true;
+  }
+
+  private async getManagedWarehouseIds(
+    userId: string,
+    templateId?: string,
+  ): Promise<string[]> {
+    const cacheKey = `wm:warehouses:${userId}:${templateId || 'all'}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as string[];
+    }
+
+    const managers = await this.prisma.warehouseTemplateManager.findMany({
+      where: {
+        user_id: userId,
+        is_active: true,
+        is_deleted: false,
+        ...(templateId ? { warehouse_template_id: templateId } : {}),
+      },
+      select: { warehouse_template_id: true },
+    });
+
+    if (managers.length === 0) {
+      await this.redisService.set(cacheKey, JSON.stringify([]), 300);
+      return [];
+    }
+
+    const warehouseTemplateIds = managers.map(
+      (manager) => manager.warehouse_template_id,
+    );
+    const warehouses = await this.prisma.warehouse.findMany({
+      where: {
+        warehouse_template_id: { in: warehouseTemplateIds },
+        is_active: true,
+        is_deleted: false,
+      },
+      select: { id: true },
+    });
+
+    const warehouseIds = warehouses.map((warehouse) => warehouse.id);
+    await this.redisService.set(cacheKey, JSON.stringify(warehouseIds), 300);
+    return warehouseIds;
+  }
+
+  private async checkManagerPermission(
+    userId: string,
+    templateId: string,
+    requiredPermission: string,
+  ): Promise<boolean> {
+    const cacheKey = `wm:perm:${userId}:${templateId}:${requiredPermission}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached !== null) {
+      return cached === 'true';
+    }
+
+    const manager = await this.prisma.warehouseTemplateManager.findUnique({
+      where: {
+        warehouse_template_id_user_id: {
+          warehouse_template_id: templateId,
+          user_id: userId,
+        },
+      },
+      include: {
+        roles: {
+          where: { is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_active: true },
+                  include: {
+                    permission: {
+                      select: { key: true, is_active: true },
                     },
+                  },
                 },
+              },
             },
-        });
+          },
+        },
+      },
+    });
 
-        if (!manager || manager.is_deleted || !manager.is_active) {
-            await this.redisService.set(cacheKey, 'false', 300);
-            return false;
-        }
-
-        const hasPermission = manager.roles.some((managerRole) =>
-            managerRole.role?.permissions.some(
-                (rolePermission) =>
-                    rolePermission.permission.is_active &&
-                    rolePermission.permission.key === requiredPermission,
-            ),
-        );
-
-        await this.redisService.set(cacheKey, hasPermission ? 'true' : 'false', 300);
-        return hasPermission;
+    if (!manager || manager.is_deleted || !manager.is_active) {
+      await this.redisService.set(cacheKey, 'false', 300);
+      return false;
     }
+
+    const hasPermission = manager.roles.some((managerRole) =>
+      managerRole.role?.permissions.some(
+        (rolePermission) =>
+          rolePermission.permission.is_active &&
+          rolePermission.permission.key === requiredPermission,
+      ),
+    );
+
+    await this.redisService.set(
+      cacheKey,
+      hasPermission ? 'true' : 'false',
+      300,
+    );
+    return hasPermission;
+  }
 }

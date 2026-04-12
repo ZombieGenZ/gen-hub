@@ -19,7 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationRoleService } from './organization-role.service';
-import { CreateOrganizationRoleDto, UpdateOrganizationRoleDto } from './dto/organization-role.dto';
+import {
+  CreateOrganizationRoleDto,
+  UpdateOrganizationRoleDto,
+} from './dto/organization-role.dto';
 import { DeleteManyDto } from '../../common/dto';
 import {
   CurrentUser,
@@ -41,7 +44,7 @@ import {
 @Controller('organizations/:orgId/roles')
 @UseGuards(PermissionGuard)
 export class OrganizationRoleController {
-  constructor(private readonly service: OrganizationRoleService) { }
+  constructor(private readonly service: OrganizationRoleService) {}
 
   @Post()
   @RequirePermission('organization.list')

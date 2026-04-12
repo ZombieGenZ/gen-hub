@@ -70,10 +70,15 @@ export class RentalContractService {
     private readonly paymentScheduler: PaymentSchedulerService,
     private readonly signatureService: SignatureService,
   ) {
-    this.CONTRACT_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
-    this.CONTRACT_LIST_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') || 60;
-    this.LOCK_DURATION_SECONDS = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
-    this.CONTRACT_PREFIX = this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
+    this.CONTRACT_CACHE_TTL =
+      this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
+    this.CONTRACT_LIST_CACHE_TTL =
+      this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') ||
+      60;
+    this.LOCK_DURATION_SECONDS =
+      this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
+    this.CONTRACT_PREFIX =
+      this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
     this.VAT_RATE = this.configService.get<number>('RENTAL_VAT_RATE') || 0;
   }
 
@@ -82,11 +87,16 @@ export class RentalContractService {
    */
   private convertDurationToMonths(value: number, unit: string): number {
     switch (unit?.toUpperCase()) {
-      case 'DAY': return Math.ceil(value / 30);
-      case 'WEEK': return Math.ceil((value * 7) / 30);
-      case 'MONTH': return value;
-      case 'YEAR': return value * 12;
-      default: return value;
+      case 'DAY':
+        return Math.ceil(value / 30);
+      case 'WEEK':
+        return Math.ceil((value * 7) / 30);
+      case 'MONTH':
+        return value;
+      case 'YEAR':
+        return value * 12;
+      default:
+        return value;
     }
   }
 
@@ -105,10 +115,11 @@ export class RentalContractService {
     if (dto.coupon_codes) dto.coupon_codes = [...new Set(dto.coupon_codes)];
 
     const seenTemplateIds = new Set<string>();
-    dto.templates = dto.templates.filter(t => {
+    dto.templates = dto.templates.filter((t) => {
       if (seenTemplateIds.has(t.template_id)) return false;
       seenTemplateIds.add(t.template_id);
-      if (t.row_template_ids) t.row_template_ids = [...new Set(t.row_template_ids)];
+      if (t.row_template_ids)
+        t.row_template_ids = [...new Set(t.row_template_ids)];
       return true;
     });
 
@@ -117,14 +128,25 @@ export class RentalContractService {
       where: { id: dto.duration_tier_id, is_deleted: false, is_active: true },
     });
     if (!tier) {
-      throw new BadRequestException(this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }));
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.validation.duration_tier_not_found', {
+          lang,
+        }),
+      );
     }
-    const rentalMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+    const rentalMonths = this.convertDurationToMonths(
+      tier.duration_value,
+      tier.duration_unit,
+    );
 
     // Validating organization exists
-    const orgExists = await this.organizationRepository.findById(dto.organization_id);
+    const orgExists = await this.organizationRepository.findById(
+      dto.organization_id,
+    );
     if (!orgExists) {
-      throw new BadRequestException(this.i18n.t('organization.errors.not_found', { lang }));
+      throw new BadRequestException(
+        this.i18n.t('organization.errors.not_found', { lang }),
+      );
     }
 
     const allPriceDetails: IRentalPriceCalculation[] = [];
@@ -133,13 +155,21 @@ export class RentalContractService {
 
     // Calculate price for each template
     for (const templateItem of dto.templates) {
-      const template = await this.templateRepository.findById(templateItem.template_id);
+      const template = await this.templateRepository.findById(
+        templateItem.template_id,
+      );
       if (!template) {
-        throw new NotFoundException(this.i18n.t('rental-contract.errors.template_not_found', { lang }));
+        throw new NotFoundException(
+          this.i18n.t('rental-contract.errors.template_not_found', { lang }),
+        );
       }
-      const isWholeWarehouse = !templateItem.row_template_ids || templateItem.row_template_ids.length === 0;
+      const isWholeWarehouse =
+        !templateItem.row_template_ids ||
+        templateItem.row_template_ids.length === 0;
       if (!isWholeWarehouse && !template.is_shared_warehouse) {
-        throw new BadRequestException(this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }));
+        throw new BadRequestException(
+          this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }),
+        );
       }
 
       // Check if template/rows are already rented
@@ -147,7 +177,9 @@ export class RentalContractService {
         if (template.is_rented || template.rental_status === 'RENTED') {
           throw new ConflictException({
             code: 'rental-contract.warehouse_lock.conflict',
-            message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+            message: this.i18n.t('rental-contract.warehouse_lock.conflict', {
+              lang,
+            }),
             success: false,
           });
         }
@@ -158,7 +190,9 @@ export class RentalContractService {
           if (row?.is_rented) {
             throw new ConflictException({
               code: 'rental-contract.warehouse_lock.conflict',
-              message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+              message: this.i18n.t('rental-contract.warehouse_lock.conflict', {
+                lang,
+              }),
               success: false,
             });
           }
@@ -166,14 +200,22 @@ export class RentalContractService {
         }
       }
 
-      const priceDetail = await this.calculateRentalPriceForTemplate(template, templateItem, rentalMonths, isWholeWarehouse, dto.duration_tier_id);
+      const priceDetail = await this.calculateRentalPriceForTemplate(
+        template,
+        templateItem,
+        rentalMonths,
+        isWholeWarehouse,
+        dto.duration_tier_id,
+      );
       allPriceDetails.push(priceDetail);
       totalPrice += isNaN(priceDetail.subtotal) ? 0 : priceDetail.subtotal;
     }
 
-    const overallDiscountRate = allPriceDetails.length > 0
-      ? allPriceDetails.reduce((sum, d) => sum + d.discountRate, 0) / allPriceDetails.length
-      : 0;
+    const overallDiscountRate =
+      allPriceDetails.length > 0
+        ? allPriceDetails.reduce((sum, d) => sum + d.discountRate, 0) /
+          allPriceDetails.length
+        : 0;
 
     // Acquire Locks
     const lockResult = await this.acquireLock(lockKeys);
@@ -189,10 +231,15 @@ export class RentalContractService {
       const code = this.generateContractCode();
       const rentalDays = rentalMonths * 30;
       const startedAt = dto.scheduled_start_at || new Date();
-      const expiredAt = new Date(startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000);
+      const expiredAt = new Date(
+        startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000,
+      );
 
       // Admin tạo contract: có thể là ACTIVE ngay (CASH) hoặc PENDING (TRANSFER)
-      const status = dto.type === AdminPaymentType.CASH ? ContractStatus.ACTIVE : ContractStatus.PENDING;
+      const status =
+        dto.type === AdminPaymentType.CASH
+          ? ContractStatus.ACTIVE
+          : ContractStatus.PENDING;
 
       // Tính thuế VAT ban đầu
       const vatRate = this.VAT_RATE;
@@ -230,13 +277,20 @@ export class RentalContractService {
         created_by: userId,
       }));
 
-      const contract = await this.repository.createWithDetails(contractData, detailsData);
+      const contract = await this.repository.createWithDetails(
+        contractData,
+        detailsData,
+      );
 
       // Áp dụng addon nếu có
       let totalAddonPrice = 0;
       if (dto.addon_ids && dto.addon_ids.length > 0) {
         const addons = await this.prisma.addon.findMany({
-          where: { id: { in: dto.addon_ids }, is_deleted: false, is_active: true },
+          where: {
+            id: { in: dto.addon_ids },
+            is_deleted: false,
+            is_active: true,
+          },
         });
 
         for (const addon of addons) {
@@ -247,7 +301,9 @@ export class RentalContractService {
             is_gift: false,
             created_by: userId,
           });
-          const addonCostDetail = addon.is_monthly_payment ? Number(addon.price) * rentalMonths : Number(addon.price);
+          const addonCostDetail = addon.is_monthly_payment
+            ? Number(addon.price) * rentalMonths
+            : Number(addon.price);
           totalAddonPrice += addonCostDetail;
         }
       }
@@ -256,17 +312,27 @@ export class RentalContractService {
       let totalInsurancePrice = 0;
       if (dto.insurance_ids && dto.insurance_ids.length > 0) {
         const insurances = await this.prisma.insurance.findMany({
-          where: { id: { in: dto.insurance_ids }, is_deleted: false, is_active: true }
+          where: {
+            id: { in: dto.insurance_ids },
+            is_deleted: false,
+            is_active: true,
+          },
         });
 
         for (const insurance of insurances) {
           let managementFee = 0;
           if (insurance.use_management_fee && insurance.management_fee_value) {
             if (insurance.management_fee_type === 'PERCENT') {
-              const totalBaseRental = allPriceDetails.reduce((sum, d) => sum + (d.pricePerMonth * (d.rentalDays / 30)), 0);
-              managementFee = totalBaseRental * (Number(insurance.management_fee_value) / 100);
+              const totalBaseRental = allPriceDetails.reduce(
+                (sum, d) => sum + d.pricePerMonth * (d.rentalDays / 30),
+                0,
+              );
+              managementFee =
+                totalBaseRental *
+                (Number(insurance.management_fee_value) / 100);
             } else {
-              managementFee = Number(insurance.management_fee_value) * rentalMonths;
+              managementFee =
+                Number(insurance.management_fee_value) * rentalMonths;
             }
           }
 
@@ -286,12 +352,13 @@ export class RentalContractService {
       if (totalAddonPrice > 0 || totalInsurancePrice > 0) {
         const currentFinal = parseFloat(contract.final_price.toString());
         const currentVat = parseFloat(contract.vat_amount?.toString() || '0');
-        const newBasePrice = currentFinal - currentVat + totalAddonPrice + totalInsurancePrice;
+        const newBasePrice =
+          currentFinal - currentVat + totalAddonPrice + totalInsurancePrice;
         const recalculatedVat = Math.round(newBasePrice * (vatRate / 100));
         const newFinalPrice = newBasePrice + recalculatedVat;
         await this.prisma.rentalContract.update({
           where: { id: contract.id },
-          data: { 
+          data: {
             final_price: new Decimal(newFinalPrice),
             vat_amount: new Decimal(recalculatedVat),
           },
@@ -301,25 +368,37 @@ export class RentalContractService {
       }
 
       if (status === ContractStatus.ACTIVE) {
-        await this.activateContractWarehouses(contract.id, dto.organization_id, userId);
+        await this.activateContractWarehouses(
+          contract.id,
+          dto.organization_id,
+          userId,
+        );
       }
 
       this.systemLogService.info(
         'rental-contract',
         'create_admin',
         `Admin created contract: ${code} (${status})`,
-        { userId, metaData: { contractId: contract.id, code } }
+        { userId, metaData: { contractId: contract.id, code } },
       );
 
       this.auditLogService.logCreate(
         dto.organization_id,
         'rental_contract',
         contract.id,
-        { ...dto, code, admin_create: true } as unknown as Record<string, unknown>,
+        { ...dto, code, admin_create: true } as unknown as Record<
+          string,
+          unknown
+        >,
         { userId, description: `Admin created contract: ${code}` },
       );
 
-      this.websocketGateway.emitRentalContractCreated(dto.organization_id, contract.id, code, userId);
+      this.websocketGateway.emitRentalContractCreated(
+        dto.organization_id,
+        contract.id,
+        code,
+        userId,
+      );
       await this.invalidateContractListCache();
 
       // Handle Payment Creation if TRANSFER, or Mock if CASH
@@ -328,7 +407,9 @@ export class RentalContractService {
         paymentResult = await this.sepayService.createContractPayment({
           rentalContractId: contract.id,
           amount: Math.round(parseFloat(contract.final_price.toString())),
-          vat_amount: Math.round(parseFloat(contract.vat_amount?.toString() || '0')),
+          vat_amount: Math.round(
+            parseFloat(contract.vat_amount?.toString() || '0'),
+          ),
           description: `${code}`,
           type: 'NEW_CONTRACT',
           userId,
@@ -348,9 +429,19 @@ export class RentalContractService {
       let signatureResult: any = null;
       if (signatureFile) {
         try {
-          signatureResult = await this.signatureService.uploadSignature(contract.id, signatureFile.buffer, userId, lang);
+          signatureResult = await this.signatureService.uploadSignature(
+            contract.id,
+            signatureFile.buffer,
+            userId,
+            lang,
+          );
         } catch (error) {
-          this.systemLogService.error('rental-contract', 'upload_signature_error', `Failed to upload signature for admin contract ${contract.id}`, { metaData: { error, contractId: contract.id } });
+          this.systemLogService.error(
+            'rental-contract',
+            'upload_signature_error',
+            `Failed to upload signature for admin contract ${contract.id}`,
+            { metaData: { error, contractId: contract.id } },
+          );
         }
       }
 
@@ -359,7 +450,6 @@ export class RentalContractService {
         payment: paymentResult,
         signature: signatureResult,
       };
-
     } finally {
       await this.releaseLock(lockKeys);
     }
@@ -378,9 +468,16 @@ export class RentalContractService {
     // Hoặc logic hiện tại: admin xem tất cả nếu có list.all
     if (!hasListAllPermission && !query.organization_id) {
       // Trường hợp hy hữu admin không có quyền list all
-      const userOrgs = await this.organizationRepository.findOrgIdsByUser(userId);
+      const userOrgs =
+        await this.organizationRepository.findOrgIdsByUser(userId);
       if (userOrgs.length === 0) {
-        return { items: [], total: 0, limit: query.limit || 10, offset: query.offset || 0, hasMore: false };
+        return {
+          items: [],
+          total: 0,
+          limit: query.limit || 10,
+          offset: query.offset || 0,
+          hasMore: false,
+        };
       }
       (query as any).organization_ids = userOrgs;
     }
@@ -400,11 +497,15 @@ export class RentalContractService {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch { }
+      } catch {}
     }
 
     const result = await this.repository.findMany(query);
-    await this.redisService.set(cacheKey, JSON.stringify(result), this.CONTRACT_LIST_CACHE_TTL);
+    await this.redisService.set(
+      cacheKey,
+      JSON.stringify(result),
+      this.CONTRACT_LIST_CACHE_TTL,
+    );
     return result;
   }
 
@@ -418,7 +519,9 @@ export class RentalContractService {
   ): Promise<IRentalContractWithRelations> {
     const contract = await this.repository.findById(id);
     if (!contract) {
-      throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
     }
     // Admin có thể view mọi contract (giả sử permission đã check ở controller level hoặc contract guard)
     // Serialize safely: BigInt fields (e.g. sepay_transaction_id) cannot be JSON.stringify-ed natively
@@ -448,24 +551,39 @@ export class RentalContractService {
   ): Promise<IRentalContractWithRelations> {
     const existing = await this.repository.findByIdWithOrganization(id);
     if (!existing) {
-      throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
     }
 
     let adjustMonths: number | null = null;
     if (dto.extend_duration_tier_id) {
       const tier = await this.prisma.rentalDurationTier.findFirst({
-        where: { id: dto.extend_duration_tier_id, is_deleted: false, is_active: true },
+        where: {
+          id: dto.extend_duration_tier_id,
+          is_deleted: false,
+          is_active: true,
+        },
       });
       if (!tier) {
-        throw new BadRequestException(this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }));
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.validation.duration_tier_not_found', {
+            lang,
+          }),
+        );
       }
-      adjustMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+      adjustMonths = this.convertDurationToMonths(
+        tier.duration_value,
+        tier.duration_unit,
+      );
     } else if (dto.reduce_months) {
       adjustMonths = -dto.reduce_months;
     }
 
     if (adjustMonths && existing.status !== ContractStatus.ACTIVE) {
-      throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_renew', { lang }));
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_renew', { lang }),
+      );
     }
 
     const updateData: Prisma.RentalContractUpdateInput = { updated_by: userId };
@@ -477,7 +595,11 @@ export class RentalContractService {
       newExpiredAt = new Date(existing.expired_at);
       newExpiredAt.setMonth(newExpiredAt.getMonth() + adjustMonths);
       if (newExpiredAt < new Date()) {
-        throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_reduce_past_now', { lang }));
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.errors.cannot_reduce_past_now', {
+            lang,
+          }),
+        );
       }
       updateData.expired_at = newExpiredAt;
     }
@@ -487,12 +609,12 @@ export class RentalContractService {
     // ─── Sync Addons ───
     if (dto.addon_ids !== undefined) {
       const currentAddons = await this.repository.findContractAddons(id);
-      const activeAddons = currentAddons.filter(a => !a.is_cancelled);
-      const currentAddonIds = new Set(activeAddons.map(a => a.addon_id));
+      const activeAddons = currentAddons.filter((a) => !a.is_cancelled);
+      const currentAddonIds = new Set(activeAddons.map((a) => a.addon_id));
       const desiredAddonIds = new Set(dto.addon_ids);
 
       // Add new addons
-      const toAdd = dto.addon_ids.filter(aid => !currentAddonIds.has(aid));
+      const toAdd = dto.addon_ids.filter((aid) => !currentAddonIds.has(aid));
       if (toAdd.length > 0) {
         const addons = await this.prisma.addon.findMany({
           where: { id: { in: toAdd }, is_deleted: false, is_active: true },
@@ -509,7 +631,11 @@ export class RentalContractService {
             rental_contract_id: id,
             action: 'ADDON_ADDED',
             description: `Đã thêm dịch vụ: ${addon.name}`,
-            metadata: { addon_id: addon.id, addon_name: addon.name, price: Number(addon.price) },
+            metadata: {
+              addon_id: addon.id,
+              addon_name: addon.name,
+              price: Number(addon.price),
+            },
             created_by: userId,
           });
         }
@@ -544,12 +670,17 @@ export class RentalContractService {
 
     // ─── Sync Insurances ───
     if (dto.insurance_ids !== undefined) {
-      const currentInsurances = await this.repository.findContractInsurances(id);
-      const currentInsuranceIds = new Set(currentInsurances.map(i => i.insurance_id));
+      const currentInsurances =
+        await this.repository.findContractInsurances(id);
+      const currentInsuranceIds = new Set(
+        currentInsurances.map((i) => i.insurance_id),
+      );
       const desiredInsuranceIds = new Set(dto.insurance_ids);
 
       // Add new insurances
-      const toAddIns = dto.insurance_ids.filter(iid => !currentInsuranceIds.has(iid));
+      const toAddIns = dto.insurance_ids.filter(
+        (iid) => !currentInsuranceIds.has(iid),
+      );
       if (toAddIns.length > 0) {
         const insurances = await this.prisma.insurance.findMany({
           where: { id: { in: toAddIns }, is_deleted: false, is_active: true },
@@ -558,23 +689,34 @@ export class RentalContractService {
           ? Math.max(
               0,
               Math.round(
-                (new Date(contract.expired_at).getTime() - new Date(contract.started_at).getTime())
-                  / (1000 * 60 * 60 * 24 * 30),
+                (new Date(contract.expired_at).getTime() -
+                  new Date(contract.started_at).getTime()) /
+                  (1000 * 60 * 60 * 24 * 30),
               ),
             )
-          : Math.max(0, Math.round(Number(contract.details?.[0]?.rental_days ?? 0) / 30));
+          : Math.max(
+              0,
+              Math.round(Number(contract.details?.[0]?.rental_days ?? 0) / 30),
+            );
         for (const insurance of insurances) {
           let managementFee = 0;
           if (insurance.use_management_fee && insurance.management_fee_value) {
             if (insurance.management_fee_type === 'PERCENT') {
-              const totalBaseRental = (contract.details ?? []).reduce((sum, detail) => {
-                const pricePerMonth = Number(detail.price_per_month ?? 0);
-                const rentalDays = Number(detail.rental_days ?? 0);
-                return sum + (pricePerMonth * (rentalDays / 30));
-              }, 0);
-              managementFee = totalBaseRental * (Number(insurance.management_fee_value) / 100);
+              const totalBaseRental = (contract.details ?? []).reduce(
+                (sum, detail) => {
+                  const pricePerMonth = Number(detail.price_per_month ?? 0);
+                  const rentalDays = Number(detail.rental_days ?? 0);
+                  return sum + pricePerMonth * (rentalDays / 30);
+                },
+                0,
+              );
+              managementFee =
+                totalBaseRental *
+                (Number(insurance.management_fee_value) / 100);
             } else {
-              managementFee = Number(insurance.management_fee_value) * rentalMonthsForInsurance;
+              managementFee =
+                Number(insurance.management_fee_value) *
+                rentalMonthsForInsurance;
             }
           }
 
@@ -589,7 +731,11 @@ export class RentalContractService {
             rental_contract_id: id,
             action: 'ADDON_ADDED',
             description: `Đã thêm bảo hiểm: ${insurance.name}`,
-            metadata: { insurance_id: insurance.id, insurance_name: insurance.name, price: Number(insurance.price) },
+            metadata: {
+              insurance_id: insurance.id,
+              insurance_name: insurance.name,
+              price: Number(insurance.price),
+            },
             created_by: userId,
           });
         }
@@ -598,7 +744,10 @@ export class RentalContractService {
       contract = await this.repository.update(id, { updated_by: userId });
     }
 
-    await Promise.all([this.invalidateContractCache(id), this.invalidateContractListCache()]);
+    await Promise.all([
+      this.invalidateContractCache(id),
+      this.invalidateContractListCache(),
+    ]);
 
     // Email notification
     if (adjustMonths && newExpiredAt && existing.organization?.owner) {
@@ -613,15 +762,22 @@ export class RentalContractService {
     }
 
     this.systemLogService.info(
-      'rental-contract', 'update', `Admin updated contract ${contract.code}`,
-      { userId, metaData: { contractId: id, adjustMonths } }
+      'rental-contract',
+      'update',
+      `Admin updated contract ${contract.code}`,
+      { userId, metaData: { contractId: id, adjustMonths } },
     );
 
     this.auditLogService.logUpdate(
-      existing.organization_id, 'rental_contract', id,
-      { name: existing.name, expired_at: existing.expired_at } as unknown as Record<string, unknown>,
+      existing.organization_id,
+      'rental_contract',
+      id,
+      {
+        name: existing.name,
+        expired_at: existing.expired_at,
+      } as unknown as Record<string, unknown>,
       dto as unknown as Record<string, unknown>,
-      { userId, description: `Admin updated contract: ${contract.code}` }
+      { userId, description: `Admin updated contract: ${contract.code}` },
     );
 
     return contract;
@@ -638,18 +794,37 @@ export class RentalContractService {
   ): Promise<void> {
     const existing = await this.repository.findByIdWithOrganization(id);
     if (!existing) {
-      throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
     }
 
-    if (([ContractStatus.COMPLETED, ContractStatus.LIQUIDATED] as ContractStatus[]).includes(existing.status)) {
-      throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_cancel', { lang }));
+    if (
+      (
+        [
+          ContractStatus.COMPLETED,
+          ContractStatus.LIQUIDATED,
+        ] as ContractStatus[]
+      ).includes(existing.status)
+    ) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_cancel', { lang }),
+      );
     }
 
-    await this.repository.cancelContract(id, userId, dto.cancel_type, dto.cancel_reason);
+    await this.repository.cancelContract(
+      id,
+      userId,
+      dto.cancel_type,
+      dto.cancel_reason,
+    );
 
     const lockKey = `rental:lock:contract:${id}`;
     await this.releaseLock([lockKey]);
-    await Promise.all([this.invalidateContractCache(id), this.invalidateContractListCache()]);
+    await Promise.all([
+      this.invalidateContractCache(id),
+      this.invalidateContractListCache(),
+    ]);
 
     // Email
     if (existing.organization?.owner?.email) {
@@ -662,57 +837,95 @@ export class RentalContractService {
           'Admin',
           lang,
         );
-      } catch (e) { }
+      } catch (e) {}
     }
 
-    this.systemLogService.info('rental-contract', 'delete_admin', `Admin cancelled contract ${existing.code}`, { userId, metaData: { contractId: id } });
+    this.systemLogService.info(
+      'rental-contract',
+      'delete_admin',
+      `Admin cancelled contract ${existing.code}`,
+      { userId, metaData: { contractId: id } },
+    );
     this.auditLogService.logDelete(
-      existing.organization_id, 'rental_contract', id,
+      existing.organization_id,
+      'rental_contract',
+      id,
       { status: existing.status } as unknown as Record<string, unknown>,
-      { userId, description: `Admin cancelled contract: ${existing.code}` }
+      { userId, description: `Admin cancelled contract: ${existing.code}` },
     );
   }
 
   /**
    * Admin delete many
    */
-  async deleteMany(items: DeleteManyItemDto[], userId: string, lang: string): Promise<void> {
-    const ids = items.map(item => item.id);
+  async deleteMany(
+    items: DeleteManyItemDto[],
+    userId: string,
+    lang: string,
+  ): Promise<void> {
+    const ids = items.map((item) => item.id);
     const contracts = await this.repository.findByIds(ids);
     if (contracts.length === 0) {
-      throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
     }
 
     // Admin có quyền delete all, chỉ cần check logic business
-    if (contracts.some(c => ([ContractStatus.COMPLETED, ContractStatus.LIQUIDATED] as ContractStatus[]).includes(c.status))) {
-      throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_cancel', { lang }));
+    if (
+      contracts.some((c) =>
+        (
+          [
+            ContractStatus.COMPLETED,
+            ContractStatus.LIQUIDATED,
+          ] as ContractStatus[]
+        ).includes(c.status),
+      )
+    ) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_cancel', { lang }),
+      );
     }
 
     for (const item of items) {
-      await this.repository.cancelContract(item.id, userId, item.cancel_type, item.cancel_reason);
+      await this.repository.cancelContract(
+        item.id,
+        userId,
+        item.cancel_type,
+        item.cancel_reason,
+      );
     }
 
-    const lockKeys = ids.map(id => `rental:lock:contract:${id}`);
+    const lockKeys = ids.map((id) => `rental:lock:contract:${id}`);
     await this.releaseLock(lockKeys);
-    await Promise.all(ids.map(id => this.invalidateContractCache(id)));
+    await Promise.all(ids.map((id) => this.invalidateContractCache(id)));
     await this.invalidateContractListCache();
 
     // Noti logic (group by org)
-    const contractsByOrg = contracts.reduce((acc, c) => {
-      acc[c.organization_id] = acc[c.organization_id] || [];
-      acc[c.organization_id].push(c);
-      return acc;
-    }, {} as Record<string, IRentalContractWithRelations[]>);
+    const contractsByOrg = contracts.reduce(
+      (acc, c) => {
+        acc[c.organization_id] = acc[c.organization_id] || [];
+        acc[c.organization_id].push(c);
+        return acc;
+      },
+      {} as Record<string, IRentalContractWithRelations[]>,
+    );
 
     for (const orgId in contractsByOrg) {
       const orgContracts = contractsByOrg[orgId];
-      this.websocketGateway.emitToOrganization(orgId, 'rentalContract:deletedMany', {
-        ids: orgContracts.map(c => c.id), orgId, deletedBy: userId, timestamp: new Date().toISOString(),
-      });
+      this.websocketGateway.emitToOrganization(
+        orgId,
+        'rentalContract:deletedMany',
+        {
+          ids: orgContracts.map((c) => c.id),
+          orgId,
+          deletedBy: userId,
+          timestamp: new Date().toISOString(),
+        },
+      );
       // Audit/Email...
     }
   }
-
 
   // --- Activation Logic ---
 
@@ -721,7 +934,11 @@ export class RentalContractService {
    * Tạo Warehouse thực từ WarehouseTemplate cho từng chi tiết hợp đồng
    * (is_whole_warehouse = true). Cập nhật RentalContractDetail.warehouse_id.
    */
-  async activateContractWarehouses(contractId: string, orgId: string, userId: string): Promise<void> {
+  async activateContractWarehouses(
+    contractId: string,
+    orgId: string,
+    userId: string,
+  ): Promise<void> {
     const details = await this.prisma.rentalContractDetail.findMany({
       where: { rental_contract_id: contractId, is_deleted: false },
       include: {
@@ -760,131 +977,136 @@ export class RentalContractService {
       // Wrap the creation in a transaction to ensure data integrity
       try {
         await this.prisma.$transaction(async (tx) => {
-        const warehouse = await tx.warehouse.create({
-          data: {
-            name: detail.warehouse_name || template.name,
-            description: detail.warehouse_description || template.description || null,
-            organization_id: orgId,
-            length: template.length,
-            width: template.width,
-            block_length: template.block_length,
-            block_width: template.block_width,
-            ceiling_height: template.ceiling_height ?? null,
-            max_load_capacity: template.max_load_capacity ?? null,
-            total_weight_capacity: template.total_weight_capacity ?? null,
-            ward_id: template.ward_id ?? null,
-            address_detail: template.address_detail ?? null,
-            latitude: template.latitude ?? null,
-            longitude: template.longitude ?? null,
-            warehouse_template_id: template.id,
-            is_active: true,
-            is_deleted: false,
-            created_by: userId,
-          },
-        });
-
-        // Deep clone rows, racks, shelves, and blocks
-        for (const rowTpl of template.rows) {
-          // IF partial rental AND this rowTpl is NOT in the rented rows list, SKIP!
-          if (!detail.is_whole_warehouse && detail.detail_rows) {
-            const rentedRowIds = detail.detail_rows.map(dr => dr.row_template_id);
-            if (!rentedRowIds.includes(rowTpl.id)) {
-              continue;
-            }
-          }
-
-          const row = await tx.row.create({
+          const warehouse = await tx.warehouse.create({
             data: {
-              warehouse_id: warehouse.id,
-              name: rowTpl.name,
-              code: rowTpl.code,
-              description: rowTpl.description,
-              is_rented: rowTpl.is_rented,
-              position_x: rowTpl.position_x,
-              position_y: rowTpl.position_y,
-              position_rotation: rowTpl.position_rotation,
-              total_weight_capacity: rowTpl.total_weight_capacity,
-              row_template_id: rowTpl.id,
+              name: detail.warehouse_name || template.name,
+              description:
+                detail.warehouse_description || template.description || null,
+              organization_id: orgId,
+              length: template.length,
+              width: template.width,
+              block_length: template.block_length,
+              block_width: template.block_width,
+              ceiling_height: template.ceiling_height ?? null,
+              max_load_capacity: template.max_load_capacity ?? null,
+              total_weight_capacity: template.total_weight_capacity ?? null,
+              ward_id: template.ward_id ?? null,
+              address_detail: template.address_detail ?? null,
+              latitude: template.latitude ?? null,
+              longitude: template.longitude ?? null,
+              warehouse_template_id: template.id,
               is_active: true,
               is_deleted: false,
               created_by: userId,
             },
           });
 
-          for (const rackTpl of rowTpl.racks) {
-            const rack = await tx.rack.create({
+          // Deep clone rows, racks, shelves, and blocks
+          for (const rowTpl of template.rows) {
+            // IF partial rental AND this rowTpl is NOT in the rented rows list, SKIP!
+            if (!detail.is_whole_warehouse && detail.detail_rows) {
+              const rentedRowIds = detail.detail_rows.map(
+                (dr) => dr.row_template_id,
+              );
+              if (!rentedRowIds.includes(rowTpl.id)) {
+                continue;
+              }
+            }
+
+            const row = await tx.row.create({
               data: {
-                row_id: row.id,
-                name: rackTpl.name,
-                code: rackTpl.code,
-                description: rackTpl.description,
-                position_x: rackTpl.position_x,
-                position_y: rackTpl.position_y,
-                position_rotation: rackTpl.position_rotation,
-                dimensions_width: rackTpl.dimensions_width,
-                dimensions_depth: rackTpl.dimensions_depth,
-                dimensions_height: rackTpl.dimensions_height,
-                default_block_max_weight_capacity: rackTpl.default_block_max_weight_capacity,
-                total_weight_capacity: rackTpl.total_weight_capacity,
-                total_height: rackTpl.total_height,
-                overload_threshold_percent: rackTpl.overload_threshold_percent,
-                is_rented: false,
+                warehouse_id: warehouse.id,
+                name: rowTpl.name,
+                code: rowTpl.code,
+                description: rowTpl.description,
+                is_rented: rowTpl.is_rented,
+                position_x: rowTpl.position_x,
+                position_y: rowTpl.position_y,
+                position_rotation: rowTpl.position_rotation,
+                total_weight_capacity: rowTpl.total_weight_capacity,
+                row_template_id: rowTpl.id,
                 is_active: true,
                 is_deleted: false,
                 created_by: userId,
               },
             });
 
-            for (const shelfTpl of rackTpl.shelves) {
-              const shelf = await tx.shelf.create({
+            for (const rackTpl of rowTpl.racks) {
+              const rack = await tx.rack.create({
                 data: {
-                  rack_id: rack.id,
-                  name: shelfTpl.name,
-                  code: shelfTpl.code,
-                  description: shelfTpl.description,
-                  height: shelfTpl.height,
-                  total_weight_capacity: shelfTpl.total_weight_capacity,
+                  row_id: row.id,
+                  name: rackTpl.name,
+                  code: rackTpl.code,
+                  description: rackTpl.description,
+                  position_x: rackTpl.position_x,
+                  position_y: rackTpl.position_y,
+                  position_rotation: rackTpl.position_rotation,
+                  dimensions_width: rackTpl.dimensions_width,
+                  dimensions_depth: rackTpl.dimensions_depth,
+                  dimensions_height: rackTpl.dimensions_height,
+                  default_block_max_weight_capacity:
+                    rackTpl.default_block_max_weight_capacity,
+                  total_weight_capacity: rackTpl.total_weight_capacity,
+                  total_height: rackTpl.total_height,
+                  overload_threshold_percent:
+                    rackTpl.overload_threshold_percent,
+                  is_rented: false,
                   is_active: true,
                   is_deleted: false,
                   created_by: userId,
                 },
               });
 
-              for (const blockTpl of shelfTpl.blocks) {
-                await tx.block.create({
+              for (const shelfTpl of rackTpl.shelves) {
+                const shelf = await tx.shelf.create({
                   data: {
-                    shelf_id: shelf.id,
-                    name: blockTpl.name,
-                    code: blockTpl.code,
-                    description: blockTpl.description,
-                    position_x: blockTpl.position_x,
-                    position_y: blockTpl.position_y,
-                    dimensions_width: blockTpl.dimensions_width,
-                    dimensions_height: blockTpl.dimensions_height,
-                    max_weight_capacity: blockTpl.max_weight_capacity,
-                    height: blockTpl.height,
+                    rack_id: rack.id,
+                    name: shelfTpl.name,
+                    code: shelfTpl.code,
+                    description: shelfTpl.description,
+                    height: shelfTpl.height,
+                    total_weight_capacity: shelfTpl.total_weight_capacity,
                     is_active: true,
                     is_deleted: false,
                     created_by: userId,
                   },
                 });
+
+                for (const blockTpl of shelfTpl.blocks) {
+                  await tx.block.create({
+                    data: {
+                      shelf_id: shelf.id,
+                      name: blockTpl.name,
+                      code: blockTpl.code,
+                      description: blockTpl.description,
+                      position_x: blockTpl.position_x,
+                      position_y: blockTpl.position_y,
+                      dimensions_width: blockTpl.dimensions_width,
+                      dimensions_height: blockTpl.dimensions_height,
+                      max_weight_capacity: blockTpl.max_weight_capacity,
+                      height: blockTpl.height,
+                      is_active: true,
+                      is_deleted: false,
+                      created_by: userId,
+                    },
+                  });
+                }
               }
             }
           }
-        }
 
-        await tx.rentalContractDetail.update({
-          where: { id: detail.id },
-          data: { warehouse_id: warehouse.id },
+          await tx.rentalContractDetail.update({
+            where: { id: detail.id },
+            data: { warehouse_id: warehouse.id },
+          });
+
+          this.systemLogService.info(
+            'rental-contract',
+            'activate_warehouse',
+            `Created warehouse ${warehouse.id} with layout for org ${orgId} from template ${template.id} (is_whole: ${detail.is_whole_warehouse})`,
+            { userId, metaData: { contractId, warehouseId: warehouse.id } },
+          );
         });
-
-        this.systemLogService.info(
-          'rental-contract',
-          'activate_warehouse',
-          `Created warehouse ${warehouse.id} with layout for org ${orgId} from template ${template.id} (is_whole: ${detail.is_whole_warehouse})`,
-          { userId, metaData: { contractId, warehouseId: warehouse.id } },
-        );
-      });
       } catch (error: any) {
         this.systemLogService.error(
           'rental-contract',
@@ -914,7 +1136,12 @@ export class RentalContractService {
     isWholeWarehouse: boolean,
     durationTierId: string,
   ): Promise<IRentalPriceCalculation> {
-    const discountRate = this.getDiscountRate(isWholeWarehouse, template, templateItem.row_template_ids, durationTierId);
+    const discountRate = this.getDiscountRate(
+      isWholeWarehouse,
+      template,
+      templateItem.row_template_ids,
+      durationTierId,
+    );
     const rentalDays = months * 30;
     let pricePerMonth = 0;
     let subtotal = 0;
@@ -999,17 +1226,39 @@ export class RentalContractService {
     return 0;
   }
 
-  private async sendContractTimeChangedEmail(data: IContractTimeChangedEmail): Promise<void> {
+  private async sendContractTimeChangedEmail(
+    data: IContractTimeChangedEmail,
+  ): Promise<void> {
     const isExtension = data.adjustMonths > 0;
-    const subject = this.i18n.t(isExtension ? 'rental-contract.email.contract_extended_subject' : 'rental-contract.email.contract_reduced_subject', { lang: data.lang, args: { code: data.contractCode } });
-    const body = this.i18n.t(isExtension ? 'rental-contract.email.contract_extended_body' : 'rental-contract.email.contract_reduced_body', {
-      lang: data.lang,
-      args: { code: data.contractCode, months: Math.abs(data.adjustMonths), date: data.newExpiredAt.toLocaleDateString('vi-VN') },
+    const subject = this.i18n.t(
+      isExtension
+        ? 'rental-contract.email.contract_extended_subject'
+        : 'rental-contract.email.contract_reduced_subject',
+      { lang: data.lang, args: { code: data.contractCode } },
+    );
+    const body = this.i18n.t(
+      isExtension
+        ? 'rental-contract.email.contract_extended_body'
+        : 'rental-contract.email.contract_reduced_body',
+      {
+        lang: data.lang,
+        args: {
+          code: data.contractCode,
+          months: Math.abs(data.adjustMonths),
+          date: data.newExpiredAt.toLocaleDateString('vi-VN'),
+        },
+      },
+    );
+    await this.emailService.sendEmail({
+      to: data.ownerEmail,
+      subject: String(subject),
+      text: String(body),
     });
-    await this.emailService.sendEmail({ to: data.ownerEmail, subject: String(subject), text: String(body) });
   }
 
-  private async acquireLock(keys: string | string[]): Promise<{ success: boolean }> {
+  private async acquireLock(
+    keys: string | string[],
+  ): Promise<{ success: boolean }> {
     const lockKeys = Array.isArray(keys) ? keys : [keys];
     for (const key of lockKeys) {
       if (await this.redisService.exists(key)) return { success: false };
@@ -1026,7 +1275,10 @@ export class RentalContractService {
   }
 
   private getContractListCacheKey(query: Record<string, unknown>): string {
-    const sortedParams = Object.keys(query).sort().map((key) => `${key}=${query[key]}`).join('&');
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
     return `rental-contract:list:${sortedParams}`;
   }
   private async invalidateContractCache(id: string): Promise<void> {
@@ -1052,20 +1304,24 @@ export class RentalContractService {
     const rowTemplateIds: string[] = [];
 
     for (const detail of contract.details) {
-      if (detail.warehouse_template_id) templateIds.push(detail.warehouse_template_id);
+      if (detail.warehouse_template_id)
+        templateIds.push(detail.warehouse_template_id);
       if (detail.detail_rows && detail.detail_rows.length > 0) {
-        detail.detail_rows.forEach((relation) => rowTemplateIds.push(relation.row_template_id));
+        detail.detail_rows.forEach((relation) =>
+          rowTemplateIds.push(relation.row_template_id),
+        );
       }
     }
 
     if (templateIds.length === 0 && rowTemplateIds.length === 0) return;
 
     // Tìm các contracts xung đột
-    const conflictingContracts = await this.repository.findConflictingPendingContracts(
-      templateIds,
-      rowTemplateIds,
-      contractId,
-    );
+    const conflictingContracts =
+      await this.repository.findConflictingPendingContracts(
+        templateIds,
+        rowTemplateIds,
+        contractId,
+      );
 
     if (conflictingContracts.length === 0) return;
 
@@ -1081,7 +1337,9 @@ export class RentalContractService {
         );
 
         // Hủy các scheduled payments/contracts
-        const payments = await this.repository.findPaymentsByContract(conflictContract.id);
+        const payments = await this.repository.findPaymentsByContract(
+          conflictContract.id,
+        );
         for (const payment of payments) {
           if (payment.status === 'PENDING') {
             this.paymentScheduler.cancelScheduledExpire(payment.id);
@@ -1091,12 +1349,14 @@ export class RentalContractService {
 
         // Emit socket event
         if (conflictContract.created_by) {
-          this.websocketGateway.server.to(`user:${conflictContract.created_by}`).emit('contract:cancelled_by_conflict', {
-            contractId: conflictContract.id,
-            code: conflictContract.code,
-            reason: 'warehouse_rented_by_others',
-            conflictWithContractId: contractId,
-          });
+          this.websocketGateway.server
+            .to(`user:${conflictContract.created_by}`)
+            .emit('contract:cancelled_by_conflict', {
+              contractId: conflictContract.id,
+              code: conflictContract.code,
+              reason: 'warehouse_rented_by_others',
+              conflictWithContractId: contractId,
+            });
         }
 
         // Log
@@ -1116,7 +1376,9 @@ export class RentalContractService {
           'rental-contract',
           'cancel-by-conflict',
           `Failed to cancel conflicting contract ${conflictContract.id}: ${error}`,
-          { metaData: { contractId: conflictContract.id, error: String(error) } },
+          {
+            metaData: { contractId: conflictContract.id, error: String(error) },
+          },
         );
       }
     }

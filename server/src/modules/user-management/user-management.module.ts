@@ -12,18 +12,18 @@ import { WarnSchedulerModule } from '../warn-scheduler/warn-scheduler.module';
 import { RoleModule } from '../role/role.module';
 
 @Module({
-    imports: [
-        PrismaModule,
-        RedisModule,
-        SystemLogModule,
-        forwardRef(() => WebsocketModule),
-        WarningCategoryModule,
-        BanSchedulerModule,
-        forwardRef(() => WarnSchedulerModule),
-        RoleModule,
-    ],
-    controllers: [UserManagementController],
-    providers: [UserManagementService, UserManagementRepository],
-    exports: [UserManagementService, UserManagementRepository],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    SystemLogModule,
+    forwardRef(() => WebsocketModule),
+    WarningCategoryModule,
+    BanSchedulerModule,
+    forwardRef(() => WarnSchedulerModule),
+    RoleModule,
+  ],
+  controllers: [UserManagementController],
+  providers: [UserManagementService, UserManagementRepository],
+  exports: [UserManagementService, UserManagementRepository],
 })
-export class UserManagementModule { }
+export class UserManagementModule {}

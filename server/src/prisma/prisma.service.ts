@@ -76,7 +76,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     // Sử dụng setImmediate để đảm bảo server ready trước khi bắt đầu seed
     setImmediate(() => {
       this.runSeedInBackground().catch((error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(`❌ Background seeding failed: ${errorMessage}`);
       });
     });
@@ -98,7 +99,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedDefaultRoles();
       this.logger.log('✅ Background seeding completed successfully');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Background seeding failed: ${errorMessage}`);
     } finally {
       this.isSeedingInProgress = false;
@@ -124,7 +126,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         database: parsedUrl.pathname.slice(1), // remove leading /
       };
     } catch (error) {
-      throw new Error(`Invalid DATABASE_URL format: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Invalid DATABASE_URL format: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -146,7 +150,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     try {
       await adminClient.connect();
 
-      const dbCheckResult = await adminClient.query(`SELECT 1 FROM pg_database WHERE datname = $1`, [config.database]);
+      const dbCheckResult = await adminClient.query(
+        `SELECT 1 FROM pg_database WHERE datname = $1`,
+        [config.database],
+      );
 
       if (dbCheckResult.rows.length === 0) {
         await adminClient.query(`CREATE DATABASE "${config.database}"`);
@@ -171,7 +178,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       return true;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to setup database: ${errorMessage}`);
       throw error;
     }
@@ -226,7 +234,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       await dbClient.end();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to recreate database: ${errorMessage}`);
       throw error;
     }
@@ -265,7 +274,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         needsSchemaSync = true;
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`⚠️ Connection failed: ${errorMessage}`);
       await this.ensureDatabaseAndExtension();
       needsSchemaSync = true;
@@ -297,7 +307,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           });
           this.logger.log('✅ Schema synced');
         } catch (retryError: unknown) {
-          const retryErrorMessage = retryError instanceof Error ? retryError.message : String(retryError);
+          const retryErrorMessage =
+            retryError instanceof Error
+              ? retryError.message
+              : String(retryError);
           this.logger.error(`❌ Schema sync failed: ${retryErrorMessage}`);
           throw new Error('Failed to initialize database schema after retry');
         }
@@ -319,7 +332,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     const existingTables = new Set(rows.map((row) => row.table_name));
 
     return Prisma.dmmf.datamodel.models
-      .map((model) => (model as { dbName?: string }).dbName || this.toCamelCaseModelName(model.name))
+      .map(
+        (model) =>
+          (model as { dbName?: string }).dbName ||
+          this.toCamelCaseModelName(model.name),
+      )
       .filter((tableName) => tableName !== '_prisma_migrations')
       .filter((tableName) => !existingTables.has(tableName));
   }
@@ -329,17 +346,23 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   private async getMissingColumnsFromPrismaSchema(): Promise<string[]> {
-    const rows = await this.$queryRaw<Array<{ table_name: string; column_name: string }>>`
+    const rows = await this.$queryRaw<
+      Array<{ table_name: string; column_name: string }>
+    >`
       SELECT table_name, column_name
       FROM information_schema.columns
       WHERE table_schema = 'public'
     `;
 
-    const existingColumns = new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
+    const existingColumns = new Set(
+      rows.map((row) => `${row.table_name}.${row.column_name}`),
+    );
     const missing: string[] = [];
 
     for (const model of Prisma.dmmf.datamodel.models) {
-      const tableName = (model as { dbName?: string }).dbName || this.toCamelCaseModelName(model.name);
+      const tableName =
+        (model as { dbName?: string }).dbName ||
+        this.toCamelCaseModelName(model.name);
       for (const field of model.fields) {
         if (field.relationName || field.isGenerated) continue;
         const columnName = (field as { dbName?: string }).dbName || field.name;
@@ -440,7 +463,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       // Set admin ID for data seeders
       for (const seeder of dataSeeders) {
-        if ('setAdminId' in seeder && typeof seeder.setAdminId === 'function' && this.seedAdminId) {
+        if (
+          'setAdminId' in seeder &&
+          typeof seeder.setAdminId === 'function' &&
+          this.seedAdminId
+        ) {
           seeder.setAdminId(this.seedAdminId);
         }
       }
@@ -453,7 +480,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const administrativeSeeder = new AdministrativeSeeder(this);
       await administrativeSeeder.run();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed default roles: ${errorMessage}`);
     }
   }

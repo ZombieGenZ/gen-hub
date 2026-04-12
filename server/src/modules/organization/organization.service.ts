@@ -50,14 +50,16 @@ export class OrganizationService {
     private readonly i18n: I18nService,
     private readonly configService: ConfigService,
     private readonly cipherService: CipherService,
-  ) { }
+  ) {}
 
   /**
    * Loại bỏ các trường nhạy cảm khỏi response
    * Các trường google_client_id, google_client_secret, google_refresh_token, email_primary_address
    * và các trường gmail_pubsub chỉ được sử dụng nội bộ bởi hệ thống
    */
-  private stripSensitiveFields(org: IOrganizationWithRelations): IOrganizationWithRelations {
+  private stripSensitiveFields(
+    org: IOrganizationWithRelations,
+  ): IOrganizationWithRelations {
     const {
       google_client_id,
       google_client_secret,
@@ -71,10 +73,14 @@ export class OrganizationService {
 
     // Convert BigInt fields to Number to avoid JSON serialization error
     if (safeOrg.api_key_logs_retention_ms != null) {
-      safeOrg.api_key_logs_retention_ms = Number(safeOrg.api_key_logs_retention_ms);
+      safeOrg.api_key_logs_retention_ms = Number(
+        safeOrg.api_key_logs_retention_ms,
+      );
     }
     if (safeOrg.org_audit_logs_retention_ms != null) {
-      safeOrg.org_audit_logs_retention_ms = Number(safeOrg.org_audit_logs_retention_ms);
+      safeOrg.org_audit_logs_retention_ms = Number(
+        safeOrg.org_audit_logs_retention_ms,
+      );
     }
 
     // Convert Decimal fields to Number to avoid JSON serialization error
@@ -93,12 +99,13 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationWithRelations> {
-
     // Check duplicate tax code
     const isTaxCodeExist = await this.repository.findByTaxCode(dto.tax_code);
     if (isTaxCodeExist) {
       throw new ConflictException(
-        await this.i18n.translate('organization.validation.tax_code_exists', { lang }),
+        await this.i18n.translate('organization.validation.tax_code_exists', {
+          lang,
+        }),
       );
     }
 
@@ -106,10 +113,9 @@ export class OrganizationService {
     const taxInfo = await this.lookupTaxCode(dto.tax_code);
     if (!taxInfo) {
       throw new BadRequestException(
-        await this.i18n.translate(
-          'organization.validation.tax_code_invalid',
-          { lang },
-        ),
+        await this.i18n.translate('organization.validation.tax_code_invalid', {
+          lang,
+        }),
       );
     }
 
@@ -154,11 +160,17 @@ export class OrganizationService {
 
     // Mã hóa các trường Gmail Pub/Sub (luôn mã hóa nếu có)
     if (dto.gmail_pubsub_topic)
-      dto.gmail_pubsub_topic = this.cipherService.encrypt(dto.gmail_pubsub_topic);
+      dto.gmail_pubsub_topic = this.cipherService.encrypt(
+        dto.gmail_pubsub_topic,
+      );
     if (dto.gmail_pubsub_subscription)
-      dto.gmail_pubsub_subscription = this.cipherService.encrypt(dto.gmail_pubsub_subscription);
+      dto.gmail_pubsub_subscription = this.cipherService.encrypt(
+        dto.gmail_pubsub_subscription,
+      );
     if (dto.gmail_webhook_secret)
-      dto.gmail_webhook_secret = this.cipherService.encrypt(dto.gmail_webhook_secret);
+      dto.gmail_webhook_secret = this.cipherService.encrypt(
+        dto.gmail_webhook_secret,
+      );
 
     // Tạo organization
     const org = await this.repository.create({
@@ -215,14 +227,23 @@ export class OrganizationService {
     );
 
     // Emit WebSocket event - gửi org đã strip sensitive fields
-    this.websocketGateway.emitOrganizationCreated(userId, this.stripSensitiveFields(org));
+    this.websocketGateway.emitOrganizationCreated(
+      userId,
+      this.stripSensitiveFields(org),
+    );
 
     return this.stripSensitiveFields(org);
   }
 
-  private async lookupTaxCode(taxCode: string): Promise<{ name: string; address: string; internationalName?: string } | null> {
+  private async lookupTaxCode(taxCode: string): Promise<{
+    name: string;
+    address: string;
+    internationalName?: string;
+  } | null> {
     try {
-      const response = await axios.get(`https://api.vietqr.io/v2/business/${taxCode}`);
+      const response = await axios.get(
+        `https://api.vietqr.io/v2/business/${taxCode}`,
+      );
       if (response.data && response.data.code === '00' && response.data.data) {
         return {
           name: response.data.data.name,
@@ -353,7 +374,7 @@ export class OrganizationService {
 
     // Ẩn các trường nhạy cảm và convert BigInt TRƯỚC khi cache
     if (result.items) {
-      result.items = result.items.map(org => this.stripSensitiveFields(org));
+      result.items = result.items.map((org) => this.stripSensitiveFields(org));
     }
 
     // Cache result (sau khi đã strip và convert BigInt)
@@ -388,7 +409,10 @@ export class OrganizationService {
     // Chỉ có admin (người có quyền update.all) mới được cập nhật is_active
     if (dto.is_active !== undefined && !hasUpdateAllPermission) {
       throw new ForbiddenException(
-        await this.i18n.translate('organization.errors.update_active_forbidden', { lang }),
+        await this.i18n.translate(
+          'organization.errors.update_active_forbidden',
+          { lang },
+        ),
       );
     }
 
@@ -404,10 +428,18 @@ export class OrganizationService {
 
     if (isUsingGoogle) {
       // Decrypt stored credentials để so sánh và validate
-      const storedClientId = org.google_client_id ? this.cipherService.decrypt(org.google_client_id) : null;
-      const storedClientSecret = org.google_client_secret ? this.cipherService.decrypt(org.google_client_secret) : null;
-      const storedRefreshToken = org.google_refresh_token ? this.cipherService.decrypt(org.google_refresh_token) : null;
-      const storedEmailPrimary = org.email_primary_address ? this.cipherService.decrypt(org.email_primary_address) : null;
+      const storedClientId = org.google_client_id
+        ? this.cipherService.decrypt(org.google_client_id)
+        : null;
+      const storedClientSecret = org.google_client_secret
+        ? this.cipherService.decrypt(org.google_client_secret)
+        : null;
+      const storedRefreshToken = org.google_refresh_token
+        ? this.cipherService.decrypt(org.google_refresh_token)
+        : null;
+      const storedEmailPrimary = org.email_primary_address
+        ? this.cipherService.decrypt(org.email_primary_address)
+        : null;
 
       const clientId = dto.google_client_id ?? storedClientId;
       const clientSecret = dto.google_client_secret ?? storedClientSecret;
@@ -450,11 +482,17 @@ export class OrganizationService {
 
     // Mã hóa các trường Gmail Pub/Sub
     if (dto.gmail_pubsub_topic)
-      dto.gmail_pubsub_topic = this.cipherService.encrypt(dto.gmail_pubsub_topic);
+      dto.gmail_pubsub_topic = this.cipherService.encrypt(
+        dto.gmail_pubsub_topic,
+      );
     if (dto.gmail_pubsub_subscription)
-      dto.gmail_pubsub_subscription = this.cipherService.encrypt(dto.gmail_pubsub_subscription);
+      dto.gmail_pubsub_subscription = this.cipherService.encrypt(
+        dto.gmail_pubsub_subscription,
+      );
     if (dto.gmail_webhook_secret)
-      dto.gmail_webhook_secret = this.cipherService.encrypt(dto.gmail_webhook_secret);
+      dto.gmail_webhook_secret = this.cipherService.encrypt(
+        dto.gmail_webhook_secret,
+      );
 
     const updated = await this.repository.update(id, {
       ...dto,
@@ -486,7 +524,10 @@ export class OrganizationService {
     );
 
     // Emit WebSocket - gửi org đã strip sensitive fields
-    this.websocketGateway.emitOrganizationUpdated(org.owner_id, this.stripSensitiveFields(updated));
+    this.websocketGateway.emitOrganizationUpdated(
+      org.owner_id,
+      this.stripSensitiveFields(updated),
+    );
 
     return this.stripSensitiveFields(updated);
   }
@@ -582,7 +623,10 @@ export class OrganizationService {
           org.id,
           'Organization',
           org.id,
-          { name: org.name, is_active: org.is_active } as Record<string, unknown>,
+          { name: org.name, is_active: org.is_active } as Record<
+            string,
+            unknown
+          >,
           { userId },
         );
         this.websocketGateway.emitOrganizationDeleted(org.owner_id, org.id);
@@ -716,7 +760,10 @@ export class OrganizationService {
         if (!user) {
           errors.push({
             email,
-            error: await this.i18n.translate('organization.errors.user_not_found', { lang }),
+            error: await this.i18n.translate(
+              'organization.errors.user_not_found',
+              { lang },
+            ),
           });
           continue;
         }
@@ -729,14 +776,20 @@ export class OrganizationService {
         if (existingMember && existingMember.is_accepted) {
           errors.push({
             email,
-            error: await this.i18n.translate('organization.errors.already_member', { lang }),
+            error: await this.i18n.translate(
+              'organization.errors.already_member',
+              { lang },
+            ),
           });
           continue;
         }
         if (existingMember && !existingMember.is_accepted) {
           errors.push({
             email,
-            error: await this.i18n.translate('organization.errors.already_invited', { lang }),
+            error: await this.i18n.translate(
+              'organization.errors.already_invited',
+              { lang },
+            ),
           });
           continue;
         }
@@ -765,7 +818,12 @@ export class OrganizationService {
           orgId,
           'OrganizationMember',
           member.id,
-          { email, user_id: user.id, invited_by: userId, display_name: member.display_name },
+          {
+            email,
+            user_id: user.id,
+            invited_by: userId,
+            display_name: member.display_name,
+          },
           { userId },
         );
 
@@ -817,16 +875,21 @@ export class OrganizationService {
         'organization',
         'invite_members',
         `Invited ${results.length} members to ${org.name}`,
-        { userId, metaData: { successCount: results.length, errorCount: errors.length } },
+        {
+          userId,
+          metaData: { successCount: results.length, errorCount: errors.length },
+        },
       );
     }
 
     // Nếu không có kết quả thành công nào và có lỗi, throw để frontend xử lý
     if (results.length === 0 && errors.length > 0) {
       throw new NotFoundException(
-        await this.i18n.translate('organization.errors.invite_failed_all', { lang }) +
-        ': ' +
-        errors.map((e) => `${e.email}: ${e.error}`).join(', '),
+        (await this.i18n.translate('organization.errors.invite_failed_all', {
+          lang,
+        })) +
+          ': ' +
+          errors.map((e) => `${e.email}: ${e.error}`).join(', '),
       );
     }
 
@@ -1111,7 +1174,12 @@ export class OrganizationService {
 
     // Emit socket event
     const org = await this.findById(orgId, lang);
-    this.websocketGateway.emitMemberAccepted(orgId, org.name, member.id, userId);
+    this.websocketGateway.emitMemberAccepted(
+      orgId,
+      org.name,
+      member.id,
+      userId,
+    );
 
     return updated;
   }
@@ -1298,7 +1366,12 @@ export class OrganizationService {
     );
 
     // Emit socket event
-    this.websocketGateway.emitMemberRolesUpdated(orgId, memberId, dto.role_ids, userId);
+    this.websocketGateway.emitMemberRolesUpdated(
+      orgId,
+      memberId,
+      dto.role_ids,
+      userId,
+    );
 
     return updated!;
   }
@@ -1355,7 +1428,12 @@ export class OrganizationService {
     );
 
     // Emit socket event
-    this.websocketGateway.emitMemberPermissionsUpdated(orgId, memberId, dto.permission_ids, userId);
+    this.websocketGateway.emitMemberPermissionsUpdated(
+      orgId,
+      memberId,
+      dto.permission_ids,
+      userId,
+    );
 
     return updated!;
   }
@@ -1419,16 +1497,23 @@ export class OrganizationService {
       memberId,
       { display_name: oldDisplayName },
       { display_name: displayName },
-      { userId, description: isSelf ? 'Self display name updated' : 'Display name updated by admin' },
+      {
+        userId,
+        description: isSelf
+          ? 'Self display name updated'
+          : 'Display name updated by admin',
+      },
     );
 
     // Emit WebSocket event
-    this.websocketGateway.server.to(`organization:${orgId}`).emit('member:displayNameUpdated', {
-      organizationId: orgId,
-      memberId,
-      displayName,
-      updatedBy: userId,
-    });
+    this.websocketGateway.server
+      .to(`organization:${orgId}`)
+      .emit('member:displayNameUpdated', {
+        organizationId: orgId,
+        memberId,
+        displayName,
+        updatedBy: userId,
+      });
 
     return updated;
   }
@@ -1566,8 +1651,6 @@ export class OrganizationService {
     this.websocketGateway.emitMemberLeft(orgId, member.id, userId);
   }
 
-
-
   async getPermissions(
     orgId: string,
     userId: string,
@@ -1593,8 +1676,6 @@ export class OrganizationService {
 
     return this.repository.findAllOrganizationPermissions();
   }
-
-
 
   /**
    * Kiểm tra quyền organization.
@@ -1630,9 +1711,7 @@ export class OrganizationService {
 
     // Kiểm tra role permissions
     const hasRolePermission = member.roles?.some((r) =>
-      r.role?.permissions?.some(
-        (rp) => rp.permission?.key === permissionKey,
-      ),
+      r.role?.permissions?.some((rp) => rp.permission?.key === permissionKey),
     );
 
     if (!hasRolePermission) {

@@ -7,7 +7,9 @@ export class CoverImageCacheKeysHelper {
   constructor(private readonly configService: ConfigService) {}
 
   get listTtl(): number {
-    return this.configService.get<number>('REDIS_COVER_IMAGE_LIST_CACHE_TTL') || 60;
+    return (
+      this.configService.get<number>('REDIS_COVER_IMAGE_LIST_CACHE_TTL') || 60
+    );
   }
 
   get detailTtl(): number {
@@ -15,15 +17,24 @@ export class CoverImageCacheKeysHelper {
   }
 
   private get prefix(): string {
-    return this.configService.get<string>('REDIS_COVER_IMAGE_KEY_PREFIX') || 'cover-image';
+    return (
+      this.configService.get<string>('REDIS_COVER_IMAGE_KEY_PREFIX') ||
+      'cover-image'
+    );
   }
 
   private get listPrefix(): string {
-    return this.configService.get<string>('REDIS_COVER_IMAGE_LIST_KEY_PREFIX') || 'cover-image:list';
+    return (
+      this.configService.get<string>('REDIS_COVER_IMAGE_LIST_KEY_PREFIX') ||
+      'cover-image:list'
+    );
   }
 
   private get detailPrefix(): string {
-    return this.configService.get<string>('REDIS_COVER_IMAGE_DETAIL_KEY_PREFIX') || 'cover-image:detail';
+    return (
+      this.configService.get<string>('REDIS_COVER_IMAGE_DETAIL_KEY_PREFIX') ||
+      'cover-image:detail'
+    );
   }
 
   list(query: QueryCoverImageDto): string {

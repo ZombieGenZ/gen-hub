@@ -5,9 +5,9 @@ import { OrgAnalyticsCacheKeys } from './services/cache-keys.helper';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [ApiKeyVerificationModule],
-    controllers: [OrgAnalyticsController],
-    providers: [OrgAnalyticsService, OrgAnalyticsCacheKeys],
-    exports: [OrgAnalyticsService],
+  imports: [ApiKeyVerificationModule],
+  controllers: [OrgAnalyticsController],
+  providers: [OrgAnalyticsService, OrgAnalyticsCacheKeys],
+  exports: [OrgAnalyticsService],
 })
-export class OrgAnalyticsModule { }
+export class OrgAnalyticsModule {}

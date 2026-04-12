@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { UserNotificationRepository } from './user-notification.repository';
 import { SendUserNotificationDto, QueryUserNotificationDto } from './dto';
@@ -12,207 +16,224 @@ import { SystemLogService } from '../system-log/system-log.service';
  */
 @Injectable()
 export class UserNotificationService {
-    constructor(
-        private readonly repository: UserNotificationRepository,
-        private readonly redisService: RedisService,
-        private readonly websocketGateway: WebsocketGateway,
-        private readonly systemLogService: SystemLogService,
-        private readonly i18n: I18nService,
-    ) { }
+  constructor(
+    private readonly repository: UserNotificationRepository,
+    private readonly redisService: RedisService,
+    private readonly websocketGateway: WebsocketGateway,
+    private readonly systemLogService: SystemLogService,
+    private readonly i18n: I18nService,
+  ) {}
 
-    // Lấy danh sách thông báo của user hiện tại
-    async getMyNotifications(
-        userId: string,
-        query: QueryUserNotificationDto,
-    ): Promise<IPaginatedResponse<IUserNotification>> {
-        const cacheKey = this.redisService.getUserNotificationListCacheKey(userId, query as Record<string, unknown>);
+  // Lấy danh sách thông báo của user hiện tại
+  async getMyNotifications(
+    userId: string,
+    query: QueryUserNotificationDto,
+  ): Promise<IPaginatedResponse<IUserNotification>> {
+    const cacheKey = this.redisService.getUserNotificationListCacheKey(
+      userId,
+      query as Record<string, unknown>,
+    );
 
-        // Check cache
-        const cached = await this.redisService.getUserNotificationListCache<IPaginatedResponse<IUserNotification>>(cacheKey);
-        if (cached) {
-            return cached;
-        }
-
-        const result = await this.repository.findByUserId(userId, query);
-
-        // Set cache
-        await this.redisService.setUserNotificationListCache(cacheKey, result);
-
-        return result;
+    // Check cache
+    const cached =
+      await this.redisService.getUserNotificationListCache<
+        IPaginatedResponse<IUserNotification>
+      >(cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    // Lấy danh sách thông báo theo user ID (admin only)
-    async getNotificationsByUserId(
-        targetUserId: string,
-        query: QueryUserNotificationDto,
-        lang: string,
-    ): Promise<IPaginatedResponse<IUserNotification>> {
-        // Kiểm tra user tồn tại
-        const userExists = await this.repository.userExists(targetUserId);
-        if (!userExists) {
-            throw new NotFoundException(
-                this.i18n.t('user-notification.errors.user_not_found', { lang }),
-            );
-        }
+    const result = await this.repository.findByUserId(userId, query);
 
-        // Check cache (sử dụng cùng cache key pattern như getMyNotifications)
-        const cacheKey = this.redisService.getUserNotificationListCacheKey(targetUserId, query as Record<string, unknown>);
-        const cached = await this.redisService.getUserNotificationListCache<IPaginatedResponse<IUserNotification>>(cacheKey);
-        if (cached) {
-            return cached;
-        }
+    // Set cache
+    await this.redisService.setUserNotificationListCache(cacheKey, result);
 
-        const result = await this.repository.findByUserId(targetUserId, query);
+    return result;
+  }
 
-        // Set cache
-        await this.redisService.setUserNotificationListCache(cacheKey, result);
-
-        return result;
+  // Lấy danh sách thông báo theo user ID (admin only)
+  async getNotificationsByUserId(
+    targetUserId: string,
+    query: QueryUserNotificationDto,
+    lang: string,
+  ): Promise<IPaginatedResponse<IUserNotification>> {
+    // Kiểm tra user tồn tại
+    const userExists = await this.repository.userExists(targetUserId);
+    if (!userExists) {
+      throw new NotFoundException(
+        this.i18n.t('user-notification.errors.user_not_found', { lang }),
+      );
     }
 
-    // Gửi thông báo cho user
-    async sendNotification(
-        dto: SendUserNotificationDto,
-        senderId: string,
-        lang: string,
-    ): Promise<IUserNotification> {
-        // Kiểm tra user tồn tại
-        const userExists = await this.repository.userExists(dto.user_id);
-        if (!userExists) {
-            throw new NotFoundException(
-                this.i18n.t('user-notification.errors.user_not_found', { lang }),
-            );
-        }
-
-        const notification = await this.repository.create({
-            title: dto.title,
-            content: dto.content,
-            type: dto.type || 'INFO',
-            user: { connect: { id: dto.user_id } },
-        });
-
-        // Invalidate cache
-        await this.redisService.invalidateUserNotificationListCache(dto.user_id);
-
-        // Emit realtime event đến user nhận
-        this.websocketGateway.emitUserNotificationReceived(dto.user_id, notification);
-
-        // Log
-        await this.systemLogService.log({
-            level: 'INFO',
-            module: 'UserNotification',
-            action: 'SEND',
-            message: `Sent notification to user: ${dto.user_id}`,
-            userId: senderId,
-            metaData: { notificationId: notification.id, targetUserId: dto.user_id },
-        });
-
-        return notification;
+    // Check cache (sử dụng cùng cache key pattern như getMyNotifications)
+    const cacheKey = this.redisService.getUserNotificationListCacheKey(
+      targetUserId,
+      query as Record<string, unknown>,
+    );
+    const cached =
+      await this.redisService.getUserNotificationListCache<
+        IPaginatedResponse<IUserNotification>
+      >(cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    // Đánh dấu đã đọc
-    async markAsRead(
-        notificationId: string,
-        userId: string,
-        lang: string,
-    ): Promise<IUserNotification> {
-        const notification = await this.repository.findById(notificationId);
-        if (!notification) {
-            throw new NotFoundException(
-                this.i18n.t('user-notification.errors.not_found', { lang }),
-            );
-        }
+    const result = await this.repository.findByUserId(targetUserId, query);
 
-        // Kiểm tra quyền sở hữu
-        if (notification.user_id !== userId) {
-            throw new ForbiddenException(
-                this.i18n.t('user-notification.errors.not_owner', { lang }),
-            );
-        }
+    // Set cache
+    await this.redisService.setUserNotificationListCache(cacheKey, result);
 
-        const updated = await this.repository.markAsRead(notificationId);
+    return result;
+  }
 
-        // Invalidate cache
-        await this.redisService.invalidateUserNotificationListCache(userId);
-
-        // Emit realtime event
-        this.websocketGateway.emitUserNotificationRead(userId, notificationId);
-
-        return updated;
+  // Gửi thông báo cho user
+  async sendNotification(
+    dto: SendUserNotificationDto,
+    senderId: string,
+    lang: string,
+  ): Promise<IUserNotification> {
+    // Kiểm tra user tồn tại
+    const userExists = await this.repository.userExists(dto.user_id);
+    if (!userExists) {
+      throw new NotFoundException(
+        this.i18n.t('user-notification.errors.user_not_found', { lang }),
+      );
     }
 
-    // Đánh dấu tất cả đã đọc
-    async markAllAsRead(userId: string): Promise<{ count: number }> {
-        const result = await this.repository.markAllAsRead(userId);
+    const notification = await this.repository.create({
+      title: dto.title,
+      content: dto.content,
+      type: dto.type || 'INFO',
+      user: { connect: { id: dto.user_id } },
+    });
 
-        // Invalidate cache
-        await this.redisService.invalidateUserNotificationListCache(userId);
+    // Invalidate cache
+    await this.redisService.invalidateUserNotificationListCache(dto.user_id);
 
-        // Emit realtime event
-        this.websocketGateway.emitUserNotificationAllRead(userId);
+    // Emit realtime event đến user nhận
+    this.websocketGateway.emitUserNotificationReceived(
+      dto.user_id,
+      notification,
+    );
 
-        return result;
+    // Log
+    await this.systemLogService.log({
+      level: 'INFO',
+      module: 'UserNotification',
+      action: 'SEND',
+      message: `Sent notification to user: ${dto.user_id}`,
+      userId: senderId,
+      metaData: { notificationId: notification.id, targetUserId: dto.user_id },
+    });
+
+    return notification;
+  }
+
+  // Đánh dấu đã đọc
+  async markAsRead(
+    notificationId: string,
+    userId: string,
+    lang: string,
+  ): Promise<IUserNotification> {
+    const notification = await this.repository.findById(notificationId);
+    if (!notification) {
+      throw new NotFoundException(
+        this.i18n.t('user-notification.errors.not_found', { lang }),
+      );
     }
 
-    // Đếm số thông báo chưa đọc
-    async countUnread(userId: string): Promise<number> {
-        return this.repository.countUnread(userId);
+    // Kiểm tra quyền sở hữu
+    if (notification.user_id !== userId) {
+      throw new ForbiddenException(
+        this.i18n.t('user-notification.errors.not_owner', { lang }),
+      );
     }
 
-    // Gửi thông báo cho nhiều users
-    async sendBulkNotification(
-        dto: { user_ids: string[]; title: string; content: string; type?: string },
-        senderId: string,
-        lang: string,
-    ): Promise<{ count: number }> {
-        // Kiểm tra users tồn tại
-        const existingUserIds = await this.repository.getExistingUserIds(dto.user_ids);
-        const notFoundCount = dto.user_ids.length - existingUserIds.length;
+    const updated = await this.repository.markAsRead(notificationId);
 
-        if (notFoundCount > 0) {
-            throw new NotFoundException(
-                this.i18n.t('user-notification.errors.some_users_not_found', {
-                    lang,
-                    args: { count: notFoundCount }
-                }),
-            );
-        }
+    // Invalidate cache
+    await this.redisService.invalidateUserNotificationListCache(userId);
 
-        // Tạo notifications
-        const createDataList = dto.user_ids.map((userId) => ({
-            title: dto.title,
-            content: dto.content,
-            type: (dto.type as 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR') || 'INFO',
-            user: { connect: { id: userId } },
-        }));
+    // Emit realtime event
+    this.websocketGateway.emitUserNotificationRead(userId, notificationId);
 
-        const notifications = await this.repository.createMany(createDataList);
+    return updated;
+  }
 
-        // Invalidate cache cho tất cả users
-        await Promise.all(
-            dto.user_ids.map((userId) =>
-                this.redisService.invalidateUserNotificationListCache(userId),
-            ),
-        );
+  // Đánh dấu tất cả đã đọc
+  async markAllAsRead(userId: string): Promise<{ count: number }> {
+    const result = await this.repository.markAllAsRead(userId);
 
-        // Emit realtime events
-        notifications.forEach((notification) => {
-            this.websocketGateway.emitUserNotificationReceived(
-                notification.user_id,
-                notification,
-            );
-        });
+    // Invalidate cache
+    await this.redisService.invalidateUserNotificationListCache(userId);
 
-        // Log
-        await this.systemLogService.log({
-            level: 'INFO',
-            module: 'UserNotification',
-            action: 'SEND_BULK',
-            message: `Sent bulk notification to ${dto.user_ids.length} users`,
-            userId: senderId,
-            metaData: { userCount: dto.user_ids.length },
-        });
+    // Emit realtime event
+    this.websocketGateway.emitUserNotificationAllRead(userId);
 
-        return { count: notifications.length };
+    return result;
+  }
+
+  // Đếm số thông báo chưa đọc
+  async countUnread(userId: string): Promise<number> {
+    return this.repository.countUnread(userId);
+  }
+
+  // Gửi thông báo cho nhiều users
+  async sendBulkNotification(
+    dto: { user_ids: string[]; title: string; content: string; type?: string },
+    senderId: string,
+    lang: string,
+  ): Promise<{ count: number }> {
+    // Kiểm tra users tồn tại
+    const existingUserIds = await this.repository.getExistingUserIds(
+      dto.user_ids,
+    );
+    const notFoundCount = dto.user_ids.length - existingUserIds.length;
+
+    if (notFoundCount > 0) {
+      throw new NotFoundException(
+        this.i18n.t('user-notification.errors.some_users_not_found', {
+          lang,
+          args: { count: notFoundCount },
+        }),
+      );
     }
+
+    // Tạo notifications
+    const createDataList = dto.user_ids.map((userId) => ({
+      title: dto.title,
+      content: dto.content,
+      type: (dto.type as 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR') || 'INFO',
+      user: { connect: { id: userId } },
+    }));
+
+    const notifications = await this.repository.createMany(createDataList);
+
+    // Invalidate cache cho tất cả users
+    await Promise.all(
+      dto.user_ids.map((userId) =>
+        this.redisService.invalidateUserNotificationListCache(userId),
+      ),
+    );
+
+    // Emit realtime events
+    notifications.forEach((notification) => {
+      this.websocketGateway.emitUserNotificationReceived(
+        notification.user_id,
+        notification,
+      );
+    });
+
+    // Log
+    await this.systemLogService.log({
+      level: 'INFO',
+      module: 'UserNotification',
+      action: 'SEND_BULK',
+      message: `Sent bulk notification to ${dto.user_ids.length} users`,
+      userId: senderId,
+      metaData: { userCount: dto.user_ids.length },
+    });
+
+    return { count: notifications.length };
+  }
 }

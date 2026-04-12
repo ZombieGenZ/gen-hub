@@ -12,8 +12,8 @@ import { OrganizationModule } from '../organization/organization.module';
  * - Lên lịch deactivate cho các API key chưa hết hạn
  */
 @Module({
-    imports: [ScheduleModule.forRoot(), OrganizationModule],
-    providers: [ApiKeySchedulerService],
-    exports: [ApiKeySchedulerService],
+  imports: [ScheduleModule.forRoot(), OrganizationModule],
+  providers: [ApiKeySchedulerService],
+  exports: [ApiKeySchedulerService],
 })
-export class ApiKeySchedulerModule { }
+export class ApiKeySchedulerModule {}

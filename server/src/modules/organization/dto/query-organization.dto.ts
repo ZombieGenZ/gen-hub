@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type, Transform } from 'class-transformer';
 
@@ -7,58 +13,67 @@ import { Type, Transform } from 'class-transformer';
  * DTO query danh sách Organization với phân trang và lọc
  */
 export class QueryOrganizationDto {
-    @ApiPropertyOptional({ description: 'Số lượng record', example: 10 })
-    @IsOptional()
-    @IsNumber({}, {
-        message: i18nValidationMessage('organization.validation.limit_positive'),
-    })
-    @Min(1, {
-        message: i18nValidationMessage('organization.validation.limit_positive'),
-    })
-    @Type(() => Number)
-    limit?: number;
+  @ApiPropertyOptional({ description: 'Số lượng record', example: 10 })
+  @IsOptional()
+  @IsNumber(
+    {},
+    {
+      message: i18nValidationMessage('organization.validation.limit_positive'),
+    },
+  )
+  @Min(1, {
+    message: i18nValidationMessage('organization.validation.limit_positive'),
+  })
+  @Type(() => Number)
+  limit?: number;
 
-    @ApiPropertyOptional({ description: 'Vị trí bắt đầu', example: 0 })
-    @IsOptional()
-    @IsNumber({}, {
-        message: i18nValidationMessage('organization.validation.offset_min'),
-    })
-    @Min(0, {
-        message: i18nValidationMessage('organization.validation.offset_min'),
-    })
-    @Type(() => Number)
-    offset?: number;
+  @ApiPropertyOptional({ description: 'Vị trí bắt đầu', example: 0 })
+  @IsOptional()
+  @IsNumber(
+    {},
+    {
+      message: i18nValidationMessage('organization.validation.offset_min'),
+    },
+  )
+  @Min(0, {
+    message: i18nValidationMessage('organization.validation.offset_min'),
+  })
+  @Type(() => Number)
+  offset?: number;
 
-    @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm', example: 'công ty' })
-    @IsOptional()
-    @IsString({
-        message: i18nValidationMessage('organization.validation.keywords_string'),
-    })
-    keywords?: string;
+  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm', example: 'công ty' })
+  @IsOptional()
+  @IsString({
+    message: i18nValidationMessage('organization.validation.keywords_string'),
+  })
+  keywords?: string;
 
-    @ApiPropertyOptional({ description: 'Lọc theo trạng thái hoạt động', example: true })
-    @IsOptional()
-    @Transform(({ value }) => {
-        if (value === 'true') return true;
-        if (value === 'false') return false;
-        return value;
-    })
-    @IsBoolean({
-        message: i18nValidationMessage('organization.validation.is_active_boolean'),
-    })
-    is_active?: boolean;
+  @ApiPropertyOptional({
+    description: 'Lọc theo trạng thái hoạt động',
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean({
+    message: i18nValidationMessage('organization.validation.is_active_boolean'),
+  })
+  is_active?: boolean;
 
-    @ApiPropertyOptional({
-        description: 'Chỉ lấy tổ chức mà user là owner hoặc member (bỏ qua quyền list.all)',
-        example: true,
-    })
-    @IsOptional()
-    @Transform(({ value }) => {
-        if (value === 'true') return true;
-        if (value === 'false') return false;
-        return value;
-    })
-    @IsBoolean()
-    member_only?: boolean;
+  @ApiPropertyOptional({
+    description:
+      'Chỉ lấy tổ chức mà user là owner hoặc member (bỏ qua quyền list.all)',
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  member_only?: boolean;
 }
-

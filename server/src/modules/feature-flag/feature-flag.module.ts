@@ -5,15 +5,14 @@ import { FeatureFlagController } from './feature-flag.controller';
 import { FeatureFlagGuard } from './feature-flag.guard';
 
 @Module({
-    controllers: [FeatureFlagController],
-    providers: [
-        FeatureFlagService,
-        {
-            provide: APP_GUARD,
-            useClass: FeatureFlagGuard,
-        },
-    ],
-    exports: [FeatureFlagService],
+  controllers: [FeatureFlagController],
+  providers: [
+    FeatureFlagService,
+    {
+      provide: APP_GUARD,
+      useClass: FeatureFlagGuard,
+    },
+  ],
+  exports: [FeatureFlagService],
 })
-export class FeatureFlagModule { }
-
+export class FeatureFlagModule {}

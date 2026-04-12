@@ -10,7 +10,10 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 
 import { ApiValidationErrorResponse, Public } from '../../common/decorators';
-import { CreatedResponse, GetResponse } from '../../common/responses/success.response';
+import {
+  CreatedResponse,
+  GetResponse,
+} from '../../common/responses/success.response';
 import { AiPluginService } from './ai-plugin.service';
 import {
   CheckAvailabilityDto,
@@ -58,7 +61,8 @@ export class AiPluginController {
     name: 'province_code',
     required: false,
     type: String,
-    description: 'Mã tỉnh hoặc thành phố nếu nền tảng AI đã xác định được từ ngữ cảnh.',
+    description:
+      'Mã tỉnh hoặc thành phố nếu nền tảng AI đã xác định được từ ngữ cảnh.',
     example: '79',
   })
   @ApiQuery({
@@ -107,7 +111,8 @@ export class AiPluginController {
     name: 'warehouse_id',
     required: false,
     type: String,
-    description: 'ID kho cụ thể nếu AI chỉ cần lấy thông tin của một kho duy nhất.',
+    description:
+      'ID kho cụ thể nếu AI chỉ cần lấy thông tin của một kho duy nhất.',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiQuery({
@@ -182,7 +187,10 @@ export class AiPluginController {
     },
   })
   @ApiValidationErrorResponse()
-  async checkAvailability(@Query() dto: CheckAvailabilityDto, @I18nLang() lang: string) {
+  async checkAvailability(
+    @Query() dto: CheckAvailabilityDto,
+    @I18nLang() lang: string,
+  ) {
     const data = await this.service.checkAvailability(dto, lang);
     return new GetResponse('ai-plugin.availability_checked', data);
   }
@@ -254,7 +262,8 @@ export class AiPluginController {
   })
   @ApiBody({
     type: CreateAiConsultationRequestDto,
-    description: 'Thông tin khách hàng và nhu cầu tư vấn được AI thu thập từ cuộc hội thoại.',
+    description:
+      'Thông tin khách hàng và nhu cầu tư vấn được AI thu thập từ cuộc hội thoại.',
     examples: {
       default: {
         summary: 'Yêu cầu tư vấn thuê kho',
@@ -263,7 +272,8 @@ export class AiPluginController {
           email: 'nguyenvanan@example.com',
           phone: '0909123456',
           subject: 'Tư vấn thuê kho tại Bình Dương',
-          message: 'Cần tìm kho khoảng 500 m2, ưu tiên gần khu công nghiệp VSIP.',
+          message:
+            'Cần tìm kho khoảng 500 m2, ưu tiên gần khu công nghiệp VSIP.',
           warehouse_id: '550e8400-e29b-41d4-a716-446655440000',
           company: 'ABC Logistics',
           position: 'Trưởng phòng vận hành',
@@ -316,7 +326,8 @@ export class AiPluginController {
           visit_time_start: '09:00',
           visit_time_end: '10:30',
           purpose: 'RENTAL_INQUIRY',
-          purpose_details: 'Muốn kiểm tra khu vực kho lạnh và quy trình xuất nhập hàng.',
+          purpose_details:
+            'Muốn kiểm tra khu vực kho lạnh và quy trình xuất nhập hàng.',
           number_of_visitors: 2,
         },
       },

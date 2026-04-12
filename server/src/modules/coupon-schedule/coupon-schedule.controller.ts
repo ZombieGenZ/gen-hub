@@ -29,7 +29,11 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import {
+  RequirePermission,
+  RequireAnyPermission,
+  CurrentUser,
+} from '../../common/decorators';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -49,7 +53,7 @@ export class CouponScheduleController {
   constructor(
     private readonly couponScheduleService: CouponScheduleService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không

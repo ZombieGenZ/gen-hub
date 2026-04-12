@@ -4,4 +4,4 @@ import { CreateCategoryDto } from './create-category.dto';
 /**
  * DTO cập nhật Category
  */
-export class UpdateCategoryDto extends PartialType(CreateCategoryDto) { }
+export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {}

@@ -4,10 +4,7 @@ import { RefundRequestModule } from '../refund-request/refund-request.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [
-        RefundRequestModule,
-        ApiKeyVerificationModule,
-    ],
-    controllers: [OrgRefundRequestController],
+  imports: [RefundRequestModule, ApiKeyVerificationModule],
+  controllers: [OrgRefundRequestController],
 })
-export class OrgRefundRequestModule { }
+export class OrgRefundRequestModule {}

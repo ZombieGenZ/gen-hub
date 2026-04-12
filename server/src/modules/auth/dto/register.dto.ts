@@ -96,4 +96,3 @@ export class RegisterDto {
   @Length(6, 6, { message: 'OTP phải là 6 chữ số' })
   otp?: string;
 }
-

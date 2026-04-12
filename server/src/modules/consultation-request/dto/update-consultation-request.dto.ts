@@ -5,7 +5,9 @@ import { i18nValidationMessage } from 'nestjs-i18n';
 
 import { CreateConsultationRequestDto } from './create-consultation-request.dto';
 
-export class UpdateConsultationRequestDto extends PartialType(CreateConsultationRequestDto) {
+export class UpdateConsultationRequestDto extends PartialType(
+  CreateConsultationRequestDto,
+) {
   @ApiPropertyOptional({
     description: 'Trạng thái mới của yêu cầu tư vấn.',
     enum: ConsultationRequestStatus,
@@ -13,7 +15,9 @@ export class UpdateConsultationRequestDto extends PartialType(CreateConsultation
   })
   @IsOptional()
   @IsEnum(ConsultationRequestStatus, {
-    message: i18nValidationMessage('consultation-request.validation.status_enum'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.status_enum',
+    ),
   })
   status?: ConsultationRequestStatus;
 
@@ -23,7 +27,9 @@ export class UpdateConsultationRequestDto extends PartialType(CreateConsultation
   })
   @IsOptional()
   @IsUUID('4', {
-    message: i18nValidationMessage('consultation-request.validation.assigned_to_uuid'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.assigned_to_uuid',
+    ),
   })
   assigned_to?: string;
 
@@ -33,7 +39,9 @@ export class UpdateConsultationRequestDto extends PartialType(CreateConsultation
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.staff_notes_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.staff_notes_string',
+    ),
   })
   staff_notes?: string;
 }

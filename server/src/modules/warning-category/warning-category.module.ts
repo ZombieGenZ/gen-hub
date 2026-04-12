@@ -8,14 +8,14 @@ import { SystemLogModule } from '../system-log/system-log.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 
 @Module({
-    imports: [
-        PrismaModule,
-        RedisModule,
-        SystemLogModule,
-        forwardRef(() => WebsocketModule),
-    ],
-    controllers: [WarningCategoryController],
-    providers: [WarningCategoryService, WarningCategoryRepository],
-    exports: [WarningCategoryService, WarningCategoryRepository],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    SystemLogModule,
+    forwardRef(() => WebsocketModule),
+  ],
+  controllers: [WarningCategoryController],
+  providers: [WarningCategoryService, WarningCategoryRepository],
+  exports: [WarningCategoryService, WarningCategoryRepository],
 })
-export class WarningCategoryModule { }
+export class WarningCategoryModule {}

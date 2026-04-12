@@ -16,33 +16,33 @@ import { DocusignService } from './docusign.service';
 import { DocusignWebhookController } from './docusign-webhook.controller';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        SystemLogModule,
-        forwardRef(() => PaymentModule),
-        forwardRef(() => WarehouseTemplateModule),
-        BullModule.registerQueue({
-            name: 'rental-contract',
-        }),
-        ScheduleModule.forRoot(),
-    ],
-    controllers: [DocusignWebhookController],
-    providers: [
-        RentalContractRepository,
-        SignatureService,
-        SignatureCleanupScheduler,
-        RentalContractProcessor,
-        PdfService,
-        DocusignService,
-    ],
-    exports: [
-        RentalContractRepository,
-        SignatureService,
-        RentalContractProcessor,
-        PdfService,
-        DocusignService,
-        BullModule,
-    ],
+  imports: [
+    SharedModule,
+    RedisModule,
+    SystemLogModule,
+    forwardRef(() => PaymentModule),
+    forwardRef(() => WarehouseTemplateModule),
+    BullModule.registerQueue({
+      name: 'rental-contract',
+    }),
+    ScheduleModule.forRoot(),
+  ],
+  controllers: [DocusignWebhookController],
+  providers: [
+    RentalContractRepository,
+    SignatureService,
+    SignatureCleanupScheduler,
+    RentalContractProcessor,
+    PdfService,
+    DocusignService,
+  ],
+  exports: [
+    RentalContractRepository,
+    SignatureService,
+    RentalContractProcessor,
+    PdfService,
+    DocusignService,
+    BullModule,
+  ],
 })
-export class RentalContractSharedModule { }
+export class RentalContractSharedModule {}

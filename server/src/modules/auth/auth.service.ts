@@ -48,7 +48,9 @@ import { IDeviceInfo } from '../../common/interfaces';
 export class AuthService {
   /** Argon2id configuration */
   private get ARGON2_MEMORY_COST(): number {
-    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+    return (
+      Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536
+    );
   }
   private get ARGON2_TIME_COST(): number {
     return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
@@ -88,7 +90,7 @@ export class AuthService {
     private readonly bruteForceService: BruteForceService,
     private readonly prismaService: PrismaService,
     private readonly authCacheKeys: AuthCacheKeysHelper,
-  ) { }
+  ) {}
 
   /**
    * Prefix key Redis cho OTP đăng ký
@@ -101,9 +103,17 @@ export class AuthService {
    * Gửi OTP xác minh email trước khi đăng ký tài khoản.
    * Lưu OTP + thông tin form vào Redis (TTL 5 phút).
    */
-  async sendRegistrationOtp(dto: RegisterDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+  async sendRegistrationOtp(
+    dto: RegisterDto,
+    deviceInfo?: IDeviceInfo,
+    lang = 'vi',
+  ) {
     // Verify captcha
-    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+    await this.turnstileService.verifyToken(
+      dto.turnstileToken,
+      deviceInfo?.ip,
+      lang,
+    );
 
     // Verify email with Hunter.io
     await this.hunterService.verifyEmail(dto.email, lang);
@@ -119,16 +129,28 @@ export class AuthService {
     // Tạo OTP 6 số
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const key = this.registrationOtpKey(dto.email);
-    const payload = JSON.stringify({ otp, name: dto.name, password: dto.password, language: dto.language });
+    const payload = JSON.stringify({
+      otp,
+      name: dto.name,
+      password: dto.password,
+      language: dto.language,
+    });
 
     // Lưu vào Redis với TTL 5 phút
     await this.redisService.set(key, payload, 300);
 
-    this.emailService.sendRegistrationOtpEmail(dto.email, otp, dto.name, lang).catch((err) => {
-      this.systemLogService.error('auth', 'send_otp_failed', `Failed to send registration OTP: ${dto.email}`, {
-        metaData: { email: dto.email, error: err.message },
+    this.emailService
+      .sendRegistrationOtpEmail(dto.email, otp, dto.name, lang)
+      .catch((err) => {
+        this.systemLogService.error(
+          'auth',
+          'send_otp_failed',
+          `Failed to send registration OTP: ${dto.email}`,
+          {
+            metaData: { email: dto.email, error: err.message },
+          },
+        );
       });
-    });
 
     return { message: await this.i18n.t('auth.register.otp_sent', { lang }) };
   }
@@ -152,7 +174,12 @@ export class AuthService {
       );
     }
 
-    let parsed: { otp: string; name: string; password: string; language?: string };
+    let parsed: {
+      otp: string;
+      name: string;
+      password: string;
+      language?: string;
+    };
     try {
       parsed = JSON.parse(cached);
     } catch {
@@ -196,14 +223,16 @@ export class AuthService {
       email_confirmed: true,
     });
 
-    this.emailService.sendWelcomeEmail(dto.email, parsed.name, lang).catch((error) => {
-      this.systemLogService.error(
-        'auth',
-        'send_email_failed',
-        `Failed to send welcome email: ${dto.email}`,
-        { metaData: { email: dto.email, error: error.message } },
-      );
-    });
+    this.emailService
+      .sendWelcomeEmail(dto.email, parsed.name, lang)
+      .catch((error) => {
+        this.systemLogService.error(
+          'auth',
+          'send_email_failed',
+          `Failed to send welcome email: ${dto.email}`,
+          { metaData: { email: dto.email, error: error.message } },
+        );
+      });
 
     const tokens = await this.generateTokens(user.id, deviceInfo, true);
 
@@ -231,13 +260,20 @@ export class AuthService {
    */
   async login(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
     // Verify captcha token
-    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+    await this.turnstileService.verifyToken(
+      dto.turnstileToken,
+      deviceInfo?.ip,
+      lang,
+    );
 
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user || !user.password) {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       this.systemLogService.warn(
         'auth',
         'login_failed',
@@ -258,7 +294,10 @@ export class AuthService {
       isPasswordValid = await argon2.verify(user.password, dto.password);
     } catch {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       // Password hash is invalid format
       this.systemLogService.warn(
         'auth',
@@ -277,7 +316,10 @@ export class AuthService {
     }
     if (!isPasswordValid) {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       this.systemLogService.warn(
         'auth',
         'login_failed',
@@ -321,7 +363,10 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, deviceInfo);
 
     // Reset brute force counter khi đăng nhập thành công
-    await this.bruteForceService.onSuccessfulLogin(dto.email, deviceInfo?.ip || 'unknown');
+    await this.bruteForceService.onSuccessfulLogin(
+      dto.email,
+      deviceInfo?.ip || 'unknown',
+    );
 
     if (user.email) {
       this.emailService
@@ -366,7 +411,11 @@ export class AuthService {
   /**
    * Đăng nhập cho Database Panel - yêu cầu quyền database.admin
    */
-  async loginDatabasePanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+  async loginDatabasePanel(
+    dto: LoginDto,
+    deviceInfo?: IDeviceInfo,
+    lang = 'vi',
+  ) {
     const result = await this.loginWithPermissionCheck(
       dto,
       deviceInfo,
@@ -381,7 +430,11 @@ export class AuthService {
   /**
    * Đăng nhập cho Feature Flag Panel - yêu cầu quyền featureflag.admin
    */
-  async loginFeatureFlagPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+  async loginFeatureFlagPanel(
+    dto: LoginDto,
+    deviceInfo?: IDeviceInfo,
+    lang = 'vi',
+  ) {
     const result = await this.loginWithPermissionCheck(
       dto,
       deviceInfo,
@@ -396,7 +449,11 @@ export class AuthService {
   /**
    * Đăng nhập cho Resources Panel - yêu cầu quyền resources.admin
    */
-  async loginResourcesPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+  async loginResourcesPanel(
+    dto: LoginDto,
+    deviceInfo?: IDeviceInfo,
+    lang = 'vi',
+  ) {
     const result = await this.loginWithPermissionCheck(
       dto,
       deviceInfo,
@@ -415,7 +472,15 @@ export class AuthService {
     const result = await this.loginWithAnyPermissionCheck(
       dto,
       deviceInfo,
-      ['database.admin', 'featureflag.admin', 'resources.admin', 'systemlogs.admin', 'backup.admin', 'backup.list', 'backup.trigger'],
+      [
+        'database.admin',
+        'featureflag.admin',
+        'resources.admin',
+        'systemlogs.admin',
+        'backup.admin',
+        'backup.list',
+        'backup.trigger',
+      ],
       'auth.panel_login.admin_permission_denied',
       'auth.panel_login.admin_success',
       lang,
@@ -435,13 +500,20 @@ export class AuthService {
     lang: string,
   ) {
     // Verify captcha token - panel logins also require captcha
-    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+    await this.turnstileService.verifyToken(
+      dto.turnstileToken,
+      deviceInfo?.ip,
+      lang,
+    );
 
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user || !user.password) {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       this.systemLogService.warn(
         'auth',
         'panel_login_failed',
@@ -462,14 +534,20 @@ export class AuthService {
       isPasswordValid = await argon2.verify(user.password, dto.password);
     } catch {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       throw new UnauthorizedException(
         await this.i18n.t('auth.login.invalid_credentials', { lang }),
       );
     }
     if (!isPasswordValid) {
       // Ghi nhận lần đăng nhập thất bại
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       throw new UnauthorizedException(
         await this.i18n.t('auth.login.invalid_credentials', { lang }),
       );
@@ -491,7 +569,10 @@ export class AuthService {
     }
 
     // Kiểm tra permission TRƯỚC khi tạo token
-    const hasPermission = await this.checkUserPermission(user.id, requiredPermission);
+    const hasPermission = await this.checkUserPermission(
+      user.id,
+      requiredPermission,
+    );
     if (!hasPermission) {
       this.systemLogService.warn(
         'auth',
@@ -521,7 +602,10 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, deviceInfo);
 
     // Reset brute force counter khi đăng nhập thành công
-    await this.bruteForceService.onSuccessfulLogin(dto.email, deviceInfo?.ip || 'unknown');
+    await this.bruteForceService.onSuccessfulLogin(
+      dto.email,
+      deviceInfo?.ip || 'unknown',
+    );
 
     if (user.email) {
       this.emailService
@@ -566,9 +650,13 @@ export class AuthService {
   /**
    * Kiểm tra user có permission cụ thể không
    */
-  private async checkUserPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async checkUserPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     // Check direct permissions
-    const directPermission = await this.redisService.getUserPermissionsCache(userId);
+    const directPermission =
+      await this.redisService.getUserPermissionsCache(userId);
     if (directPermission !== null && directPermission.includes(permissionKey)) {
       return true;
     }
@@ -636,12 +724,19 @@ export class AuthService {
     lang: string,
   ) {
     // Verify captcha token
-    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+    await this.turnstileService.verifyToken(
+      dto.turnstileToken,
+      deviceInfo?.ip,
+      lang,
+    );
 
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user || !user.password) {
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       this.systemLogService.warn(
         'auth',
         'panel_login_failed',
@@ -661,13 +756,19 @@ export class AuthService {
     try {
       isPasswordValid = await argon2.verify(user.password, dto.password);
     } catch {
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       throw new UnauthorizedException(
         await this.i18n.t('auth.login.invalid_credentials', { lang }),
       );
     }
     if (!isPasswordValid) {
-      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      await this.bruteForceService.recordFailedAttempt(
+        dto.email,
+        deviceInfo?.ip || 'unknown',
+      );
       throw new UnauthorizedException(
         await this.i18n.t('auth.login.invalid_credentials', { lang }),
       );
@@ -725,7 +826,10 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, deviceInfo);
 
-    await this.bruteForceService.onSuccessfulLogin(dto.email, deviceInfo?.ip || 'unknown');
+    await this.bruteForceService.onSuccessfulLogin(
+      dto.email,
+      deviceInfo?.ip || 'unknown',
+    );
 
     if (user.email) {
       this.emailService
@@ -767,7 +871,6 @@ export class AuthService {
     };
   }
 
-
   /**
    * Xác thực email
    */
@@ -784,7 +887,9 @@ export class AuthService {
     // Invalidate user cache để đảm bảo dữ liệu mới được cập nhật
     await this.redisService.invalidateUserCache(user.id);
 
-    const message = await this.i18n.t('auth.verification.email_verified', { lang });
+    const message = await this.i18n.t('auth.verification.email_verified', {
+      lang,
+    });
 
     // Emit socket event
     this.websocketGateway.emitEmailVerified(user.id, user.email || '', message);
@@ -930,7 +1035,11 @@ export class AuthService {
    */
   async forgotPassword(dto: ForgotPasswordDto, lang = 'vi') {
     // Verify captcha token
-    await this.turnstileService.verifyToken(dto.turnstileToken, undefined, lang);
+    await this.turnstileService.verifyToken(
+      dto.turnstileToken,
+      undefined,
+      lang,
+    );
 
     const user = await this.userRepository.findByEmail(dto.email);
 
@@ -1004,14 +1113,11 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await argon2.hash(
-      dto.new_password,
-      {
-        memoryCost: this.ARGON2_MEMORY_COST,
-        timeCost: this.ARGON2_TIME_COST,
-        parallelism: this.ARGON2_PARALLELISM,
-      },
-    );
+    const hashedPassword = await argon2.hash(dto.new_password, {
+      memoryCost: this.ARGON2_MEMORY_COST,
+      timeCost: this.ARGON2_TIME_COST,
+      parallelism: this.ARGON2_PARALLELISM,
+    });
 
     await this.userRepository.resetPassword(user.id, hashedPassword);
 
@@ -1245,7 +1351,9 @@ export class AuthService {
    * @param email - User email
    * @returns User data or null
    */
-  private async getUserByEmailWithCache(email: string): Promise<ICachedAuthUser | null> {
+  private async getUserByEmailWithCache(
+    email: string,
+  ): Promise<ICachedAuthUser | null> {
     const cacheKey = this.authCacheKeys.session(email);
 
     try {
@@ -1319,7 +1427,10 @@ export class AuthService {
    * @param permissionKey - Permission key to check
    * @returns true if user has permission
    */
-  private async checkUserPermissionWithCache(userId: string, permissionKey: string): Promise<boolean> {
+  private async checkUserPermissionWithCache(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     const cacheKey = this.authCacheKeys.permissionCheck(userId, permissionKey);
 
     try {
@@ -1337,7 +1448,10 @@ export class AuthService {
       }
 
       // 2. Cache miss - check permission
-      const hasPermission = await this.checkUserPermission(userId, permissionKey);
+      const hasPermission = await this.checkUserPermission(
+        userId,
+        permissionKey,
+      );
 
       // 3. Store result in cache with TTL from ConfigService
       const ttl = this.authCacheKeys.permissionTtl;
@@ -1375,7 +1489,9 @@ export class AuthService {
     try {
       await Promise.all([
         // Invalidate session cache if email provided
-        email ? this.redisService.del(this.authCacheKeys.session(email)) : Promise.resolve(0),
+        email
+          ? this.redisService.del(this.authCacheKeys.session(email))
+          : Promise.resolve(0),
         // Invalidate permission cache by pattern
         this.redisService.delByPattern(permissionPattern),
         // Invalidate user cache (from redis.service)
@@ -1400,4 +1516,3 @@ export class AuthService {
     }
   }
 }
-

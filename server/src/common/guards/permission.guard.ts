@@ -17,7 +17,7 @@ export class PermissionGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
@@ -31,8 +31,10 @@ export class PermissionGuard implements CanActivate {
     );
 
     // Nếu không có permission nào được yêu cầu, cho phép truy cập
-    if ((!requiredPermissions || requiredPermissions.length === 0) &&
-      (!requiredAnyPermissions || requiredAnyPermissions.length === 0)) {
+    if (
+      (!requiredPermissions || requiredPermissions.length === 0) &&
+      (!requiredAnyPermissions || requiredAnyPermissions.length === 0)
+    ) {
       return true;
     }
 
@@ -72,7 +74,8 @@ export class PermissionGuard implements CanActivate {
     if (!userRecord.is_verified) {
       throw new ForbiddenException({
         code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
-        message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+        message:
+          'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
         success: false,
       });
     }

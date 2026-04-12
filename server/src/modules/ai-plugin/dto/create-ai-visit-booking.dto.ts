@@ -1,7 +1,16 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { WarehouseVisitPurpose } from '@prisma/client';
-import { IsDateString, IsEmail, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreateAiVisitBookingDto {
@@ -9,29 +18,43 @@ export class CreateAiVisitBookingDto {
     description: 'ID của kho mà khách hàng muốn đặt lịch tham quan.',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsUUID('4', { message: i18nValidationMessage('ai-plugin.validation.warehouse_id_uuid') })
+  @IsUUID('4', {
+    message: i18nValidationMessage('ai-plugin.validation.warehouse_id_uuid'),
+  })
   warehouse_id: string;
 
   @ApiPropertyOptional({
-    description: 'ID tổ chức liên quan nếu lịch tham quan được tạo cho một doanh nghiệp cụ thể.',
+    description:
+      'ID tổ chức liên quan nếu lịch tham quan được tạo cho một doanh nghiệp cụ thể.',
     example: '770e8400-e29b-41d4-a716-446655440222',
   })
   @IsOptional()
-  @IsUUID('4', { message: i18nValidationMessage('ai-plugin.validation.organization_id_uuid') })
+  @IsUUID('4', {
+    message: i18nValidationMessage('ai-plugin.validation.organization_id_uuid'),
+  })
   organization_id?: string;
 
   @ApiProperty({
     description: 'Tên người đại diện đi tham quan kho.',
     example: 'Trần Minh Khoa',
   })
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visitor_name_string') })
+  @IsString({
+    message: i18nValidationMessage('ai-plugin.validation.visitor_name_string'),
+  })
   visitor_name: string;
 
   @ApiProperty({
     description: 'Email liên hệ để xác nhận hoặc cập nhật lịch hẹn.',
     example: 'tranminhkhoa@example.com',
   })
-  @IsEmail({}, { message: i18nValidationMessage('ai-plugin.validation.visitor_email_invalid') })
+  @IsEmail(
+    {},
+    {
+      message: i18nValidationMessage(
+        'ai-plugin.validation.visitor_email_invalid',
+      ),
+    },
+  )
   visitor_email: string;
 
   @ApiPropertyOptional({
@@ -39,7 +62,9 @@ export class CreateAiVisitBookingDto {
     example: '0911222333',
   })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visitor_phone_string') })
+  @IsString({
+    message: i18nValidationMessage('ai-plugin.validation.visitor_phone_string'),
+  })
   visitor_phone?: string;
 
   @ApiPropertyOptional({
@@ -47,7 +72,11 @@ export class CreateAiVisitBookingDto {
     example: 'GEN Logistics',
   })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visitor_company_string') })
+  @IsString({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.visitor_company_string',
+    ),
+  })
   visitor_company?: string;
 
   @ApiPropertyOptional({
@@ -55,21 +84,36 @@ export class CreateAiVisitBookingDto {
     example: 'Quản lý thu mua',
   })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visitor_position_string') })
+  @IsString({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.visitor_position_string',
+    ),
+  })
   visitor_position?: string;
 
   @ApiProperty({
     description: 'Ngày dự kiến tham quan kho theo định dạng ISO date.',
     example: '2026-03-20',
   })
-  @IsDateString({}, { message: i18nValidationMessage('ai-plugin.validation.visit_date_date_string') })
+  @IsDateString(
+    {},
+    {
+      message: i18nValidationMessage(
+        'ai-plugin.validation.visit_date_date_string',
+      ),
+    },
+  )
   visit_date: string;
 
   @ApiProperty({
     description: 'Thời gian bắt đầu tham quan kho.',
     example: '09:00',
   })
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visit_time_start_string') })
+  @IsString({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.visit_time_start_string',
+    ),
+  })
   visit_time_start: string;
 
   @ApiPropertyOptional({
@@ -77,7 +121,11 @@ export class CreateAiVisitBookingDto {
     example: '10:30',
   })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.visit_time_end_string') })
+  @IsString({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.visit_time_end_string',
+    ),
+  })
   visit_time_end?: string;
 
   @ApiPropertyOptional({
@@ -96,7 +144,11 @@ export class CreateAiVisitBookingDto {
     example: 'Muốn kiểm tra khu vực kho lạnh và quy trình xuất nhập hàng.',
   })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('ai-plugin.validation.purpose_details_string') })
+  @IsString({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.purpose_details_string',
+    ),
+  })
   purpose_details?: string;
 
   @ApiPropertyOptional({
@@ -106,7 +158,15 @@ export class CreateAiVisitBookingDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: i18nValidationMessage('ai-plugin.validation.number_of_visitors_int') })
-  @Min(1, { message: i18nValidationMessage('ai-plugin.validation.number_of_visitors_min') })
+  @IsInt({
+    message: i18nValidationMessage(
+      'ai-plugin.validation.number_of_visitors_int',
+    ),
+  })
+  @Min(1, {
+    message: i18nValidationMessage(
+      'ai-plugin.validation.number_of_visitors_min',
+    ),
+  })
   number_of_visitors?: number;
 }

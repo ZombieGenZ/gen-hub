@@ -8,10 +8,9 @@ import { WarehouseVisitController } from './warehouse-visit.controller';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
 
 @Module({
-    imports: [PrismaModule, RedisModule, NotificationModule, WebsocketModule],
-    controllers: [WarehouseVisitController],
-    providers: [WarehouseVisitService, WarehouseVisitRepository],
-    exports: [WarehouseVisitService],
+  imports: [PrismaModule, RedisModule, NotificationModule, WebsocketModule],
+  controllers: [WarehouseVisitController],
+  providers: [WarehouseVisitService, WarehouseVisitRepository],
+  exports: [WarehouseVisitService],
 })
-export class WarehouseVisitModule { }
-
+export class WarehouseVisitModule {}

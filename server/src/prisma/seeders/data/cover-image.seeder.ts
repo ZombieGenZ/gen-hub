@@ -76,7 +76,8 @@ export class CoverImageSeeder extends BaseSeeder {
     const created = await this.prisma.coverImage.create({
       data: {
         name: process.env.SEED_DEFAULT_COVER_NAME || 'Default Cover',
-        description: process.env.SEED_DEFAULT_COVER_DESCRIPTION || 'Default cover image',
+        description:
+          process.env.SEED_DEFAULT_COVER_DESCRIPTION || 'Default cover image',
         image_url:
           process.env.SEED_DEFAULT_COVER_IMAGE_URL ||
           'https://picsum.photos/seed/genhub-default-cover/1600/900',
@@ -125,7 +126,8 @@ export class CoverImageSeeder extends BaseSeeder {
       await this.seedDefaultCover();
       await this.seedMultipleCovers();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to seed cover images: ${errorMessage}`);
     }
   }

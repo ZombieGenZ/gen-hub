@@ -20,7 +20,6 @@ export class EmailService {
    * Email translations for different languages
    */
 
-
   constructor(
     private readonly configService: ConfigService,
     private readonly appConfigService: AppConfigService,
@@ -32,7 +31,6 @@ export class EmailService {
   /**
    * Get translations for the specified language
    */
-
 
   private accessToken: string | null = null;
   private tokenExpires: number = 0;
@@ -70,7 +68,11 @@ export class EmailService {
     try {
       // Reuse cached token if valid (buffer 5 minutes)
       const now = Date.now();
-      if (this.transporter && this.accessToken && this.tokenExpires > now + 300000) {
+      if (
+        this.transporter &&
+        this.accessToken &&
+        this.tokenExpires > now + 300000
+      ) {
         return this.transporter;
       }
 
@@ -88,7 +90,9 @@ export class EmailService {
       const expiryDate = res?.data?.expiry_date;
       this.tokenExpires = expiryDate ? expiryDate : now + 3600 * 1000;
 
-      const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+      const primaryEmail = this.configService.get<string>(
+        'EMAIL_PRIMARY_ADDRESS',
+      );
 
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -117,12 +121,16 @@ export class EmailService {
     const transporter = await this.createTransporter();
 
     if (!transporter) {
-      console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
+      console.warn(
+        '[EmailService] Không thể gửi email - transporter chưa được cấu hình',
+      );
       return false;
     }
 
     const sendEmail = this.configService.get<string>('EMAIL_SEND_ADDRESS');
-    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+    const primaryEmail = this.configService.get<string>(
+      'EMAIL_PRIMARY_ADDRESS',
+    );
 
     try {
       const appName = this.appConfigService.get('brandName');
@@ -146,11 +154,17 @@ export class EmailService {
    * @param appName - Tên ứng dụng
    * @param lang - Ngôn ngữ
    */
-  private async createEmailTemplate(content: string, appName: string, lang: string = 'vi'): Promise<string> {
+  private async createEmailTemplate(
+    content: string,
+    appName: string,
+    lang: string = 'vi',
+  ): Promise<string> {
     const systemName = await this.i18n.t('email.template.systemName', { lang });
     const supportText = await this.i18n.t('email.footer.supportText', { lang });
     const copyright = await this.i18n.t('email.footer.copyright', { lang });
-    const autoEmailText = await this.i18n.t('email.footer.autoEmailText', { lang });
+    const autoEmailText = await this.i18n.t('email.footer.autoEmailText', {
+      lang,
+    });
 
     // Get colors and support info from config
     const colors = this.appConfigService.get('colors');
@@ -249,13 +263,30 @@ export class EmailService {
 
     const greeting = await this.i18n.t('email.verification.greeting', { lang });
     const welcome = await this.i18n.t('email.verification.welcome', { lang });
-    const emailLabel = await this.i18n.t('email.verification.emailLabel', { lang });
-    const expirationLabel = await this.i18n.t('email.verification.expirationLabel', { lang });
-    const expirationValue = await this.i18n.t('email.verification.expirationValue', { lang });
-    const buttonText = await this.i18n.t('email.verification.buttonText', { lang });
-    const copyLinkText = await this.i18n.t('email.verification.copyLinkText', { lang });
-    const warningText = await this.i18n.t('email.verification.warningText', { lang });
-    const subjectPrefix = await this.i18n.t('email.verification.subjectPrefix', { lang });
+    const emailLabel = await this.i18n.t('email.verification.emailLabel', {
+      lang,
+    });
+    const expirationLabel = await this.i18n.t(
+      'email.verification.expirationLabel',
+      { lang },
+    );
+    const expirationValue = await this.i18n.t(
+      'email.verification.expirationValue',
+      { lang },
+    );
+    const buttonText = await this.i18n.t('email.verification.buttonText', {
+      lang,
+    });
+    const copyLinkText = await this.i18n.t('email.verification.copyLinkText', {
+      lang,
+    });
+    const warningText = await this.i18n.t('email.verification.warningText', {
+      lang,
+    });
+    const subjectPrefix = await this.i18n.t(
+      'email.verification.subjectPrefix',
+      { lang },
+    );
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -345,16 +376,38 @@ export class EmailService {
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const title = await this.i18n.t('email.forgotPassword.title', { lang });
-    const greeting = await this.i18n.t('email.forgotPassword.greeting', { lang });
+    const greeting = await this.i18n.t('email.forgotPassword.greeting', {
+      lang,
+    });
     const message = await this.i18n.t('email.forgotPassword.message', { lang });
-    const timeLabel = await this.i18n.t('email.forgotPassword.timeLabel', { lang });
-    const timeWarning = await this.i18n.t('email.forgotPassword.timeWarning', { lang });
-    const buttonText = await this.i18n.t('email.forgotPassword.buttonText', { lang });
-    const copyLinkText = await this.i18n.t('email.forgotPassword.copyLinkText', { lang });
-    const securityTitle = await this.i18n.t('email.forgotPassword.securityTitle', { lang });
-    const securityMessage = await this.i18n.t('email.forgotPassword.securityMessage', { lang });
-    const requestTime = await this.i18n.t('email.forgotPassword.requestTime', { lang });
-    const subjectPrefix = await this.i18n.t('email.forgotPassword.subjectPrefix', { lang });
+    const timeLabel = await this.i18n.t('email.forgotPassword.timeLabel', {
+      lang,
+    });
+    const timeWarning = await this.i18n.t('email.forgotPassword.timeWarning', {
+      lang,
+    });
+    const buttonText = await this.i18n.t('email.forgotPassword.buttonText', {
+      lang,
+    });
+    const copyLinkText = await this.i18n.t(
+      'email.forgotPassword.copyLinkText',
+      { lang },
+    );
+    const securityTitle = await this.i18n.t(
+      'email.forgotPassword.securityTitle',
+      { lang },
+    );
+    const securityMessage = await this.i18n.t(
+      'email.forgotPassword.securityMessage',
+      { lang },
+    );
+    const requestTime = await this.i18n.t('email.forgotPassword.requestTime', {
+      lang,
+    });
+    const subjectPrefix = await this.i18n.t(
+      'email.forgotPassword.subjectPrefix',
+      { lang },
+    );
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -440,7 +493,9 @@ export class EmailService {
 
     const greeting = await this.i18n.t('email.welcome.greeting', { lang });
     const message = await this.i18n.t('email.welcome.message', { lang });
-    const accountReady = await this.i18n.t('email.welcome.accountReady', { lang });
+    const accountReady = await this.i18n.t('email.welcome.accountReady', {
+      lang,
+    });
     const getStarted = await this.i18n.t('email.welcome.getStarted', { lang });
     const subject = await this.i18n.t('email.welcome.subject', { lang });
 
@@ -481,13 +536,29 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('email.loginNotification.greeting', { lang });
-    const message = await this.i18n.t('email.loginNotification.message', { lang });
-    const deviceLabel = await this.i18n.t('email.loginNotification.deviceLabel', { lang });
-    const ipLabel = await this.i18n.t('email.loginNotification.ipLabel', { lang });
-    const timeLabel = await this.i18n.t('email.loginNotification.timeLabel', { lang });
-    const warningText = await this.i18n.t('email.loginNotification.warningText', { lang });
-    const subject = await this.i18n.t('email.loginNotification.subject', { lang });
+    const greeting = await this.i18n.t('email.loginNotification.greeting', {
+      lang,
+    });
+    const message = await this.i18n.t('email.loginNotification.message', {
+      lang,
+    });
+    const deviceLabel = await this.i18n.t(
+      'email.loginNotification.deviceLabel',
+      { lang },
+    );
+    const ipLabel = await this.i18n.t('email.loginNotification.ipLabel', {
+      lang,
+    });
+    const timeLabel = await this.i18n.t('email.loginNotification.timeLabel', {
+      lang,
+    });
+    const warningText = await this.i18n.t(
+      'email.loginNotification.warningText',
+      { lang },
+    );
+    const subject = await this.i18n.t('email.loginNotification.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -529,11 +600,21 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('email.passwordChanged.greeting', { lang });
-    const message = await this.i18n.t('email.passwordChanged.message', { lang });
-    const timeLabel = await this.i18n.t('email.passwordChanged.timeLabel', { lang });
-    const warningText = await this.i18n.t('email.passwordChanged.warningText', { lang });
-    const subject = await this.i18n.t('email.passwordChanged.subject', { lang });
+    const greeting = await this.i18n.t('email.passwordChanged.greeting', {
+      lang,
+    });
+    const message = await this.i18n.t('email.passwordChanged.message', {
+      lang,
+    });
+    const timeLabel = await this.i18n.t('email.passwordChanged.timeLabel', {
+      lang,
+    });
+    const warningText = await this.i18n.t('email.passwordChanged.warningText', {
+      lang,
+    });
+    const subject = await this.i18n.t('email.passwordChanged.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -574,9 +655,13 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('email.platformLinked.greeting', { lang });
+    const greeting = await this.i18n.t('email.platformLinked.greeting', {
+      lang,
+    });
     const message = await this.i18n.t('email.platformLinked.message', { lang });
-    const timeLabel = await this.i18n.t('email.platformLinked.timeLabel', { lang });
+    const timeLabel = await this.i18n.t('email.platformLinked.timeLabel', {
+      lang,
+    });
     const subject = await this.i18n.t('email.platformLinked.subject', { lang });
 
     // Get colors from config
@@ -613,11 +698,22 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('email.platformUnlinked.greeting', { lang });
-    const message = await this.i18n.t('email.platformUnlinked.message', { lang });
-    const timeLabel = await this.i18n.t('email.platformUnlinked.timeLabel', { lang });
-    const warningText = await this.i18n.t('email.platformUnlinked.warningText', { lang });
-    const subject = await this.i18n.t('email.platformUnlinked.subject', { lang });
+    const greeting = await this.i18n.t('email.platformUnlinked.greeting', {
+      lang,
+    });
+    const message = await this.i18n.t('email.platformUnlinked.message', {
+      lang,
+    });
+    const timeLabel = await this.i18n.t('email.platformUnlinked.timeLabel', {
+      lang,
+    });
+    const warningText = await this.i18n.t(
+      'email.platformUnlinked.warningText',
+      { lang },
+    );
+    const subject = await this.i18n.t('email.platformUnlinked.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -668,16 +764,43 @@ export class EmailService {
     const acceptUrl = `${frontendUrl}/organizations/accept-invite?token=${token}`;
     const appName = this.appConfigService.get('brandName');
 
-    const greeting = await this.i18n.t('email.organizationInvite.greeting', { lang });
-    const inviteMessage = await this.i18n.t('email.organizationInvite.message', { lang });
-    const invitedBy = await this.i18n.t('email.organizationInvite.invitedBy', { lang });
-    const orgLabel = await this.i18n.t('email.organizationInvite.orgLabel', { lang });
-    const expirationLabel = await this.i18n.t('email.organizationInvite.expirationLabel', { lang });
-    const expirationValue = await this.i18n.t('email.organizationInvite.expirationValue', { lang });
-    const buttonText = await this.i18n.t('email.organizationInvite.buttonText', { lang });
-    const copyLinkText = await this.i18n.t('email.organizationInvite.copyLinkText', { lang });
-    const warningText = await this.i18n.t('email.organizationInvite.warningText', { lang });
-    const subjectPrefix = await this.i18n.t('email.organizationInvite.subjectPrefix', { lang, args: { organizationName } });
+    const greeting = await this.i18n.t('email.organizationInvite.greeting', {
+      lang,
+    });
+    const inviteMessage = await this.i18n.t(
+      'email.organizationInvite.message',
+      { lang },
+    );
+    const invitedBy = await this.i18n.t('email.organizationInvite.invitedBy', {
+      lang,
+    });
+    const orgLabel = await this.i18n.t('email.organizationInvite.orgLabel', {
+      lang,
+    });
+    const expirationLabel = await this.i18n.t(
+      'email.organizationInvite.expirationLabel',
+      { lang },
+    );
+    const expirationValue = await this.i18n.t(
+      'email.organizationInvite.expirationValue',
+      { lang },
+    );
+    const buttonText = await this.i18n.t(
+      'email.organizationInvite.buttonText',
+      { lang },
+    );
+    const copyLinkText = await this.i18n.t(
+      'email.organizationInvite.copyLinkText',
+      { lang },
+    );
+    const warningText = await this.i18n.t(
+      'email.organizationInvite.warningText',
+      { lang },
+    );
+    const subjectPrefix = await this.i18n.t(
+      'email.organizationInvite.subjectPrefix',
+      { lang, args: { organizationName } },
+    );
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -773,15 +896,39 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('email.googleIntegrationError.greeting', { lang });
-    const title = await this.i18n.t('email.googleIntegrationError.title', { lang });
-    const message = await this.i18n.t('email.googleIntegrationError.message', { lang });
-    const orgLabel = await this.i18n.t('email.googleIntegrationError.orgLabel', { lang });
-    const errorLabel = await this.i18n.t('email.googleIntegrationError.errorLabel', { lang });
-    const timeLabel = await this.i18n.t('email.googleIntegrationError.timeLabel', { lang });
-    const actionMessage = await this.i18n.t('email.googleIntegrationError.actionMessage', { lang });
-    const disabledMessage = await this.i18n.t('email.googleIntegrationError.disabledMessage', { lang });
-    const subject = await this.i18n.t('email.googleIntegrationError.subject', { lang });
+    const greeting = await this.i18n.t(
+      'email.googleIntegrationError.greeting',
+      { lang },
+    );
+    const title = await this.i18n.t('email.googleIntegrationError.title', {
+      lang,
+    });
+    const message = await this.i18n.t('email.googleIntegrationError.message', {
+      lang,
+    });
+    const orgLabel = await this.i18n.t(
+      'email.googleIntegrationError.orgLabel',
+      { lang },
+    );
+    const errorLabel = await this.i18n.t(
+      'email.googleIntegrationError.errorLabel',
+      { lang },
+    );
+    const timeLabel = await this.i18n.t(
+      'email.googleIntegrationError.timeLabel',
+      { lang },
+    );
+    const actionMessage = await this.i18n.t(
+      'email.googleIntegrationError.actionMessage',
+      { lang },
+    );
+    const disabledMessage = await this.i18n.t(
+      'email.googleIntegrationError.disabledMessage',
+      { lang },
+    );
+    const subject = await this.i18n.t('email.googleIntegrationError.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -860,18 +1007,36 @@ export class EmailService {
   ): Promise<boolean> {
     const appName = this.appConfigService.get('brandName');
 
-    const subject = await this.i18n.t('email.contractCancelled.subject', { lang });
-    const greeting = await this.i18n.t('email.contractCancelled.greeting', { lang });
-    const message = await this.i18n.t('email.contractCancelled.message', { lang });
-    const deletedByLabel = await this.i18n.t('email.contractCancelled.deletedBy', { lang });
-    const contractListLabel = await this.i18n.t('email.contractCancelled.contractListLabel', { lang });
-    const contactSupport = await this.i18n.t('email.contractCancelled.contactSupport', { lang });
+    const subject = await this.i18n.t('email.contractCancelled.subject', {
+      lang,
+    });
+    const greeting = await this.i18n.t('email.contractCancelled.greeting', {
+      lang,
+    });
+    const message = await this.i18n.t('email.contractCancelled.message', {
+      lang,
+    });
+    const deletedByLabel = await this.i18n.t(
+      'email.contractCancelled.deletedBy',
+      { lang },
+    );
+    const contractListLabel = await this.i18n.t(
+      'email.contractCancelled.contractListLabel',
+      { lang },
+    );
+    const contactSupport = await this.i18n.t(
+      'email.contractCancelled.contactSupport',
+      { lang },
+    );
 
     const colors = this.appConfigService.get('colors');
 
-    const contractListHtml = contractCodes.map(code =>
-      `<li style="margin-bottom: 5px; color: ${colors.gray900}; font-weight: 500;">${code}</li>`
-    ).join('');
+    const contractListHtml = contractCodes
+      .map(
+        (code) =>
+          `<li style="margin-bottom: 5px; color: ${colors.gray900}; font-weight: 500;">${code}</li>`,
+      )
+      .join('');
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.error}; text-align: center;">
@@ -929,16 +1094,39 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
-    const greeting = await this.i18n.t('bruteForce.securityAlert.greeting', { lang });
+    const greeting = await this.i18n.t('bruteForce.securityAlert.greeting', {
+      lang,
+    });
     const title = await this.i18n.t('bruteForce.securityAlert.title', { lang });
-    const message = await this.i18n.t('bruteForce.securityAlert.message', { lang });
-    const lockMessage = await this.i18n.t('bruteForce.securityAlert.lockMessage', { lang });
-    const unlockInstructions = await this.i18n.t('bruteForce.securityAlert.unlockInstructions', { lang });
-    const codeLabel = await this.i18n.t('bruteForce.securityAlert.codeLabel', { lang });
-    const warningText = await this.i18n.t('bruteForce.securityAlert.warningText', { lang });
-    const expirationLabel = await this.i18n.t('bruteForce.securityAlert.expirationLabel', { lang });
-    const expirationValue = await this.i18n.t('bruteForce.securityAlert.expirationValue', { lang });
-    const subject = await this.i18n.t('bruteForce.securityAlert.subject', { lang });
+    const message = await this.i18n.t('bruteForce.securityAlert.message', {
+      lang,
+    });
+    const lockMessage = await this.i18n.t(
+      'bruteForce.securityAlert.lockMessage',
+      { lang },
+    );
+    const unlockInstructions = await this.i18n.t(
+      'bruteForce.securityAlert.unlockInstructions',
+      { lang },
+    );
+    const codeLabel = await this.i18n.t('bruteForce.securityAlert.codeLabel', {
+      lang,
+    });
+    const warningText = await this.i18n.t(
+      'bruteForce.securityAlert.warningText',
+      { lang },
+    );
+    const expirationLabel = await this.i18n.t(
+      'bruteForce.securityAlert.expirationLabel',
+      { lang },
+    );
+    const expirationValue = await this.i18n.t(
+      'bruteForce.securityAlert.expirationValue',
+      { lang },
+    );
+    const subject = await this.i18n.t('bruteForce.securityAlert.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -1044,11 +1232,20 @@ export class EmailService {
   ): Promise<boolean> {
     const appName = this.appConfigService.get('brandName');
 
-    const greeting = await this.i18n.t('bruteForce.unlockSuccess.greeting', { lang });
+    const greeting = await this.i18n.t('bruteForce.unlockSuccess.greeting', {
+      lang,
+    });
     const title = await this.i18n.t('bruteForce.unlockSuccess.title', { lang });
-    const message = await this.i18n.t('bruteForce.unlockSuccess.message', { lang });
-    const securityTip = await this.i18n.t('bruteForce.unlockSuccess.securityTip', { lang });
-    const subject = await this.i18n.t('bruteForce.unlockSuccess.subject', { lang });
+    const message = await this.i18n.t('bruteForce.unlockSuccess.message', {
+      lang,
+    });
+    const securityTip = await this.i18n.t(
+      'bruteForce.unlockSuccess.securityTip',
+      { lang },
+    );
+    const subject = await this.i18n.t('bruteForce.unlockSuccess.subject', {
+      lang,
+    });
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -1126,18 +1323,52 @@ export class EmailService {
       border: '#e5e7eb',
     };
 
-    const yourRequest = await this.i18n.t('contact.email.confirmation.yourRequest', { lang });
-    const nameLabel = await this.i18n.t('contact.email.confirmation.nameLabel', { lang });
-    const emailLabel = await this.i18n.t('contact.email.confirmation.emailLabel', { lang });
-    const phoneLabel = await this.i18n.t('contact.email.confirmation.phoneLabel', { lang });
-    const subjectLabel = await this.i18n.t('contact.email.confirmation.subjectLabel', { lang });
-    const messageLabel = await this.i18n.t('contact.email.confirmation.messageLabel', { lang });
-    const responseNote = await this.i18n.t('contact.email.confirmation.responseNote', { lang });
-    const replyNote = await this.i18n.t('contact.email.confirmation.replyNote', { lang });
-    const ticketCodeLabel = await this.i18n.t('contact.email.confirmation.ticketCode', { lang });
-    const received = await this.i18n.t('contact.email.confirmation.received', { lang });
-    const greeting = await this.i18n.t('contact.email.confirmation.greeting', { lang });
-    const emailSubjectTitle = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const yourRequest = await this.i18n.t(
+      'contact.email.confirmation.yourRequest',
+      { lang },
+    );
+    const nameLabel = await this.i18n.t(
+      'contact.email.confirmation.nameLabel',
+      { lang },
+    );
+    const emailLabel = await this.i18n.t(
+      'contact.email.confirmation.emailLabel',
+      { lang },
+    );
+    const phoneLabel = await this.i18n.t(
+      'contact.email.confirmation.phoneLabel',
+      { lang },
+    );
+    const subjectLabel = await this.i18n.t(
+      'contact.email.confirmation.subjectLabel',
+      { lang },
+    );
+    const messageLabel = await this.i18n.t(
+      'contact.email.confirmation.messageLabel',
+      { lang },
+    );
+    const responseNote = await this.i18n.t(
+      'contact.email.confirmation.responseNote',
+      { lang },
+    );
+    const replyNote = await this.i18n.t(
+      'contact.email.confirmation.replyNote',
+      { lang },
+    );
+    const ticketCodeLabel = await this.i18n.t(
+      'contact.email.confirmation.ticketCode',
+      { lang },
+    );
+    const received = await this.i18n.t('contact.email.confirmation.received', {
+      lang,
+    });
+    const greeting = await this.i18n.t('contact.email.confirmation.greeting', {
+      lang,
+    });
+    const emailSubjectTitle = await this.i18n.t(
+      'contact.email.confirmation.subject',
+      { lang, args: { code: ticketCode } },
+    );
 
     const content = `
       <!-- Lời chào -->
@@ -1164,18 +1395,26 @@ export class EmailService {
             <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${emailLabel}</td>
             <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${to}</td>
           </tr>
-          ${phone ? `
+          ${
+            phone
+              ? `
           <tr>
             <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${phoneLabel}</td>
             <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${phone}</td>
           </tr>
-          ` : ''}
-          ${subject ? `
+          `
+              : ''
+          }
+          ${
+            subject
+              ? `
           <tr>
             <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${subjectLabel}</td>
             <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${subject}</td>
           </tr>
-          ` : ''}
+          `
+              : ''
+          }
         </table>
         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid ${colors.border};">
           <p style="margin: 0 0 5px; font-size: 13px; color: ${colors.gray500};">${messageLabel}:</p>
@@ -1194,12 +1433,18 @@ export class EmailService {
       </div>
     `;
 
-    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
-    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+    const supportEmail = this.configService.get<string>(
+      'EMAIL_SUPPORT_ADDRESS',
+    );
+    const primaryEmail = this.configService.get<string>(
+      'EMAIL_PRIMARY_ADDRESS',
+    );
 
     const transporter = await this.createTransporter();
     if (!transporter) {
-      console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
+      console.warn(
+        '[EmailService] Không thể gửi email - transporter chưa được cấu hình',
+      );
       return null;
     }
 
@@ -1216,7 +1461,10 @@ export class EmailService {
       });
       return info.messageId || null;
     } catch (error) {
-      console.error('[EmailService] Lỗi khi gửi email xác nhận liên hệ:', error);
+      console.error(
+        '[EmailService] Lỗi khi gửi email xác nhận liên hệ:',
+        error,
+      );
       return null;
     }
   }
@@ -1247,13 +1495,25 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const colors = this.appConfigService.get('colors');
 
-    const greeting = await this.i18n.t('contact.email.reply.greeting', { lang });
-    const staffReply = await this.i18n.t('contact.email.reply.staffReply', { lang });
-    const replyNote = await this.i18n.t('contact.email.reply.replyNote', { lang });
-    const ticketCodeLabel = await this.i18n.t('contact.email.reply.ticketCode', { lang });
+    const greeting = await this.i18n.t('contact.email.reply.greeting', {
+      lang,
+    });
+    const staffReply = await this.i18n.t('contact.email.reply.staffReply', {
+      lang,
+    });
+    const replyNote = await this.i18n.t('contact.email.reply.replyNote', {
+      lang,
+    });
+    const ticketCodeLabel = await this.i18n.t(
+      'contact.email.reply.ticketCode',
+      { lang },
+    );
 
     // Lấy subject của email xác nhận để reply đúng vào thread
-    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const confirmationSubject = await this.i18n.t(
+      'contact.email.confirmation.subject',
+      { lang, args: { code: ticketCode } },
+    );
     const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
@@ -1285,12 +1545,18 @@ export class EmailService {
       </div>
     `;
 
-    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
-    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+    const supportEmail = this.configService.get<string>(
+      'EMAIL_SUPPORT_ADDRESS',
+    );
+    const primaryEmail = this.configService.get<string>(
+      'EMAIL_PRIMARY_ADDRESS',
+    );
 
     const transporter = await this.createTransporter();
     if (!transporter) {
-      console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
+      console.warn(
+        '[EmailService] Không thể gửi email - transporter chưa được cấu hình',
+      );
       return null;
     }
 
@@ -1344,16 +1610,31 @@ export class EmailService {
     };
 
     const title = await this.i18n.t('contact.email.closed.title', { lang });
-    const greeting = await this.i18n.t('contact.email.greeting', { lang, args: { name } });
-    const messageTemplate = await this.i18n.t('contact.email.closed.message', { lang, args: { ticketCode } });
+    const greeting = await this.i18n.t('contact.email.greeting', {
+      lang,
+      args: { name },
+    });
+    const messageTemplate = await this.i18n.t('contact.email.closed.message', {
+      lang,
+      args: { ticketCode },
+    });
     const note = await this.i18n.t('contact.email.closed.note', { lang });
-    const subjectPrefix = await this.i18n.t('contact.email.closed.subject_prefix', { lang, args: { code: ticketCode } });
+    const subjectPrefix = await this.i18n.t(
+      'contact.email.closed.subject_prefix',
+      { lang, args: { code: ticketCode } },
+    );
 
     const finalTitle = title || 'Ticket Closed';
     const finalGreeting = greeting || `Hi ${name},`;
-    const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been closed.`;
-    const finalNote = note || 'If you need further assistance, please open a new ticket.';
-    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const finalMessage =
+      messageTemplate ||
+      `Your support ticket <strong>#${ticketCode}</strong> has been closed.`;
+    const finalNote =
+      note || 'If you need further assistance, please open a new ticket.';
+    const confirmationSubject = await this.i18n.t(
+      'contact.email.confirmation.subject',
+      { lang, args: { code: ticketCode } },
+    );
     const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
@@ -1375,8 +1656,12 @@ export class EmailService {
       </div>
     `;
 
-    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
-    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+    const supportEmail = this.configService.get<string>(
+      'EMAIL_SUPPORT_ADDRESS',
+    );
+    const primaryEmail = this.configService.get<string>(
+      'EMAIL_PRIMARY_ADDRESS',
+    );
 
     const transporter = await this.createTransporter();
     if (!transporter) return false;
@@ -1392,12 +1677,16 @@ export class EmailService {
       };
 
       if (inReplyTo) mailOptions['inReplyTo'] = inReplyTo;
-      if (references.length > 0) mailOptions['references'] = references.join(' ');
+      if (references.length > 0)
+        mailOptions['references'] = references.join(' ');
 
       await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      console.error('[EmailService] Failed to send closed ticket email:', error);
+      console.error(
+        '[EmailService] Failed to send closed ticket email:',
+        error,
+      );
       return false;
     }
   }
@@ -1425,15 +1714,31 @@ export class EmailService {
     };
 
     const title = await this.i18n.t('contact.email.reopened.title', { lang });
-    const greeting = await this.i18n.t('contact.email.greeting', { lang, args: { name } });
-    const messageTemplate = await this.i18n.t('contact.email.reopened.message', { lang, args: { ticketCode } });
-    const subjectPrefix = await this.i18n.t('contact.email.reopened.subject_prefix', { lang, args: { code: ticketCode } });
-    const replyNote = await this.i18n.t('contact.email.reopened.replyNote', { lang });
+    const greeting = await this.i18n.t('contact.email.greeting', {
+      lang,
+      args: { name },
+    });
+    const messageTemplate = await this.i18n.t(
+      'contact.email.reopened.message',
+      { lang, args: { ticketCode } },
+    );
+    const subjectPrefix = await this.i18n.t(
+      'contact.email.reopened.subject_prefix',
+      { lang, args: { code: ticketCode } },
+    );
+    const replyNote = await this.i18n.t('contact.email.reopened.replyNote', {
+      lang,
+    });
 
     const finalTitle = title || 'Ticket Reopened';
     const finalGreeting = greeting || `Hi ${name},`;
-    const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been reopened.`;
-    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const finalMessage =
+      messageTemplate ||
+      `Your support ticket <strong>#${ticketCode}</strong> has been reopened.`;
+    const confirmationSubject = await this.i18n.t(
+      'contact.email.confirmation.subject',
+      { lang, args: { code: ticketCode } },
+    );
     const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
@@ -1455,8 +1760,12 @@ export class EmailService {
       </div>
     `;
 
-    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
-    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+    const supportEmail = this.configService.get<string>(
+      'EMAIL_SUPPORT_ADDRESS',
+    );
+    const primaryEmail = this.configService.get<string>(
+      'EMAIL_PRIMARY_ADDRESS',
+    );
 
     const transporter = await this.createTransporter();
     if (!transporter) return false;
@@ -1472,12 +1781,16 @@ export class EmailService {
       };
 
       if (inReplyTo) mailOptions['inReplyTo'] = inReplyTo;
-      if (references.length > 0) mailOptions['references'] = references.join(' ');
+      if (references.length > 0)
+        mailOptions['references'] = references.join(' ');
 
       await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      console.error('[EmailService] Failed to send reopened ticket email:', error);
+      console.error(
+        '[EmailService] Failed to send reopened ticket email:',
+        error,
+      );
       return false;
     }
   }
@@ -1496,14 +1809,20 @@ export class EmailService {
 
     // Hardcoded text for now until i18n keys are added
     const greeting = lang === 'vi' ? 'Xin chào' : 'Hello';
-    const message = lang === 'vi'
-      ? `Bạn đã được mời tải xuống ứng dụng <strong style="color: #6366f1;">${appName}</strong>.`
-      : `You have been invited to download the <strong style="color: #6366f1;">${appName}</strong> application.`;
+    const message =
+      lang === 'vi'
+        ? `Bạn đã được mời tải xuống ứng dụng <strong style="color: #6366f1;">${appName}</strong>.`
+        : `You have been invited to download the <strong style="color: #6366f1;">${appName}</strong> application.`;
     const actionText = lang === 'vi' ? 'Tải xuống ngay' : 'Download Now';
     const expirationText = expiresAt
-      ? (lang === 'vi' ? `Liên kết này sẽ hết hạn vào lúc: <strong>${expiresAt.toLocaleString(locale)}</strong>` : `This link will expire at: <strong>${expiresAt.toLocaleString(locale)}</strong>`)
+      ? lang === 'vi'
+        ? `Liên kết này sẽ hết hạn vào lúc: <strong>${expiresAt.toLocaleString(locale)}</strong>`
+        : `This link will expire at: <strong>${expiresAt.toLocaleString(locale)}</strong>`
       : '';
-    const subject = lang === 'vi' ? `Mời tải xuống ứng dụng ${appName}` : `Invitation to download ${appName}`;
+    const subject =
+      lang === 'vi'
+        ? `Mời tải xuống ứng dụng ${appName}`
+        : `Invitation to download ${appName}`;
 
     // Get colors from config
     const colors = this.appConfigService.get('colors');
@@ -1533,12 +1852,16 @@ export class EmailService {
         </a>
       </div>
 
-      ${expirationText ? `
+      ${
+        expirationText
+          ? `
       <div style="background-color: ${gray100}; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
         <p style="margin: 0; font-size: 13px; color: ${gray500};">
           ${expirationText}
         </p>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
       
       <div style="background-color: ${gray100}; border-radius: 8px; padding: 15px; margin: 25px 0;">
         <p style="margin: 0 0 8px; font-size: 13px; color: ${gray500}; text-align: center;">
@@ -1568,14 +1891,35 @@ export class EmailService {
   ): Promise<boolean> {
     const appName = this.appConfigService.get('brandName');
     const colors = this.appConfigService.get('colors');
-    const subject = await this.i18n.t('warehouse_visit.email.approved.subject', { lang, args: { bookingCode } });
-    const title = await this.i18n.t('warehouse_visit.email.approved.title', { lang });
-    const greeting = await this.i18n.t('warehouse_visit.email.approved.greeting', { lang, args: { visitorName } });
-    const message = await this.i18n.t('warehouse_visit.email.approved.message', { lang });
-    const warehouseLabel = await this.i18n.t('warehouse_visit.email.approved.warehouse', { lang });
-    const dateLabel = await this.i18n.t('warehouse_visit.email.approved.date', { lang });
-    const timeLabel = await this.i18n.t('warehouse_visit.email.approved.time', { lang });
-    const bookingCodeLabel = await this.i18n.t('warehouse_visit.email.approved.booking_code', { lang });
+    const subject = await this.i18n.t(
+      'warehouse_visit.email.approved.subject',
+      { lang, args: { bookingCode } },
+    );
+    const title = await this.i18n.t('warehouse_visit.email.approved.title', {
+      lang,
+    });
+    const greeting = await this.i18n.t(
+      'warehouse_visit.email.approved.greeting',
+      { lang, args: { visitorName } },
+    );
+    const message = await this.i18n.t(
+      'warehouse_visit.email.approved.message',
+      { lang },
+    );
+    const warehouseLabel = await this.i18n.t(
+      'warehouse_visit.email.approved.warehouse',
+      { lang },
+    );
+    const dateLabel = await this.i18n.t('warehouse_visit.email.approved.date', {
+      lang,
+    });
+    const timeLabel = await this.i18n.t('warehouse_visit.email.approved.time', {
+      lang,
+    });
+    const bookingCodeLabel = await this.i18n.t(
+      'warehouse_visit.email.approved.booking_code',
+      { lang },
+    );
 
     const content = `
       <h2 style="margin:0 0 20px;color:${colors.gray900};text-align:center;">${title}</h2>
@@ -1605,11 +1949,25 @@ export class EmailService {
   ): Promise<boolean> {
     const appName = this.appConfigService.get('brandName');
     const colors = this.appConfigService.get('colors');
-    const subject = await this.i18n.t('warehouse_visit.email.rejected.subject', { lang, args: { bookingCode } });
-    const title = await this.i18n.t('warehouse_visit.email.rejected.title', { lang });
-    const greeting = await this.i18n.t('warehouse_visit.email.rejected.greeting', { lang, args: { visitorName } });
-    const message = await this.i18n.t('warehouse_visit.email.rejected.message', { lang });
-    const reasonLabel = await this.i18n.t('warehouse_visit.email.rejected.reason', { lang });
+    const subject = await this.i18n.t(
+      'warehouse_visit.email.rejected.subject',
+      { lang, args: { bookingCode } },
+    );
+    const title = await this.i18n.t('warehouse_visit.email.rejected.title', {
+      lang,
+    });
+    const greeting = await this.i18n.t(
+      'warehouse_visit.email.rejected.greeting',
+      { lang, args: { visitorName } },
+    );
+    const message = await this.i18n.t(
+      'warehouse_visit.email.rejected.message',
+      { lang },
+    );
+    const reasonLabel = await this.i18n.t(
+      'warehouse_visit.email.rejected.reason',
+      { lang },
+    );
 
     const content = `
       <h2 style="margin:0 0 20px;color:${colors.gray900};text-align:center;">${title}</h2>
@@ -1644,19 +2002,26 @@ export class EmailService {
     const appName = this.appConfigService.get('brandName');
     const colors = this.appConfigService.get('colors');
 
-    const title = lang === 'vi' ? 'Xác minh Email Đăng ký' : 'Registration Email Verification';
-    const greeting = lang === 'vi'
-      ? `Xin chào <strong style="color:${colors.primaryDark};">${name}</strong>,`
-      : `Hello <strong style="color:${colors.primaryDark};">${name}</strong>,`;
-    const message = lang === 'vi'
-      ? `Nhập mã OTP bên dưới để hoàn tất đăng ký tài khoản <strong>${appName}</strong>. Mã có hiệu lực trong <strong style="color:${colors.warning};">5 phút</strong>.`
-      : `Enter the OTP below to complete your <strong>${appName}</strong> registration. The code is valid for <strong style="color:${colors.warning};">5 minutes</strong>.`;
-    const warningText = lang === 'vi'
-      ? 'Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.'
-      : 'If you did not make this request, please ignore this email.';
-    const subject = lang === 'vi'
-      ? `Mã xác minh đăng ký - ${appName}`
-      : `Registration verification code - ${appName}`;
+    const title =
+      lang === 'vi'
+        ? 'Xác minh Email Đăng ký'
+        : 'Registration Email Verification';
+    const greeting =
+      lang === 'vi'
+        ? `Xin chào <strong style="color:${colors.primaryDark};">${name}</strong>,`
+        : `Hello <strong style="color:${colors.primaryDark};">${name}</strong>,`;
+    const message =
+      lang === 'vi'
+        ? `Nhập mã OTP bên dưới để hoàn tất đăng ký tài khoản <strong>${appName}</strong>. Mã có hiệu lực trong <strong style="color:${colors.warning};">5 phút</strong>.`
+        : `Enter the OTP below to complete your <strong>${appName}</strong> registration. The code is valid for <strong style="color:${colors.warning};">5 minutes</strong>.`;
+    const warningText =
+      lang === 'vi'
+        ? 'Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.'
+        : 'If you did not make this request, please ignore this email.';
+    const subject =
+      lang === 'vi'
+        ? `Mã xác minh đăng ký - ${appName}`
+        : `Registration verification code - ${appName}`;
 
     const content = `
       <h2 style="margin:0 0 20px;font-size:24px;font-weight:600;color:${colors.gray900};text-align:center;">
@@ -1698,5 +2063,3 @@ export class EmailService {
     });
   }
 }
-
-

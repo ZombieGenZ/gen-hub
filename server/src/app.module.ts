@@ -99,8 +99,6 @@ import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inv
 import { AppDownloadModule } from './modules/app-download/app-download.module';
 import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
 
-
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -209,7 +207,6 @@ import { CustomerReviewModule } from './modules/customer-review/customer-review.
     // Inventory Management (Organization level)
     InventoryRequestModule,
     WarehouseManagerInventoryModule,
-
 
     // Organization Update Request
     OrganizationUpdateRequestModule,
@@ -328,5 +325,4 @@ import { CustomerReviewModule } from './modules/customer-review/customer-review.
     },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}

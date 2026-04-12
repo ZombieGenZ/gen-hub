@@ -1,302 +1,419 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { AddonRepository } from './addon.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
-import { CreateAddonDto, UpdateAddonDto, QueryAddonDto, QueryActiveAddonDto } from './dto';
+import {
+  CreateAddonDto,
+  UpdateAddonDto,
+  QueryAddonDto,
+  QueryActiveAddonDto,
+} from './dto';
 
 @Injectable()
 export class AddonService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
+  private readonly cacheTTL: number;
+  private readonly listCacheTTL: number;
 
-    constructor(
-        private readonly repository: AddonRepository,
-        private readonly redisService: RedisService,
-        private readonly websocketGateway: WebsocketGateway,
-        private readonly systemLogService: SystemLogService,
-        private readonly configService: ConfigService,
-        private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_ADDON_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_ADDON_LIST_CACHE_TTL', 60);
+  constructor(
+    private readonly repository: AddonRepository,
+    private readonly redisService: RedisService,
+    private readonly websocketGateway: WebsocketGateway,
+    private readonly systemLogService: SystemLogService,
+    private readonly configService: ConfigService,
+    private readonly i18n: I18nService,
+  ) {
+    this.cacheTTL = this.configService.get<number>(
+      'REDIS_ADDON_CACHE_TTL',
+      300,
+    );
+    this.listCacheTTL = this.configService.get<number>(
+      'REDIS_ADDON_LIST_CACHE_TTL',
+      60,
+    );
+  }
+
+  private getCacheKey(id: string): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_ADDON_KEY_PREFIX',
+      'addon',
+    );
+    return `${prefix}:${id}`;
+  }
+
+  private getListCacheKey(query: QueryAddonDto): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_ADDON_LIST_KEY_PREFIX',
+      'addon:list',
+    );
+    return `${prefix}:${JSON.stringify(query)}`;
+  }
+
+  async create(dto: CreateAddonDto, userId: string, lang: string) {
+    // Kiểm tra tên trùng
+    const existing = await this.repository.findByName(dto.name);
+    if (existing) {
+      throw new ConflictException(
+        this.i18n.t('addon.errors.name_exists', { lang }),
+      );
     }
 
-    private getCacheKey(id: string): string {
-        const prefix = this.configService.get<string>('REDIS_ADDON_KEY_PREFIX', 'addon');
-        return `${prefix}:${id}`;
+    const addon = await this.repository.create({
+      ...dto,
+      created_by: userId,
+    });
+
+    // Xóa cache list
+    await this.invalidateListCache();
+
+    // Ghi log
+    this.systemLogService.info(
+      'Addon',
+      'CREATE',
+      this.i18n.t('addon.logs.created', {
+        lang: 'vi',
+        args: { name: addon.name },
+      }),
+      {
+        userId,
+        metaData: { addonId: addon.id, name: addon.name },
+      },
+    );
+
+    // Emit socket event
+    this.websocketGateway.server.emit('addon:created', {
+      addonId: addon.id,
+      name: addon.name,
+      createdBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return addon;
+  }
+
+  async findAll(
+    query: QueryAddonDto,
+    userId: string,
+    hasListAllPermission: boolean,
+  ) {
+    const {
+      limit = 10,
+      offset = 0,
+      keywords,
+      is_active,
+      addon_type_id,
+    } = query;
+
+    // Check cache - include userId and permission in cache key
+    const cacheKey = `${this.getListCacheKey(query)}:${userId}:${hasListAllPermission}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    private getListCacheKey(query: QueryAddonDto): string {
-        const prefix = this.configService.get<string>('REDIS_ADDON_LIST_KEY_PREFIX', 'addon:list');
-        return `${prefix}:${JSON.stringify(query)}`;
+    const where: any = { is_deleted: false };
+
+    // Nếu không có quyền list.all, chỉ lấy items của chính user
+    if (!hasListAllPermission) {
+      where.created_by = userId;
     }
 
-    async create(dto: CreateAddonDto, userId: string, lang: string) {
-        // Kiểm tra tên trùng
-        const existing = await this.repository.findByName(dto.name);
-        if (existing) {
-            throw new ConflictException(
-                this.i18n.t('addon.errors.name_exists', { lang }),
-            );
-        }
-
-        const addon = await this.repository.create({
-            ...dto,
-            created_by: userId,
-        });
-
-        // Xóa cache list
-        await this.invalidateListCache();
-
-        // Ghi log
-        this.systemLogService.info('Addon', 'CREATE', this.i18n.t('addon.logs.created', { lang: 'vi', args: { name: addon.name } }), {
-            userId,
-            metaData: { addonId: addon.id, name: addon.name },
-        });
-
-        // Emit socket event
-        this.websocketGateway.server.emit('addon:created', {
-            addonId: addon.id,
-            name: addon.name,
-            createdBy: userId,
-            timestamp: new Date().toISOString(),
-        });
-
-        return addon;
+    if (is_active !== undefined) {
+      where.is_active = is_active;
     }
 
-    async findAll(query: QueryAddonDto, userId: string, hasListAllPermission: boolean) {
-        const { limit = 10, offset = 0, keywords, is_active, addon_type_id } = query;
-
-        // Check cache - include userId and permission in cache key
-        const cacheKey = `${this.getListCacheKey(query)}:${userId}:${hasListAllPermission}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
-
-        const where: any = { is_deleted: false };
-
-        // Nếu không có quyền list.all, chỉ lấy items của chính user
-        if (!hasListAllPermission) {
-            where.created_by = userId;
-        }
-
-        if (is_active !== undefined) {
-            where.is_active = is_active;
-        }
-
-        if (keywords) {
-            where.OR = [
-                { name: { contains: keywords, mode: 'insensitive' } },
-                { description: { contains: keywords, mode: 'insensitive' } },
-            ];
-        }
-
-        // Filter theo addon_type_id thông qua bảng trung gian addon_types
-        if (addon_type_id) {
-            where.addon_types = {
-                some: {
-                    addon_type_id: addon_type_id,
-                    is_deleted: false,
-                },
-            };
-        }
-
-        const [data, total] = await Promise.all([
-            this.repository.findAll({
-                skip: offset,
-                take: limit,
-                where,
-                orderBy: { created_at: 'desc' },
-            }),
-            this.repository.count(where),
-        ]);
-
-        const hasMore = offset + data.length < total;
-        const result = { items: data, total, limit, offset, hasMore };
-
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
-
-        return result;
+    if (keywords) {
+      where.OR = [
+        { name: { contains: keywords, mode: 'insensitive' } },
+        { description: { contains: keywords, mode: 'insensitive' } },
+      ];
     }
 
-    async findById(id: string, userId: string, hasReadAllPermission: boolean, lang: string) {
-        // Check cache - include userId and permission in cache key
-        const cacheKey = `${this.getCacheKey(id)}:${userId}:${hasReadAllPermission}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
-
-        const addon = await this.repository.findById(id, userId, hasReadAllPermission);
-        if (!addon) {
-            throw new NotFoundException(
-                this.i18n.t('addon.errors.not_found', { lang }),
-            );
-        }
-
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(addon), this.cacheTTL);
-
-        return addon;
+    // Filter theo addon_type_id thông qua bảng trung gian addon_types
+    if (addon_type_id) {
+      where.addon_types = {
+        some: {
+          addon_type_id: addon_type_id,
+          is_deleted: false,
+        },
+      };
     }
 
-    // Lấy tất cả active addons (có phân trang)
-    async findAllActive(query?: QueryActiveAddonDto) {
-        const { limit = 10, offset = 0, addon_type_id } = query || {};
-        const prefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
-        const cacheKey = addon_type_id 
-            ? `${prefix}:type:${addon_type_id}:${limit}:${offset}` 
-            : `${prefix}:${limit}:${offset}`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+    const [data, total] = await Promise.all([
+      this.repository.findAll({
+        skip: offset,
+        take: limit,
+        where,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.repository.count(where),
+    ]);
 
-        const [data, total] = await Promise.all([
-            this.repository.findAllActive({
-                skip: offset,
-                take: limit,
-                addonTypeId: addon_type_id,
-            }),
-            this.repository.countActive(addon_type_id),
-        ]);
+    const hasMore = offset + data.length < total;
+    const result = { items: data, total, limit, offset, hasMore };
 
-        const hasMore = offset + data.length < total;
-        const result = { items: data, total, limit, offset, hasMore };
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+    // Set cache
+    await this.redisService.set(
+      cacheKey,
+      JSON.stringify(result),
+      this.listCacheTTL,
+    );
 
-        return result;
+    return result;
+  }
+
+  async findById(
+    id: string,
+    userId: string,
+    hasReadAllPermission: boolean,
+    lang: string,
+  ) {
+    // Check cache - include userId and permission in cache key
+    const cacheKey = `${this.getCacheKey(id)}:${userId}:${hasReadAllPermission}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    async update(id: string, dto: UpdateAddonDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {
-        const addon = await this.repository.findById(id, userId, hasUpdateAllPermission);
-        if (!addon) {
-            throw new NotFoundException(
-                this.i18n.t('addon.errors.not_found', { lang }),
-            );
-        }
-
-        // Kiểm tra tên trùng nếu đang cập nhật tên
-        if (dto.name && dto.name !== addon.name) {
-            const existing = await this.repository.findByName(dto.name, id);
-            if (existing) {
-                throw new ConflictException(
-                    this.i18n.t('addon.errors.name_exists', { lang }),
-                );
-            }
-        }
-
-        const updated = await this.repository.update(id, {
-            ...dto,
-            updated_by: userId,
-        });
-
-        // Khi thay đổi is_active, cập nhật cả bảng mapping TierAddonGift
-        if (dto.is_active !== undefined && dto.is_active !== addon.is_active) {
-            await this.repository.updateTierGiftStatus(id, dto.is_active);
-        }
-
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
-
-        // Ghi log
-        this.systemLogService.info('Addon', 'UPDATE', this.i18n.t('addon.logs.updated', { lang: 'vi', args: { name: updated.name } }), {
-            userId,
-            metaData: { addonId: id, updatedFields: Object.keys(dto) },
-        });
-
-        // Emit socket event
-        this.websocketGateway.server.emit('addon:updated', {
-            addonId: id,
-            name: updated.name,
-            updatedFields: Object.keys(dto),
-            updatedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
-
-        return updated;
+    const addon = await this.repository.findById(
+      id,
+      userId,
+      hasReadAllPermission,
+    );
+    if (!addon) {
+      throw new NotFoundException(
+        this.i18n.t('addon.errors.not_found', { lang }),
+      );
     }
 
-    async delete(id: string, userId: string, hasDeleteAllPermission: boolean, lang: string) {
-        const addon = await this.repository.findById(id, userId, hasDeleteAllPermission);
-        if (!addon) {
-            throw new NotFoundException(
-                this.i18n.t('addon.errors.not_found', { lang }),
-            );
-        }
+    // Set cache
+    await this.redisService.set(cacheKey, JSON.stringify(addon), this.cacheTTL);
 
-        // Soft delete addon và các TierAddonGift liên quan
-        await this.repository.softDelete(id, userId);
-        await this.repository.softDeleteTierGifts(id, userId);
+    return addon;
+  }
 
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
-
-        // Ghi log
-        this.systemLogService.info('Addon', 'DELETE', this.i18n.t('addon.logs.deleted', { lang: 'vi', args: { name: addon.name } }), {
-            userId,
-            metaData: { addonId: id, name: addon.name },
-        });
-
-        // Emit socket event
-        this.websocketGateway.server.emit('addon:deleted', {
-            addonId: id,
-            name: addon.name,
-            deletedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+  // Lấy tất cả active addons (có phân trang)
+  async findAllActive(query?: QueryActiveAddonDto) {
+    const { limit = 10, offset = 0, addon_type_id } = query || {};
+    const prefix = this.configService.get<string>(
+      'REDIS_ADDON_ACTIVE_KEY_PREFIX',
+      'addon:active',
+    );
+    const cacheKey = addon_type_id
+      ? `${prefix}:type:${addon_type_id}:${limit}:${offset}`
+      : `${prefix}:${limit}:${offset}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    async deleteMany(ids: string[], userId: string, hasDeleteAllPermission: boolean, lang: string) {
-        const addons = await this.repository.findByIds(ids, userId, hasDeleteAllPermission);
-        if (addons.length === 0) {
-            throw new NotFoundException(
-                this.i18n.t('addon.errors.not_found', { lang }),
-            );
-        }
+    const [data, total] = await Promise.all([
+      this.repository.findAllActive({
+        skip: offset,
+        take: limit,
+        addonTypeId: addon_type_id,
+      }),
+      this.repository.countActive(addon_type_id),
+    ]);
 
-        // Soft delete addons và TierAddonGifts
-        await this.repository.softDeleteMany(ids, userId);
-        for (const id of ids) {
-            await this.repository.softDeleteTierGifts(id, userId);
-        }
+    const hasMore = offset + data.length < total;
+    const result = { items: data, total, limit, offset, hasMore };
+    await this.redisService.set(
+      cacheKey,
+      JSON.stringify(result),
+      this.listCacheTTL,
+    );
 
-        // Invalidate cache
-        await Promise.all(ids.map(id => this.invalidateCache(id)));
-        await this.invalidateListCache();
+    return result;
+  }
 
-        // Emit socket event
-        this.websocketGateway.server.emit('addon:deletedMany', {
-            addonIds: ids,
-            deletedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
-
-        // Log
-        addons.forEach(a => {
-            this.systemLogService.info('Addon', 'DELETE', this.i18n.t('addon.logs.deleted', { lang: 'vi', args: { name: a.name } }), {
-                userId,
-                metaData: { addonId: a.id, name: a.name },
-            });
-        });
+  async update(
+    id: string,
+    dto: UpdateAddonDto,
+    userId: string,
+    hasUpdateAllPermission: boolean,
+    lang: string,
+  ) {
+    const addon = await this.repository.findById(
+      id,
+      userId,
+      hasUpdateAllPermission,
+    );
+    if (!addon) {
+      throw new NotFoundException(
+        this.i18n.t('addon.errors.not_found', { lang }),
+      );
     }
 
-    private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+    // Kiểm tra tên trùng nếu đang cập nhật tên
+    if (dto.name && dto.name !== addon.name) {
+      const existing = await this.repository.findByName(dto.name, id);
+      if (existing) {
+        throw new ConflictException(
+          this.i18n.t('addon.errors.name_exists', { lang }),
+        );
+      }
     }
 
-    private async invalidateListCache() {
-        const listPrefix = this.configService.get<string>('REDIS_ADDON_LIST_KEY_PREFIX', 'addon:list');
-        const activePrefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
-        await this.redisService.delByPattern(`${listPrefix}:*`);
-        await this.redisService.delByPattern(`${activePrefix}*`);
+    const updated = await this.repository.update(id, {
+      ...dto,
+      updated_by: userId,
+    });
+
+    // Khi thay đổi is_active, cập nhật cả bảng mapping TierAddonGift
+    if (dto.is_active !== undefined && dto.is_active !== addon.is_active) {
+      await this.repository.updateTierGiftStatus(id, dto.is_active);
     }
+
+    // Xóa cache
+    await this.invalidateCache(id);
+    await this.invalidateListCache();
+
+    // Ghi log
+    this.systemLogService.info(
+      'Addon',
+      'UPDATE',
+      this.i18n.t('addon.logs.updated', {
+        lang: 'vi',
+        args: { name: updated.name },
+      }),
+      {
+        userId,
+        metaData: { addonId: id, updatedFields: Object.keys(dto) },
+      },
+    );
+
+    // Emit socket event
+    this.websocketGateway.server.emit('addon:updated', {
+      addonId: id,
+      name: updated.name,
+      updatedFields: Object.keys(dto),
+      updatedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return updated;
+  }
+
+  async delete(
+    id: string,
+    userId: string,
+    hasDeleteAllPermission: boolean,
+    lang: string,
+  ) {
+    const addon = await this.repository.findById(
+      id,
+      userId,
+      hasDeleteAllPermission,
+    );
+    if (!addon) {
+      throw new NotFoundException(
+        this.i18n.t('addon.errors.not_found', { lang }),
+      );
+    }
+
+    // Soft delete addon và các TierAddonGift liên quan
+    await this.repository.softDelete(id, userId);
+    await this.repository.softDeleteTierGifts(id, userId);
+
+    // Xóa cache
+    await this.invalidateCache(id);
+    await this.invalidateListCache();
+
+    // Ghi log
+    this.systemLogService.info(
+      'Addon',
+      'DELETE',
+      this.i18n.t('addon.logs.deleted', {
+        lang: 'vi',
+        args: { name: addon.name },
+      }),
+      {
+        userId,
+        metaData: { addonId: id, name: addon.name },
+      },
+    );
+
+    // Emit socket event
+    this.websocketGateway.server.emit('addon:deleted', {
+      addonId: id,
+      name: addon.name,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async deleteMany(
+    ids: string[],
+    userId: string,
+    hasDeleteAllPermission: boolean,
+    lang: string,
+  ) {
+    const addons = await this.repository.findByIds(
+      ids,
+      userId,
+      hasDeleteAllPermission,
+    );
+    if (addons.length === 0) {
+      throw new NotFoundException(
+        this.i18n.t('addon.errors.not_found', { lang }),
+      );
+    }
+
+    // Soft delete addons và TierAddonGifts
+    await this.repository.softDeleteMany(ids, userId);
+    for (const id of ids) {
+      await this.repository.softDeleteTierGifts(id, userId);
+    }
+
+    // Invalidate cache
+    await Promise.all(ids.map((id) => this.invalidateCache(id)));
+    await this.invalidateListCache();
+
+    // Emit socket event
+    this.websocketGateway.server.emit('addon:deletedMany', {
+      addonIds: ids,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log
+    addons.forEach((a) => {
+      this.systemLogService.info(
+        'Addon',
+        'DELETE',
+        this.i18n.t('addon.logs.deleted', {
+          lang: 'vi',
+          args: { name: a.name },
+        }),
+        {
+          userId,
+          metaData: { addonId: a.id, name: a.name },
+        },
+      );
+    });
+  }
+
+  private async invalidateCache(id: string) {
+    await this.redisService.del(this.getCacheKey(id));
+  }
+
+  private async invalidateListCache() {
+    const listPrefix = this.configService.get<string>(
+      'REDIS_ADDON_LIST_KEY_PREFIX',
+      'addon:list',
+    );
+    const activePrefix = this.configService.get<string>(
+      'REDIS_ADDON_ACTIVE_KEY_PREFIX',
+      'addon:active',
+    );
+    await this.redisService.delByPattern(`${listPrefix}:*`);
+    await this.redisService.delByPattern(`${activePrefix}*`);
+  }
 }

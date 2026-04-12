@@ -1,9 +1,9 @@
 /**
  * Module Registry for API Key Swagger
- * 
+ *
  * Đây là danh sách TẤT CẢ modules có khả năng hỗ trợ API Key.
  * Database (OrganizationPermission.allow_api_key) sẽ control ENABLE/DISABLE.
- * 
+ *
  * Khi thêm module mới hỗ trợ API Key:
  * 1. Thêm vào registry này
  * 2. Seed permissions với allow_api_key = true
@@ -22,13 +22,13 @@ import { RentalContractModule } from '../../modules/rental-contract/rental-contr
  * Interface cho module registry entry
  */
 export interface ApiKeyModuleEntry {
-    /** Module class */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    module: any;
-    /** Permission key prefixes that map to this module (e.g., ['product'] or ['organization.notification']) */
-    permissionPrefixes: string[];
-    /** Description for logging */
-    description: string;
+  /** Module class */
+
+  module: any;
+  /** Permission key prefixes that map to this module (e.g., ['product'] or ['organization.notification']) */
+  permissionPrefixes: string[];
+  /** Description for logging */
+  description: string;
 }
 
 /**
@@ -37,73 +37,71 @@ export interface ApiKeyModuleEntry {
  * Value: module config
  */
 export const API_KEY_MODULE_REGISTRY: Record<string, ApiKeyModuleEntry> = {
-    warehouse: {
-        module: WarehouseModule,
-        permissionPrefixes: ['warehouse'],
-        description: 'Warehouse management',
-    },
-    product: {
-        module: ProductModule,
-        permissionPrefixes: ['product'],
-        description: 'Product management',
-    },
-    batch: {
-        module: BatchModule,
-        permissionPrefixes: ['batch'],
-        description: 'Batch management',
-    },
-    partner: {
-        module: PartnerModule,
-        permissionPrefixes: ['partner'],
-        description: 'Partner management',
-    },
-    organization: {
-        module: OrganizationModule,
-        permissionPrefixes: ['organization'],
-        description: 'Organization management',
-    },
-    'org-notification': {
-        module: OrgNotificationModule,
-        permissionPrefixes: ['organization.notification'],
-        description: 'Organization notifications',
-    },
-    'rental-contract': {
-        module: RentalContractModule,
-        permissionPrefixes: ['rental-contract'],
-        description: 'Rental contract management',
-    },
+  warehouse: {
+    module: WarehouseModule,
+    permissionPrefixes: ['warehouse'],
+    description: 'Warehouse management',
+  },
+  product: {
+    module: ProductModule,
+    permissionPrefixes: ['product'],
+    description: 'Product management',
+  },
+  batch: {
+    module: BatchModule,
+    permissionPrefixes: ['batch'],
+    description: 'Batch management',
+  },
+  partner: {
+    module: PartnerModule,
+    permissionPrefixes: ['partner'],
+    description: 'Partner management',
+  },
+  organization: {
+    module: OrganizationModule,
+    permissionPrefixes: ['organization'],
+    description: 'Organization management',
+  },
+  'org-notification': {
+    module: OrgNotificationModule,
+    permissionPrefixes: ['organization.notification'],
+    description: 'Organization notifications',
+  },
+  'rental-contract': {
+    module: RentalContractModule,
+    permissionPrefixes: ['rental-contract'],
+    description: 'Rental contract management',
+  },
 };
 
 /**
  * Helper: Lấy modules cần include dựa trên permission keys từ database
  */
 export function getApiKeyModules(permissionKeys: string[]): {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    modules: any[];
-    enabledModuleNames: string[];
+  modules: any[];
+  enabledModuleNames: string[];
 } {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const modules: any[] = [];
-    const enabledModuleNames: string[] = [];
+  const modules: any[] = [];
+  const enabledModuleNames: string[] = [];
 
-    for (const [name, entry] of Object.entries(API_KEY_MODULE_REGISTRY)) {
-        // Check if any permission matches this module's prefixes
-        const hasMatchingPermission = permissionKeys.some(key =>
-            entry.permissionPrefixes.some(prefix => key.startsWith(prefix))
-        );
+  for (const [name, entry] of Object.entries(API_KEY_MODULE_REGISTRY)) {
+    // Check if any permission matches this module's prefixes
+    const hasMatchingPermission = permissionKeys.some((key) =>
+      entry.permissionPrefixes.some((prefix) => key.startsWith(prefix)),
+    );
 
-        if (hasMatchingPermission) {
-            modules.push(entry.module);
-            enabledModuleNames.push(name);
-        }
+    if (hasMatchingPermission) {
+      modules.push(entry.module);
+      enabledModuleNames.push(name);
     }
+  }
 
-    // Always include OrganizationModule for /organizations/permissions/api-key-enabled endpoint
-    const orgModule = API_KEY_MODULE_REGISTRY.organization?.module;
-    if (orgModule && !modules.includes(orgModule)) {
-        modules.push(orgModule);
-        enabledModuleNames.push('organization');
-    }
+  // Always include OrganizationModule for /organizations/permissions/api-key-enabled endpoint
+  const orgModule = API_KEY_MODULE_REGISTRY.organization?.module;
+  if (orgModule && !modules.includes(orgModule)) {
+    modules.push(orgModule);
+    enabledModuleNames.push('organization');
+  }
 
-    return { modules, enabledModuleNames };
+  return { modules, enabledModuleNames };
 }

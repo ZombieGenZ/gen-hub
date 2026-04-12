@@ -4,8 +4,8 @@ import { AdminDashboardService } from './admin-dashboard.service';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-    imports: [RedisModule],
-    controllers: [AdminDashboardController],
-    providers: [AdminDashboardService],
+  imports: [RedisModule],
+  controllers: [AdminDashboardController],
+  providers: [AdminDashboardService],
 })
 export class AdminDashboardModule {}

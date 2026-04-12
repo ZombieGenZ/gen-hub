@@ -21,4 +21,4 @@ import { AccountRepository } from './account.repository';
   providers: [AccountService, AccountRepository],
   exports: [AccountService],
 })
-export class AccountModule { }
+export class AccountModule {}

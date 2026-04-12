@@ -9,7 +9,9 @@ export class CreateConsultationRequestDto {
     example: 'Nguyễn Thị Lan',
   })
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.name_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.name_string',
+    ),
   })
   name: string;
 
@@ -19,7 +21,11 @@ export class CreateConsultationRequestDto {
   })
   @IsEmail(
     {},
-    { message: i18nValidationMessage('consultation-request.validation.email_invalid') },
+    {
+      message: i18nValidationMessage(
+        'consultation-request.validation.email_invalid',
+      ),
+    },
   )
   email: string;
 
@@ -29,7 +35,9 @@ export class CreateConsultationRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.phone_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.phone_string',
+    ),
   })
   phone?: string;
 
@@ -39,7 +47,9 @@ export class CreateConsultationRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.company_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.company_string',
+    ),
   })
   company?: string;
 
@@ -49,7 +59,9 @@ export class CreateConsultationRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.position_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.position_string',
+    ),
   })
   position?: string;
 
@@ -58,7 +70,9 @@ export class CreateConsultationRequestDto {
     example: 'Tư vấn thuê kho lạnh',
   })
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.subject_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.subject_string',
+    ),
   })
   subject: string;
 
@@ -67,7 +81,9 @@ export class CreateConsultationRequestDto {
     example: 'Cần thuê kho lạnh khoảng 200 m2 tại Long An trong quý 2.',
   })
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.message_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.message_string',
+    ),
   })
   message: string;
 
@@ -91,7 +107,9 @@ export class CreateConsultationRequestDto {
   })
   @IsOptional()
   @IsEnum(ConsultationRequestSource, {
-    message: i18nValidationMessage('consultation-request.validation.source_enum'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.source_enum',
+    ),
   })
   source?: ConsultationRequestSource;
 }

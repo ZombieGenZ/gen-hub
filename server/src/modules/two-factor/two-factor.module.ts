@@ -27,4 +27,4 @@ import { TwoFactorRepository } from './repositories/two-factor.repository';
   providers: [TwoFactorService, TwoFactorRepository],
   exports: [TwoFactorService, TwoFactorRepository],
 })
-export class TwoFactorModule { }
+export class TwoFactorModule {}

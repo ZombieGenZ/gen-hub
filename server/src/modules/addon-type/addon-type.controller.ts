@@ -51,7 +51,7 @@ export class AddonTypeController {
   constructor(
     private readonly addonTypeService: AddonTypeService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -296,8 +296,15 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddonTypePaginatedResponse>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'addon-type.list.all');
-    const result = await this.addonTypeService.findAll(query, userId, hasListAllPermission);
+    const hasListAllPermission = await this.hasPermission(
+      userId,
+      'addon-type.list.all',
+    );
+    const result = await this.addonTypeService.findAll(
+      query,
+      userId,
+      hasListAllPermission,
+    );
     return new GetResponse('addon-type.list', result);
   }
 
@@ -445,8 +452,16 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddonTypeWithRelations>> {
-    const hasReadAllPermission = await this.hasPermission(userId, 'addon-type.read.all');
-    const addonType = await this.addonTypeService.findById(id, userId, hasReadAllPermission, lang);
+    const hasReadAllPermission = await this.hasPermission(
+      userId,
+      'addon-type.read.all',
+    );
+    const addonType = await this.addonTypeService.findById(
+      id,
+      userId,
+      hasReadAllPermission,
+      lang,
+    );
     return new GetResponse('addon-type.read', addonType);
   }
 
@@ -568,8 +583,17 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    const hasUpdateAllPermission = await this.hasPermission(userId, 'addon-type.update.all');
-    const addonType = await this.addonTypeService.update(id, dto, userId, hasUpdateAllPermission, lang);
+    const hasUpdateAllPermission = await this.hasPermission(
+      userId,
+      'addon-type.update.all',
+    );
+    const addonType = await this.addonTypeService.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAllPermission,
+      lang,
+    );
     return new UpdatedResponse('addon-type.updated', addonType);
   }
 
@@ -619,8 +643,16 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon-type.delete.all');
-    await this.addonTypeService.delete(id, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'addon-type.delete.all',
+    );
+    await this.addonTypeService.delete(
+      id,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse('addon-type.deleted', null);
   }
 
@@ -710,8 +742,16 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon-type.delete.all');
-    await this.addonTypeService.deleteMany(ids, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'addon-type.delete.all',
+    );
+    await this.addonTypeService.deleteMany(
+      ids,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse('addon-type.deletedMany', null);
   }
 }

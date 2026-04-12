@@ -12,20 +12,19 @@ import { PaymentSchedulerService } from './payment-scheduler.service';
 import { PaymentController } from './payment.controller';
 
 @Module({
-    imports: [
-        SharedModule,
-        SystemLogModule,
-        WebsocketModule,
-        forwardRef(() => RentalContractModule),
-        forwardRef(() => OrganizationBalanceModule),
-        ContactListModule,
-        BullModule.registerQueue({
-            name: 'rental-contract',
-        }),
-    ],
-    controllers: [PaymentController],
-    providers: [SepayService, PaymentSchedulerService],
-    exports: [SepayService, PaymentSchedulerService],
+  imports: [
+    SharedModule,
+    SystemLogModule,
+    WebsocketModule,
+    forwardRef(() => RentalContractModule),
+    forwardRef(() => OrganizationBalanceModule),
+    ContactListModule,
+    BullModule.registerQueue({
+      name: 'rental-contract',
+    }),
+  ],
+  controllers: [PaymentController],
+  providers: [SepayService, PaymentSchedulerService],
+  exports: [SepayService, PaymentSchedulerService],
 })
-export class PaymentModule { }
-
+export class PaymentModule {}

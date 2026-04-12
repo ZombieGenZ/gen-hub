@@ -19,4 +19,3 @@ export const coverImageListSelect = {
 export const coverImageDetailSelect = {
   ...coverImageListSelect,
 } satisfies Prisma.CoverImageSelect;
-

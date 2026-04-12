@@ -56,11 +56,13 @@ export function parseUIDToCoordinates(uid: string): Point3D {
   const components = parseUID(uid);
 
   // X axis depends on Zone and Bin position within the shelf
-  const x = (components.zone - 1) * Warehouse3DConfig.zoneSpacingX + (components.bin - 1) * Warehouse3DConfig.binSpacingX;
-  
+  const x =
+    (components.zone - 1) * Warehouse3DConfig.zoneSpacingX +
+    (components.bin - 1) * Warehouse3DConfig.binSpacingX;
+
   // Y axis depends on the Shelf level
   const y = (components.shelf - 1) * Warehouse3DConfig.shelfHeightY;
-  
+
   // Z axis depends on the Row position
   const z = (components.row - 1) * Warehouse3DConfig.rowSpacingZ;
 

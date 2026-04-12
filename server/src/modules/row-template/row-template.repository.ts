@@ -9,378 +9,384 @@ import { QueryRowTemplateDto } from './dto';
  */
 @Injectable()
 export class RowTemplateRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly paginationConfig: PaginationConfigService,
-    ) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paginationConfig: PaginationConfigService,
+  ) {}
 
-    /** Include relations cho row */
-    private readonly fullInclude = {
-        discount_configs: {
-            where: { is_deleted: false },
-            orderBy: { created_at: 'asc' as const },
-            include: {
-                duration_tier: true,
+  /** Include relations cho row */
+  private readonly fullInclude = {
+    discount_configs: {
+      where: { is_deleted: false },
+      orderBy: { created_at: 'asc' as const },
+      include: {
+        duration_tier: true,
+      },
+    },
+    addon_gifts: {
+      where: { is_deleted: false },
+      orderBy: { created_at: 'asc' as const },
+      include: {
+        addon: true,
+      },
+    },
+    insurance_gifts: {
+      where: { is_deleted: false },
+      orderBy: { created_at: 'asc' as const },
+      include: {
+        insurance: true,
+      },
+    },
+    racks: {
+      where: { is_deleted: false },
+      orderBy: { created_at: 'asc' as const },
+      include: {
+        shelves: {
+          where: { is_deleted: false },
+          orderBy: { created_at: 'asc' as const },
+          include: {
+            blocks: {
+              where: { is_deleted: false },
+              orderBy: { created_at: 'asc' as const },
             },
+          },
         },
-        addon_gifts: {
-            where: { is_deleted: false },
-            orderBy: { created_at: 'asc' as const },
-            include: {
-                addon: true,
-            },
-        },
-        insurance_gifts: {
-            where: { is_deleted: false },
-            orderBy: { created_at: 'asc' as const },
-            include: {
-                insurance: true,
-            },
-        },
-        racks: {
-            where: { is_deleted: false },
-            orderBy: { created_at: 'asc' as const },
-            include: {
-                shelves: {
-                    where: { is_deleted: false },
-                    orderBy: { created_at: 'asc' as const },
-                    include: {
-                        blocks: {
-                            where: { is_deleted: false },
-                            orderBy: { created_at: 'asc' as const },
-                        },
-                    },
-                },
-            },
-        },
+      },
+    },
+  };
+
+  /** Include nhẹ cho list */
+  private readonly listInclude = {
+    discount_configs: {
+      where: { is_deleted: false },
+      include: {
+        duration_tier: true,
+      },
+    },
+    _count: {
+      select: {
+        racks: { where: { is_deleted: false } },
+      },
+    },
+  };
+
+  async create(data: Prisma.RowTemplateCreateInput) {
+    return this.prisma.rowTemplate.create({
+      data,
+      include: this.fullInclude,
+    });
+  }
+
+  async findById(id: string) {
+    return this.prisma.rowTemplate.findFirst({
+      where: { id, is_deleted: false },
+      include: this.fullInclude,
+    });
+  }
+
+  async findByCode(
+    warehouseTemplateId: string,
+    code: string,
+    excludeId?: string,
+  ) {
+    return this.prisma.rowTemplate.findFirst({
+      where: {
+        warehouse_template_id: warehouseTemplateId,
+        code,
+        is_deleted: false,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+    });
+  }
+
+  async findMany(warehouseTemplateId: string, query: QueryRowTemplateDto) {
+    const limit = this.paginationConfig.getLimit(query.limit);
+    const offset = this.paginationConfig.getOffset(query.offset);
+    const { keywords, is_active, is_rented } = query;
+
+    const where: Prisma.RowTemplateWhereInput = {
+      warehouse_template_id: warehouseTemplateId,
+      is_deleted: false,
+      ...(is_active !== undefined && { is_active }),
+      ...(is_rented !== undefined && { is_rented }),
+      ...(keywords && {
+        OR: [
+          { name: { contains: keywords, mode: 'insensitive' } },
+          { code: { contains: keywords, mode: 'insensitive' } },
+          { description: { contains: keywords, mode: 'insensitive' } },
+        ],
+      }),
     };
 
-    /** Include nhẹ cho list */
-    private readonly listInclude = {
-        discount_configs: {
-            where: { is_deleted: false },
-            include: {
-                duration_tier: true,
-            },
-        },
-        _count: {
-            select: {
-                racks: { where: { is_deleted: false } },
-            },
-        },
+    const [items, total] = await Promise.all([
+      this.prisma.rowTemplate.findMany({
+        where,
+        include: this.listInclude,
+        orderBy: { created_at: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.rowTemplate.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      limit,
+      offset,
+      hasMore: offset + items.length < total,
     };
+  }
 
-    async create(data: Prisma.RowTemplateCreateInput) {
-        return this.prisma.rowTemplate.create({
-            data,
-            include: this.fullInclude,
+  async update(id: string, data: Prisma.RowTemplateUpdateInput) {
+    return this.prisma.rowTemplate.update({
+      where: { id },
+      data,
+      include: this.fullInclude,
+    });
+  }
+
+  async softDelete(id: string, deletedBy: string) {
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      // Cascade delete discount configs
+      await tx.rowDiscountConfig.updateMany({
+        where: { row_template_id: id, is_deleted: false },
+        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+      });
+
+      // Cascade delete nested entities
+      const racks = await tx.rackTemplate.findMany({
+        where: { row_template_id: id, is_deleted: false },
+        select: { id: true },
+      });
+      const rackIds = racks.map((r) => r.id);
+
+      if (rackIds.length > 0) {
+        const shelves = await tx.shelfTemplate.findMany({
+          where: { rack_template_id: { in: rackIds }, is_deleted: false },
+          select: { id: true },
         });
-    }
+        const shelfIds = shelves.map((s) => s.id);
 
-    async findById(id: string) {
-        return this.prisma.rowTemplate.findFirst({
-            where: { id, is_deleted: false },
-            include: this.fullInclude,
+        if (shelfIds.length > 0) {
+          await tx.blockTemplate.updateMany({
+            where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
+            data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+          });
+        }
+
+        await tx.shelfTemplate.updateMany({
+          where: { rack_template_id: { in: rackIds }, is_deleted: false },
+          data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
         });
-    }
 
-    async findByCode(warehouseTemplateId: string, code: string, excludeId?: string) {
-        return this.prisma.rowTemplate.findFirst({
-            where: {
-                warehouse_template_id: warehouseTemplateId,
-                code,
-                is_deleted: false,
-                ...(excludeId && { id: { not: excludeId } }),
-            },
+        await tx.rackTemplate.updateMany({
+          where: { row_template_id: id, is_deleted: false },
+          data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
         });
-    }
+      }
 
-    async findMany(warehouseTemplateId: string, query: QueryRowTemplateDto) {
-        const limit = this.paginationConfig.getLimit(query.limit);
-        const offset = this.paginationConfig.getOffset(query.offset);
-        const { keywords, is_active, is_rented } = query;
+      // Soft delete row
+      return tx.rowTemplate.update({
+        where: { id },
+        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+      });
+    });
+  }
 
-        const where: Prisma.RowTemplateWhereInput = {
-            warehouse_template_id: warehouseTemplateId,
-            is_deleted: false,
-            ...(is_active !== undefined && { is_active }),
-            ...(is_rented !== undefined && { is_rented }),
-            ...(keywords && {
-                OR: [
-                    { name: { contains: keywords, mode: 'insensitive' } },
-                    { code: { contains: keywords, mode: 'insensitive' } },
-                    { description: { contains: keywords, mode: 'insensitive' } },
-                ],
-            }),
-        };
+  async softDeleteMany(ids: string[], deletedBy: string) {
+    const now = new Date();
 
-        const [items, total] = await Promise.all([
-            this.prisma.rowTemplate.findMany({
-                where,
-                include: this.listInclude,
-                orderBy: { created_at: 'desc' },
-                take: limit,
-                skip: offset,
-            }),
-            this.prisma.rowTemplate.count({ where }),
-        ]);
+    return this.prisma.$transaction(async (tx) => {
+      // Cascade delete discount configs
+      await tx.rowDiscountConfig.updateMany({
+        where: { row_template_id: { in: ids }, is_deleted: false },
+        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+      });
 
-        return {
-            items,
-            total,
-            limit,
-            offset,
-            hasMore: offset + items.length < total,
-        };
-    }
+      // Cascade delete nested entities
+      const racks = await tx.rackTemplate.findMany({
+        where: { row_template_id: { in: ids }, is_deleted: false },
+        select: { id: true },
+      });
+      const rackIds = racks.map((r) => r.id);
 
-    async update(id: string, data: Prisma.RowTemplateUpdateInput) {
-        return this.prisma.rowTemplate.update({
-            where: { id },
-            data,
-            include: this.fullInclude,
+      if (rackIds.length > 0) {
+        const shelves = await tx.shelfTemplate.findMany({
+          where: { rack_template_id: { in: rackIds }, is_deleted: false },
+          select: { id: true },
         });
-    }
+        const shelfIds = shelves.map((s) => s.id);
 
-    async softDelete(id: string, deletedBy: string) {
-        const now = new Date();
+        if (shelfIds.length > 0) {
+          await tx.blockTemplate.updateMany({
+            where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
+            data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+          });
+        }
 
-        return this.prisma.$transaction(async (tx) => {
-            // Cascade delete discount configs
-            await tx.rowDiscountConfig.updateMany({
-                where: { row_template_id: id, is_deleted: false },
-                data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-            });
-
-            // Cascade delete nested entities
-            const racks = await tx.rackTemplate.findMany({
-                where: { row_template_id: id, is_deleted: false },
-                select: { id: true },
-            });
-            const rackIds = racks.map(r => r.id);
-
-            if (rackIds.length > 0) {
-                const shelves = await tx.shelfTemplate.findMany({
-                    where: { rack_template_id: { in: rackIds }, is_deleted: false },
-                    select: { id: true },
-                });
-                const shelfIds = shelves.map(s => s.id);
-
-                if (shelfIds.length > 0) {
-                    await tx.blockTemplate.updateMany({
-                        where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
-                        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                    });
-                }
-
-                await tx.shelfTemplate.updateMany({
-                    where: { rack_template_id: { in: rackIds }, is_deleted: false },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                });
-
-                await tx.rackTemplate.updateMany({
-                    where: { row_template_id: id, is_deleted: false },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                });
-            }
-
-            // Soft delete row
-            return tx.rowTemplate.update({
-                where: { id },
-                data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-            });
+        await tx.shelfTemplate.updateMany({
+          where: { rack_template_id: { in: rackIds }, is_deleted: false },
+          data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
         });
-    }
 
-    async softDeleteMany(ids: string[], deletedBy: string) {
-        const now = new Date();
-
-        return this.prisma.$transaction(async (tx) => {
-            // Cascade delete discount configs
-            await tx.rowDiscountConfig.updateMany({
-                where: { row_template_id: { in: ids }, is_deleted: false },
-                data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-            });
-
-            // Cascade delete nested entities
-            const racks = await tx.rackTemplate.findMany({
-                where: { row_template_id: { in: ids }, is_deleted: false },
-                select: { id: true },
-            });
-            const rackIds = racks.map(r => r.id);
-
-            if (rackIds.length > 0) {
-                const shelves = await tx.shelfTemplate.findMany({
-                    where: { rack_template_id: { in: rackIds }, is_deleted: false },
-                    select: { id: true },
-                });
-                const shelfIds = shelves.map(s => s.id);
-
-                if (shelfIds.length > 0) {
-                    await tx.blockTemplate.updateMany({
-                        where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
-                        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                    });
-                }
-
-                await tx.shelfTemplate.updateMany({
-                    where: { rack_template_id: { in: rackIds }, is_deleted: false },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                });
-
-                await tx.rackTemplate.updateMany({
-                    where: { row_template_id: { in: ids }, is_deleted: false },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-                });
-            }
-
-            return tx.rowTemplate.updateMany({
-                where: { id: { in: ids } },
-                data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
-            });
+        await tx.rackTemplate.updateMany({
+          where: { row_template_id: { in: ids }, is_deleted: false },
+          data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
         });
-    }
+      }
 
-    async findByIds(ids: string[]) {
-        return this.prisma.rowTemplate.findMany({
-            where: { id: { in: ids }, is_deleted: false },
+      return tx.rowTemplate.updateMany({
+        where: { id: { in: ids } },
+        data: { is_deleted: true, deleted_at: now, deleted_by: deletedBy },
+      });
+    });
+  }
+
+  async findByIds(ids: string[]) {
+    return this.prisma.rowTemplate.findMany({
+      where: { id: { in: ids }, is_deleted: false },
+    });
+  }
+
+  /** Kiểm tra warehouse template tồn tại và trả về bounds */
+  async warehouseTemplateExists(id: string) {
+    return this.prisma.warehouseTemplate.findFirst({
+      where: { id, is_deleted: false },
+      select: { id: true, length: true, width: true, created_by: true },
+    });
+  }
+
+  /** Lấy discount configs hiện có của row */
+  async findDiscountConfigs(rowId: string) {
+    return this.prisma.rowDiscountConfig.findMany({
+      where: { row_template_id: rowId, is_deleted: false },
+      select: { id: true, duration_tier_id: true },
+    });
+  }
+
+  /** Upsert discount configs cho row */
+  async upsertDiscountConfigs(
+    rowId: string,
+    configsToCreate: Prisma.RowDiscountConfigCreateManyInput[],
+    configsToUpdate: {
+      id: string;
+      data: Prisma.RowDiscountConfigUpdateInput;
+    }[],
+    configIdsToDelete: string[],
+    userId: string,
+  ) {
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      // Delete configs that are not in the request
+      if (configIdsToDelete.length > 0) {
+        await tx.rowDiscountConfig.updateMany({
+          where: { id: { in: configIdsToDelete } },
+          data: { is_deleted: true, deleted_at: now, deleted_by: userId },
         });
-    }
+      }
 
-    /** Kiểm tra warehouse template tồn tại và trả về bounds */
-    async warehouseTemplateExists(id: string) {
-        return this.prisma.warehouseTemplate.findFirst({
-            where: { id, is_deleted: false },
-            select: { id: true, length: true, width: true, created_by: true },
+      // Create new configs
+      if (configsToCreate.length > 0) {
+        await tx.rowDiscountConfig.createMany({
+          data: configsToCreate.map((c) => ({
+            ...c,
+            row_template_id: rowId,
+          })),
         });
-    }
+      }
 
-    /** Lấy discount configs hiện có của row */
-    async findDiscountConfigs(rowId: string) {
-        return this.prisma.rowDiscountConfig.findMany({
-            where: { row_template_id: rowId, is_deleted: false },
-            select: { id: true, duration_tier_id: true },
+      // Update existing configs
+      for (const config of configsToUpdate) {
+        await tx.rowDiscountConfig.update({
+          where: { id: config.id },
+          data: config.data,
         });
-    }
+      }
+    });
+  }
 
-    /** Upsert discount configs cho row */
-    async upsertDiscountConfigs(
-        rowId: string,
-        configsToCreate: Prisma.RowDiscountConfigCreateManyInput[],
-        configsToUpdate: { id: string; data: Prisma.RowDiscountConfigUpdateInput }[],
-        configIdsToDelete: string[],
-        userId: string,
-    ) {
-        const now = new Date();
+  /** Upsert addon gifts cho row */
+  async upsertAddonGifts(
+    rowId: string,
+    createData: Prisma.RowAddonGiftCreateManyInput[],
+    updateData: { id: string; data: Prisma.RowAddonGiftUpdateInput }[],
+    deleteIds: string[],
+    userId: string,
+  ) {
+    const now = new Date();
 
-        await this.prisma.$transaction(async (tx) => {
-            // Delete configs that are not in the request
-            if (configIdsToDelete.length > 0) {
-                await tx.rowDiscountConfig.updateMany({
-                    where: { id: { in: configIdsToDelete } },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: userId },
-                });
-            }
-
-            // Create new configs
-            if (configsToCreate.length > 0) {
-                await tx.rowDiscountConfig.createMany({
-                    data: configsToCreate.map(c => ({
-                        ...c,
-                        row_template_id: rowId,
-                    })),
-                });
-            }
-
-            // Update existing configs
-            for (const config of configsToUpdate) {
-                await tx.rowDiscountConfig.update({
-                    where: { id: config.id },
-                    data: config.data,
-                });
-            }
+    await this.prisma.$transaction(async (tx) => {
+      // Delete gifts
+      if (deleteIds.length > 0) {
+        await tx.rowAddonGift.updateMany({
+          where: { id: { in: deleteIds } },
+          data: { is_deleted: true, deleted_at: now, deleted_by: userId },
         });
-    }
+      }
 
-    /** Upsert addon gifts cho row */
-    async upsertAddonGifts(
-        rowId: string,
-        createData: Prisma.RowAddonGiftCreateManyInput[],
-        updateData: { id: string; data: Prisma.RowAddonGiftUpdateInput }[],
-        deleteIds: string[],
-        userId: string,
-    ) {
-        const now = new Date();
-
-        await this.prisma.$transaction(async (tx) => {
-            // Delete gifts
-            if (deleteIds.length > 0) {
-                await tx.rowAddonGift.updateMany({
-                    where: { id: { in: deleteIds } },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: userId },
-                });
-            }
-
-            // Create gifts
-            if (createData.length > 0) {
-                // Manually set row_template_id because createManyInput doesn't infer from context
-                const dataWithTemplateId = createData.map(d => ({
-                    ...d,
-                    row_template_id: rowId,
-                }));
-                await tx.rowAddonGift.createMany({
-                    data: dataWithTemplateId,
-                });
-            }
-
-            // Update gifts
-            for (const item of updateData) {
-                await tx.rowAddonGift.update({
-                    where: { id: item.id },
-                    data: item.data,
-                });
-            }
+      // Create gifts
+      if (createData.length > 0) {
+        // Manually set row_template_id because createManyInput doesn't infer from context
+        const dataWithTemplateId = createData.map((d) => ({
+          ...d,
+          row_template_id: rowId,
+        }));
+        await tx.rowAddonGift.createMany({
+          data: dataWithTemplateId,
         });
-    }
+      }
 
-    /** Upsert insurance gifts cho row */
-    async upsertInsuranceGifts(
-        rowId: string,
-        createData: Prisma.RowInsuranceGiftCreateManyInput[],
-        updateData: { id: string; data: Prisma.RowInsuranceGiftUpdateInput }[],
-        deleteIds: string[],
-        userId: string,
-    ) {
-        const now = new Date();
-
-        await this.prisma.$transaction(async (tx) => {
-            // Delete gifts
-            if (deleteIds.length > 0) {
-                await tx.rowInsuranceGift.updateMany({
-                    where: { id: { in: deleteIds } },
-                    data: { is_deleted: true, deleted_at: now, deleted_by: userId },
-                });
-            }
-
-            // Create gifts
-            if (createData.length > 0) {
-                const dataWithTemplateId = createData.map(d => ({
-                    ...d,
-                    row_template_id: rowId,
-                }));
-                await tx.rowInsuranceGift.createMany({
-                    data: dataWithTemplateId,
-                });
-            }
-
-            // Update gifts
-            for (const item of updateData) {
-                await tx.rowInsuranceGift.update({
-                    where: { id: item.id },
-                    data: item.data,
-                });
-            }
+      // Update gifts
+      for (const item of updateData) {
+        await tx.rowAddonGift.update({
+          where: { id: item.id },
+          data: item.data,
         });
-    }
+      }
+    });
+  }
 
+  /** Upsert insurance gifts cho row */
+  async upsertInsuranceGifts(
+    rowId: string,
+    createData: Prisma.RowInsuranceGiftCreateManyInput[],
+    updateData: { id: string; data: Prisma.RowInsuranceGiftUpdateInput }[],
+    deleteIds: string[],
+    userId: string,
+  ) {
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      // Delete gifts
+      if (deleteIds.length > 0) {
+        await tx.rowInsuranceGift.updateMany({
+          where: { id: { in: deleteIds } },
+          data: { is_deleted: true, deleted_at: now, deleted_by: userId },
+        });
+      }
+
+      // Create gifts
+      if (createData.length > 0) {
+        const dataWithTemplateId = createData.map((d) => ({
+          ...d,
+          row_template_id: rowId,
+        }));
+        await tx.rowInsuranceGift.createMany({
+          data: dataWithTemplateId,
+        });
+      }
+
+      // Update gifts
+      for (const item of updateData) {
+        await tx.rowInsuranceGift.update({
+          where: { id: item.id },
+          data: item.data,
+        });
+      }
+    });
+  }
 }

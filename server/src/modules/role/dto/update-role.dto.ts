@@ -9,12 +9,12 @@ import { CreateRoleDto } from './create-role.dto';
  * DTO để cập nhật role
  */
 export class UpdateRoleDto extends PartialType(CreateRoleDto) {
-    @ApiProperty({
-        description: 'Trạng thái active của role',
-        required: false,
-    })
-    @IsOptional()
-    @IsBoolean({ message: i18nValidationMessage('common.validation.is_boolean') })
-    @Transform(({ value }) => value === 'true' || value === true)
-    is_active?: boolean;
+  @ApiProperty({
+    description: 'Trạng thái active của role',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: i18nValidationMessage('common.validation.is_boolean') })
+  @Transform(({ value }) => value === 'true' || value === true)
+  is_active?: boolean;
 }

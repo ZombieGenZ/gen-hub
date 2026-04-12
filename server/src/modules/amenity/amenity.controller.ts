@@ -25,7 +25,12 @@ import { AmenityService } from './amenity.service';
 import { CreateAmenityDto, UpdateAmenityDto, QueryAmenityDto } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser, Public } from '../../common/decorators';
+import {
+  RequirePermission,
+  RequireAnyPermission,
+  CurrentUser,
+  Public,
+} from '../../common/decorators';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
@@ -45,7 +50,7 @@ export class AmenityController {
   constructor(
     private readonly amenityService: AmenityService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -303,8 +308,15 @@ export class AmenityController {
     @Query() query: QueryAmenityDto,
     @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<IAmenity>>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'amenity.list.all');
-    const result = await this.amenityService.findAll(query, userId, hasListAllPermission);
+    const hasListAllPermission = await this.hasPermission(
+      userId,
+      'amenity.list.all',
+    );
+    const result = await this.amenityService.findAll(
+      query,
+      userId,
+      hasListAllPermission,
+    );
     return new GetResponse('amenity.list.success', result);
   }
 
@@ -457,7 +469,6 @@ export class AmenityController {
       },
     },
   })
-
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -468,8 +479,16 @@ export class AmenityController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAmenity>> {
-    const hasReadAllPermission = await this.hasPermission(userId, 'amenity.read.all');
-    const result = await this.amenityService.findById(id, userId, hasReadAllPermission, lang);
+    const hasReadAllPermission = await this.hasPermission(
+      userId,
+      'amenity.read.all',
+    );
+    const result = await this.amenityService.findById(
+      id,
+      userId,
+      hasReadAllPermission,
+      lang,
+    );
     return new GetResponse('amenity.get.success', result);
   }
 
@@ -596,8 +615,17 @@ export class AmenityController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAmenity>> {
-    const hasUpdateAllPermission = await this.hasPermission(userId, 'amenity.update.all');
-    const result = await this.amenityService.update(id, dto, userId, hasUpdateAllPermission, lang);
+    const hasUpdateAllPermission = await this.hasPermission(
+      userId,
+      'amenity.update.all',
+    );
+    const result = await this.amenityService.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAllPermission,
+      lang,
+    );
     return new UpdatedResponse('amenity.update.success', result);
   }
 
@@ -671,8 +699,16 @@ export class AmenityController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'amenity.delete.all');
-    await this.amenityService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'amenity.delete.all',
+    );
+    await this.amenityService.deleteMany(
+      dto.ids,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse('amenity.delete.success', null);
   }
 
@@ -723,7 +759,10 @@ export class AmenityController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'amenity.delete.all');
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'amenity.delete.all',
+    );
     await this.amenityService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse('amenity.delete.success', null);
   }

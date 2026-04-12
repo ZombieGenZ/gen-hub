@@ -24,7 +24,12 @@ export class AvatarImageRepository {
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; where?: any; orderBy?: any }) {
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: any;
+    orderBy?: any;
+  }) {
     return this.prisma.avatarImage.findMany({
       ...params,
       select: avatarImageListSelect,
@@ -40,7 +45,10 @@ export class AvatarImageRepository {
     if (!hasReadAllPermission && userId) {
       where.created_by = userId;
     }
-    return this.prisma.avatarImage.findFirst({ where, select: avatarImageDetailSelect });
+    return this.prisma.avatarImage.findFirst({
+      where,
+      select: avatarImageDetailSelect,
+    });
   }
 
   async findByName(name: string, excludeId?: string) {
@@ -73,14 +81,17 @@ export class AvatarImageRepository {
     });
   }
 
-  async update(id: string, data: {
-    name?: string;
-    description?: string;
-    image_url?: string;
-    is_default?: boolean;
-    is_active?: boolean;
-    updated_by: string;
-  }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      image_url?: string;
+      is_default?: boolean;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
     return this.prisma.avatarImage.update({
       where: { id },
       data,
@@ -99,13 +110,20 @@ export class AvatarImageRepository {
     });
   }
 
-  async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+  async findByIds(
+    ids: string[],
+    userId?: string,
+    hasDeleteAllPermission?: boolean,
+  ) {
     const where: any = { id: { in: ids }, is_deleted: false };
     if (!hasDeleteAllPermission && userId) {
       where.created_by = userId;
     }
 
-    return this.prisma.avatarImage.findMany({ where, select: avatarImageListSelect });
+    return this.prisma.avatarImage.findMany({
+      where,
+      select: avatarImageListSelect,
+    });
   }
 
   async softDeleteMany(ids: string[], deletedBy: string) {

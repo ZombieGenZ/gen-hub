@@ -10,11 +10,12 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly appConfigService: AppConfigService,
-  ) { }
+  ) {}
 
   @ApiOperation({
     summary: 'Trang chủ',
-    description: 'Endpoint gốc của API. Trả về thông điệp chào mừng để xác nhận API đang hoạt động và có thể truy cập được.',
+    description:
+      'Endpoint gốc của API. Trả về thông điệp chào mừng để xác nhận API đang hoạt động và có thể truy cập được.',
   })
   @ApiResponse({
     status: 200,

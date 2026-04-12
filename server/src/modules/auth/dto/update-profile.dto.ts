@@ -20,7 +20,8 @@ export class UpdateProfileDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Ngôn ngữ (vi, en) - chỉ cho phép các giá trị từ ALLOWED_LANGUAGES',
+    description:
+      'Ngôn ngữ (vi, en) - chỉ cho phép các giá trị từ ALLOWED_LANGUAGES',
     example: 'vi',
   })
   @IsOptional()

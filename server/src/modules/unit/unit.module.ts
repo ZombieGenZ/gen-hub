@@ -9,9 +9,15 @@ import { OrganizationModule } from '../organization/organization.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [SharedModule, RedisModule, WebsocketModule, OrganizationModule, ApiKeyVerificationModule],
-    controllers: [UnitController],
-    providers: [UnitService, UnitRepository],
-    exports: [UnitService, UnitRepository],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    OrganizationModule,
+    ApiKeyVerificationModule,
+  ],
+  controllers: [UnitController],
+  providers: [UnitService, UnitRepository],
+  exports: [UnitService, UnitRepository],
 })
-export class UnitModule { }
+export class UnitModule {}

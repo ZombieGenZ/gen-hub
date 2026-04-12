@@ -1,7 +1,4 @@
-import {
-    Injectable,
-    ExecutionContext,
-} from '@nestjs/common';
+import { Injectable, ExecutionContext } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 /**
@@ -12,28 +9,28 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
-    /**
-     * Luôn cho phép request đi qua
-     * Nếu có token hợp lệ, user sẽ được attach vào request
-     */
-    canActivate(context: ExecutionContext) {
-        return super.canActivate(context);
-    }
+  /**
+   * Luôn cho phép request đi qua
+   * Nếu có token hợp lệ, user sẽ được attach vào request
+   */
+  canActivate(context: ExecutionContext) {
+    return super.canActivate(context);
+  }
 
-    /**
-     * Không throw error nếu không có user
-     * Trả về null thay vì throw UnauthorizedException
-     */
-    handleRequest<TUser = unknown>(
-        err: Error | null,
-        user: TUser | false,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _info: Error | undefined,
-    ): TUser | null {
-        // Nếu có lỗi hoặc không có user, trả về null thay vì throw error
-        if (err || !user) {
-            return null as TUser | null;
-        }
-        return user;
+  /**
+   * Không throw error nếu không có user
+   * Trả về null thay vì throw UnauthorizedException
+   */
+  handleRequest<TUser = unknown>(
+    err: Error | null,
+    user: TUser | false,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _info: Error | undefined,
+  ): TUser | null {
+    // Nếu có lỗi hoặc không có user, trả về null thay vì throw error
+    if (err || !user) {
+      return null as TUser | null;
     }
+    return user;
+  }
 }

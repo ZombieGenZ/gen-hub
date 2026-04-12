@@ -6,12 +6,9 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [PrismaModule, ApiKeyVerificationModule],
-    controllers: [WarehouseManagerViewController],
-    providers: [
-        WarehouseManagerViewService,
-        WarehouseManagerViewRepository,
-    ],
-    exports: [WarehouseManagerViewService],
+  imports: [PrismaModule, ApiKeyVerificationModule],
+  controllers: [WarehouseManagerViewController],
+  providers: [WarehouseManagerViewService, WarehouseManagerViewRepository],
+  exports: [WarehouseManagerViewService],
 })
-export class WarehouseManagerViewModule { }
+export class WarehouseManagerViewModule {}

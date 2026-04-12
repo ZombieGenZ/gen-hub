@@ -1612,16 +1612,12 @@ export class InventoryRequestService {
     ]);
 
     // Emit realtime event: inbound:approved
-    this.websocketGateway.emitToOrganization(
-      orgId,
-      'inbound:approved',
-      {
-        receiptId: id,
-        code: updated.code,
-        approvedBy: actorId,
-        timestamp: new Date().toISOString(),
-      },
-    );
+    this.websocketGateway.emitToOrganization(orgId, 'inbound:approved', {
+      receiptId: id,
+      code: updated.code,
+      approvedBy: actorId,
+      timestamp: new Date().toISOString(),
+    });
 
     // Audit log
     this.auditLogService.logUpdate(
@@ -2177,7 +2173,9 @@ export class InventoryRequestService {
 
     // Khách hàng không đồng ý → huỷ phiếu nhập, không để treo đơn
     const isCancelled = hasMismatch && dto.is_customer_agreed === false;
-    const finalStatus = isCancelled ? ReceiptStatus.CANCELLED : ReceiptStatus.PROCESSING;
+    const finalStatus = isCancelled
+      ? ReceiptStatus.CANCELLED
+      : ReceiptStatus.PROCESSING;
     const cancelReason = await this.i18n.translate(
       'inventory-request.errors.inbound_cancelled_customer_rejected',
       { lang },
@@ -2197,7 +2195,8 @@ export class InventoryRequestService {
           receiving_completed_at: new Date(),
           notes: isCancelled ? cancelReason : (dto.notes ?? receipt.notes),
           // ✅ Lưu flag: khách hàng đã đồng ý với mismatch
-          is_customer_mismatch_agreed: hasMismatch && dto.is_customer_agreed === true ? true : false,
+          is_customer_mismatch_agreed:
+            hasMismatch && dto.is_customer_agreed === true ? true : false,
           updated_by: actorId,
         },
         include: {
@@ -2298,9 +2297,14 @@ export class InventoryRequestService {
     });
 
     // ✅ Nếu khách hàng đã đồng ý mismatch ở receiving → cho phép cất hàng ngay (không yêu cầu force)
-    const hasCustomerApprovedMismatch = (receipt as any).is_customer_mismatch_agreed === true;
+    const hasCustomerApprovedMismatch =
+      (receipt as any).is_customer_mismatch_agreed === true;
 
-    if (mismatchDetails.length > 0 && !dto?.force && !hasCustomerApprovedMismatch) {
+    if (
+      mismatchDetails.length > 0 &&
+      !dto?.force &&
+      !hasCustomerApprovedMismatch
+    ) {
       const mismatches = mismatchDetails.map((d) => ({
         detail_id: d.id,
         product_name: (d as any).product?.name || d.product_id,

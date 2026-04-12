@@ -6,8 +6,11 @@ import { CoverImageService } from './cover-image.service';
 
 @Module({
   controllers: [CoverImageController],
-  providers: [CoverImageService, CoverImageRepository, CoverImageCacheKeysHelper],
+  providers: [
+    CoverImageService,
+    CoverImageRepository,
+    CoverImageCacheKeysHelper,
+  ],
   exports: [CoverImageService],
 })
 export class CoverImageModule {}
-

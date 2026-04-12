@@ -9,16 +9,16 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-    imports: [
-        ConfigModule,
-        ScheduleModule.forRoot(),
-        BackblazeB2Module,
-        RedisModule,
-        WebsocketModule,
-        PrismaModule,
-    ],
-    controllers: [DatabaseBackupController],
-    providers: [DatabaseBackupService],
-    exports: [DatabaseBackupService],
+  imports: [
+    ConfigModule,
+    ScheduleModule.forRoot(),
+    BackblazeB2Module,
+    RedisModule,
+    WebsocketModule,
+    PrismaModule,
+  ],
+  controllers: [DatabaseBackupController],
+  providers: [DatabaseBackupService],
+  exports: [DatabaseBackupService],
 })
-export class DatabaseBackupModule { }
+export class DatabaseBackupModule {}

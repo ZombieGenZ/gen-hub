@@ -5,8 +5,8 @@ import { AmenityRepository } from './amenity.repository';
 import { AmenityCacheKeysHelper } from './constants';
 
 @Module({
-    controllers: [AmenityController],
-    providers: [AmenityService, AmenityRepository, AmenityCacheKeysHelper],
-    exports: [AmenityService],
+  controllers: [AmenityController],
+  providers: [AmenityService, AmenityRepository, AmenityCacheKeysHelper],
+  exports: [AmenityService],
 })
-export class AmenityModule { }
+export class AmenityModule {}

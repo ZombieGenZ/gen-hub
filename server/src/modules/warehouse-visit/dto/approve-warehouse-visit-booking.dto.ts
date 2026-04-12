@@ -24,7 +24,9 @@ export class ApproveWarehouseVisitBookingDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('warehouse_visit.validation.confirmation_notes_string'),
+    message: i18nValidationMessage(
+      'warehouse_visit.validation.confirmation_notes_string',
+    ),
   })
   confirmation_notes?: string;
 
@@ -34,7 +36,9 @@ export class ApproveWarehouseVisitBookingDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('warehouse_visit.validation.rejection_reason_string'),
+    message: i18nValidationMessage(
+      'warehouse_visit.validation.rejection_reason_string',
+    ),
   })
   rejection_reason?: string;
 }

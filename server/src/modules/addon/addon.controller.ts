@@ -30,7 +30,11 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import {
+  RequirePermission,
+  RequireAnyPermission,
+  CurrentUser,
+} from '../../common/decorators';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
@@ -51,7 +55,7 @@ export class AddonController {
     private readonly addonService: AddonService,
     private readonly i18n: I18nService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -316,8 +320,15 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IAddon>>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'addon.list.all');
-    const result = await this.addonService.findAll(query, userId, hasListAllPermission);
+    const hasListAllPermission = await this.hasPermission(
+      userId,
+      'addon.list.all',
+    );
+    const result = await this.addonService.findAll(
+      query,
+      userId,
+      hasListAllPermission,
+    );
     return new GetResponse(
       'addon.list.success',
       result,
@@ -491,8 +502,16 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddon>> {
-    const hasReadAllPermission = await this.hasPermission(userId, 'addon.read.all');
-    const result = await this.addonService.findById(id, userId, hasReadAllPermission, lang);
+    const hasReadAllPermission = await this.hasPermission(
+      userId,
+      'addon.read.all',
+    );
+    const result = await this.addonService.findById(
+      id,
+      userId,
+      hasReadAllPermission,
+      lang,
+    );
     return new GetResponse(
       'addon.read.success',
       result,
@@ -622,8 +641,17 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAddon>> {
-    const hasUpdateAllPermission = await this.hasPermission(userId, 'addon.update.all');
-    const result = await this.addonService.update(id, dto, userId, hasUpdateAllPermission, lang);
+    const hasUpdateAllPermission = await this.hasPermission(
+      userId,
+      'addon.update.all',
+    );
+    const result = await this.addonService.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAllPermission,
+      lang,
+    );
     return new UpdatedResponse(
       'addon.update.success',
       result,
@@ -689,8 +717,16 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon.delete.all');
-    await this.addonService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'addon.delete.all',
+    );
+    await this.addonService.deleteMany(
+      dto.ids,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse(
       'addon.delete.success',
       null,
@@ -745,7 +781,10 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon.delete.all');
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'addon.delete.all',
+    );
     await this.addonService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse(
       'addon.delete.success',

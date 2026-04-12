@@ -1,5 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ConsultationRequestSource, ConsultationRequestStatus } from '@prisma/client';
+import {
+  ConsultationRequestSource,
+  ConsultationRequestStatus,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -12,7 +15,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @Min(1, { message: i18nValidationMessage('consultation-request.validation.page_min') })
+  @Min(1, {
+    message: i18nValidationMessage('consultation-request.validation.page_min'),
+  })
   page?: number = 1;
 
   @ApiPropertyOptional({
@@ -22,16 +27,21 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @Min(1, { message: i18nValidationMessage('consultation-request.validation.limit_min') })
+  @Min(1, {
+    message: i18nValidationMessage('consultation-request.validation.limit_min'),
+  })
   limit?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Từ khóa tìm kiếm theo tên, email, số điện thoại hoặc mã yêu cầu.',
+    description:
+      'Từ khóa tìm kiếm theo tên, email, số điện thoại hoặc mã yêu cầu.',
     example: 'Nguyễn Thị Lan',
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.search_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.search_string',
+    ),
   })
   search?: string;
 
@@ -42,7 +52,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @IsEnum(ConsultationRequestStatus, {
-    message: i18nValidationMessage('consultation-request.validation.status_enum'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.status_enum',
+    ),
   })
   status?: ConsultationRequestStatus;
 
@@ -53,7 +65,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @IsEnum(ConsultationRequestSource, {
-    message: i18nValidationMessage('consultation-request.validation.source_enum'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.source_enum',
+    ),
   })
   source?: ConsultationRequestSource;
 
@@ -63,7 +77,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @IsUUID('4', {
-    message: i18nValidationMessage('consultation-request.validation.assigned_to_uuid'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.assigned_to_uuid',
+    ),
   })
   assigned_to?: string;
 
@@ -74,7 +90,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.sort_by_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.sort_by_string',
+    ),
   })
   sort_by?: string = 'created_at';
 
@@ -85,7 +103,9 @@ export class QueryConsultationRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('consultation-request.validation.sort_order_string'),
+    message: i18nValidationMessage(
+      'consultation-request.validation.sort_order_string',
+    ),
   })
   sort_order?: 'asc' | 'desc' = 'desc';
 }

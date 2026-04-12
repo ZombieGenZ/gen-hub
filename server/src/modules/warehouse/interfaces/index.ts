@@ -4,38 +4,38 @@ import { Warehouse, Row, Rack, Shelf, Block } from '@prisma/client';
  * Interface warehouse với relations
  */
 export interface IWarehouseWithRelations extends Warehouse {
-    organization?: {
-        id: string;
-        name: string;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  ward?: {
+    id: string;
+    name: string;
+    code: string;
+    type: string | null;
+    province?: {
+      id: string;
+      name: string;
+      code: string;
+      type: string | null;
     };
-    ward?: {
-        id: string;
-        name: string;
-        code: string;
-        type: string | null;
-        province?: {
-            id: string;
-            name: string;
-            code: string;
-            type: string | null;
-        };
-    } | null;
-    rows?: IRowWithRelations[];
-    _count?: {
-        rows: number;
-    };
+  } | null;
+  rows?: IRowWithRelations[];
+  _count?: {
+    rows: number;
+  };
 }
 
 export interface IRowWithRelations extends Row {
-    racks?: IRackWithRelations[];
+  racks?: IRackWithRelations[];
 }
 
 export interface IRackWithRelations extends Rack {
-    shelves?: IShelfWithRelations[];
+  shelves?: IShelfWithRelations[];
 }
 
 export interface IShelfWithRelations extends Shelf {
-    blocks?: Block[];
+  blocks?: Block[];
 }
 
 // Re-export IPaginatedResponse từ common
@@ -45,43 +45,43 @@ export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
  * Interface warehouse layout (toàn bộ cấu trúc)
  */
 export interface IWarehouseLayout {
+  id: string;
+  name: string;
+  description: string | null;
+  length: number;
+  width: number;
+  rows: {
     id: string;
     name: string;
-    description: string | null;
-    length: number;
-    width: number;
-    rows: {
+    code: string;
+    position_x: number | null;
+    position_y: number | null;
+    position_rotation: number | null;
+    is_rented: boolean;
+    racks: {
+      id: string;
+      name: string;
+      code: string;
+      position_x: number | null;
+      position_y: number | null;
+      position_rotation: number | null;
+      dimensions_width: number | null;
+      dimensions_depth: number | null;
+      dimensions_height: number | null;
+      shelves: {
         id: string;
         name: string;
         code: string;
-        position_x: number | null;
-        position_y: number | null;
-        position_rotation: number | null;
-        is_rented: boolean;
-        racks: {
-            id: string;
-            name: string;
-            code: string;
-            position_x: number | null;
-            position_y: number | null;
-            position_rotation: number | null;
-            dimensions_width: number | null;
-            dimensions_depth: number | null;
-            dimensions_height: number | null;
-            shelves: {
-                id: string;
-                name: string;
-                code: string;
-                blocks: {
-                    id: string;
-                    name: string;
-                    code: string;
-                    position_x: number | null;
-                    position_y: number | null;
-                    dimensions_width: number | null;
-                    dimensions_height: number | null;
-                }[];
-            }[];
+        blocks: {
+          id: string;
+          name: string;
+          code: string;
+          position_x: number | null;
+          position_y: number | null;
+          dimensions_width: number | null;
+          dimensions_height: number | null;
         }[];
+      }[];
     }[];
+  }[];
 }

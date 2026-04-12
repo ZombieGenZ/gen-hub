@@ -10,4 +10,3 @@ import { RankService } from './rank.service';
   exports: [RankService],
 })
 export class RankModule {}
-

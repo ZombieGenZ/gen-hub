@@ -11,16 +11,16 @@ import { WarehouseService } from './warehouse.service';
 import { WarehouseRepository } from './warehouse.repository';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        OrganizationModule,
-        ApiKeyVerificationModule,
-    ],
-    controllers: [WarehouseController],
-    providers: [WarehouseService, WarehouseRepository],
-    exports: [WarehouseService, WarehouseRepository],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    OrganizationModule,
+    ApiKeyVerificationModule,
+  ],
+  controllers: [WarehouseController],
+  providers: [WarehouseService, WarehouseRepository],
+  exports: [WarehouseService, WarehouseRepository],
 })
-export class WarehouseModule { }
+export class WarehouseModule {}

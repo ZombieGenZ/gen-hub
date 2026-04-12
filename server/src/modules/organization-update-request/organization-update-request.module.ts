@@ -8,10 +8,16 @@ import { OrganizationModule } from '../organization/organization.module';
 import { UserNotificationModule } from '../user-notification/user-notification.module';
 
 @Module({
-    imports: [forwardRef(() => OrganizationModule), UserNotificationModule],
-    controllers: [OrganizationUpdateRequestController],
-    providers: [OrganizationUpdateRequestService, OrganizationUpdateRequestRepository, OrganizationUpdateRequestCacheKeys],
-    exports: [OrganizationUpdateRequestService, OrganizationUpdateRequestCacheKeys],
-
+  imports: [forwardRef(() => OrganizationModule), UserNotificationModule],
+  controllers: [OrganizationUpdateRequestController],
+  providers: [
+    OrganizationUpdateRequestService,
+    OrganizationUpdateRequestRepository,
+    OrganizationUpdateRequestCacheKeys,
+  ],
+  exports: [
+    OrganizationUpdateRequestService,
+    OrganizationUpdateRequestCacheKeys,
+  ],
 })
-export class OrganizationUpdateRequestModule { }
+export class OrganizationUpdateRequestModule {}

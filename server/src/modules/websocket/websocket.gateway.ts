@@ -8,7 +8,12 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger, Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Logger,
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Server, Socket } from 'socket.io';
@@ -49,7 +54,13 @@ import { UserRepository } from '../user/user.repository';
   transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
+  implements
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit,
+    OnModuleDestroy
+{
   @WebSocketServer()
   server: Server;
 
@@ -71,7 +82,7 @@ export class WebsocketGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userRepository: UserRepository,
-  ) { }
+  ) {}
 
   /**
    * Khởi tạo module - bắt đầu interval check offline users
@@ -86,7 +97,9 @@ export class WebsocketGateway
       this.checkAndSetOfflineUsers();
     }, checkIntervalMs);
 
-    this.logger.log(`⏰ User online status check interval started (${checkIntervalMs}ms)`);
+    this.logger.log(
+      `⏰ User online status check interval started (${checkIntervalMs}ms)`,
+    );
   }
 
   /**
@@ -124,7 +137,9 @@ export class WebsocketGateway
 
           // Lưu mapping cho authenticated user
           this.socketUsers.set(socket.id, userId);
-          const isFirstConnection = !this.userSockets.has(userId) || this.userSockets.get(userId)!.size === 0;
+          const isFirstConnection =
+            !this.userSockets.has(userId) ||
+            this.userSockets.get(userId)!.size === 0;
           if (!this.userSockets.has(userId)) {
             this.userSockets.set(userId, new Set());
           }
@@ -136,7 +151,8 @@ export class WebsocketGateway
           // Join user room
           socket.join(`user:${userId}`);
 
-          const organizationIds = await this.userRepository.getUserOrganizations(userId);
+          const organizationIds =
+            await this.userRepository.getUserOrganizations(userId);
           organizationIds.forEach((orgId) => {
             socket.join(`organization:${orgId}`);
           });
@@ -146,7 +162,9 @@ export class WebsocketGateway
             await this.setUserOnlineStatus(userId, true);
           }
 
-          this.logger.log(`✅ Client connected: ${socket.id} (User: ${userId})`);
+          this.logger.log(
+            `✅ Client connected: ${socket.id} (User: ${userId})`,
+          );
         } else {
           // Token không hợp lệ
           this.sendError(socket, 'UNAUTHORIZED', 'Invalid or expired token');
@@ -295,7 +313,11 @@ export class WebsocketGateway
   /**
    * Emit event khi tạo mới WarehouseTemplate
    */
-  emitWarehouseTemplateCreated(warehouseTemplateId: string, name: string, createdBy: string) {
+  emitWarehouseTemplateCreated(
+    warehouseTemplateId: string,
+    name: string,
+    createdBy: string,
+  ) {
     const event: WarehouseTemplateCreatedEvent = {
       warehouseTemplateId,
       name,
@@ -327,7 +349,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa WarehouseTemplate
    */
-  emitWarehouseTemplateDeleted(warehouseTemplateId: string, name: string, deletedBy: string) {
+  emitWarehouseTemplateDeleted(
+    warehouseTemplateId: string,
+    name: string,
+    deletedBy: string,
+  ) {
     const event: WarehouseTemplateDeletedEvent = {
       warehouseTemplateId,
       name,
@@ -409,7 +435,10 @@ export class WebsocketGateway
   /**
    * Emit event khi mời thành viên
    */
-  emitMemberInvited(invitedUserId: string, data: { organization: { id: string; name: string }; member: unknown }) {
+  emitMemberInvited(
+    invitedUserId: string,
+    data: { organization: { id: string; name: string }; member: unknown },
+  ) {
     const event: MemberInvitedEvent = {
       organizationId: data.organization.id,
       organizationName: data.organization.name,
@@ -417,26 +446,37 @@ export class WebsocketGateway
       invitedBy: '',
       timestamp: new Date().toISOString(),
     };
-    this.server.to(`user:${invitedUserId}`).emit('organization:memberInvited', event);
+    this.server
+      .to(`user:${invitedUserId}`)
+      .emit('organization:memberInvited', event);
   }
 
   /**
    * Emit event khi xóa thành viên
    */
-  emitMemberRemoved(removedUserId: string, data: { organizationId: string; memberId: string }) {
+  emitMemberRemoved(
+    removedUserId: string,
+    data: { organizationId: string; memberId: string },
+  ) {
     const event: MemberRemovedEvent = {
       organizationId: data.organizationId,
       memberId: data.memberId,
       removedBy: '',
       timestamp: new Date().toISOString(),
     };
-    this.server.to(`user:${removedUserId}`).emit('organization:memberRemoved', event);
+    this.server
+      .to(`user:${removedUserId}`)
+      .emit('organization:memberRemoved', event);
   }
 
   /**
    * Emit event khi chuyển quyền sở hữu
    */
-  emitOwnershipTransferred(oldOwnerId: string, newOwnerId: string, org: { id: string; name: string }) {
+  emitOwnershipTransferred(
+    oldOwnerId: string,
+    newOwnerId: string,
+    org: { id: string; name: string },
+  ) {
     const event: OwnershipTransferredEvent = {
       organizationId: org.id,
       organizationName: org.name,
@@ -444,32 +484,45 @@ export class WebsocketGateway
       newOwnerId,
       timestamp: new Date().toISOString(),
     };
-    this.server.to(`user:${oldOwnerId}`).emit('organization:ownershipTransferred', event);
-    this.server.to(`user:${newOwnerId}`).emit('organization:ownershipTransferred', event);
+    this.server
+      .to(`user:${oldOwnerId}`)
+      .emit('organization:ownershipTransferred', event);
+    this.server
+      .to(`user:${newOwnerId}`)
+      .emit('organization:ownershipTransferred', event);
   }
 
   /**
    * Emit event khi thành viên chấp nhận lời mời
    */
-  emitMemberAccepted(orgId: string, orgName: string, memberId: string, userId: string) {
-    this.server.to(`organization:${orgId}`).emit('organization:memberAccepted', {
-      organizationId: orgId,
-      organizationName: orgName,
-      memberId,
-      userId,
-      timestamp: new Date().toISOString(),
-    });
+  emitMemberAccepted(
+    orgId: string,
+    orgName: string,
+    memberId: string,
+    userId: string,
+  ) {
+    this.server
+      .to(`organization:${orgId}`)
+      .emit('organization:memberAccepted', {
+        organizationId: orgId,
+        organizationName: orgName,
+        memberId,
+        userId,
+        timestamp: new Date().toISOString(),
+      });
   }
 
   /**
    * Emit event khi thành viên từ chối lời mời
    */
   emitMemberRejected(orgId: string, userId: string) {
-    this.server.to(`organization:${orgId}`).emit('organization:memberRejected', {
-      organizationId: orgId,
-      userId,
-      timestamp: new Date().toISOString(),
-    });
+    this.server
+      .to(`organization:${orgId}`)
+      .emit('organization:memberRejected', {
+        organizationId: orgId,
+        userId,
+        timestamp: new Date().toISOString(),
+      });
   }
 
   /**
@@ -487,33 +540,51 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật roles của thành viên
    */
-  emitMemberRolesUpdated(orgId: string, memberId: string, roleIds: string[], updatedBy: string) {
-    this.server.to(`organization:${orgId}`).emit('organization:memberRolesUpdated', {
-      organizationId: orgId,
-      memberId,
-      roleIds,
-      updatedBy,
-      timestamp: new Date().toISOString(),
-    });
+  emitMemberRolesUpdated(
+    orgId: string,
+    memberId: string,
+    roleIds: string[],
+    updatedBy: string,
+  ) {
+    this.server
+      .to(`organization:${orgId}`)
+      .emit('organization:memberRolesUpdated', {
+        organizationId: orgId,
+        memberId,
+        roleIds,
+        updatedBy,
+        timestamp: new Date().toISOString(),
+      });
   }
 
   /**
    * Emit event khi cập nhật permissions của thành viên
    */
-  emitMemberPermissionsUpdated(orgId: string, memberId: string, permissionIds: string[], updatedBy: string) {
-    this.server.to(`organization:${orgId}`).emit('organization:memberPermissionsUpdated', {
-      organizationId: orgId,
-      memberId,
-      permissionIds,
-      updatedBy,
-      timestamp: new Date().toISOString(),
-    });
+  emitMemberPermissionsUpdated(
+    orgId: string,
+    memberId: string,
+    permissionIds: string[],
+    updatedBy: string,
+  ) {
+    this.server
+      .to(`organization:${orgId}`)
+      .emit('organization:memberPermissionsUpdated', {
+        organizationId: orgId,
+        memberId,
+        permissionIds,
+        updatedBy,
+        timestamp: new Date().toISOString(),
+      });
   }
 
   /**
    * Emit event khi tạo GlobalNotification - broadcast đến tất cả
    */
-  emitGlobalNotificationCreated(notificationId: string, title: string, createdBy: string) {
+  emitGlobalNotificationCreated(
+    notificationId: string,
+    title: string,
+    createdBy: string,
+  ) {
     this.server.emit('globalNotification:created', {
       notificationId,
       title,
@@ -543,7 +614,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa GlobalNotification
    */
-  emitGlobalNotificationDeleted(notificationId: string, title: string, deletedBy: string) {
+  emitGlobalNotificationDeleted(
+    notificationId: string,
+    title: string,
+    deletedBy: string,
+  ) {
     this.server.emit('globalNotification:deleted', {
       notificationId,
       title,
@@ -555,7 +630,10 @@ export class WebsocketGateway
   /**
    * Emit event khi user nhận thông báo mới
    */
-  emitUserNotificationReceived(userId: string, notification: { id: string; title: string; content: string; type: string }) {
+  emitUserNotificationReceived(
+    userId: string,
+    notification: { id: string; title: string; content: string; type: string },
+  ) {
     this.server.to(`user:${userId}`).emit('userNotification:received', {
       notificationId: notification.id,
       title: notification.title,
@@ -587,7 +665,12 @@ export class WebsocketGateway
   /**
    * Emit event khi tạo OrganizationNotification
    */
-  emitOrgNotificationCreated(orgId: string, notificationId: string, title: string, createdBy: string) {
+  emitOrgNotificationCreated(
+    orgId: string,
+    notificationId: string,
+    title: string,
+    createdBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('orgNotification:created', {
       organizationId: orgId,
       notificationId,
@@ -620,7 +703,12 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa OrganizationNotification
    */
-  emitOrgNotificationDeleted(orgId: string, notificationId: string, title: string, deletedBy: string) {
+  emitOrgNotificationDeleted(
+    orgId: string,
+    notificationId: string,
+    title: string,
+    deletedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('orgNotification:deleted', {
       organizationId: orgId,
       notificationId,
@@ -633,7 +721,12 @@ export class WebsocketGateway
   /**
    * Emit event khi tạo Organization Role
    */
-  emitOrgRoleCreated(orgId: string, roleId: string, roleName: string, createdBy: string) {
+  emitOrgRoleCreated(
+    orgId: string,
+    roleId: string,
+    roleName: string,
+    createdBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('orgRole:created', {
       organizationId: orgId,
       roleId,
@@ -646,7 +739,12 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật Organization Role
    */
-  emitOrgRoleUpdated(orgId: string, roleId: string, roleName: string, updatedBy: string) {
+  emitOrgRoleUpdated(
+    orgId: string,
+    roleId: string,
+    roleName: string,
+    updatedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('orgRole:updated', {
       organizationId: orgId,
       roleId,
@@ -684,7 +782,12 @@ export class WebsocketGateway
   /**
    * Emit event khi tạo API Key
    */
-  emitApiKeyCreated(orgId: string, apiKeyId: string, name: string, createdBy: string) {
+  emitApiKeyCreated(
+    orgId: string,
+    apiKeyId: string,
+    name: string,
+    createdBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('apiKey:created', {
       organizationId: orgId,
       apiKeyId,
@@ -697,7 +800,12 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật API Key
    */
-  emitApiKeyUpdated(orgId: string, apiKeyId: string, name: string, updatedBy: string) {
+  emitApiKeyUpdated(
+    orgId: string,
+    apiKeyId: string,
+    name: string,
+    updatedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('apiKey:updated', {
       organizationId: orgId,
       apiKeyId,
@@ -722,7 +830,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa nhiều API Keys
    */
-  emitApiKeysDeletedMany(orgId: string, apiKeyIds: string[], deletedBy: string) {
+  emitApiKeysDeletedMany(
+    orgId: string,
+    apiKeyIds: string[],
+    deletedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('apiKey:deletedMany', {
       organizationId: orgId,
       apiKeyIds,
@@ -735,7 +847,13 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật Warehouse
    */
-  emitWarehouseUpdated(orgId: string, warehouseId: string, name: string, updatedFields: string[], updatedBy: string) {
+  emitWarehouseUpdated(
+    orgId: string,
+    warehouseId: string,
+    name: string,
+    updatedFields: string[],
+    updatedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('warehouse:updated', {
       organizationId: orgId,
       warehouseId,
@@ -761,7 +879,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa nhiều Warehouses
    */
-  emitWarehousesDeletedMany(orgId: string, warehouseIds: string[], deletedBy: string) {
+  emitWarehousesDeletedMany(
+    orgId: string,
+    warehouseIds: string[],
+    deletedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('warehouse:deletedMany', {
       organizationId: orgId,
       warehouseIds,
@@ -774,7 +896,13 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật layout Warehouse
    */
-  emitWarehouseLayoutUpdated(orgId: string, warehouseId: string, name: string, updatedBy: string, summary: Record<string, number>) {
+  emitWarehouseLayoutUpdated(
+    orgId: string,
+    warehouseId: string,
+    name: string,
+    updatedBy: string,
+    summary: Record<string, number>,
+  ) {
     this.server.to(`organization:${orgId}`).emit('warehouse:layoutUpdated', {
       organizationId: orgId,
       warehouseId,
@@ -788,7 +916,12 @@ export class WebsocketGateway
   /**
    * Emit event khi tạo Rental Contract
    */
-  emitRentalContractCreated(orgId: string, contractId: string, contractNumber: string, createdBy: string) {
+  emitRentalContractCreated(
+    orgId: string,
+    contractId: string,
+    contractNumber: string,
+    createdBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('rentalContract:created', {
       organizationId: orgId,
       contractId,
@@ -801,21 +934,33 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật trạng thái hợp đồng thuê
    */
-  emitRentalContractStatusUpdated(orgId: string, contractId: string, contractNumber: string, status: string, updatedBy: string) {
-    this.server.to(`organization:${orgId}`).emit('rentalContract:statusUpdated', {
-      organizationId: orgId,
-      contractId,
-      contractNumber,
-      status,
-      updatedBy,
-      timestamp: new Date().toISOString(),
-    });
+  emitRentalContractStatusUpdated(
+    orgId: string,
+    contractId: string,
+    contractNumber: string,
+    status: string,
+    updatedBy: string,
+  ) {
+    this.server
+      .to(`organization:${orgId}`)
+      .emit('rentalContract:statusUpdated', {
+        organizationId: orgId,
+        contractId,
+        contractNumber,
+        status,
+        updatedBy,
+        timestamp: new Date().toISOString(),
+      });
   }
 
   /**
    * Emit event khi có lịch tham quan kho mới
    */
-  emitWarehouseVisitCreated(bookingId: string, warehouseId: string, createdBy: string) {
+  emitWarehouseVisitCreated(
+    bookingId: string,
+    warehouseId: string,
+    createdBy: string,
+  ) {
     this.server.emit('warehouseVisit:created', {
       bookingId,
       warehouseId,
@@ -827,7 +972,13 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật Rental Contract
    */
-  emitRentalContractUpdated(orgId: string, contractId: string, contractNumber: string, updatedBy: string, status?: string) {
+  emitRentalContractUpdated(
+    orgId: string,
+    contractId: string,
+    contractNumber: string,
+    updatedBy: string,
+    status?: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('rentalContract:updated', {
       organizationId: orgId,
       contractId,
@@ -841,7 +992,12 @@ export class WebsocketGateway
   /**
    * Emit event khi gán Warehouse Manager
    */
-  emitWarehouseManagerAssigned(templateId: string, managerId: string, userId: string, createdBy: string) {
+  emitWarehouseManagerAssigned(
+    templateId: string,
+    managerId: string,
+    userId: string,
+    createdBy: string,
+  ) {
     this.server.emit('warehouseManager:assigned', {
       templateId,
       managerId,
@@ -854,7 +1010,11 @@ export class WebsocketGateway
   /**
    * Emit event khi cập nhật Warehouse Manager
    */
-  emitWarehouseManagerUpdated(templateId: string, managerId: string, updatedBy: string) {
+  emitWarehouseManagerUpdated(
+    templateId: string,
+    managerId: string,
+    updatedBy: string,
+  ) {
     this.server.emit('warehouseManager:updated', {
       templateId,
       managerId,
@@ -866,7 +1026,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa Warehouse Manager
    */
-  emitWarehouseManagerRemoved(templateId: string, managerId: string, removedBy: string) {
+  emitWarehouseManagerRemoved(
+    templateId: string,
+    managerId: string,
+    removedBy: string,
+  ) {
     this.server.emit('warehouseManager:removed', {
       templateId,
       managerId,
@@ -878,7 +1042,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa Rental Contract
    */
-  emitRentalContractDeleted(orgId: string, contractId: string, deletedBy: string) {
+  emitRentalContractDeleted(
+    orgId: string,
+    contractId: string,
+    deletedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('rentalContract:deleted', {
       organizationId: orgId,
       contractId,
@@ -890,7 +1058,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa nhiều Rental Contracts
    */
-  emitRentalContractsDeletedMany(orgId: string, contractIds: string[], deletedBy: string) {
+  emitRentalContractsDeletedMany(
+    orgId: string,
+    contractIds: string[],
+    deletedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('rentalContract:deletedMany', {
       organizationId: orgId,
       contractIds,
@@ -903,7 +1075,13 @@ export class WebsocketGateway
   /**
    * Emit event khi gia hạn Rental Contract
    */
-  emitRentalContractRenewed(orgId: string, contractId: string, contractNumber: string, newEndDate: string, renewedBy: string) {
+  emitRentalContractRenewed(
+    orgId: string,
+    contractId: string,
+    contractNumber: string,
+    newEndDate: string,
+    renewedBy: string,
+  ) {
     this.server.to(`organization:${orgId}`).emit('rentalContract:renewed', {
       organizationId: orgId,
       contractId,
@@ -917,7 +1095,11 @@ export class WebsocketGateway
   /**
    * Emit event khi upload ảnh cho template
    */
-  emitWarehouseTemplateImagesUploaded(templateId: string, count: number, uploadedBy: string) {
+  emitWarehouseTemplateImagesUploaded(
+    templateId: string,
+    count: number,
+    uploadedBy: string,
+  ) {
     this.server.emit('warehouseTemplateImage:created', {
       templateId,
       count,
@@ -929,7 +1111,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa ảnh của template
    */
-  emitWarehouseTemplateImageDeleted(templateId: string, imageId: string, deletedBy: string) {
+  emitWarehouseTemplateImageDeleted(
+    templateId: string,
+    imageId: string,
+    deletedBy: string,
+  ) {
     this.server.emit('warehouseTemplateImage:deleted', {
       templateId,
       imageId,
@@ -941,7 +1127,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa nhiều ảnh của template
    */
-  emitWarehouseTemplateImagesDeletedMany(templateId: string, imageIds: string[], deletedBy: string) {
+  emitWarehouseTemplateImagesDeletedMany(
+    templateId: string,
+    imageIds: string[],
+    deletedBy: string,
+  ) {
     this.server.emit('warehouseTemplateImage:deletedMany', {
       templateId,
       imageIds,
@@ -969,7 +1159,11 @@ export class WebsocketGateway
    * @param configData - Dữ liệu config mới sau khi thay đổi
    * @param updatedBy - User ID của người thực hiện thao tác
    */
-  emitConfigUpdated(action: 'updated' | 'reset' | 'reloaded', configData: Record<string, unknown>, updatedBy?: string) {
+  emitConfigUpdated(
+    action: 'updated' | 'reset' | 'reloaded',
+    configData: Record<string, unknown>,
+    updatedBy?: string,
+  ) {
     this.server.emit(`config:${action}`, {
       action,
       data: configData,
@@ -981,7 +1175,11 @@ export class WebsocketGateway
   /**
    * Generic emit to organization room - dùng cho các entity khác nhau
    */
-  emitToOrganization(orgId: string, event: string, data: Record<string, unknown>) {
+  emitToOrganization(
+    orgId: string,
+    event: string,
+    data: Record<string, unknown>,
+  ) {
     this.server.to(`organization:${orgId}`).emit(event, {
       ...data,
       organizationId: orgId,
@@ -1010,7 +1208,12 @@ export class WebsocketGateway
   /**
    * Emit event khi unassign staff khỏi ticket
    */
-  emitContactStaffUnassigned(conversationId: string, code: string, staffId: string, unassignedBy: string) {
+  emitContactStaffUnassigned(
+    conversationId: string,
+    code: string,
+    staffId: string,
+    unassignedBy: string,
+  ) {
     this.server.to('admin_room').emit('contact:staffUnassigned', {
       conversationId,
       code,
@@ -1021,7 +1224,6 @@ export class WebsocketGateway
   }
 
   @SubscribeMessage('ping')
-
   handlePing(@ConnectedSocket() socket: Socket) {
     // Cập nhật heartbeat nếu user đã authenticated
     const userId = this.socketUsers.get(socket.id);
@@ -1043,7 +1245,11 @@ export class WebsocketGateway
   ) {
     const { sessionId } = payload || {};
 
-    if (!sessionId || typeof sessionId !== 'string' || sessionId.trim() === '') {
+    if (
+      !sessionId ||
+      typeof sessionId !== 'string' ||
+      sessionId.trim() === ''
+    ) {
       socket.emit('chat:error', {
         code: 'INVALID_SESSION',
         message: 'sessionId is required',
@@ -1213,7 +1419,10 @@ export class WebsocketGateway
   /**
    * Cập nhật trạng thái online của user vào database và emit event
    */
-  private async setUserOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
+  private async setUserOnlineStatus(
+    userId: string,
+    isOnline: boolean,
+  ): Promise<void> {
     try {
       let user;
       if (isOnline) {
@@ -1229,18 +1438,21 @@ export class WebsocketGateway
       const orgIds = await this.userRepository.getUserOrganizations(userId);
       const timestamp = new Date().toISOString();
 
-      orgIds.forEach(orgId => {
-        this.server.to(`organization:${orgId}`).emit('organization:memberOnlineStatus', {
-          organizationId: orgId,
-          userId,
-          isOnline,
-          lastOnline: user.last_online,
-          timestamp
-        });
+      orgIds.forEach((orgId) => {
+        this.server
+          .to(`organization:${orgId}`)
+          .emit('organization:memberOnlineStatus', {
+            organizationId: orgId,
+            userId,
+            isOnline,
+            lastOnline: user.last_online,
+            timestamp,
+          });
       });
-
     } catch (error) {
-      this.logger.error(`Failed to update online status for user ${userId}: ${error}`);
+      this.logger.error(
+        `Failed to update online status for user ${userId}: ${error}`,
+      );
     }
   }
 
@@ -1251,7 +1463,9 @@ export class WebsocketGateway
     const event: UserOnlineStatusEvent = {
       userId,
       isOnline,
-      lastOnline: lastOnline?.toISOString() || (isOnline ? null : new Date().toISOString()),
+      lastOnline:
+        lastOnline?.toISOString() ||
+        (isOnline ? null : new Date().toISOString()),
       timestamp: new Date().toISOString(),
     };
 
@@ -1278,7 +1492,10 @@ export class WebsocketGateway
 
       for (const user of onlineUsers) {
         // Nếu user không có socket kết nối
-        if (!this.userSockets.has(user.id) || this.userSockets.get(user.id)!.size === 0) {
+        if (
+          !this.userSockets.has(user.id) ||
+          this.userSockets.get(user.id)!.size === 0
+        ) {
           const lastHeartbeat = this.userLastHeartbeat.get(user.id);
 
           // Nếu không có heartbeat hoặc heartbeat quá timeout
@@ -1290,7 +1507,8 @@ export class WebsocketGateway
 
       if (usersToSetOffline.length > 0) {
         // Bulk update offline
-        const count = await this.userRepository.setUsersOffline(usersToSetOffline);
+        const count =
+          await this.userRepository.setUsersOffline(usersToSetOffline);
 
         // Emit events cho từng user
         for (const userId of usersToSetOffline) {
@@ -1314,7 +1532,11 @@ export class WebsocketGateway
   /**
    * Emit event khi có conversation mới
    */
-  emitContactConversationCreated(conversationId: string, code: string, email: string) {
+  emitContactConversationCreated(
+    conversationId: string,
+    code: string,
+    email: string,
+  ) {
     this.server.to('admin_room').emit('contact:created', {
       conversationId,
       code,
@@ -1326,7 +1548,12 @@ export class WebsocketGateway
   /**
    * Emit event khi conversation được cập nhật
    */
-  emitContactConversationUpdated(conversationId: string, code: string, updatedFields: string[], updatedBy: string) {
+  emitContactConversationUpdated(
+    conversationId: string,
+    code: string,
+    updatedFields: string[],
+    updatedBy: string,
+  ) {
     this.server.to('admin_room').emit('contact:updated', {
       conversationId,
       code,
@@ -1353,7 +1580,11 @@ export class WebsocketGateway
    * @param message - Nội dung message
    * @param sessionId - (Optional) session_id của LIVE_CHAT để emit realtime cho guest
    */
-  emitContactMessageCreated(conversationId: string, message: any, sessionId?: string) {
+  emitContactMessageCreated(
+    conversationId: string,
+    message: any,
+    sessionId?: string,
+  ) {
     const payload = {
       conversationId,
       message,
@@ -1365,14 +1596,21 @@ export class WebsocketGateway
 
     // Nếu là LIVE_CHAT, gửi thêm vào room của guest để nhận realtime
     if (sessionId) {
-      this.server.to(`chat:${sessionId}`).emit('contact:messageCreated', payload);
+      this.server
+        .to(`chat:${sessionId}`)
+        .emit('contact:messageCreated', payload);
     }
   }
 
   /**
    * Emit event khi conversation bị đóng
    */
-  emitContactConversationClosed(conversationId: string, code: string, closedBy: string, sessionId?: string) {
+  emitContactConversationClosed(
+    conversationId: string,
+    code: string,
+    closedBy: string,
+    sessionId?: string,
+  ) {
     const payload = {
       conversationId,
       code,
@@ -1390,7 +1628,12 @@ export class WebsocketGateway
   /**
    * Emit event khi conversation được mở lại
    */
-  emitContactConversationReopened(conversationId: string, code: string, reopenedBy: string, sessionId?: string) {
+  emitContactConversationReopened(
+    conversationId: string,
+    code: string,
+    reopenedBy: string,
+    sessionId?: string,
+  ) {
     const payload = {
       conversationId,
       code,
@@ -1408,7 +1651,11 @@ export class WebsocketGateway
   /**
    * Emit event khi xóa nhiều conversations
    */
-  emitContactConversationsDeletedMany(requestedIds: string[], count: number, deletedBy: string) {
+  emitContactConversationsDeletedMany(
+    requestedIds: string[],
+    count: number,
+    deletedBy: string,
+  ) {
     this.server.to('admin_room').emit('contact:deletedMany', {
       requestedIds,
       count,
@@ -1416,7 +1663,6 @@ export class WebsocketGateway
       timestamp: new Date().toISOString(),
     });
   }
-
 
   /**
    * Emit system log event to subscribed admin clients
@@ -1450,7 +1696,13 @@ export class WebsocketGateway
   /**
    * Emit event khi user bị ban
    */
-  emitUserBanned(userId: string, reason: string, isPermanent: boolean, bannedEnd: string | null, bannedBy: string) {
+  emitUserBanned(
+    userId: string,
+    reason: string,
+    isPermanent: boolean,
+    bannedEnd: string | null,
+    bannedBy: string,
+  ) {
     const event = {
       userId,
       reason,
@@ -1479,7 +1731,13 @@ export class WebsocketGateway
   /**
    * Emit event khi user bị warn
    */
-  emitUserWarned(userId: string, warningId: string, reason: string, expiresAt: string | null, warnedBy: string) {
+  emitUserWarned(
+    userId: string,
+    warningId: string,
+    reason: string,
+    expiresAt: string | null,
+    warnedBy: string,
+  ) {
     const event = {
       userId,
       warningId,
@@ -1538,7 +1796,12 @@ export class WebsocketGateway
   /**
    * Emit event khi Warning Category được tạo
    */
-  emitWarningCategoryCreated(id: string, name: string, severity: string, createdBy: string) {
+  emitWarningCategoryCreated(
+    id: string,
+    name: string,
+    severity: string,
+    createdBy: string,
+  ) {
     const event = {
       id,
       name,
@@ -1591,7 +1854,12 @@ export class WebsocketGateway
   /**
    * Emit event khi Warn Penalty được tạo
    */
-  emitWarnPenaltyCreated(id: string, minWarnCount: number, maxWarnCount: number | null, createdBy: string) {
+  emitWarnPenaltyCreated(
+    id: string,
+    minWarnCount: number,
+    maxWarnCount: number | null,
+    createdBy: string,
+  ) {
     const event = {
       id,
       minWarnCount,
@@ -1605,7 +1873,12 @@ export class WebsocketGateway
   /**
    * Emit event khi Warn Penalty được cập nhật
    */
-  emitWarnPenaltyUpdated(id: string, minWarnCount: number, maxWarnCount: number | null, updatedBy: string) {
+  emitWarnPenaltyUpdated(
+    id: string,
+    minWarnCount: number,
+    maxWarnCount: number | null,
+    updatedBy: string,
+  ) {
     const event = {
       id,
       minWarnCount,
@@ -1709,7 +1982,11 @@ export class WebsocketGateway
   /**
    * Emit event khi permissions của user được cập nhật
    */
-  emitUserPermissionsUpdated(userId: string, permissionIds: string[], updatedBy: string) {
+  emitUserPermissionsUpdated(
+    userId: string,
+    permissionIds: string[],
+    updatedBy: string,
+  ) {
     const event = {
       userId,
       permissionIds,
@@ -1785,4 +2062,3 @@ export class WebsocketGateway
     this.server.to('admin_room').emit('user:deletedMany', event);
   }
 }
-

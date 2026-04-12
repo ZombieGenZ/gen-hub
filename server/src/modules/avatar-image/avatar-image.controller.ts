@@ -29,24 +29,73 @@ import {
   RequirePermission,
 } from '../../common/decorators';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { buildErrorSchema, buildSuccessSchema } from '../../common/swagger/master-data-swagger.helper';
-import { CreatedResponse, DeletedResponse, GetResponse, UpdatedResponse } from '../../common/responses';
+import {
+  buildErrorSchema,
+  buildSuccessSchema,
+} from '../../common/swagger/master-data-swagger.helper';
+import {
+  CreatedResponse,
+  DeletedResponse,
+  GetResponse,
+  UpdatedResponse,
+} from '../../common/responses';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvatarImageService } from './avatar-image.service';
-import { CreateAvatarImageDto, QueryAvatarImageDto, UpdateAvatarImageDto } from './dto';
+import {
+  CreateAvatarImageDto,
+  QueryAvatarImageDto,
+  UpdateAvatarImageDto,
+} from './dto';
 import { IAvatarImage, IPaginatedResponse } from './types';
 
 const avatarImageItemSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', format: 'uuid', description: 'ID ảnh avatar', example: '550e8400-e29b-41d4-a716-446655440001' },
-    name: { type: 'string', description: 'Tên ảnh avatar', example: 'Avatar mặc định xanh ngọc' },
-    description: { type: 'string', nullable: true, description: 'Mô tả ngắn về ảnh avatar', example: 'Ảnh mặc định dùng cho tài khoản mới' },
-    image_url: { type: 'string', description: 'Đường dẫn ảnh avatar', example: 'https://cdn.genhub.dev/avatars/default-teal.png' },
-    is_default: { type: 'boolean', description: 'Đánh dấu ảnh mặc định của hệ thống', example: true },
-    is_active: { type: 'boolean', description: 'Trạng thái hoạt động', example: true },
-    created_at: { type: 'string', format: 'date-time', description: 'Thời điểm tạo bản ghi', example: '2026-03-13T09:00:00.000Z' },
-    updated_at: { type: 'string', format: 'date-time', nullable: true, description: 'Thời điểm cập nhật gần nhất', example: '2026-03-13T10:15:00.000Z' },
+    id: {
+      type: 'string',
+      format: 'uuid',
+      description: 'ID ảnh avatar',
+      example: '550e8400-e29b-41d4-a716-446655440001',
+    },
+    name: {
+      type: 'string',
+      description: 'Tên ảnh avatar',
+      example: 'Avatar mặc định xanh ngọc',
+    },
+    description: {
+      type: 'string',
+      nullable: true,
+      description: 'Mô tả ngắn về ảnh avatar',
+      example: 'Ảnh mặc định dùng cho tài khoản mới',
+    },
+    image_url: {
+      type: 'string',
+      description: 'Đường dẫn ảnh avatar',
+      example: 'https://cdn.genhub.dev/avatars/default-teal.png',
+    },
+    is_default: {
+      type: 'boolean',
+      description: 'Đánh dấu ảnh mặc định của hệ thống',
+      example: true,
+    },
+    is_active: {
+      type: 'boolean',
+      description: 'Trạng thái hoạt động',
+      example: true,
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      description: 'Thời điểm tạo bản ghi',
+      example: '2026-03-13T09:00:00.000Z',
+    },
+    updated_at: {
+      type: 'string',
+      format: 'date-time',
+      nullable: true,
+      description: 'Thời điểm cập nhật gần nhất',
+      example: '2026-03-13T10:15:00.000Z',
+    },
   },
 };
 
@@ -88,7 +137,10 @@ export class AvatarImageController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     if (!userId) return false;
 
     const user = await this.prisma.user.findFirst({
@@ -116,10 +168,14 @@ export class AvatarImageController {
 
     if (!user) return false;
 
-    const hasDirect = user.system_permissions.some((p) => p.permission.key === permissionKey);
+    const hasDirect = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
     if (hasDirect) return true;
 
-    return user.system_roles.some((ur) => ur.role.permissions.some((rp) => rp.permission.key === permissionKey));
+    return user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
   }
 
   @Post()
@@ -134,7 +190,8 @@ export class AvatarImageController {
     examples: {
       default_avatar: {
         summary: 'Tạo ảnh mặc định mới',
-        description: 'Dùng khi quản trị viên muốn đổi ảnh avatar mặc định của hệ thống',
+        description:
+          'Dùng khi quản trị viên muốn đổi ảnh avatar mặc định của hệ thống',
         value: {
           name: 'Avatar mặc định xanh ngọc',
           description: 'Ảnh mặc định cho người dùng mới',
@@ -179,7 +236,8 @@ export class AvatarImageController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Tên ảnh avatar đã tồn tại hoặc thao tác xung đột với ảnh mặc định hiện có',
+    description:
+      'Tên ảnh avatar đã tồn tại hoặc thao tác xung đột với ảnh mặc định hiện có',
     schema: buildErrorSchema({
       code: 'error.conflict',
       message: 'Tên ảnh avatar đã tồn tại trong hệ thống',
@@ -205,10 +263,34 @@ export class AvatarImageController {
     description:
       'Lấy danh sách ảnh avatar có phân trang, hỗ trợ tìm kiếm theo tên hoặc mô tả và lọc theo trạng thái hoạt động. Người có quyền `avatar-image.list.all` sẽ xem toàn bộ dữ liệu, ngược lại chỉ xem dữ liệu do mình tạo.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên hoặc mô tả ảnh avatar', example: 'mặc định' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái hoạt động', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên hoặc mô tả ảnh avatar',
+    example: 'mặc định',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Lọc theo trạng thái hoạt động',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách ảnh avatar thành công',
@@ -218,9 +300,21 @@ export class AvatarImageController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: avatarImageItemSchema, description: 'Danh sách ảnh avatar' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: avatarImageItemSchema,
+            description: 'Danh sách ảnh avatar',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -236,7 +330,10 @@ export class AvatarImageController {
     @Query() query: QueryAvatarImageDto,
     @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<IAvatarImage>>> {
-    const hasListAll = await this.hasPermission(userId, 'avatar-image.list.all');
+    const hasListAll = await this.hasPermission(
+      userId,
+      'avatar-image.list.all',
+    );
     const result = await this.service.findAll(query, userId, hasListAll);
     return new GetResponse('avatar-image.list.success', result);
   }
@@ -247,10 +344,34 @@ export class AvatarImageController {
     description:
       'API public trả về danh sách ảnh avatar đang bật để hiển thị cho ứng dụng client, form đăng ký hoặc màn chọn avatar. Hỗ trợ phân trang và lọc từ khóa.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên hoặc mô tả ảnh avatar', example: 'xám' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Tham số lọc bổ sung, thông thường luôn là true với API này', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên hoặc mô tả ảnh avatar',
+    example: 'xám',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Tham số lọc bổ sung, thông thường luôn là true với API này',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách ảnh avatar đang hoạt động thành công',
@@ -260,9 +381,21 @@ export class AvatarImageController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: avatarImageItemSchema, description: 'Danh sách ảnh avatar đang hoạt động' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: avatarImageItemSchema,
+            description: 'Danh sách ảnh avatar đang hoạt động',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -270,7 +403,9 @@ export class AvatarImageController {
     }),
   })
   @ApiValidationErrorResponse()
-  async findAllActive(@Query() query: QueryAvatarImageDto): Promise<GetResponse<IPaginatedResponse<IAvatarImage>>> {
+  async findAllActive(
+    @Query() query: QueryAvatarImageDto,
+  ): Promise<GetResponse<IPaginatedResponse<IAvatarImage>>> {
     const result = await this.service.findAllActive(query);
     return new GetResponse('avatar-image.list.success', result);
   }
@@ -322,7 +457,10 @@ export class AvatarImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAvatarImage>> {
-    const hasReadAll = await this.hasPermission(userId, 'avatar-image.read.all');
+    const hasReadAll = await this.hasPermission(
+      userId,
+      'avatar-image.read.all',
+    );
     const result = await this.service.findById(id, userId, hasReadAll, lang);
     return new GetResponse('avatar-image.get.success', result);
   }
@@ -402,10 +540,12 @@ export class AvatarImageController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Tên ảnh avatar đã tồn tại hoặc thao tác cập nhật xung đột với ảnh mặc định',
+    description:
+      'Tên ảnh avatar đã tồn tại hoặc thao tác cập nhật xung đột với ảnh mặc định',
     schema: buildErrorSchema({
       code: 'error.conflict',
-      message: 'Không thể bỏ trạng thái mặc định của ảnh avatar mặc định hiện tại',
+      message:
+        'Không thể bỏ trạng thái mặc định của ảnh avatar mặc định hiện tại',
     }),
   })
   @ApiAuthResponses()
@@ -419,8 +559,17 @@ export class AvatarImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAvatarImage>> {
-    const hasUpdateAll = await this.hasPermission(userId, 'avatar-image.update.all');
-    const result = await this.service.update(id, dto, userId, hasUpdateAll, lang);
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'avatar-image.update.all',
+    );
+    const result = await this.service.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAll,
+      lang,
+    );
     return new UpdatedResponse('avatar-image.update.success', result);
   }
 
@@ -452,7 +601,11 @@ export class AvatarImageController {
     schema: buildSuccessSchema({
       code: 'avatar-image.delete.success',
       message: 'Xóa nhiều ảnh avatar thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -482,7 +635,10 @@ export class AvatarImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'avatar-image.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'avatar-image.delete.all',
+    );
     await this.service.deleteMany(dto.ids, userId, hasDeleteAll, lang);
     return new DeletedResponse('avatar-image.delete.success', null);
   }
@@ -505,7 +661,11 @@ export class AvatarImageController {
     schema: buildSuccessSchema({
       code: 'avatar-image.delete.success',
       message: 'Xóa ảnh avatar thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -542,7 +702,10 @@ export class AvatarImageController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'avatar-image.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'avatar-image.delete.all',
+    );
     await this.service.delete(id, userId, hasDeleteAll, lang);
     return new DeletedResponse('avatar-image.delete.success', null);
   }

@@ -31,10 +31,14 @@ export class CreateDiscountTierDto {
     example: '1 tháng',
   })
   @IsNotEmpty({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.name_required'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.name_required',
+    ),
   })
   @IsString({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.name_string'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.name_string',
+    ),
   })
   name: string;
 
@@ -44,13 +48,19 @@ export class CreateDiscountTierDto {
     minimum: 1,
   })
   @IsNotEmpty({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.duration_value_required'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.duration_value_required',
+    ),
   })
   @IsInt({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.duration_value_int'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.duration_value_int',
+    ),
   })
   @Min(1, {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.duration_value_min'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.duration_value_min',
+    ),
   })
   @Type(() => Number)
   duration_value: number;
@@ -61,10 +71,14 @@ export class CreateDiscountTierDto {
     example: DurationUnit.MONTH,
   })
   @IsNotEmpty({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.duration_unit_required'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.duration_unit_required',
+    ),
   })
   @IsEnum(DurationUnit, {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.duration_unit_invalid'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.duration_unit_invalid',
+    ),
   })
   duration_unit: DurationUnit;
 
@@ -75,16 +89,27 @@ export class CreateDiscountTierDto {
     maximum: 100,
   })
   @IsNotEmpty({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.discount_percent_required'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.discount_percent_required',
+    ),
   })
-  @IsNumber({}, {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.discount_percent_number'),
-  })
+  @IsNumber(
+    {},
+    {
+      message: i18nValidationMessage(
+        'warehouse-discount-tier.validation.discount_percent_number',
+      ),
+    },
+  )
   @Min(0, {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.discount_range'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.discount_range',
+    ),
   })
   @Max(100, {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.discount_range'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.discount_range',
+    ),
   })
   @Type(() => Number)
   discount_percent: number;
@@ -95,7 +120,9 @@ export class CreateDiscountTierDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.description_string'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.description_string',
+    ),
   })
   description?: string;
 
@@ -106,7 +133,9 @@ export class CreateDiscountTierDto {
   })
   @IsOptional()
   @IsBoolean({
-    message: i18nValidationMessage('warehouse-discount-tier.validation.is_active_boolean'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.is_active_boolean',
+    ),
   })
   is_active?: boolean;
 }
@@ -124,7 +153,9 @@ export class UpdateDiscountTierDto extends CreateDiscountTierDto {
   })
   @IsOptional()
   @IsUUID('4', {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.id_uuid'),
+    message: i18nValidationMessage(
+      'warehouse-discount-tier.validation.id_uuid',
+    ),
   })
   id?: string;
 }
@@ -133,4 +164,3 @@ export class UpdateDiscountTierDto extends CreateDiscountTierDto {
  * @deprecated Use CreateDiscountTierDto or UpdateDiscountTierDto instead
  */
 export const DiscountTierDto = UpdateDiscountTierDto;
-

@@ -5,9 +5,9 @@ import { PublicQuotationRepository } from './public-quotation.repository';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [PublicQuotationController],
-    providers: [PublicQuotationService, PublicQuotationRepository],
-    exports: [PublicQuotationService],
+  imports: [PrismaModule],
+  controllers: [PublicQuotationController],
+  providers: [PublicQuotationService, PublicQuotationRepository],
+  exports: [PublicQuotationService],
 })
 export class PublicQuotationModule {}

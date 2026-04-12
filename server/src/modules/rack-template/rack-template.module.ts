@@ -4,8 +4,8 @@ import { RackTemplateService } from './rack-template.service';
 import { RackTemplateRepository } from './rack-template.repository';
 
 @Module({
-    controllers: [RackTemplateController],
-    providers: [RackTemplateService, RackTemplateRepository],
-    exports: [RackTemplateService, RackTemplateRepository],
+  controllers: [RackTemplateController],
+  providers: [RackTemplateService, RackTemplateRepository],
+  exports: [RackTemplateService, RackTemplateRepository],
 })
-export class RackTemplateModule { }
+export class RackTemplateModule {}

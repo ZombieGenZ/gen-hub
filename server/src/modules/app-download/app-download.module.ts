@@ -11,20 +11,20 @@ import { AppDownloadCacheKeys } from './constants/app-download-cache.helper';
 import { InviteSchedulerService } from './invite-scheduler.service';
 
 @Module({
-    imports: [
-        NotificationModule,
-        ConfigModule,
-        PermissionModule,
-        ApiKeyVerificationModule,
-        RedisModule,
-    ],
-    controllers: [AppDownloadController],
-    providers: [
-        AppDownloadService,
-        AppDownloadRepository,
-        AppDownloadCacheKeys,
-        InviteSchedulerService,
-    ],
-    exports: [AppDownloadService, AppDownloadRepository],
+  imports: [
+    NotificationModule,
+    ConfigModule,
+    PermissionModule,
+    ApiKeyVerificationModule,
+    RedisModule,
+  ],
+  controllers: [AppDownloadController],
+  providers: [
+    AppDownloadService,
+    AppDownloadRepository,
+    AppDownloadCacheKeys,
+    InviteSchedulerService,
+  ],
+  exports: [AppDownloadService, AppDownloadRepository],
 })
-export class AppDownloadModule { }
+export class AppDownloadModule {}

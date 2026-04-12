@@ -4,8 +4,8 @@ import { FaqService } from './faq.service';
 import { FaqRepository } from './faq.repository';
 
 @Module({
-    controllers: [FaqController],
-    providers: [FaqService, FaqRepository],
-    exports: [FaqService, FaqRepository],
+  controllers: [FaqController],
+  providers: [FaqService, FaqRepository],
+  exports: [FaqService, FaqRepository],
 })
-export class FaqModule { }
+export class FaqModule {}

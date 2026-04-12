@@ -20,7 +20,9 @@ export class QueryRankDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('rank.validation.keywords_string') })
+  @IsString({
+    message: i18nValidationMessage('rank.validation.keywords_string'),
+  })
   keywords?: string;
 
   @ApiPropertyOptional()
@@ -30,7 +32,8 @@ export class QueryRankDto {
     if (value === 'false') return false;
     return value;
   })
-  @IsBoolean({ message: i18nValidationMessage('rank.validation.is_active_boolean') })
+  @IsBoolean({
+    message: i18nValidationMessage('rank.validation.is_active_boolean'),
+  })
   is_active?: boolean;
 }
-

@@ -1,8 +1,8 @@
 import {
-    Injectable,
-    OnModuleInit,
-    OnModuleDestroy,
-    Logger,
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Interval } from '@nestjs/schedule';
@@ -13,7 +13,11 @@ import { ContactService } from '../contact/contact.service';
 import { GmailApiService } from './gmail-api.service';
 import { AiHubService } from '../ai-hub';
 import { DiscordService } from '../discord/discord.service';
-import { IGmailMessage, IGmailPubSubNotification, IUnlockTokenData } from './interfaces';
+import {
+  IGmailMessage,
+  IGmailPubSubNotification,
+  IUnlockTokenData,
+} from './interfaces';
 
 /**
  * Email Inbound Provider
@@ -22,545 +26,600 @@ import { IGmailMessage, IGmailPubSubNotification, IUnlockTokenData } from './int
  */
 @Injectable()
 export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
-    private readonly logger = new Logger(EmailInboundProvider.name);
-    private readonly UNLOCK_CODE_PATTERN = /UNLOCK\s+(\d{6})/i;
-    // Subject format: [UNLOCK] email@domain.com
-    private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+([^\s-]+@[^\s-]+)/i;
-    // Subject format: [#TICKET-20260101-001]
-    private readonly TICKET_SUBJECT_PATTERN = /\[#([A-Z]+-\d{8}-\d{3})\]/i;
+  private readonly logger = new Logger(EmailInboundProvider.name);
+  private readonly UNLOCK_CODE_PATTERN = /UNLOCK\s+(\d{6})/i;
+  // Subject format: [UNLOCK] email@domain.com
+  private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+([^\s-]+@[^\s-]+)/i;
+  // Subject format: [#TICKET-20260101-001]
+  private readonly TICKET_SUBJECT_PATTERN = /\[#([A-Z]+-\d{8}-\d{3})\]/i;
 
-    private isProcessing = false;
-    private pollInterval: NodeJS.Timeout | null = null;
+  private isProcessing = false;
+  private pollInterval: NodeJS.Timeout | null = null;
 
-    constructor(
-        private readonly configService: ConfigService,
-        private readonly redisService: RedisService,
-        private readonly prismaService: PrismaService,
-        private readonly emailService: EmailService,
-        private readonly contactService: ContactService,
-        private readonly gmailApiService: GmailApiService,
-        private readonly aiHubService: AiHubService,
-        private readonly discordService: DiscordService,
-    ) { }
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
+    private readonly prismaService: PrismaService,
+    private readonly emailService: EmailService,
+    private readonly contactService: ContactService,
+    private readonly gmailApiService: GmailApiService,
+    private readonly aiHubService: AiHubService,
+    private readonly discordService: DiscordService,
+  ) {}
 
-    async onModuleInit() {
-        this.logger.log('📧 EmailInboundProvider initializing...');
+  async onModuleInit() {
+    this.logger.log('📧 EmailInboundProvider initializing...');
 
-        // Đăng ký Discord callback cho staff reply
-        this.discordService.setReplyCallback(async (ticketCode, content, staffName, staffDiscordId) => {
-            const result = await this.contactService.replyFromDiscord(
-                ticketCode,
-                content,
-                staffName,
-                staffDiscordId,
-            );
-            if (result) {
-                this.logger.log(`📤 Discord reply processed for ticket: ${ticketCode}`);
-            } else {
-                this.logger.warn(`⚠️ Failed to process Discord reply for ticket: ${ticketCode}`);
-            }
-        });
-
-        // Chờ Gmail API service sẵn sàng
-        if (!this.gmailApiService.isReady()) {
-            this.logger.warn('⚠️ Gmail API chưa sẵn sàng, email inbound sẽ không hoạt động');
-            return;
-        }
-
-        // Kiểm tra mode: Push (Pub/Sub) hoặc Polling
-        if (this.gmailApiService.isPollingMode()) {
-            this.logger.log('📧 Starting in POLLING mode');
-            this.startPolling();
+    // Đăng ký Discord callback cho staff reply
+    this.discordService.setReplyCallback(
+      async (ticketCode, content, staffName, staffDiscordId) => {
+        const result = await this.contactService.replyFromDiscord(
+          ticketCode,
+          content,
+          staffName,
+          staffDiscordId,
+        );
+        if (result) {
+          this.logger.log(
+            `📤 Discord reply processed for ticket: ${ticketCode}`,
+          );
         } else {
-            this.logger.log('📧 Starting in PUSH mode (Pub/Sub)');
-            await this.gmailApiService.watchMailbox();
+          this.logger.warn(
+            `⚠️ Failed to process Discord reply for ticket: ${ticketCode}`,
+          );
         }
+      },
+    );
 
-        // Xử lý các email chưa đọc khi khởi động (non-blocking)
-        // Defer to prevent blocking server startup and quota exhaustion
-        setImmediate(() => {
-            this.processUnreadEmails().catch(error => {
-                this.logger.error('Error in deferred email processing:', error);
-            });
-        });
+    // Chờ Gmail API service sẵn sàng
+    if (!this.gmailApiService.isReady()) {
+      this.logger.warn(
+        '⚠️ Gmail API chưa sẵn sàng, email inbound sẽ không hoạt động',
+      );
+      return;
     }
 
-    async onModuleDestroy() {
-        if (this.pollInterval) {
-            clearInterval(this.pollInterval);
-            this.pollInterval = null;
-        }
+    // Kiểm tra mode: Push (Pub/Sub) hoặc Polling
+    if (this.gmailApiService.isPollingMode()) {
+      this.logger.log('📧 Starting in POLLING mode');
+      this.startPolling();
+    } else {
+      this.logger.log('📧 Starting in PUSH mode (Pub/Sub)');
+      await this.gmailApiService.watchMailbox();
     }
 
-    /**
-     * Bắt đầu polling mode
-     */
-    private startPolling(): void {
-        const interval = this.gmailApiService.getPollInterval();
-        this.logger.log(`⏱️ Polling every ${interval / 1000}s`);
+    // Xử lý các email chưa đọc khi khởi động (non-blocking)
+    // Defer to prevent blocking server startup and quota exhaustion
+    setImmediate(() => {
+      this.processUnreadEmails().catch((error) => {
+        this.logger.error('Error in deferred email processing:', error);
+      });
+    });
+  }
 
-        this.pollInterval = setInterval(async () => {
-            await this.processUnreadEmails();
-        }, interval);
+  async onModuleDestroy() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  }
+
+  /**
+   * Bắt đầu polling mode
+   */
+  private startPolling(): void {
+    const interval = this.gmailApiService.getPollInterval();
+    this.logger.log(`⏱️ Polling every ${interval / 1000}s`);
+
+    this.pollInterval = setInterval(async () => {
+      await this.processUnreadEmails();
+    }, interval);
+  }
+
+  /**
+   * Xử lý push notification từ Pub/Sub
+   * Được gọi từ webhook controller
+   */
+  async handlePubSubNotification(
+    notification: IGmailPubSubNotification,
+  ): Promise<void> {
+    this.logger.log(
+      `📬 Received Pub/Sub notification: historyId=${notification.historyId}`,
+    );
+
+    const currentHistoryId = this.gmailApiService.getCurrentHistoryId();
+    if (!currentHistoryId) {
+      // Không có historyId trước đó, xử lý unread messages
+      await this.processUnreadEmails();
+      this.gmailApiService.setCurrentHistoryId(notification.historyId);
+      return;
     }
 
-    /**
-     * Xử lý push notification từ Pub/Sub
-     * Được gọi từ webhook controller
-     */
-    async handlePubSubNotification(notification: IGmailPubSubNotification): Promise<void> {
-        this.logger.log(`📬 Received Pub/Sub notification: historyId=${notification.historyId}`);
+    // Lấy history changes
+    const history = await this.gmailApiService.getHistory(currentHistoryId);
 
-        const currentHistoryId = this.gmailApiService.getCurrentHistoryId();
-        if (!currentHistoryId) {
-            // Không có historyId trước đó, xử lý unread messages
-            await this.processUnreadEmails();
-            this.gmailApiService.setCurrentHistoryId(notification.historyId);
-            return;
+    for (const item of history) {
+      if (item.messagesAdded) {
+        for (const added of item.messagesAdded) {
+          // Chỉ xử lý email trong INBOX và UNREAD
+          if (
+            added.message.labelIds?.includes('INBOX') &&
+            added.message.labelIds?.includes('UNREAD')
+          ) {
+            await this.processMessageById(added.message.id);
+          }
         }
-
-        // Lấy history changes
-        const history = await this.gmailApiService.getHistory(currentHistoryId);
-
-        for (const item of history) {
-            if (item.messagesAdded) {
-                for (const added of item.messagesAdded) {
-                    // Chỉ xử lý email trong INBOX và UNREAD
-                    if (
-                        added.message.labelIds?.includes('INBOX') &&
-                        added.message.labelIds?.includes('UNREAD')
-                    ) {
-                        await this.processMessageById(added.message.id);
-                    }
-                }
-            }
-        }
-
-        this.gmailApiService.setCurrentHistoryId(notification.historyId);
+      }
     }
 
-    /**
-     * Xử lý các email chưa đọc
-     */
-    async processUnreadEmails(): Promise<void> {
-        if (this.isProcessing) {
-            this.logger.debug('Already processing, skip...');
-            return;
-        }
+    this.gmailApiService.setCurrentHistoryId(notification.historyId);
+  }
 
-        this.isProcessing = true;
-        try {
-            const unreadMessages = await this.gmailApiService.getUnreadMessages(10);
-
-            if (unreadMessages.length === 0) {
-                this.logger.debug('📭 No unread emails');
-                return;
-            }
-
-            this.logger.log(`📬 Found ${unreadMessages.length} unread email(s)`);
-
-            for (const msg of unreadMessages) {
-                await this.processMessageById(msg.id);
-                // Add delay between processing to prevent quota exhaustion
-                // Wait 1 second between emails to avoid rapid API calls
-                if (unreadMessages.indexOf(msg) < unreadMessages.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-        } catch (error) {
-            this.logger.error('Error processing unread emails:', error);
-        } finally {
-            this.isProcessing = false;
-        }
+  /**
+   * Xử lý các email chưa đọc
+   */
+  async processUnreadEmails(): Promise<void> {
+    if (this.isProcessing) {
+      this.logger.debug('Already processing, skip...');
+      return;
     }
 
-    /**
-     * Xử lý một message theo ID
-     */
-    private async processMessageById(messageId: string): Promise<void> {
-        const message = await this.gmailApiService.getMessage(messageId);
-        if (!message) {
-            this.logger.warn(`Message ${messageId} not found or error fetching`);
-            return;
-        }
+    this.isProcessing = true;
+    try {
+      const unreadMessages = await this.gmailApiService.getUnreadMessages(10);
 
-        await this.processMessage(message);
+      if (unreadMessages.length === 0) {
+        this.logger.debug('📭 No unread emails');
+        return;
+      }
+
+      this.logger.log(`📬 Found ${unreadMessages.length} unread email(s)`);
+
+      for (const msg of unreadMessages) {
+        await this.processMessageById(msg.id);
+        // Add delay between processing to prevent quota exhaustion
+        // Wait 1 second between emails to avoid rapid API calls
+        if (unreadMessages.indexOf(msg) < unreadMessages.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error processing unread emails:', error);
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  /**
+   * Xử lý một message theo ID
+   */
+  private async processMessageById(messageId: string): Promise<void> {
+    const message = await this.gmailApiService.getMessage(messageId);
+    if (!message) {
+      this.logger.warn(`Message ${messageId} not found or error fetching`);
+      return;
     }
 
-    /**
-     * Xử lý một email
-     */
-    private async processMessage(message: IGmailMessage): Promise<void> {
-        try {
-            const fromHeader = message.headers.from || '';
-            const senderEmail = this.gmailApiService.extractEmailFromHeader(fromHeader);
-            const senderName = this.gmailApiService.extractNameFromHeader(fromHeader);
-            const subject = message.headers.subject || '';
+    await this.processMessage(message);
+  }
 
-            // Bỏ qua emails từ hệ thống
-            const systemEmails = ['no-reply@', 'noreply@', 'support@gen-hub', 'mailer-daemon@'];
-            const isSystemEmail = systemEmails.some(se => senderEmail.includes(se));
-            if (isSystemEmail) {
-                this.logger.debug(`Skipping system email from ${senderEmail}`);
-                await this.gmailApiService.markAsRead(message.id);
-                return;
-            }
+  /**
+   * Xử lý một email
+   */
+  private async processMessage(message: IGmailMessage): Promise<void> {
+    try {
+      const fromHeader = message.headers.from || '';
+      const senderEmail =
+        this.gmailApiService.extractEmailFromHeader(fromHeader);
+      const senderName = this.gmailApiService.extractNameFromHeader(fromHeader);
+      const subject = message.headers.subject || '';
 
-            // Kiểm tra subject patterns
-            const isUnlockEmail = this.UNLOCK_SUBJECT_PATTERN.test(subject);
-            const isTicketReply = this.TICKET_SUBJECT_PATTERN.test(subject);
-
-            if (!isUnlockEmail && !isTicketReply) {
-                // Sử dụng Gemini AI để phân loại email
-                const bodyText = this.extractNewReplyContent(message.body.text || message.body.html || '');
-
-                try {
-                    const classification = await this.aiHubService.classifyEmail(
-                        senderEmail,
-                        senderName,
-                        subject,
-                        bodyText,
-                    );
-
-                    if (classification.isSpamOrAdvertising) {
-                        // Spam/quảng cáo → đánh dấu đã đọc
-                        this.logger.debug(`Spam/advertising email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`);
-                        await this.gmailApiService.markAsRead(message.id);
-                        return;
-                    }
-
-                    if (classification.isUserContact) {
-                        // Email contact từ người dùng → tự động tạo contact
-                        this.logger.debug(`User contact email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`);
-                        await this.createNewContact(
-                            message,
-                            senderEmail,
-                            senderName,
-                            subject,
-                            bodyText,
-                        );
-                        await this.gmailApiService.markAsRead(message.id);
-                        return;
-                    }
-
-                    // Không xác định → để nguyên (không đánh dấu đã đọc)
-                    this.logger.debug(`Unknown email type, leaving unread: ${subject.substring(0, 50)}... (category: ${classification.category})`);
-                    return;
-                } catch (error) {
-                    // Lỗi AI → để nguyên email (không đánh dấu đã đọc)
-                    this.logger.error(`Gemini AI classification failed: ${error.message}`);
-                    return;
-                }
-            }
-
-            // Lấy nội dung email
-            const bodyText = this.extractNewReplyContent(message.body.text || message.body.html || '');
-
-            this.logger.debug(`Processing email from ${senderEmail}: ${subject}`);
-
-            // Xử lý unlock email
-            if (isUnlockEmail) {
-                await this.handleUnlockEmail(message, senderEmail, subject, bodyText);
-                return;
-            }
-
-            // Xử lý contact ticket reply
-            if (isTicketReply) {
-                await this.handleTicketReply(message, senderEmail, senderName, subject, bodyText);
-                return;
-            }
-        } catch (error) {
-            this.logger.error('Error processing email:', error);
-        }
-    }
-
-    /**
-     * Xử lý unlock email
-     */
-    private async handleUnlockEmail(
-        message: IGmailMessage,
-        senderEmail: string,
-        subject: string,
-        bodyText: string,
-    ): Promise<void> {
-        const subjectMatch = subject.match(this.UNLOCK_SUBJECT_PATTERN);
-        if (!subjectMatch) {
-            await this.gmailApiService.markAsRead(message.id);
-            return;
-        }
-
-        const claimedEmail = subjectMatch[1].toLowerCase().trim();
-
-        // Kiểm tra email match
-        if (claimedEmail !== senderEmail) {
-            this.logger.warn(`Subject email mismatch: claimed=${claimedEmail}, sender=${senderEmail}`);
-            await this.gmailApiService.markAsRead(message.id);
-            return;
-        }
-
-        // Tìm unlock code
-        let unlockCode: string | null = null;
-
-        const subjectCodeMatch = subject.match(this.UNLOCK_CODE_PATTERN);
-        if (subjectCodeMatch) {
-            unlockCode = subjectCodeMatch[1];
-        } else {
-            const bodyMatch = bodyText.match(this.UNLOCK_CODE_PATTERN);
-            if (bodyMatch) {
-                unlockCode = bodyMatch[1];
-            }
-        }
-
-        if (!unlockCode) {
-            this.logger.warn(`No unlock code found from ${senderEmail}`);
-            await this.gmailApiService.markAsRead(message.id);
-            return;
-        }
-
-        this.logger.log(`🔓 Unlock request from ${senderEmail} with code ${unlockCode}`);
-
-        // Xác thực và unlock
-        const success = await this.verifyAndUnlock(senderEmail, unlockCode);
-
-        // Đánh dấu đã đọc
+      // Bỏ qua emails từ hệ thống
+      const systemEmails = [
+        'no-reply@',
+        'noreply@',
+        'support@gen-hub',
+        'mailer-daemon@',
+      ];
+      const isSystemEmail = systemEmails.some((se) => senderEmail.includes(se));
+      if (isSystemEmail) {
+        this.logger.debug(`Skipping system email from ${senderEmail}`);
         await this.gmailApiService.markAsRead(message.id);
+        return;
+      }
 
-        // Gửi email phản hồi
-        if (success) {
-            const user = await this.prismaService.user.findFirst({
-                where: { email: senderEmail },
-                select: { name: true, language: true },
-            });
+      // Kiểm tra subject patterns
+      const isUnlockEmail = this.UNLOCK_SUBJECT_PATTERN.test(subject);
+      const isTicketReply = this.TICKET_SUBJECT_PATTERN.test(subject);
 
-            if (user) {
-                await this.emailService.sendUnlockSuccessEmail(
-                    senderEmail,
-                    user.name,
-                    user.language || 'vi',
-                );
-            }
-        }
-    }
-
-    /**
-     * Xử lý contact ticket reply
-     */
-    private async handleTicketReply(
-        message: IGmailMessage,
-        senderEmail: string,
-        senderName: string,
-        subject: string,
-        bodyText: string,
-    ): Promise<void> {
-        this.logger.log(`📩 Contact ticket reply detected: ${subject}`);
+      if (!isUnlockEmail && !isTicketReply) {
+        // Sử dụng Gemini AI để phân loại email
+        const bodyText = this.extractNewReplyContent(
+          message.body.text || message.body.html || '',
+        );
 
         try {
-            const processed = await this.contactService.processInboundEmail(
-                senderEmail,
-                senderName,
-                subject,
-                bodyText,
-                message.headers.messageId || `inbound-${Date.now()}`,
-                message.headers.inReplyTo,
-                message.headers.references,
+          const classification = await this.aiHubService.classifyEmail(
+            senderEmail,
+            senderName,
+            subject,
+            bodyText,
+          );
+
+          if (classification.isSpamOrAdvertising) {
+            // Spam/quảng cáo → đánh dấu đã đọc
+            this.logger.debug(
+              `Spam/advertising email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`,
             );
+            await this.gmailApiService.markAsRead(message.id);
+            return;
+          }
 
-            if (processed) {
-                const ticketMatch = subject.match(this.TICKET_SUBJECT_PATTERN);
-                const ticketCode = ticketMatch?.[1];
-                this.logger.log(`✅ Contact ticket reply processed: ${ticketCode}`);
-
-                // Forward to Discord channel
-                if (ticketCode && this.discordService.enabled) {
-                    const conversation = await this.contactService.getByCode(ticketCode);
-                    if (conversation?.discord_channel_id) {
-                        await this.discordService.sendMessageToTicket(
-                            conversation.discord_channel_id,
-                            bodyText,
-                            true, // isFromCustomer
-                            senderName,
-                        );
-                        this.logger.log(`📤 Forwarded email reply to Discord channel for ${ticketCode}`);
-                    }
-                }
-            } else {
-                this.logger.warn(`⚠️ Contact ticket not found for: ${subject}`);
-            }
-        } catch (error) {
-            this.logger.error('Error processing contact ticket reply:', error);
-        }
-
-        // Luôn đánh dấu đã đọc
-        await this.gmailApiService.markAsRead(message.id);
-    }
-
-    /**
-     * Trích xuất nội dung reply mới, bỏ quoted text
-     */
-    private extractNewReplyContent(fullContent: string): string {
-        let content = fullContent;
-
-        // Remove HTML tags if present
-        content = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-
-        // Patterns để tìm điểm bắt đầu của quoted text
-        const quoteMarkers = [
-            /Vào[\s\S]+?đã viết:/i,           // Gmail Vietnamese
-            /On[\s\S]+?wrote:/i,               // Gmail/Outlook English
-            /^>+\s*/m,                         // Classic quote marker
-            /-{5,}\s*(Forwarded|Original)\s+message/i,
-            /From:\s*[\s\S]+?Sent:\s*/i,       // Outlook format
-            /^\s*_{5,}\s*$/m,                  // Underscore separator
-        ];
-
-        let cutIndex = content.length;
-
-        for (const marker of quoteMarkers) {
-            const match = content.match(marker);
-            if (match && match.index !== undefined && match.index < cutIndex) {
-                cutIndex = match.index;
-            }
-        }
-
-        content = content.substring(0, cutIndex);
-
-        return content
-            .trim()
-            .replace(/\n{3,}/g, '\n\n')
-            .replace(/\s+$/, '');
-    }
-
-    /**
-     * Xác thực và mở khóa tài khoản
-     */
-    private async verifyAndUnlock(email: string, code: string): Promise<boolean> {
-        const unlockKey = `unlock_token:${email}`;
-        const tokenData = await this.redisService.get(unlockKey);
-
-        if (!tokenData) {
-            this.logger.warn(`No unlock token found for ${email}`);
-            return false;
-        }
-
-        try {
-            const parsed: IUnlockTokenData = JSON.parse(tokenData);
-
-            if (parsed.code !== code) {
-                this.logger.warn(`Invalid unlock code for ${email}`);
-                return false;
-            }
-
-            // Kiểm tra user có bị brute force ban không
-            const user = await this.prismaService.user.findFirst({
-                where: { email },
-                select: {
-                    id: true,
-                    name: true,
-                    language: true,
-                    is_brute_force_banned: true,
-                },
-            });
-
-            if (!user) {
-                this.logger.warn(`User not found for ${email}`);
-                return false;
-            }
-
-            if (!user.is_brute_force_banned) {
-                this.logger.warn(`Cannot unlock ${email} via email - not a brute force ban`);
-                return false;
-            }
-
-            // Mở khóa tài khoản
-            await this.prismaService.user.updateMany({
-                where: { email },
-                data: {
-                    is_banned: false,
-                    is_brute_force_banned: false,
-                    banned_end: null,
-                },
-            });
-
-            // Xóa Redis data
-            await this.redisService.del(`lock_status:${email}`);
-            await this.redisService.del(unlockKey);
-            await this.redisService.delByPattern(`rate_limit:${email}:*`);
-
-            this.logger.log(`✅ Account unlocked successfully for ${email}`);
-
-            // Gửi email thông báo
-            try {
-                await this.emailService.sendUnlockSuccessEmail(
-                    email,
-                    user.name,
-                    user.language || 'vi',
-                );
-            } catch (emailError) {
-                this.logger.warn(`Failed to send unlock success email to ${email}:`, emailError);
-            }
-
-            return true;
-        } catch (error) {
-            this.logger.error(`Error verifying unlock code for ${email}:`, error);
-            return false;
-        }
-    }
-
-    /**
-     * Tạo contact mới từ email đến
-     * Được gọi khi Gemini AI phân loại email là contact từ người dùng
-     */
-    private async createNewContact(
-        message: IGmailMessage,
-        senderEmail: string,
-        senderName: string,
-        subject: string,
-        content: string,
-    ): Promise<void> {
-        try {
-            // Tạo contact conversation
-            const result = await this.contactService.createFromInboundEmail(
-                senderEmail,
-                senderName || senderEmail.split('@')[0],
-                subject || 'Liên hệ hỗ trợ',
-                content,
-                message.id,
-                message.headers.messageId,
-                message.headers.inReplyTo,
-                message.headers.references,
+          if (classification.isUserContact) {
+            // Email contact từ người dùng → tự động tạo contact
+            this.logger.debug(
+              `User contact email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`,
             );
+            await this.createNewContact(
+              message,
+              senderEmail,
+              senderName,
+              subject,
+              bodyText,
+            );
+            await this.gmailApiService.markAsRead(message.id);
+            return;
+          }
 
-            this.logger.log(`Created new contact ticket ${result.code} from email: ${senderEmail}`);
-
-            // Tạo Discord channel nếu được bật
-            if (this.discordService.enabled) {
-                const discordResult = await this.discordService.createContactChannel(
-                    result.code,
-                    senderName || senderEmail.split('@')[0],
-                    senderEmail,
-                    subject,
-                    false, // isPriority
-                    content, // Pass email content to be displayed in Embed
-                );
-
-                if (discordResult.success && discordResult.channelId) {
-                    // Cập nhật discord_channel_id cho conversation
-                    await this.contactService.updateDiscordChannelId(result.id, discordResult.channelId);
-                    this.logger.log(`Created Discord channel for ticket ${result.code}`);
-
-                    // Send AI reply to Discord if available
-                    if (result.aiResponse) {
-                        await this.discordService.sendMessageToTicket(
-                            discordResult.channelId,
-                            `**🤖 GEN-HUB AI**: ${result.aiResponse}`,
-                            false,
-                        );
-                    }
-                }
-            }
+          // Không xác định → để nguyên (không đánh dấu đã đọc)
+          this.logger.debug(
+            `Unknown email type, leaving unread: ${subject.substring(0, 50)}... (category: ${classification.category})`,
+          );
+          return;
         } catch (error) {
-            this.logger.error(`Failed to create contact from email ${senderEmail}:`, error);
-            throw error;
+          // Lỗi AI → để nguyên email (không đánh dấu đã đọc)
+          this.logger.error(
+            `Gemini AI classification failed: ${error.message}`,
+          );
+          return;
         }
+      }
+
+      // Lấy nội dung email
+      const bodyText = this.extractNewReplyContent(
+        message.body.text || message.body.html || '',
+      );
+
+      this.logger.debug(`Processing email from ${senderEmail}: ${subject}`);
+
+      // Xử lý unlock email
+      if (isUnlockEmail) {
+        await this.handleUnlockEmail(message, senderEmail, subject, bodyText);
+        return;
+      }
+
+      // Xử lý contact ticket reply
+      if (isTicketReply) {
+        await this.handleTicketReply(
+          message,
+          senderEmail,
+          senderName,
+          subject,
+          bodyText,
+        );
+        return;
+      }
+    } catch (error) {
+      this.logger.error('Error processing email:', error);
     }
+  }
+
+  /**
+   * Xử lý unlock email
+   */
+  private async handleUnlockEmail(
+    message: IGmailMessage,
+    senderEmail: string,
+    subject: string,
+    bodyText: string,
+  ): Promise<void> {
+    const subjectMatch = subject.match(this.UNLOCK_SUBJECT_PATTERN);
+    if (!subjectMatch) {
+      await this.gmailApiService.markAsRead(message.id);
+      return;
+    }
+
+    const claimedEmail = subjectMatch[1].toLowerCase().trim();
+
+    // Kiểm tra email match
+    if (claimedEmail !== senderEmail) {
+      this.logger.warn(
+        `Subject email mismatch: claimed=${claimedEmail}, sender=${senderEmail}`,
+      );
+      await this.gmailApiService.markAsRead(message.id);
+      return;
+    }
+
+    // Tìm unlock code
+    let unlockCode: string | null = null;
+
+    const subjectCodeMatch = subject.match(this.UNLOCK_CODE_PATTERN);
+    if (subjectCodeMatch) {
+      unlockCode = subjectCodeMatch[1];
+    } else {
+      const bodyMatch = bodyText.match(this.UNLOCK_CODE_PATTERN);
+      if (bodyMatch) {
+        unlockCode = bodyMatch[1];
+      }
+    }
+
+    if (!unlockCode) {
+      this.logger.warn(`No unlock code found from ${senderEmail}`);
+      await this.gmailApiService.markAsRead(message.id);
+      return;
+    }
+
+    this.logger.log(
+      `🔓 Unlock request from ${senderEmail} with code ${unlockCode}`,
+    );
+
+    // Xác thực và unlock
+    const success = await this.verifyAndUnlock(senderEmail, unlockCode);
+
+    // Đánh dấu đã đọc
+    await this.gmailApiService.markAsRead(message.id);
+
+    // Gửi email phản hồi
+    if (success) {
+      const user = await this.prismaService.user.findFirst({
+        where: { email: senderEmail },
+        select: { name: true, language: true },
+      });
+
+      if (user) {
+        await this.emailService.sendUnlockSuccessEmail(
+          senderEmail,
+          user.name,
+          user.language || 'vi',
+        );
+      }
+    }
+  }
+
+  /**
+   * Xử lý contact ticket reply
+   */
+  private async handleTicketReply(
+    message: IGmailMessage,
+    senderEmail: string,
+    senderName: string,
+    subject: string,
+    bodyText: string,
+  ): Promise<void> {
+    this.logger.log(`📩 Contact ticket reply detected: ${subject}`);
+
+    try {
+      const processed = await this.contactService.processInboundEmail(
+        senderEmail,
+        senderName,
+        subject,
+        bodyText,
+        message.headers.messageId || `inbound-${Date.now()}`,
+        message.headers.inReplyTo,
+        message.headers.references,
+      );
+
+      if (processed) {
+        const ticketMatch = subject.match(this.TICKET_SUBJECT_PATTERN);
+        const ticketCode = ticketMatch?.[1];
+        this.logger.log(`✅ Contact ticket reply processed: ${ticketCode}`);
+
+        // Forward to Discord channel
+        if (ticketCode && this.discordService.enabled) {
+          const conversation = await this.contactService.getByCode(ticketCode);
+          if (conversation?.discord_channel_id) {
+            await this.discordService.sendMessageToTicket(
+              conversation.discord_channel_id,
+              bodyText,
+              true, // isFromCustomer
+              senderName,
+            );
+            this.logger.log(
+              `📤 Forwarded email reply to Discord channel for ${ticketCode}`,
+            );
+          }
+        }
+      } else {
+        this.logger.warn(`⚠️ Contact ticket not found for: ${subject}`);
+      }
+    } catch (error) {
+      this.logger.error('Error processing contact ticket reply:', error);
+    }
+
+    // Luôn đánh dấu đã đọc
+    await this.gmailApiService.markAsRead(message.id);
+  }
+
+  /**
+   * Trích xuất nội dung reply mới, bỏ quoted text
+   */
+  private extractNewReplyContent(fullContent: string): string {
+    let content = fullContent;
+
+    // Remove HTML tags if present
+    content = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+
+    // Patterns để tìm điểm bắt đầu của quoted text
+    const quoteMarkers = [
+      /Vào[\s\S]+?đã viết:/i, // Gmail Vietnamese
+      /On[\s\S]+?wrote:/i, // Gmail/Outlook English
+      /^>+\s*/m, // Classic quote marker
+      /-{5,}\s*(Forwarded|Original)\s+message/i,
+      /From:\s*[\s\S]+?Sent:\s*/i, // Outlook format
+      /^\s*_{5,}\s*$/m, // Underscore separator
+    ];
+
+    let cutIndex = content.length;
+
+    for (const marker of quoteMarkers) {
+      const match = content.match(marker);
+      if (match && match.index !== undefined && match.index < cutIndex) {
+        cutIndex = match.index;
+      }
+    }
+
+    content = content.substring(0, cutIndex);
+
+    return content
+      .trim()
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s+$/, '');
+  }
+
+  /**
+   * Xác thực và mở khóa tài khoản
+   */
+  private async verifyAndUnlock(email: string, code: string): Promise<boolean> {
+    const unlockKey = `unlock_token:${email}`;
+    const tokenData = await this.redisService.get(unlockKey);
+
+    if (!tokenData) {
+      this.logger.warn(`No unlock token found for ${email}`);
+      return false;
+    }
+
+    try {
+      const parsed: IUnlockTokenData = JSON.parse(tokenData);
+
+      if (parsed.code !== code) {
+        this.logger.warn(`Invalid unlock code for ${email}`);
+        return false;
+      }
+
+      // Kiểm tra user có bị brute force ban không
+      const user = await this.prismaService.user.findFirst({
+        where: { email },
+        select: {
+          id: true,
+          name: true,
+          language: true,
+          is_brute_force_banned: true,
+        },
+      });
+
+      if (!user) {
+        this.logger.warn(`User not found for ${email}`);
+        return false;
+      }
+
+      if (!user.is_brute_force_banned) {
+        this.logger.warn(
+          `Cannot unlock ${email} via email - not a brute force ban`,
+        );
+        return false;
+      }
+
+      // Mở khóa tài khoản
+      await this.prismaService.user.updateMany({
+        where: { email },
+        data: {
+          is_banned: false,
+          is_brute_force_banned: false,
+          banned_end: null,
+        },
+      });
+
+      // Xóa Redis data
+      await this.redisService.del(`lock_status:${email}`);
+      await this.redisService.del(unlockKey);
+      await this.redisService.delByPattern(`rate_limit:${email}:*`);
+
+      this.logger.log(`✅ Account unlocked successfully for ${email}`);
+
+      // Gửi email thông báo
+      try {
+        await this.emailService.sendUnlockSuccessEmail(
+          email,
+          user.name,
+          user.language || 'vi',
+        );
+      } catch (emailError) {
+        this.logger.warn(
+          `Failed to send unlock success email to ${email}:`,
+          emailError,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error(`Error verifying unlock code for ${email}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Tạo contact mới từ email đến
+   * Được gọi khi Gemini AI phân loại email là contact từ người dùng
+   */
+  private async createNewContact(
+    message: IGmailMessage,
+    senderEmail: string,
+    senderName: string,
+    subject: string,
+    content: string,
+  ): Promise<void> {
+    try {
+      // Tạo contact conversation
+      const result = await this.contactService.createFromInboundEmail(
+        senderEmail,
+        senderName || senderEmail.split('@')[0],
+        subject || 'Liên hệ hỗ trợ',
+        content,
+        message.id,
+        message.headers.messageId,
+        message.headers.inReplyTo,
+        message.headers.references,
+      );
+
+      this.logger.log(
+        `Created new contact ticket ${result.code} from email: ${senderEmail}`,
+      );
+
+      // Tạo Discord channel nếu được bật
+      if (this.discordService.enabled) {
+        const discordResult = await this.discordService.createContactChannel(
+          result.code,
+          senderName || senderEmail.split('@')[0],
+          senderEmail,
+          subject,
+          false, // isPriority
+          content, // Pass email content to be displayed in Embed
+        );
+
+        if (discordResult.success && discordResult.channelId) {
+          // Cập nhật discord_channel_id cho conversation
+          await this.contactService.updateDiscordChannelId(
+            result.id,
+            discordResult.channelId,
+          );
+          this.logger.log(`Created Discord channel for ticket ${result.code}`);
+
+          // Send AI reply to Discord if available
+          if (result.aiResponse) {
+            await this.discordService.sendMessageToTicket(
+              discordResult.channelId,
+              `**🤖 GEN-HUB AI**: ${result.aiResponse}`,
+              false,
+            );
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to create contact from email ${senderEmail}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }

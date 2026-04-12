@@ -64,7 +64,7 @@ export class AccountService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly redisService: RedisService,
     private readonly websocketGateway: WebsocketGateway,
-  ) { }
+  ) {}
 
   /**
    * Lấy thông tin profile
@@ -151,7 +151,8 @@ export class AccountService {
       (p, index, self) => index === self.findIndex((t) => t.id === p.id),
     );
 
-    const organizationId = await this.accountRepository.findPrimaryOrganizationId(userId);
+    const organizationId =
+      await this.accountRepository.findPrimaryOrganizationId(userId);
 
     const profileData: IAccountProfile = {
       user: {
@@ -272,7 +273,10 @@ export class AccountService {
 
     let isPasswordValid = false;
     try {
-      isPasswordValid = await argon2.verify(user.password, dto.current_password);
+      isPasswordValid = await argon2.verify(
+        user.password,
+        dto.current_password,
+      );
     } catch {
       throw new UnauthorizedException(
         await this.i18n.t('auth.change_password.incorrect_current_password', {
@@ -512,7 +516,9 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.avatar_uploaded', { lang }),
+      message: await this.i18n.t('account.avatar_cover.avatar_uploaded', {
+        lang,
+      }),
       avatar_url: uploadResult.url,
     };
   }
@@ -546,7 +552,9 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.cover_uploaded', { lang }),
+      message: await this.i18n.t('account.avatar_cover.cover_uploaded', {
+        lang,
+      }),
       cover_url: uploadResult.url,
     };
   }
@@ -562,14 +570,20 @@ export class AccountService {
     const defaultAvatarId = this.appConfigService.get('defaultAvatarId');
     if (!defaultAvatarId) {
       throw new BadRequestException(
-        await this.i18n.t('account.avatar_cover.default_avatar_not_configured', { lang }),
+        await this.i18n.t(
+          'account.avatar_cover.default_avatar_not_configured',
+          { lang },
+        ),
       );
     }
 
-    const avatarExists = await this.accountRepository.findAvatarImageById(defaultAvatarId);
+    const avatarExists =
+      await this.accountRepository.findAvatarImageById(defaultAvatarId);
     if (!avatarExists) {
       throw new BadRequestException(
-        await this.i18n.t('account.avatar_cover.default_avatar_not_found', { lang }),
+        await this.i18n.t('account.avatar_cover.default_avatar_not_found', {
+          lang,
+        }),
       );
     }
 
@@ -584,7 +598,9 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.avatar_default_set', { lang }),
+      message: await this.i18n.t('account.avatar_cover.avatar_default_set', {
+        lang,
+      }),
       avatar_image_id: defaultAvatarId,
     };
   }
@@ -600,14 +616,19 @@ export class AccountService {
     const defaultCoverId = this.appConfigService.get('defaultCoverId');
     if (!defaultCoverId) {
       throw new BadRequestException(
-        await this.i18n.t('account.avatar_cover.default_cover_not_configured', { lang }),
+        await this.i18n.t('account.avatar_cover.default_cover_not_configured', {
+          lang,
+        }),
       );
     }
 
-    const coverExists = await this.accountRepository.findCoverImageById(defaultCoverId);
+    const coverExists =
+      await this.accountRepository.findCoverImageById(defaultCoverId);
     if (!coverExists) {
       throw new BadRequestException(
-        await this.i18n.t('account.avatar_cover.default_cover_not_found', { lang }),
+        await this.i18n.t('account.avatar_cover.default_cover_not_found', {
+          lang,
+        }),
       );
     }
 
@@ -622,12 +643,18 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.cover_default_set', { lang }),
+      message: await this.i18n.t('account.avatar_cover.cover_default_set', {
+        lang,
+      }),
       cover_image_id: defaultCoverId,
     };
   }
 
-  async selectAvatarImage(userId: string, avatarImageId: string, lang = DEFAULT_LANGUAGE) {
+  async selectAvatarImage(
+    userId: string,
+    avatarImageId: string,
+    lang = DEFAULT_LANGUAGE,
+  ) {
     const user = await this.accountRepository.findById(userId);
     if (!user) {
       throw new BadRequestException(
@@ -635,7 +662,8 @@ export class AccountService {
       );
     }
 
-    const avatarExists = await this.accountRepository.findAvatarImageById(avatarImageId);
+    const avatarExists =
+      await this.accountRepository.findAvatarImageById(avatarImageId);
     if (!avatarExists) {
       throw new BadRequestException(
         await this.i18n.t('account.avatar_cover.avatar_not_found', { lang }),
@@ -653,12 +681,18 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.avatar_selected', { lang }),
+      message: await this.i18n.t('account.avatar_cover.avatar_selected', {
+        lang,
+      }),
       avatar_image_id: avatarImageId,
     };
   }
 
-  async selectCoverImage(userId: string, coverImageId: string, lang = DEFAULT_LANGUAGE) {
+  async selectCoverImage(
+    userId: string,
+    coverImageId: string,
+    lang = DEFAULT_LANGUAGE,
+  ) {
     const user = await this.accountRepository.findById(userId);
     if (!user) {
       throw new BadRequestException(
@@ -666,7 +700,8 @@ export class AccountService {
       );
     }
 
-    const coverExists = await this.accountRepository.findCoverImageById(coverImageId);
+    const coverExists =
+      await this.accountRepository.findCoverImageById(coverImageId);
     if (!coverExists) {
       throw new BadRequestException(
         await this.i18n.t('account.avatar_cover.cover_not_found', { lang }),
@@ -684,7 +719,9 @@ export class AccountService {
     ]);
 
     return {
-      message: await this.i18n.t('account.avatar_cover.cover_selected', { lang }),
+      message: await this.i18n.t('account.avatar_cover.cover_selected', {
+        lang,
+      }),
       cover_image_id: coverImageId,
     };
   }

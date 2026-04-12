@@ -7,9 +7,9 @@ import { ConsultationRequestRepository } from './consultation-request.repository
 import { ConsultationRequestService } from './consultation-request.service';
 
 @Module({
-    imports: [PrismaModule, RedisModule],
-    controllers: [ConsultationRequestController],
-    providers: [ConsultationRequestRepository, ConsultationRequestService],
-    exports: [ConsultationRequestService],
+  imports: [PrismaModule, RedisModule],
+  controllers: [ConsultationRequestController],
+  providers: [ConsultationRequestRepository, ConsultationRequestService],
+  exports: [ConsultationRequestService],
 })
-export class ConsultationRequestModule { }
+export class ConsultationRequestModule {}

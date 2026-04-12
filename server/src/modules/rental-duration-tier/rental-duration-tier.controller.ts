@@ -29,7 +29,11 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import {
+  RequirePermission,
+  RequireAnyPermission,
+  CurrentUser,
+} from '../../common/decorators';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -49,7 +53,7 @@ export class RentalDurationTierController {
   constructor(
     private readonly service: RentalDurationTierService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Check if user has specific permission
@@ -382,14 +386,23 @@ export class RentalDurationTierController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('rental-duration-tier.list', 'rental-duration-tier.list.all')
+  @RequireAnyPermission(
+    'rental-duration-tier.list',
+    'rental-duration-tier.list.all',
+  )
   @Get()
   async findAll(
     @Query() query: QueryRentalDurationTierDto,
     @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<IRentalDurationTier>>> {
-    const hasListAll = await this.hasPermission(userId, 'rental-duration-tier.list.all');
-    const result = await this.service.findAll(query, hasListAll ? undefined : userId);
+    const hasListAll = await this.hasPermission(
+      userId,
+      'rental-duration-tier.list.all',
+    );
+    const result = await this.service.findAll(
+      query,
+      hasListAll ? undefined : userId,
+    );
     return new GetResponse(
       'rental-duration-tier.success.fetched',
       result,
@@ -568,15 +581,25 @@ export class RentalDurationTierController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('rental-duration-tier.read', 'rental-duration-tier.read.all')
+  @RequireAnyPermission(
+    'rental-duration-tier.read',
+    'rental-duration-tier.read.all',
+  )
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IRentalDurationTier>> {
-    const hasReadAll = await this.hasPermission(userId, 'rental-duration-tier.read.all');
-    const result = await this.service.findById(id, lang, hasReadAll ? undefined : userId);
+    const hasReadAll = await this.hasPermission(
+      userId,
+      'rental-duration-tier.read.all',
+    );
+    const result = await this.service.findById(
+      id,
+      lang,
+      hasReadAll ? undefined : userId,
+    );
     return new GetResponse(
       'rental-duration-tier.success.fetched',
       result,
@@ -733,7 +756,10 @@ export class RentalDurationTierController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('rental-duration-tier.update', 'rental-duration-tier.update.all')
+  @RequireAnyPermission(
+    'rental-duration-tier.update',
+    'rental-duration-tier.update.all',
+  )
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -741,8 +767,17 @@ export class RentalDurationTierController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IRentalDurationTier>> {
-    const hasUpdateAll = await this.hasPermission(userId, 'rental-duration-tier.update.all');
-    const result = await this.service.update(id, dto, userId, lang, hasUpdateAll ? undefined : userId);
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'rental-duration-tier.update.all',
+    );
+    const result = await this.service.update(
+      id,
+      dto,
+      userId,
+      lang,
+      hasUpdateAll ? undefined : userId,
+    );
     return new UpdatedResponse(
       'rental-duration-tier.success.updated',
       result,

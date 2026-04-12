@@ -16,24 +16,67 @@ export class AvatarCoverRankPermissionsSeeder extends BaseSeeder {
   private async seedModulePermissions(moduleKey: string, moduleLabel: string) {
     try {
       const permissions = [
-        { key: `${moduleKey}.create`, name: `Create ${moduleLabel}`, description: `Permission to create ${moduleLabel}` },
-        { key: `${moduleKey}.list`, name: `List own ${moduleLabel}`, description: `Permission to list own ${moduleLabel}` },
-        { key: `${moduleKey}.list.all`, name: `List all ${moduleLabel}`, description: `Permission to list all ${moduleLabel}` },
-        { key: `${moduleKey}.read`, name: `Read own ${moduleLabel}`, description: `Permission to read own ${moduleLabel}` },
-        { key: `${moduleKey}.read.all`, name: `Read all ${moduleLabel}`, description: `Permission to read all ${moduleLabel}` },
-        { key: `${moduleKey}.update`, name: `Update own ${moduleLabel}`, description: `Permission to update own ${moduleLabel}` },
-        { key: `${moduleKey}.update.all`, name: `Update all ${moduleLabel}`, description: `Permission to update all ${moduleLabel}` },
-        { key: `${moduleKey}.delete`, name: `Delete own ${moduleLabel}`, description: `Permission to delete own ${moduleLabel}` },
-        { key: `${moduleKey}.delete.all`, name: `Delete all ${moduleLabel}`, description: `Permission to delete all ${moduleLabel}` },
+        {
+          key: `${moduleKey}.create`,
+          name: `Create ${moduleLabel}`,
+          description: `Permission to create ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.list`,
+          name: `List own ${moduleLabel}`,
+          description: `Permission to list own ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.list.all`,
+          name: `List all ${moduleLabel}`,
+          description: `Permission to list all ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.read`,
+          name: `Read own ${moduleLabel}`,
+          description: `Permission to read own ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.read.all`,
+          name: `Read all ${moduleLabel}`,
+          description: `Permission to read all ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.update`,
+          name: `Update own ${moduleLabel}`,
+          description: `Permission to update own ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.update.all`,
+          name: `Update all ${moduleLabel}`,
+          description: `Permission to update all ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.delete`,
+          name: `Delete own ${moduleLabel}`,
+          description: `Permission to delete own ${moduleLabel}`,
+        },
+        {
+          key: `${moduleKey}.delete.all`,
+          name: `Delete all ${moduleLabel}`,
+          description: `Permission to delete all ${moduleLabel}`,
+        },
       ];
 
       for (const perm of permissions) {
-        await this.createPermissionIfNotExists(perm.key, perm.name, perm.description);
+        await this.createPermissionIfNotExists(
+          perm.key,
+          perm.name,
+          perm.description,
+        );
       }
 
       const adminRoles = await this.getAdminRoles();
       const seededPerms = await this.prisma.permission.findMany({
-        where: { key: { in: permissions.map((p) => p.key) }, is_deleted: false },
+        where: {
+          key: { in: permissions.map((p) => p.key) },
+          is_deleted: false,
+        },
       });
 
       for (const role of adminRoles) {
@@ -44,8 +87,11 @@ export class AvatarCoverRankPermissionsSeeder extends BaseSeeder {
 
       this.logger.log(`${moduleLabel} permissions seeded`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to seed ${moduleLabel} permissions: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to seed ${moduleLabel} permissions: ${errorMessage}`,
+      );
     }
   }
 }

@@ -25,10 +25,10 @@ export class RowAddonGiftDto {
 
   // Row-specific conditions if any (usually just order amount, or duration?)
   // Replicating WarehouseAddonGiftDto structure mostly, but adapted context if needed.
-  // WarehouseTemplate had min_warehouses, min_rows. 
-  // RowTemplate context: maybe min_racks? 
+  // WarehouseTemplate had min_warehouses, min_rows.
+  // RowTemplate context: maybe min_racks?
   // Let's stick to simple conditions for now or copy generic structure.
-  // Actually, RowAddonGift might depend on renting multiple rows? 
+  // Actually, RowAddonGift might depend on renting multiple rows?
   // Or just min_order_amount implementation.
   // Checking schema.prisma for RowAddonGift fields.
   /*
@@ -52,14 +52,19 @@ export class RowAddonGiftDto {
   @IsBoolean()
   is_until_service_end?: boolean;
 
-  @ApiPropertyOptional({ description: 'Giá trị thời gian tặng (nếu không phải until service end)' })
-  @ValidateIf(o => o.is_until_service_end === false)
+  @ApiPropertyOptional({
+    description: 'Giá trị thời gian tặng (nếu không phải until service end)',
+  })
+  @ValidateIf((o) => o.is_until_service_end === false)
   @IsNumber()
   @Min(1)
   gift_duration_value?: number;
 
-  @ApiPropertyOptional({ description: 'Đơn vị thời gian tặng', enum: DurationUnit })
-  @ValidateIf(o => o.is_until_service_end === false)
+  @ApiPropertyOptional({
+    description: 'Đơn vị thời gian tặng',
+    enum: DurationUnit,
+  })
+  @ValidateIf((o) => o.is_until_service_end === false)
   @IsEnum(DurationUnit)
   gift_duration_unit?: DurationUnit;
 

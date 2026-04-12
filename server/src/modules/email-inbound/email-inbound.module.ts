@@ -16,17 +16,17 @@ import { AiHubModule } from '../ai-hub';
  * Hỗ trợ Push (Pub/Sub) và Polling mode
  */
 @Module({
-    imports: [
-        ScheduleModule.forRoot(),
-        RedisModule,
-        PrismaModule,
-        NotificationModule,
-        forwardRef(() => ContactModule),
-        DiscordModule,
-        AiHubModule,
-    ],
-    controllers: [GmailWebhookController],
-    providers: [GmailApiService, EmailInboundProvider],
-    exports: [GmailApiService, EmailInboundProvider],
+  imports: [
+    ScheduleModule.forRoot(),
+    RedisModule,
+    PrismaModule,
+    NotificationModule,
+    forwardRef(() => ContactModule),
+    DiscordModule,
+    AiHubModule,
+  ],
+  controllers: [GmailWebhookController],
+  providers: [GmailApiService, EmailInboundProvider],
+  exports: [GmailApiService, EmailInboundProvider],
 })
-export class EmailInboundModule { }
+export class EmailInboundModule {}

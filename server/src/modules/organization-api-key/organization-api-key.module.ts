@@ -9,27 +9,20 @@ import { ApiKeyLogService } from './api-key-log.service';
 import { RedisModule } from '../redis/redis.module';
 import { OrganizationApiKeyCacheKeys } from './constants/cache-keys.helper';
 
-
 @Module({
-    imports: [
-        SharedModule,
-        WebsocketModule,
-        OrganizationModule,
-        RedisModule,
-    ],
-    controllers: [OrganizationApiKeyController],
-    providers: [
-        OrganizationApiKeyService,
-        OrganizationApiKeyRepository,
-        ApiKeyLogService,
-        OrganizationApiKeyCacheKeys,
-    ],
-    exports: [
-        OrganizationApiKeyService,
-        OrganizationApiKeyRepository,
-        ApiKeyLogService,
-        OrganizationApiKeyCacheKeys,
-    ],
-
+  imports: [SharedModule, WebsocketModule, OrganizationModule, RedisModule],
+  controllers: [OrganizationApiKeyController],
+  providers: [
+    OrganizationApiKeyService,
+    OrganizationApiKeyRepository,
+    ApiKeyLogService,
+    OrganizationApiKeyCacheKeys,
+  ],
+  exports: [
+    OrganizationApiKeyService,
+    OrganizationApiKeyRepository,
+    ApiKeyLogService,
+    OrganizationApiKeyCacheKeys,
+  ],
 })
-export class OrganizationApiKeyModule { }
+export class OrganizationApiKeyModule {}

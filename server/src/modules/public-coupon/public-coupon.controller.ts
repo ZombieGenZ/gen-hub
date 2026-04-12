@@ -233,7 +233,10 @@ export class PublicCouponController {
     @CurrentUser('userId') userId: string,
     @Query() query: QueryPublicCouponDto,
   ): Promise<GetResponse<IPaginatedResponse<IPublicCoupon>>> {
-    const result = await this.publicCouponService.getSavedCoupons(userId, query);
+    const result = await this.publicCouponService.getSavedCoupons(
+      userId,
+      query,
+    );
     return new GetResponse(
       'coupon.saved.list.success',
       result,
@@ -358,7 +361,8 @@ export class PublicCouponController {
               },
               gift_insurances: {
                 type: 'array',
-                description: 'Danh sách bảo hiểm được tặng kèm khi áp dụng coupon',
+                description:
+                  'Danh sách bảo hiểm được tặng kèm khi áp dụng coupon',
                 items: {
                   type: 'object',
                   properties: {
@@ -654,7 +658,11 @@ export class PublicCouponController {
     @Body() dto: ValidateCouponDto,
     @I18nLang() lang: string,
   ): Promise<OkResponse<any>> {
-    const result = await this.publicCouponService.validateCoupon(userId, dto, lang);
+    const result = await this.publicCouponService.validateCoupon(
+      userId,
+      dto,
+      lang,
+    );
     if ('error' in result && result.error) {
       return new OkResponse('coupon.validate.failed', result, result.error);
     }

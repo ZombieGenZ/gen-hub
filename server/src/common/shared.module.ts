@@ -88,5 +88,4 @@ import { ExcelService } from './services/excel.service';
     ExcelService,
   ],
 })
-export class SharedModule { }
-
+export class SharedModule {}

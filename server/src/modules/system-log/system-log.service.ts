@@ -29,7 +29,7 @@ export class SystemLogService {
     @Optional()
     @Inject(forwardRef(() => WebsocketGateway))
     private readonly websocketGateway?: WebsocketGateway,
-  ) { }
+  ) {}
 
   /**
    * Log async - fire-and-forget, không await
@@ -39,7 +39,9 @@ export class SystemLogService {
   logAsync(params: CreateLogDto): void {
     // Console output cho ERROR level trong development
     if (params.level === 'ERROR') {
-      this.logger.error(`[${params.module}:${params.action}] ${params.message}`);
+      this.logger.error(
+        `[${params.module}:${params.action}] ${params.message}`,
+      );
     }
 
     this.createLog(params).catch((error) => {
@@ -54,7 +56,9 @@ export class SystemLogService {
   async log(params: CreateLogDto): Promise<void> {
     // Console output cho ERROR level
     if (params.level === 'ERROR') {
-      this.logger.error(`[${params.module}:${params.action}] ${params.message}`);
+      this.logger.error(
+        `[${params.module}:${params.action}] ${params.message}`,
+      );
     }
 
     await this.createLog(params);
@@ -319,11 +323,9 @@ export class SystemLogService {
     const result = await this.repository.findPaginated(query);
 
     // 3. Set cache (fire-and-forget)
-    this.redisService
-      .setSystemLogListCache(cacheKey, result)
-      .catch(() => {
-        // Silent fail
-      });
+    this.redisService.setSystemLogListCache(cacheKey, result).catch(() => {
+      // Silent fail
+    });
 
     return result;
   }

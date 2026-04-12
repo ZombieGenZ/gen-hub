@@ -14,20 +14,20 @@ import { RentalContractController } from './rental-contract.controller';
 import { RentalContractService } from './rental-contract.service';
 
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        SystemLogModule,
-        OrganizationModule,
-        NotificationModule,
-        UserNotificationModule,
-        RentalContractSharedModule,
-        forwardRef(() => PaymentModule),
-        forwardRef(() => WarehouseTemplateModule),
-    ],
-    controllers: [RentalContractController],
-    providers: [RentalContractService],
-    exports: [RentalContractService],
+  imports: [
+    SharedModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    OrganizationModule,
+    NotificationModule,
+    UserNotificationModule,
+    RentalContractSharedModule,
+    forwardRef(() => PaymentModule),
+    forwardRef(() => WarehouseTemplateModule),
+  ],
+  controllers: [RentalContractController],
+  providers: [RentalContractService],
+  exports: [RentalContractService],
 })
-export class RentalContractModule { }
+export class RentalContractModule {}

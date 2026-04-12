@@ -8,9 +8,9 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 
 @Module({
-    imports: [SharedModule, RedisModule, WebsocketModule, SystemLogModule],
-    controllers: [UserNotificationController],
-    providers: [UserNotificationService, UserNotificationRepository],
-    exports: [UserNotificationService],
+  imports: [SharedModule, RedisModule, WebsocketModule, SystemLogModule],
+  controllers: [UserNotificationController],
+  providers: [UserNotificationService, UserNotificationRepository],
+  exports: [UserNotificationService],
 })
-export class UserNotificationModule { }
+export class UserNotificationModule {}

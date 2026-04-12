@@ -8,4 +8,4 @@ export const ORG_PERMISSIONS_KEY = 'org_permissions';
  * @param permissions - Danh sách quyền cần kiểm tra
  */
 export const RequireOrgPermission = (...permissions: string[]) =>
-    SetMetadata(ORG_PERMISSIONS_KEY, permissions);
+  SetMetadata(ORG_PERMISSIONS_KEY, permissions);

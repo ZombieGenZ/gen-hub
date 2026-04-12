@@ -10,243 +10,275 @@ import { IFaqPaginatedResponse } from './interfaces';
 
 @Injectable()
 export class FaqService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-    private readonly cacheKeyPrefix: string;
+  private readonly cacheTTL: number;
+  private readonly listCacheTTL: number;
+  private readonly cacheKeyPrefix: string;
 
-    constructor(
-        private readonly repository: FaqRepository,
-        private readonly redisService: RedisService,
-        private readonly websocketGateway: WebsocketGateway,
-        private readonly systemLogService: SystemLogService,
-        private readonly configService: ConfigService,
-        private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_FAQ_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_FAQ_LIST_CACHE_TTL', 60);
-        this.cacheKeyPrefix = this.configService.get<string>('REDIS_FAQ_KEY_PREFIX') || 'faq';
+  constructor(
+    private readonly repository: FaqRepository,
+    private readonly redisService: RedisService,
+    private readonly websocketGateway: WebsocketGateway,
+    private readonly systemLogService: SystemLogService,
+    private readonly configService: ConfigService,
+    private readonly i18n: I18nService,
+  ) {
+    this.cacheTTL = this.configService.get<number>('REDIS_FAQ_CACHE_TTL', 300);
+    this.listCacheTTL = this.configService.get<number>(
+      'REDIS_FAQ_LIST_CACHE_TTL',
+      60,
+    );
+    this.cacheKeyPrefix =
+      this.configService.get<string>('REDIS_FAQ_KEY_PREFIX') || 'faq';
+  }
+
+  private getCacheKey(id: string): string {
+    return `${this.cacheKeyPrefix}:${id}`;
+  }
+
+  private getListCacheKey(query: QueryFaqDto): string {
+    return `${this.cacheKeyPrefix}:list:${JSON.stringify(query)}`;
+  }
+
+  async create(dto: CreateFaqDto, userId: string, lang: string) {
+    const faq = await this.repository.create({
+      ...dto,
+      created_by: userId,
+    });
+
+    // Xóa cache list
+    await this.invalidateListCache();
+
+    // Ghi log
+    this.systemLogService.info(
+      'FAQ',
+      'CREATE',
+      `Tạo FAQ mới: ${faq.question.substring(0, 50)}`,
+      {
+        userId,
+        metaData: { faqId: faq.id },
+      },
+    );
+
+    // Emit socket event
+    this.websocketGateway.server.emit('faq:created', {
+      faqId: faq.id,
+      question: faq.question,
+      createdBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return faq;
+  }
+
+  async findAll(query: QueryFaqDto): Promise<IFaqPaginatedResponse> {
+    const { limit = 10, offset = 0, keywords, is_active } = query;
+
+    // Check cache
+    const cacheKey = this.getListCacheKey(query);
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    private getCacheKey(id: string): string {
-        return `${this.cacheKeyPrefix}:${id}`;
+    const where: any = { is_deleted: false };
+
+    if (is_active !== undefined) {
+      where.is_active = is_active;
     }
 
-    private getListCacheKey(query: QueryFaqDto): string {
-        return `${this.cacheKeyPrefix}:list:${JSON.stringify(query)}`;
+    if (keywords) {
+      where.OR = [
+        { question: { contains: keywords, mode: 'insensitive' } },
+        { answer: { contains: keywords, mode: 'insensitive' } },
+      ];
     }
 
-    async create(dto: CreateFaqDto, userId: string, lang: string) {
-        const faq = await this.repository.create({
-            ...dto,
-            created_by: userId,
-        });
+    const [data, total] = await Promise.all([
+      this.repository.findAll({
+        skip: offset,
+        take: limit,
+        where,
+        orderBy: { order: 'asc' },
+      }),
+      this.repository.count(where),
+    ]);
 
-        // Xóa cache list
-        await this.invalidateListCache();
+    const hasMore = offset + data.length < total;
+    const result = { items: data, total, limit, offset, hasMore };
 
-        // Ghi log
-        this.systemLogService.info('FAQ', 'CREATE', `Tạo FAQ mới: ${faq.question.substring(0, 50)}`, {
-            userId,
-            metaData: { faqId: faq.id },
-        });
+    // Set cache
+    await this.redisService.set(
+      cacheKey,
+      JSON.stringify(result),
+      this.listCacheTTL,
+    );
 
-        // Emit socket event
-        this.websocketGateway.server.emit('faq:created', {
-            faqId: faq.id,
-            question: faq.question,
-            createdBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+    return result;
+  }
 
-        return faq;
+  async findById(id: string, lang: string) {
+    // Check cache
+    const cacheKey = this.getCacheKey(id);
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    async findAll(query: QueryFaqDto): Promise<IFaqPaginatedResponse> {
-        const { limit = 10, offset = 0, keywords, is_active } = query;
-
-        // Check cache
-        const cacheKey = this.getListCacheKey(query);
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
-
-        const where: any = { is_deleted: false };
-
-        if (is_active !== undefined) {
-            where.is_active = is_active;
-        }
-
-        if (keywords) {
-            where.OR = [
-                { question: { contains: keywords, mode: 'insensitive' } },
-                { answer: { contains: keywords, mode: 'insensitive' } },
-            ];
-        }
-
-        const [data, total] = await Promise.all([
-            this.repository.findAll({
-                skip: offset,
-                take: limit,
-                where,
-                orderBy: { order: 'asc' },
-            }),
-            this.repository.count(where),
-        ]);
-
-        const hasMore = offset + data.length < total;
-        const result = { items: data, total, limit, offset, hasMore };
-
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
-
-        return result;
+    const faq = await this.repository.findById(id);
+    if (!faq) {
+      throw new NotFoundException(
+        this.i18n.t('faq.errors.not_found', { lang }),
+      );
     }
 
-    async findById(id: string, lang: string) {
-        // Check cache
-        const cacheKey = this.getCacheKey(id);
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+    // Set cache
+    await this.redisService.set(cacheKey, JSON.stringify(faq), this.cacheTTL);
 
-        const faq = await this.repository.findById(id);
-        if (!faq) {
-            throw new NotFoundException(
-                this.i18n.t('faq.errors.not_found', { lang }),
-            );
-        }
+    return faq;
+  }
 
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(faq), this.cacheTTL);
-
-        return faq;
+  /**
+   * Lấy danh sách FAQ công khai (không cần auth)
+   */
+  async findAllPublic(): Promise<IFaqPaginatedResponse> {
+    const cacheKey = `${this.cacheKeyPrefix}:public`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    /**
-     * Lấy danh sách FAQ công khai (không cần auth)
-     */
-    async findAllPublic(): Promise<IFaqPaginatedResponse> {
-        const cacheKey = `${this.cacheKeyPrefix}:public`;
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+    const data = await this.repository.findAllActive();
+    const result = {
+      items: data,
+      total: data.length,
+      limit: data.length,
+      offset: 0,
+      hasMore: false,
+    };
 
-        const data = await this.repository.findAllActive();
-        const result = {
-            items: data,
-            total: data.length,
-            limit: data.length,
-            offset: 0,
-            hasMore: false,
-        };
+    await this.redisService.set(
+      cacheKey,
+      JSON.stringify(result),
+      this.listCacheTTL,
+    );
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+    return result;
+  }
 
-        return result;
+  async update(id: string, dto: UpdateFaqDto, userId: string, lang: string) {
+    const faq = await this.repository.findById(id);
+    if (!faq) {
+      throw new NotFoundException(
+        this.i18n.t('faq.errors.not_found', { lang }),
+      );
     }
 
-    async update(id: string, dto: UpdateFaqDto, userId: string, lang: string) {
-        const faq = await this.repository.findById(id);
-        if (!faq) {
-            throw new NotFoundException(
-                this.i18n.t('faq.errors.not_found', { lang }),
-            );
-        }
+    const updated = await this.repository.update(id, {
+      ...dto,
+      updated_by: userId,
+    });
 
-        const updated = await this.repository.update(id, {
-            ...dto,
-            updated_by: userId,
-        });
+    // Xóa cache
+    await this.invalidateCache(id);
+    await this.invalidateListCache();
 
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+    // Ghi log
+    this.systemLogService.info(
+      'FAQ',
+      'UPDATE',
+      `Cập nhật FAQ: ${updated.question.substring(0, 50)}`,
+      {
+        userId,
+        metaData: { faqId: id, updatedFields: Object.keys(dto) },
+      },
+    );
 
-        // Ghi log
-        this.systemLogService.info('FAQ', 'UPDATE', `Cập nhật FAQ: ${updated.question.substring(0, 50)}`, {
-            userId,
-            metaData: { faqId: id, updatedFields: Object.keys(dto) },
-        });
+    // Emit socket event
+    this.websocketGateway.server.emit('faq:updated', {
+      faqId: id,
+      question: updated.question,
+      updatedFields: Object.keys(dto),
+      updatedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
 
-        // Emit socket event
-        this.websocketGateway.server.emit('faq:updated', {
-            faqId: id,
-            question: updated.question,
-            updatedFields: Object.keys(dto),
-            updatedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+    return updated;
+  }
 
-        return updated;
+  async delete(id: string, userId: string, lang: string) {
+    const faq = await this.repository.findById(id);
+    if (!faq) {
+      throw new NotFoundException(
+        this.i18n.t('faq.errors.not_found', { lang }),
+      );
     }
 
-    async delete(id: string, userId: string, lang: string) {
-        const faq = await this.repository.findById(id);
-        if (!faq) {
-            throw new NotFoundException(
-                this.i18n.t('faq.errors.not_found', { lang }),
-            );
-        }
+    await this.repository.softDelete(id, userId);
 
-        await this.repository.softDelete(id, userId);
+    // Xóa cache
+    await this.invalidateCache(id);
+    await this.invalidateListCache();
 
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+    // Ghi log
+    this.systemLogService.info(
+      'FAQ',
+      'DELETE',
+      `Xóa FAQ: ${faq.question.substring(0, 50)}`,
+      {
+        userId,
+        metaData: { faqId: id },
+      },
+    );
 
-        // Ghi log
-        this.systemLogService.info('FAQ', 'DELETE', `Xóa FAQ: ${faq.question.substring(0, 50)}`, {
-            userId,
-            metaData: { faqId: id },
-        });
+    // Emit socket event
+    this.websocketGateway.server.emit('faq:deleted', {
+      faqId: id,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
-        // Emit socket event
-        this.websocketGateway.server.emit('faq:deleted', {
-            faqId: id,
-            deletedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+  async deleteMany(ids: string[], userId: string, lang: string) {
+    const faqs = await this.repository.findByIds(ids);
+    if (faqs.length === 0) {
+      throw new NotFoundException(
+        this.i18n.t('faq.errors.not_found', { lang }),
+      );
     }
 
-    async deleteMany(ids: string[], userId: string, lang: string) {
-        const faqs = await this.repository.findByIds(ids);
-        if (faqs.length === 0) {
-            throw new NotFoundException(
-                this.i18n.t('faq.errors.not_found', { lang }),
-            );
-        }
+    await this.repository.softDeleteMany(ids, userId);
 
-        await this.repository.softDeleteMany(ids, userId);
+    // Invalidate cache
+    await Promise.all(ids.map((id) => this.invalidateCache(id)));
+    await this.invalidateListCache();
 
-        // Invalidate cache
-        await Promise.all(ids.map(id => this.invalidateCache(id)));
-        await this.invalidateListCache();
+    // Emit socket event
+    this.websocketGateway.server.emit('faq:deletedMany', {
+      faqIds: ids,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
 
-        // Emit socket event
-        this.websocketGateway.server.emit('faq:deletedMany', {
-            faqIds: ids,
-            deletedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+    // Log
+    faqs.forEach((faq) => {
+      this.systemLogService.info(
+        'FAQ',
+        'DELETE',
+        `Xóa FAQ: ${faq.question.substring(0, 50)}`,
+        {
+          userId,
+          metaData: { faqId: faq.id },
+        },
+      );
+    });
+  }
 
-        // Log
-        faqs.forEach(faq => {
-            this.systemLogService.info('FAQ', 'DELETE', `Xóa FAQ: ${faq.question.substring(0, 50)}`, {
-                userId,
-                metaData: { faqId: faq.id },
-            });
-        });
-    }
+  private async invalidateCache(id: string) {
+    await this.redisService.del(this.getCacheKey(id));
+  }
 
-    private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
-    }
-
-    private async invalidateListCache() {
-        await this.redisService.delByPattern(`${this.cacheKeyPrefix}:list:*`);
-        await this.redisService.del(`${this.cacheKeyPrefix}:public`);
-    }
+  private async invalidateListCache() {
+    await this.redisService.delByPattern(`${this.cacheKeyPrefix}:list:*`);
+    await this.redisService.del(`${this.cacheKeyPrefix}:public`);
+  }
 }

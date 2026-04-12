@@ -19,11 +19,7 @@ import { SystemLogCacheKeysHelper } from './constants';
 @Module({
   imports: [ConfigModule],
   controllers: [SystemLogController],
-  providers: [
-    SystemLogService,
-    SystemLogRepository,
-    SystemLogCacheKeysHelper,
-  ],
+  providers: [SystemLogService, SystemLogRepository, SystemLogCacheKeysHelper],
   exports: [SystemLogService, SystemLogCacheKeysHelper],
 })
-export class SystemLogModule { }
+export class SystemLogModule {}

@@ -53,7 +53,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       const i18n = I18nContext.current();
 
       // Mapping từ JWT error message sang i18n key và response code
-      const errorMapping: Record<string, { i18nKey: string; code: ResponseCode }> = {
+      const errorMapping: Record<
+        string,
+        { i18nKey: string; code: ResponseCode }
+      > = {
         'jwt expired': {
           i18nKey: 'common.errors.jwt_expired',
           code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_EXPIRED,
@@ -81,10 +84,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
       if (info?.message && errorMapping[info.message]) {
         const mapping = errorMapping[info.message];
-        message = i18n?.t(mapping.i18nKey) as string || info.message;
+        message = (i18n?.t(mapping.i18nKey) as string) || info.message;
         code = mapping.code;
       } else {
-        message = i18n?.t('common.errors.unauthorized') as string || 'Không có quyền truy cập';
+        message =
+          (i18n?.t('common.errors.unauthorized') as string) ||
+          'Không có quyền truy cập';
         code = ResponseCode.ERROR_UNAUTHORIZED_TOKEN_MISSING;
       }
 

@@ -4,8 +4,8 @@ import { RentalDurationTierService } from './rental-duration-tier.service';
 import { RentalDurationTierRepository } from './rental-duration-tier.repository';
 
 @Module({
-    controllers: [RentalDurationTierController],
-    providers: [RentalDurationTierService, RentalDurationTierRepository],
-    exports: [RentalDurationTierService],
+  controllers: [RentalDurationTierController],
+  providers: [RentalDurationTierService, RentalDurationTierRepository],
+  exports: [RentalDurationTierService],
 })
-export class RentalDurationTierModule { }
+export class RentalDurationTierModule {}

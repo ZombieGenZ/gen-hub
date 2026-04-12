@@ -5,8 +5,8 @@ import { AddonTypeRepository } from './addon-type.repository';
 import { AddonTypeCacheKeysHelper } from './constants';
 
 @Module({
-    controllers: [AddonTypeController],
-    providers: [AddonTypeService, AddonTypeRepository, AddonTypeCacheKeysHelper],
-    exports: [AddonTypeService, AddonTypeRepository],
+  controllers: [AddonTypeController],
+  providers: [AddonTypeService, AddonTypeRepository, AddonTypeCacheKeysHelper],
+  exports: [AddonTypeService, AddonTypeRepository],
 })
-export class AddonTypeModule { }
+export class AddonTypeModule {}

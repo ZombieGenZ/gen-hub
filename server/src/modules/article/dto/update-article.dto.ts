@@ -4,4 +4,4 @@ import { CreateArticleDto } from './create-article.dto';
 /**
  * DTO cập nhật Article
  */
-export class UpdateArticleDto extends PartialType(CreateArticleDto) { }
+export class UpdateArticleDto extends PartialType(CreateArticleDto) {}

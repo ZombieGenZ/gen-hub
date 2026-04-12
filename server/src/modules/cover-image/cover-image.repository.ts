@@ -24,7 +24,12 @@ export class CoverImageRepository {
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; where?: any; orderBy?: any }) {
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: any;
+    orderBy?: any;
+  }) {
     return this.prisma.coverImage.findMany({
       ...params,
       select: coverImageListSelect,
@@ -40,7 +45,10 @@ export class CoverImageRepository {
     if (!hasReadAllPermission && userId) {
       where.created_by = userId;
     }
-    return this.prisma.coverImage.findFirst({ where, select: coverImageDetailSelect });
+    return this.prisma.coverImage.findFirst({
+      where,
+      select: coverImageDetailSelect,
+    });
   }
 
   async findByName(name: string, excludeId?: string) {
@@ -73,14 +81,17 @@ export class CoverImageRepository {
     });
   }
 
-  async update(id: string, data: {
-    name?: string;
-    description?: string;
-    image_url?: string;
-    is_default?: boolean;
-    is_active?: boolean;
-    updated_by: string;
-  }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      image_url?: string;
+      is_default?: boolean;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
     return this.prisma.coverImage.update({
       where: { id },
       data,
@@ -99,13 +110,20 @@ export class CoverImageRepository {
     });
   }
 
-  async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+  async findByIds(
+    ids: string[],
+    userId?: string,
+    hasDeleteAllPermission?: boolean,
+  ) {
     const where: any = { id: { in: ids }, is_deleted: false };
     if (!hasDeleteAllPermission && userId) {
       where.created_by = userId;
     }
 
-    return this.prisma.coverImage.findMany({ where, select: coverImageListSelect });
+    return this.prisma.coverImage.findMany({
+      where,
+      select: coverImageListSelect,
+    });
   }
 
   async softDeleteMany(ids: string[], deletedBy: string) {
@@ -119,4 +137,3 @@ export class CoverImageRepository {
     });
   }
 }
-

@@ -19,11 +19,17 @@ export class RankCacheKeysHelper {
   }
 
   private get listPrefix(): string {
-    return this.configService.get<string>('REDIS_RANK_LIST_KEY_PREFIX') || 'rank:list';
+    return (
+      this.configService.get<string>('REDIS_RANK_LIST_KEY_PREFIX') ||
+      'rank:list'
+    );
   }
 
   private get detailPrefix(): string {
-    return this.configService.get<string>('REDIS_RANK_DETAIL_KEY_PREFIX') || 'rank:detail';
+    return (
+      this.configService.get<string>('REDIS_RANK_DETAIL_KEY_PREFIX') ||
+      'rank:detail'
+    );
   }
 
   list(query: QueryRankDto): string {

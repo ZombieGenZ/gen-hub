@@ -4,4 +4,6 @@ import { CreateGlobalNotificationDto } from './create-global-notification.dto';
 /**
  * DTO cập nhật GlobalNotification
  */
-export class UpdateGlobalNotificationDto extends PartialType(CreateGlobalNotificationDto) { }
+export class UpdateGlobalNotificationDto extends PartialType(
+  CreateGlobalNotificationDto,
+) {}

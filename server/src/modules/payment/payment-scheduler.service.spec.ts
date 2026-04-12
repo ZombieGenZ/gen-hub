@@ -251,9 +251,12 @@ describe('PaymentSchedulerService', () => {
       await service.expirePayment('p-1');
 
       expect(websocket.server.to).toHaveBeenCalledWith('user:user-1');
-      expect(mockEmit).toHaveBeenCalledWith('payment:expired', expect.objectContaining({
-        paymentId: 'p-1',
-      }));
+      expect(mockEmit).toHaveBeenCalledWith(
+        'payment:expired',
+        expect.objectContaining({
+          paymentId: 'p-1',
+        }),
+      );
     });
 
     it('should skip if payment is not PENDING', async () => {
@@ -300,7 +303,10 @@ describe('PaymentSchedulerService', () => {
         id: 'c-1',
         status: ContractStatus.PENDING,
       });
-      prisma.payment.findFirst.mockResolvedValue({ id: 'p-1', status: PaymentStatus.PENDING });
+      prisma.payment.findFirst.mockResolvedValue({
+        id: 'p-1',
+        status: PaymentStatus.PENDING,
+      });
 
       await service.cancelContract('c-1');
 
@@ -329,10 +335,13 @@ describe('PaymentSchedulerService', () => {
 
       await service.cancelContract('c-1');
 
-      expect(mockEmit).toHaveBeenCalledWith('contract:cancelled', expect.objectContaining({
-        contractId: 'c-1',
-        reason: 'Payment timeout',
-      }));
+      expect(mockEmit).toHaveBeenCalledWith(
+        'contract:cancelled',
+        expect.objectContaining({
+          contractId: 'c-1',
+          reason: 'Payment timeout',
+        }),
+      );
     });
   });
 
@@ -341,7 +350,9 @@ describe('PaymentSchedulerService', () => {
     it('should delete timeout from registry', () => {
       service.cancelScheduledExpire('p-1');
 
-      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith('payment_expire_p-1');
+      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith(
+        'payment_expire_p-1',
+      );
     });
 
     it('should not throw if timeout does not exist', () => {
@@ -357,7 +368,9 @@ describe('PaymentSchedulerService', () => {
     it('should delete contract cancel timeout', () => {
       service.cancelScheduledCancel('c-1');
 
-      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith('contract_cancel_c-1');
+      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith(
+        'contract_cancel_c-1',
+      );
     });
   });
 
@@ -372,9 +385,15 @@ describe('PaymentSchedulerService', () => {
 
       service.onModuleDestroy();
 
-      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith('payment_expire_p1');
-      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith('contract_cancel_c1');
-      expect(schedulerRegistry.deleteTimeout).not.toHaveBeenCalledWith('some_other_timeout');
+      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith(
+        'payment_expire_p1',
+      );
+      expect(schedulerRegistry.deleteTimeout).toHaveBeenCalledWith(
+        'contract_cancel_c1',
+      );
+      expect(schedulerRegistry.deleteTimeout).not.toHaveBeenCalledWith(
+        'some_other_timeout',
+      );
     });
   });
 });

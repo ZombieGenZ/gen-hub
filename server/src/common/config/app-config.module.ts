@@ -14,6 +14,4 @@ import { AppConfigCacheKeys } from './helpers/cache-keys.helper';
   providers: [AppConfigCacheKeys, AppConfigService, PaginationConfigService],
   exports: [AppConfigCacheKeys, AppConfigService, PaginationConfigService],
 })
-export class AppConfigModule { }
-
-
+export class AppConfigModule {}

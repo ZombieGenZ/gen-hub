@@ -20,7 +20,7 @@ interface IDeviceInfo {
  */
 @Injectable()
 export class RefreshTokenRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Tạo refresh token mới
@@ -50,7 +50,12 @@ export class RefreshTokenRepository {
    * Uses Prisma select for optimized query - only fetches needed fields
    * @param token - Token string
    */
-  async findByToken(token: string): Promise<Pick<RefreshToken, 'id' | 'user_id' | 'token' | 'ip' | 'device' | 'created_at'> | null> {
+  async findByToken(
+    token: string,
+  ): Promise<Pick<
+    RefreshToken,
+    'id' | 'user_id' | 'token' | 'ip' | 'device' | 'created_at'
+  > | null> {
     return this.prisma.refreshToken.findFirst({
       where: {
         token,

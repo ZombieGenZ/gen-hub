@@ -9,4 +9,4 @@ export const PERMISSIONS_KEY = 'permissions';
  * @example @RequirePermission('config.update', 'config.reset')
  */
 export const RequirePermission = (...permissions: string[]) =>
-    SetMetadata(PERMISSIONS_KEY, permissions);
+  SetMetadata(PERMISSIONS_KEY, permissions);

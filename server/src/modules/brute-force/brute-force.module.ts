@@ -11,8 +11,8 @@ import { BruteForceCacheHelper } from './constants/brute-force-cache.helper';
  * Bảo vệ hệ thống khỏi tấn công brute force qua rate limiting
  */
 @Module({
-    imports: [RedisModule, PrismaModule, NotificationModule],
-    providers: [BruteForceService, BruteForceGuard, BruteForceCacheHelper],
-    exports: [BruteForceService, BruteForceGuard],
+  imports: [RedisModule, PrismaModule, NotificationModule],
+  providers: [BruteForceService, BruteForceGuard, BruteForceCacheHelper],
+  exports: [BruteForceService, BruteForceGuard],
 })
-export class BruteForceModule { }
+export class BruteForceModule {}

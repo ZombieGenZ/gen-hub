@@ -54,9 +54,7 @@ import { DeleteAccountDto } from './dto';
  */
 function getDeviceInfo(req: Request) {
   return {
-    ip: (req.ip ||
-      req.headers['x-forwarded-for']?.toString() ||
-      'unknown') as string,
+    ip: req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown',
     device: req.headers['user-agent']?.toString() || 'unknown',
     os: req.headers['sec-ch-ua-platform']?.toString() || 'unknown',
   };
@@ -179,7 +177,7 @@ const selectCoverResponseSchema = createAvatarCoverResponseSchema({
 @Controller('account')
 @ApiBearerAuth('JWT-auth')
 export class AccountController {
-  constructor(private readonly accountService: AccountService) { }
+  constructor(private readonly accountService: AccountService) {}
 
   private static readonly AVATAR_MAX_FILE_SIZE = parseInt(
     process.env.UPLOAD_AVATAR_MAX_SIZE || '2097152',
@@ -775,7 +773,9 @@ export class AccountController {
     FileInterceptor('file', {
       limits: { fileSize: AccountController.AVATAR_MAX_FILE_SIZE },
       fileFilter: (req, file, cb) => {
-        if (AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+        if (
+          AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)
+        ) {
           cb(null, true);
           return;
         }
@@ -799,7 +799,11 @@ export class AccountController {
       lang || 'vi',
     );
 
-    return new CreatedResponse('account.avatar.upload_success', result, result.message);
+    return new CreatedResponse(
+      'account.avatar.upload_success',
+      result,
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Upload cover' })
@@ -819,7 +823,9 @@ export class AccountController {
     FileInterceptor('file', {
       limits: { fileSize: AccountController.AVATAR_MAX_FILE_SIZE },
       fileFilter: (req, file, cb) => {
-        if (AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+        if (
+          AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)
+        ) {
           cb(null, true);
           return;
         }
@@ -843,7 +849,11 @@ export class AccountController {
       lang || 'vi',
     );
 
-    return new CreatedResponse('account.cover.upload_success', result, result.message);
+    return new CreatedResponse(
+      'account.cover.upload_success',
+      result,
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Set avatar default system image' })
@@ -859,8 +869,15 @@ export class AccountController {
     @CurrentUser() user: IJwtPayload,
     @Headers('accept-language') lang?: string,
   ) {
-    const result = await this.accountService.setAvatarDefault(user.userId, lang || 'vi');
-    return new UpdatedResponse('account.avatar.default_success', result, result.message);
+    const result = await this.accountService.setAvatarDefault(
+      user.userId,
+      lang || 'vi',
+    );
+    return new UpdatedResponse(
+      'account.avatar.default_success',
+      result,
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Set cover default system image' })
@@ -876,8 +893,15 @@ export class AccountController {
     @CurrentUser() user: IJwtPayload,
     @Headers('accept-language') lang?: string,
   ) {
-    const result = await this.accountService.setCoverDefault(user.userId, lang || 'vi');
-    return new UpdatedResponse('account.cover.default_success', result, result.message);
+    const result = await this.accountService.setCoverDefault(
+      user.userId,
+      lang || 'vi',
+    );
+    return new UpdatedResponse(
+      'account.cover.default_success',
+      result,
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Select avatar image from defaults' })
@@ -894,8 +918,16 @@ export class AccountController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('accept-language') lang?: string,
   ) {
-    const result = await this.accountService.selectAvatarImage(user.userId, id, lang || 'vi');
-    return new UpdatedResponse('account.avatar.select_success', result, result.message);
+    const result = await this.accountService.selectAvatarImage(
+      user.userId,
+      id,
+      lang || 'vi',
+    );
+    return new UpdatedResponse(
+      'account.avatar.select_success',
+      result,
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Select cover image from defaults' })
@@ -912,7 +944,15 @@ export class AccountController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('accept-language') lang?: string,
   ) {
-    const result = await this.accountService.selectCoverImage(user.userId, id, lang || 'vi');
-    return new UpdatedResponse('account.cover.select_success', result, result.message);
+    const result = await this.accountService.selectCoverImage(
+      user.userId,
+      id,
+      lang || 'vi',
+    );
+    return new UpdatedResponse(
+      'account.cover.select_success',
+      result,
+      result.message,
+    );
   }
 }

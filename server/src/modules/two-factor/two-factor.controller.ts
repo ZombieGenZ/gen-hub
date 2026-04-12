@@ -38,9 +38,7 @@ import type { IJwtPayload } from '../../common/interfaces';
  */
 function getDeviceInfo(req: Request) {
   return {
-    ip: (req.ip ||
-      req.headers['x-forwarded-for']?.toString() ||
-      'unknown') as string,
+    ip: req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown',
     device: req.headers['user-agent']?.toString() || 'unknown',
     os: req.headers['sec-ch-ua-platform']?.toString() || 'unknown',
   };

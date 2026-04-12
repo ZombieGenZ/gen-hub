@@ -72,4 +72,4 @@ export const SERVICES = [
   'resources-panel',
 ] as const;
 
-export type ServiceName = typeof SERVICES[number];
+export type ServiceName = (typeof SERVICES)[number];

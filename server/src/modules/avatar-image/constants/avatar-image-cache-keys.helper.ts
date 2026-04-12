@@ -7,23 +7,36 @@ export class AvatarImageCacheKeysHelper {
   constructor(private readonly configService: ConfigService) {}
 
   get listTtl(): number {
-    return this.configService.get<number>('REDIS_AVATAR_IMAGE_LIST_CACHE_TTL') || 60;
+    return (
+      this.configService.get<number>('REDIS_AVATAR_IMAGE_LIST_CACHE_TTL') || 60
+    );
   }
 
   get detailTtl(): number {
-    return this.configService.get<number>('REDIS_AVATAR_IMAGE_CACHE_TTL') || 300;
+    return (
+      this.configService.get<number>('REDIS_AVATAR_IMAGE_CACHE_TTL') || 300
+    );
   }
 
   private get prefix(): string {
-    return this.configService.get<string>('REDIS_AVATAR_IMAGE_KEY_PREFIX') || 'avatar-image';
+    return (
+      this.configService.get<string>('REDIS_AVATAR_IMAGE_KEY_PREFIX') ||
+      'avatar-image'
+    );
   }
 
   private get listPrefix(): string {
-    return this.configService.get<string>('REDIS_AVATAR_IMAGE_LIST_KEY_PREFIX') || 'avatar-image:list';
+    return (
+      this.configService.get<string>('REDIS_AVATAR_IMAGE_LIST_KEY_PREFIX') ||
+      'avatar-image:list'
+    );
   }
 
   private get detailPrefix(): string {
-    return this.configService.get<string>('REDIS_AVATAR_IMAGE_DETAIL_KEY_PREFIX') || 'avatar-image:detail';
+    return (
+      this.configService.get<string>('REDIS_AVATAR_IMAGE_DETAIL_KEY_PREFIX') ||
+      'avatar-image:detail'
+    );
   }
 
   list(query: QueryAvatarImageDto): string {

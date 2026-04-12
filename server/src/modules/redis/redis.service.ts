@@ -37,27 +37,35 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.PERMISSION_CACHE_TTL =
       this.configService.get<number>('REDIS_PERMISSION_CACHE_TTL') || 300;
     this.WAREHOUSE_TEMPLATE_CACHE_TTL =
-      this.configService.get<number>('REDIS_WAREHOUSE_TEMPLATE_CACHE_TTL') || 300;
+      this.configService.get<number>('REDIS_WAREHOUSE_TEMPLATE_CACHE_TTL') ||
+      300;
     this.WAREHOUSE_TEMPLATE_LIST_CACHE_TTL =
-      this.configService.get<number>('REDIS_WAREHOUSE_TEMPLATE_LIST_CACHE_TTL') || 60;
+      this.configService.get<number>(
+        'REDIS_WAREHOUSE_TEMPLATE_LIST_CACHE_TTL',
+      ) || 60;
     this.ORGANIZATION_CACHE_TTL =
       this.configService.get<number>('REDIS_ORGANIZATION_CACHE_TTL') || 300;
     this.ORGANIZATION_LIST_CACHE_TTL =
       this.configService.get<number>('REDIS_ORGANIZATION_LIST_CACHE_TTL') || 60;
     this.ORGANIZATION_MEMBER_CACHE_TTL =
-      this.configService.get<number>('REDIS_ORGANIZATION_MEMBER_CACHE_TTL') || 300;
+      this.configService.get<number>('REDIS_ORGANIZATION_MEMBER_CACHE_TTL') ||
+      300;
     this.WAREHOUSE_MANAGER_CACHE_TTL =
-      this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_CACHE_TTL') || 300;
+      this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_CACHE_TTL') ||
+      300;
 
     // Account Module Cache Config from env
     this.ACCOUNT_PROFILE_CACHE_TTL =
       this.configService.get<number>('REDIS_ACCOUNT_PROFILE_CACHE_TTL') || 300;
     this.ACCOUNT_FULL_DATA_CACHE_TTL =
-      this.configService.get<number>('REDIS_ACCOUNT_FULL_DATA_CACHE_TTL') || 180;
+      this.configService.get<number>('REDIS_ACCOUNT_FULL_DATA_CACHE_TTL') ||
+      180;
     this.ACCOUNT_PROFILE_KEY_PREFIX =
-      this.configService.get<string>('REDIS_ACCOUNT_PROFILE_KEY_PREFIX') || 'account:profile';
+      this.configService.get<string>('REDIS_ACCOUNT_PROFILE_KEY_PREFIX') ||
+      'account:profile';
     this.ACCOUNT_FULL_DATA_KEY_PREFIX =
-      this.configService.get<string>('REDIS_ACCOUNT_FULL_DATA_KEY_PREFIX') || 'account:fulldata';
+      this.configService.get<string>('REDIS_ACCOUNT_FULL_DATA_KEY_PREFIX') ||
+      'account:fulldata';
 
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
@@ -249,7 +257,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.WAREHOUSE_TEMPLATE_CACHE_TTL;
-    await this.set(this.getWarehouseTemplateCacheKey(templateId), JSON.stringify(data), ttl);
+    await this.set(
+      this.getWarehouseTemplateCacheKey(templateId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateWarehouseTemplateCache(templateId: string): Promise<void> {
@@ -267,7 +279,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setWarehouseTemplateListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setWarehouseTemplateListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.WAREHOUSE_TEMPLATE_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -309,7 +325,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.ORGANIZATION_CACHE_TTL;
-    await this.set(this.getOrganizationCacheKey(orgId), JSON.stringify(data), ttl);
+    await this.set(
+      this.getOrganizationCacheKey(orgId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateOrganizationCache(orgId: string): Promise<void> {
@@ -327,7 +347,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setOrganizationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setOrganizationListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.ORGANIZATION_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -353,7 +377,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.ORGANIZATION_MEMBER_CACHE_TTL;
-    await this.set(this.getOrganizationMemberCacheKey(orgId), JSON.stringify(data), ttl);
+    await this.set(
+      this.getOrganizationMemberCacheKey(orgId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateOrganizationMemberCache(orgId: string): Promise<void> {
@@ -394,9 +422,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setGlobalNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setGlobalNotificationCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.GLOBAL_NOTIFICATION_CACHE_TTL;
-    await this.set(this.getGlobalNotificationCacheKey(id), JSON.stringify(data), ttl);
+    await this.set(
+      this.getGlobalNotificationCacheKey(id),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateGlobalNotificationCache(id: string): Promise<void> {
@@ -413,7 +449,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setGlobalNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setGlobalNotificationListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.GLOBAL_NOTIFICATION_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -429,7 +469,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return `user-notification:${id}`;
   }
 
-  getUserNotificationListCacheKey(userId: string, query: Record<string, unknown>): string {
+  getUserNotificationListCacheKey(
+    userId: string,
+    query: Record<string, unknown>,
+  ): string {
     const sortedParams = Object.keys(query)
       .sort()
       .map((key) => `${key}=${query[key]}`)
@@ -447,9 +490,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setUserNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setUserNotificationCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.USER_NOTIFICATION_CACHE_TTL;
-    await this.set(this.getUserNotificationCacheKey(id), JSON.stringify(data), ttl);
+    await this.set(
+      this.getUserNotificationCacheKey(id),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateUserNotificationCache(id: string): Promise<void> {
@@ -466,7 +517,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setUserNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setUserNotificationListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.USER_NOTIFICATION_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -482,7 +537,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return `org-notification:${id}`;
   }
 
-  getOrgNotificationListCacheKey(orgId: string, query: Record<string, unknown>): string {
+  getOrgNotificationListCacheKey(
+    orgId: string,
+    query: Record<string, unknown>,
+  ): string {
     const sortedParams = Object.keys(query)
       .sort()
       .map((key) => `${key}=${query[key]}`)
@@ -500,9 +558,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setOrgNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setOrgNotificationCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.ORG_NOTIFICATION_CACHE_TTL;
-    await this.set(this.getOrgNotificationCacheKey(id), JSON.stringify(data), ttl);
+    await this.set(
+      this.getOrgNotificationCacheKey(id),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateOrgNotificationCache(id: string): Promise<void> {
@@ -519,7 +585,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setOrgNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setOrgNotificationListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.ORG_NOTIFICATION_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -530,7 +600,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   private readonly ORG_CHAT_MESSAGE_LIST_CACHE_TTL: number = 60;
 
-  getOrgChatMessageListCacheKey(orgId: string, query: Record<string, unknown>): string {
+  getOrgChatMessageListCacheKey(
+    orgId: string,
+    query: Record<string, unknown>,
+  ): string {
     const sortedParams = Object.keys(query)
       .sort()
       .map((key) => `${key}=${query[key]}`)
@@ -548,7 +621,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setOrgChatMessageListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setOrgChatMessageListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl = ttlSeconds || this.ORG_CHAT_MESSAGE_LIST_CACHE_TTL;
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
@@ -586,7 +663,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.ACCOUNT_PROFILE_CACHE_TTL;
-    await this.set(this.getAccountProfileCacheKey(userId), JSON.stringify(data), ttl);
+    await this.set(
+      this.getAccountProfileCacheKey(userId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   /**
@@ -625,7 +706,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.ACCOUNT_FULL_DATA_CACHE_TTL;
-    await this.set(this.getAccountFullDataCacheKey(userId), JSON.stringify(data), ttl);
+    await this.set(
+      this.getAccountFullDataCacheKey(userId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   /**
@@ -646,38 +731,53 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   private get SYSTEM_LOG_LIST_CACHE_TTL(): number {
-    return this.configService.get<number>('REDIS_SYSTEM_LOG_LIST_CACHE_TTL') || 30;
+    return (
+      this.configService.get<number>('REDIS_SYSTEM_LOG_LIST_CACHE_TTL') || 30
+    );
   }
 
   private get SYSTEM_LOG_STATS_CACHE_TTL(): number {
-    return this.configService.get<number>('REDIS_SYSTEM_LOG_STATS_CACHE_TTL') || 60;
+    return (
+      this.configService.get<number>('REDIS_SYSTEM_LOG_STATS_CACHE_TTL') || 60
+    );
   }
 
   private get SYSTEM_LOG_MODULES_CACHE_TTL(): number {
-    return this.configService.get<number>('REDIS_SYSTEM_LOG_MODULES_CACHE_TTL') || 300;
+    return (
+      this.configService.get<number>('REDIS_SYSTEM_LOG_MODULES_CACHE_TTL') ||
+      300
+    );
   }
 
   private get SYSTEM_LOG_LIST_KEY_PREFIX(): string {
-    return this.configService.get<string>('REDIS_SYSTEM_LOG_LIST_KEY_PREFIX') || 'system:log:list';
+    return (
+      this.configService.get<string>('REDIS_SYSTEM_LOG_LIST_KEY_PREFIX') ||
+      'system:log:list'
+    );
   }
 
   private get SYSTEM_LOG_STATS_KEY_PREFIX(): string {
-    return this.configService.get<string>('REDIS_SYSTEM_LOG_STATS_KEY_PREFIX') || 'system:log:stats';
+    return (
+      this.configService.get<string>('REDIS_SYSTEM_LOG_STATS_KEY_PREFIX') ||
+      'system:log:stats'
+    );
   }
-
 
   private readonly TWO_FACTOR_SETUP_CACHE_TTL: number;
   private readonly TWO_FACTOR_TEMP_TOKEN_CACHE_TTL: number;
 
   private get TWO_FACTOR_SETUP_KEY_PREFIX(): string {
-    return this.configService.get<string>('REDIS_TWO_FACTOR_SETUP_KEY_PREFIX') || '2fa:setup';
+    return (
+      this.configService.get<string>('REDIS_TWO_FACTOR_SETUP_KEY_PREFIX') ||
+      '2fa:setup'
+    );
   }
 
   /*
    * Initialize 2FA cache config in constructor (add this logic inside constructor)
-   * Note: Since I cannot edit constructor directly here easily without replacing the whole class, 
+   * Note: Since I cannot edit constructor directly here easily without replacing the whole class,
    * I will rely on the properties being initialized with default values or read directly in methods if needed.
-   * However, best practice is to read in constructor. 
+   * However, best practice is to read in constructor.
    * Let's add the methods first.
    */
 
@@ -709,8 +809,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     data: T,
     ttlSeconds?: number,
   ): Promise<void> {
-    const ttl = ttlSeconds || this.configService.get<number>('REDIS_TWO_FACTOR_SETUP_CACHE_TTL') || 300;
-    await this.set(this.getTwoFactorSetupCacheKey(userId), JSON.stringify(data), ttl);
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>('REDIS_TWO_FACTOR_SETUP_CACHE_TTL') ||
+      300;
+    await this.set(
+      this.getTwoFactorSetupCacheKey(userId),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   /**
@@ -720,9 +827,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.del(this.getTwoFactorSetupCacheKey(userId));
   }
 
-
   private get SYSTEM_LOG_MODULES_KEY_PREFIX(): string {
-    return this.configService.get<string>('REDIS_SYSTEM_LOG_MODULES_KEY_PREFIX') || 'system:log:modules';
+    return (
+      this.configService.get<string>('REDIS_SYSTEM_LOG_MODULES_KEY_PREFIX') ||
+      'system:log:modules'
+    );
   }
 
   /**
@@ -831,7 +940,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttlSeconds?: number,
   ): Promise<void> {
     const ttl = ttlSeconds || this.SYSTEM_LOG_MODULES_CACHE_TTL;
-    await this.set(this.SYSTEM_LOG_MODULES_KEY_PREFIX, JSON.stringify(modules), ttl);
+    await this.set(
+      this.SYSTEM_LOG_MODULES_KEY_PREFIX,
+      JSON.stringify(modules),
+      ttl,
+    );
   }
 
   /**
@@ -851,7 +964,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.invalidateSystemLogModulesCache(),
     ]);
   }
-
 
   // Warehouse Manager Cache Helpers
   getWarehouseManagerCacheKey(id: string): string {
@@ -1041,11 +1153,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setConsultationRequestCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setConsultationRequestCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl =
       ttlSeconds ||
-      this.configService.get<number>('REDIS_CONSULTATION_REQUEST_CACHE_TTL', 300);
-    await this.set(this.getConsultationRequestCacheKey(id), JSON.stringify(data), ttl);
+      this.configService.get<number>(
+        'REDIS_CONSULTATION_REQUEST_CACHE_TTL',
+        300,
+      );
+    await this.set(
+      this.getConsultationRequestCacheKey(id),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateConsultationRequestCache(id: string): Promise<void> {
@@ -1053,7 +1176,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.invalidateConsultationRequestListCache();
   }
 
-  async getConsultationRequestListCache<T>(cacheKey: string): Promise<T | null> {
+  async getConsultationRequestListCache<T>(
+    cacheKey: string,
+  ): Promise<T | null> {
     const data = await this.get(cacheKey);
     if (!data) return null;
     try {
@@ -1063,10 +1188,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async setConsultationRequestListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+  async setConsultationRequestListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
     const ttl =
       ttlSeconds ||
-      this.configService.get<number>('REDIS_CONSULTATION_REQUEST_LIST_CACHE_TTL', 60);
+      this.configService.get<number>(
+        'REDIS_CONSULTATION_REQUEST_LIST_CACHE_TTL',
+        60,
+      );
     await this.set(cacheKey, JSON.stringify(data), ttl);
   }
 
@@ -1078,4 +1210,3 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.delByPattern(`${prefix}:*`);
   }
 }
-

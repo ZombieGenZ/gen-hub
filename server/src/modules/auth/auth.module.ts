@@ -16,10 +16,25 @@ import { BruteForceModule } from '../brute-force/brute-force.module';
  * Quản lý authentication và authorization
  */
 @Module({
-  imports: [UserModule, BackupCodeModule, NotificationModule, RedisModule, BruteForceModule],
+  imports: [
+    UserModule,
+    BackupCodeModule,
+    NotificationModule,
+    RedisModule,
+    BruteForceModule,
+  ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenRepository, AuthCacheKeysHelper],
-  exports: [AuthService, JwtStrategy, RefreshTokenRepository, AuthCacheKeysHelper],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenRepository,
+    AuthCacheKeysHelper,
+  ],
+  exports: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenRepository,
+    AuthCacheKeysHelper,
+  ],
 })
-export class AuthModule { }
-
+export class AuthModule {}

@@ -4,8 +4,8 @@ import { RowTemplateService } from './row-template.service';
 import { RowTemplateRepository } from './row-template.repository';
 
 @Module({
-    controllers: [RowTemplateController],
-    providers: [RowTemplateService, RowTemplateRepository],
-    exports: [RowTemplateService, RowTemplateRepository],
+  controllers: [RowTemplateController],
+  providers: [RowTemplateService, RowTemplateRepository],
+  exports: [RowTemplateService, RowTemplateRepository],
 })
-export class RowTemplateModule { }
+export class RowTemplateModule {}

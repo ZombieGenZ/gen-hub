@@ -2,223 +2,276 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RevenueAnalyticsRepository } from './revenue-analytics.repository';
 import { RedisService } from '../redis/redis.service';
 import {
-    QueryRevenueDto,
-    DatePreset,
-    QueryRevenueChartDto,
-    ChartGranularity,
-    QueryRevenueTableDto,
-    RevenueTableTab,
-    ExportRevenueDto,
+  QueryRevenueDto,
+  DatePreset,
+  QueryRevenueChartDto,
+  ChartGranularity,
+  QueryRevenueTableDto,
+  RevenueTableTab,
+  ExportRevenueDto,
 } from './dto';
 import { ExcelService } from '../../common/services/excel.service';
 
 @Injectable()
 export class RevenueAnalyticsService {
-    private readonly logger = new Logger(RevenueAnalyticsService.name);
+  private readonly logger = new Logger(RevenueAnalyticsService.name);
 
-    private readonly KPI_CACHE_TTL = 60; // 60 giây
-    private readonly CHART_CACHE_TTL = 120; // 120 giây
-    private readonly TABLE_CACHE_TTL = 30; // 30 giây
+  private readonly KPI_CACHE_TTL = 60; // 60 giây
+  private readonly CHART_CACHE_TTL = 120; // 120 giây
+  private readonly TABLE_CACHE_TTL = 30; // 30 giây
 
-    constructor(
-        private readonly repository: RevenueAnalyticsRepository,
-        private readonly redisService: RedisService,
-        private readonly excelService: ExcelService,
-    ) { }
+  constructor(
+    private readonly repository: RevenueAnalyticsRepository,
+    private readonly redisService: RedisService,
+    private readonly excelService: ExcelService,
+  ) {}
 
-    /**
-     * Resolve DatePreset hoặc custom date range thành { from, to }
-     */
-    private resolveDateRange(dto: QueryRevenueDto): { from: Date; to: Date } {
-        if (dto.preset === DatePreset.CUSTOM && dto.from_date && dto.to_date) {
-            return {
-                from: new Date(dto.from_date + 'T00:00:00+07:00'),
-                to: new Date(dto.to_date + 'T23:59:59+07:00'),
-            };
-        }
-
-        const now = new Date();
-        // Chuyển về timezone VN để tính
-        const vnNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
-        switch (dto.preset) {
-            case DatePreset.TODAY: {
-                const start = new Date(vnNow);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date(vnNow);
-                end.setHours(23, 59, 59, 999);
-                return { from: start, to: end };
-            }
-            case DatePreset.THIS_WEEK: {
-                const start = new Date(vnNow);
-                const day = start.getDay();
-                const diff = day === 0 ? 6 : day - 1; // Monday = start of week
-                start.setDate(start.getDate() - diff);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date(start);
-                end.setDate(end.getDate() + 6);
-                end.setHours(23, 59, 59, 999);
-                return { from: start, to: end };
-            }
-            case DatePreset.THIS_QUARTER: {
-                const quarter = Math.floor(vnNow.getMonth() / 3);
-                const start = new Date(vnNow.getFullYear(), quarter * 3, 1, 0, 0, 0, 0);
-                const end = new Date(vnNow.getFullYear(), (quarter + 1) * 3, 0, 23, 59, 59, 999);
-                return { from: start, to: end };
-            }
-            case DatePreset.THIS_MONTH:
-            default: {
-                const start = new Date(vnNow.getFullYear(), vnNow.getMonth(), 1, 0, 0, 0, 0);
-                const end = new Date(vnNow.getFullYear(), vnNow.getMonth() + 1, 0, 23, 59, 59, 999);
-                return { from: start, to: end };
-            }
-        }
+  /**
+   * Resolve DatePreset hoặc custom date range thành { from, to }
+   */
+  private resolveDateRange(dto: QueryRevenueDto): { from: Date; to: Date } {
+    if (dto.preset === DatePreset.CUSTOM && dto.from_date && dto.to_date) {
+      return {
+        from: new Date(dto.from_date + 'T00:00:00+07:00'),
+        to: new Date(dto.to_date + 'T23:59:59+07:00'),
+      };
     }
 
-    /**
-     * Tạo cache key từ prefix + DTO params
-     */
-    private getCacheKey(prefix: string, params: Record<string, unknown>): string {
-        const sorted = Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== null)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([k, v]) => `${k}=${v}`)
-            .join('&');
-        return `revenue:${prefix}:${sorted}`;
+    const now = new Date();
+    // Chuyển về timezone VN để tính
+    const vnNow = new Date(
+      now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }),
+    );
+
+    switch (dto.preset) {
+      case DatePreset.TODAY: {
+        const start = new Date(vnNow);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(vnNow);
+        end.setHours(23, 59, 59, 999);
+        return { from: start, to: end };
+      }
+      case DatePreset.THIS_WEEK: {
+        const start = new Date(vnNow);
+        const day = start.getDay();
+        const diff = day === 0 ? 6 : day - 1; // Monday = start of week
+        start.setDate(start.getDate() - diff);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+        return { from: start, to: end };
+      }
+      case DatePreset.THIS_QUARTER: {
+        const quarter = Math.floor(vnNow.getMonth() / 3);
+        const start = new Date(vnNow.getFullYear(), quarter * 3, 1, 0, 0, 0, 0);
+        const end = new Date(
+          vnNow.getFullYear(),
+          (quarter + 1) * 3,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        return { from: start, to: end };
+      }
+      case DatePreset.THIS_MONTH:
+      default: {
+        const start = new Date(
+          vnNow.getFullYear(),
+          vnNow.getMonth(),
+          1,
+          0,
+          0,
+          0,
+          0,
+        );
+        const end = new Date(
+          vnNow.getFullYear(),
+          vnNow.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        return { from: start, to: end };
+      }
+    }
+  }
+
+  /**
+   * Tạo cache key từ prefix + DTO params
+   */
+  private getCacheKey(prefix: string, params: Record<string, unknown>): string {
+    const sorted = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&');
+    return `revenue:${prefix}:${sorted}`;
+  }
+
+  /**
+   * Resolve province_id → warehouse_template_ids
+   */
+  private async resolveWarehouseFilter(
+    dto: QueryRevenueDto,
+  ): Promise<string[] | undefined> {
+    if (dto.warehouse_template_id) {
+      return [dto.warehouse_template_id];
+    }
+    if (dto.province_id) {
+      return this.repository.getWarehouseTemplateIdsByProvinceId(
+        dto.province_id,
+      );
+    }
+    return undefined;
+  }
+
+  /**
+   * Lấy dữ liệu 4 KPI cards + sparkline
+   */
+  async getKpis(dto: QueryRevenueDto) {
+    const cacheKey = this.getCacheKey('kpis', dto as any);
+    const cached = await this.redisService.getJson<any>(cacheKey);
+    if (cached) return cached;
+
+    const { from, to } = this.resolveDateRange(dto);
+    const warehouseTemplateIds = await this.resolveWarehouseFilter(dto);
+
+    const [netRevenue, pending, overdue, refunded, sparkline] =
+      await Promise.all([
+        this.repository.getNetRevenue(from, to, warehouseTemplateIds),
+        this.repository.getPendingReceivables(from, to, warehouseTemplateIds),
+        this.repository.getOverduePenalties(from, to),
+        this.repository.getTotalRefunded(from, to),
+        this.repository.getSparklineData(14),
+      ]);
+
+    const result = { netRevenue, pending, overdue, refunded, sparkline };
+    await this.redisService.setJson(cacheKey, result, this.KPI_CACHE_TTL);
+
+    return result;
+  }
+
+  /**
+   * Lấy dữ liệu biểu đồ (time series + payment method breakdown)
+   */
+  async getChartData(dto: QueryRevenueChartDto) {
+    const cacheKey = this.getCacheKey('charts', dto as any);
+    const cached = await this.redisService.getJson<any>(cacheKey);
+    if (cached) return cached;
+
+    const { from, to } = this.resolveDateRange(dto);
+    const granularity = dto.granularity || ChartGranularity.MONTH;
+
+    const queries: Promise<any>[] = [
+      this.repository.getRevenueTimeSeries(from, to, granularity),
+      this.repository.getAddonInsuranceTimeSeries(from, to, granularity),
+      this.repository.getPaymentMethodBreakdown(from, to),
+    ];
+
+    if (dto.include_coupon_discount) {
+      queries.push(
+        this.repository.getCouponDiscountTimeSeries(from, to, granularity),
+      );
     }
 
-    /**
-     * Resolve province_id → warehouse_template_ids
-     */
-    private async resolveWarehouseFilter(dto: QueryRevenueDto): Promise<string[] | undefined> {
-        if (dto.warehouse_template_id) {
-            return [dto.warehouse_template_id];
-        }
-        if (dto.province_id) {
-            return this.repository.getWarehouseTemplateIdsByProvinceId(dto.province_id);
-        }
-        return undefined;
+    const results = await Promise.all(queries);
+
+    const result = {
+      timeSeries: results[0],
+      addonSeries: results[1],
+      paymentMethodBreakdown: results[2],
+      couponDiscount: dto.include_coupon_discount ? results[3] : null,
+    };
+
+    await this.redisService.setJson(cacheKey, result, this.CHART_CACHE_TTL);
+    return result;
+  }
+
+  /**
+   * Lấy dữ liệu bảng theo tab
+   */
+  async getTableData(dto: QueryRevenueTableDto) {
+    const cacheKey = this.getCacheKey('tables', dto as any);
+    const cached = await this.redisService.getJson<any>(cacheKey);
+    if (cached) return cached;
+
+    const { from, to } = this.resolveDateRange(dto);
+    const limit = dto.limit || 20;
+    const offset = dto.offset || 0;
+    const tab = dto.tab || RevenueTableTab.TOP_ORGANIZATIONS;
+
+    let result: any;
+
+    switch (tab) {
+      case RevenueTableTab.TOP_ORGANIZATIONS:
+        result = await this.repository.getTopOrganizations(
+          from,
+          to,
+          limit,
+          offset,
+        );
+        break;
+      case RevenueTableTab.TOP_WAREHOUSES:
+        result = await this.repository.getTopWarehouses(
+          from,
+          to,
+          limit,
+          offset,
+        );
+        break;
+      case RevenueTableTab.RECENT_TRANSACTIONS:
+        result = await this.repository.getRecentTransactions(
+          from,
+          to,
+          limit,
+          offset,
+        );
+        break;
     }
 
-    /**
-     * Lấy dữ liệu 4 KPI cards + sparkline
-     */
-    async getKpis(dto: QueryRevenueDto) {
-        const cacheKey = this.getCacheKey('kpis', dto as any);
-        const cached = await this.redisService.getJson<any>(cacheKey);
-        if (cached) return cached;
+    result = { ...result, limit, offset, tab };
+    await this.redisService.setJson(cacheKey, result, this.TABLE_CACHE_TTL);
+    return result;
+  }
 
-        const { from, to } = this.resolveDateRange(dto);
-        const warehouseTemplateIds = await this.resolveWarehouseFilter(dto);
+  /**
+   * Xuất báo cáo doanh thu ra Excel
+   */
+  async exportReport(dto: ExportRevenueDto) {
+    const { from, to } = this.resolveDateRange(dto);
 
-        const [netRevenue, pending, overdue, refunded, sparkline] = await Promise.all([
-            this.repository.getNetRevenue(from, to, warehouseTemplateIds),
-            this.repository.getPendingReceivables(from, to, warehouseTemplateIds),
-            this.repository.getOverduePenalties(from, to),
-            this.repository.getTotalRefunded(from, to),
-            this.repository.getSparklineData(14),
-        ]);
+    // Mặc định xuất 1000 giao dịch gần đây nhất trong khoảng thời gian
+    const result = await this.repository.getRecentTransactions(
+      from,
+      to,
+      1000,
+      0,
+    );
+    const items = result.items;
 
-        const result = { netRevenue, pending, overdue, refunded, sparkline };
-        await this.redisService.setJson(cacheKey, result, this.KPI_CACHE_TTL);
+    const columns = [
+      { header: 'Mã hợp đồng', key: 'contract_code', width: 20 },
+      { header: 'Tổ chức', key: 'org_name', width: 30 },
+      { header: 'Số tiền', key: 'amount', width: 15 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+      { header: 'Ngày thanh toán', key: 'paid_at', width: 20 },
+      { header: 'Phương thức', key: 'payment_method', width: 20 },
+    ];
 
-        return result;
-    }
+    const data = items.map((item) => ({
+      contract_code: item.contract?.code || 'N/A',
+      org_name: item.organization?.name || 'N/A',
+      amount: item.amount,
+      status: item.status,
+      paid_at: item.paid_at ? new Date(item.paid_at).toLocaleString() : 'N/A',
+      payment_method: item.payment_method,
+    }));
 
-    /**
-     * Lấy dữ liệu biểu đồ (time series + payment method breakdown)
-     */
-    async getChartData(dto: QueryRevenueChartDto) {
-        const cacheKey = this.getCacheKey('charts', dto as any);
-        const cached = await this.redisService.getJson<any>(cacheKey);
-        if (cached) return cached;
-
-        const { from, to } = this.resolveDateRange(dto);
-        const granularity = dto.granularity || ChartGranularity.MONTH;
-
-        const queries: Promise<any>[] = [
-            this.repository.getRevenueTimeSeries(from, to, granularity),
-            this.repository.getAddonInsuranceTimeSeries(from, to, granularity),
-            this.repository.getPaymentMethodBreakdown(from, to),
-        ];
-
-        if (dto.include_coupon_discount) {
-            queries.push(this.repository.getCouponDiscountTimeSeries(from, to, granularity));
-        }
-
-        const results = await Promise.all(queries);
-
-        const result = {
-            timeSeries: results[0],
-            addonSeries: results[1],
-            paymentMethodBreakdown: results[2],
-            couponDiscount: dto.include_coupon_discount ? results[3] : null,
-        };
-
-        await this.redisService.setJson(cacheKey, result, this.CHART_CACHE_TTL);
-        return result;
-    }
-
-    /**
-     * Lấy dữ liệu bảng theo tab
-     */
-    async getTableData(dto: QueryRevenueTableDto) {
-        const cacheKey = this.getCacheKey('tables', dto as any);
-        const cached = await this.redisService.getJson<any>(cacheKey);
-        if (cached) return cached;
-
-        const { from, to } = this.resolveDateRange(dto);
-        const limit = dto.limit || 20;
-        const offset = dto.offset || 0;
-        const tab = dto.tab || RevenueTableTab.TOP_ORGANIZATIONS;
-
-        let result: any;
-
-        switch (tab) {
-            case RevenueTableTab.TOP_ORGANIZATIONS:
-                result = await this.repository.getTopOrganizations(from, to, limit, offset);
-                break;
-            case RevenueTableTab.TOP_WAREHOUSES:
-                result = await this.repository.getTopWarehouses(from, to, limit, offset);
-                break;
-            case RevenueTableTab.RECENT_TRANSACTIONS:
-                result = await this.repository.getRecentTransactions(from, to, limit, offset);
-                break;
-        }
-
-        result = { ...result, limit, offset, tab };
-        await this.redisService.setJson(cacheKey, result, this.TABLE_CACHE_TTL);
-        return result;
-    }
-
-    /**
-     * Xuất báo cáo doanh thu ra Excel
-     */
-    async exportReport(dto: ExportRevenueDto) {
-        const { from, to } = this.resolveDateRange(dto);
-        
-        // Mặc định xuất 1000 giao dịch gần đây nhất trong khoảng thời gian
-        const result = await this.repository.getRecentTransactions(from, to, 1000, 0);
-        const items = result.items;
-
-        const columns = [
-            { header: 'Mã hợp đồng', key: 'contract_code', width: 20 },
-            { header: 'Tổ chức', key: 'org_name', width: 30 },
-            { header: 'Số tiền', key: 'amount', width: 15 },
-            { header: 'Trạng thái', key: 'status', width: 15 },
-            { header: 'Ngày thanh toán', key: 'paid_at', width: 20 },
-            { header: 'Phương thức', key: 'payment_method', width: 20 },
-        ];
-
-        const data = items.map(item => ({
-            contract_code: item.contract?.code || 'N/A',
-            org_name: item.organization?.name || 'N/A',
-            amount: item.amount,
-            status: item.status,
-            paid_at: item.paid_at ? new Date(item.paid_at).toLocaleString() : 'N/A',
-            payment_method: item.payment_method,
-        }));
-
-        return this.excelService.createExcelBuffer(columns, data, 'Revenue Report');
-    }
+    return this.excelService.createExcelBuffer(columns, data, 'Revenue Report');
+  }
 }

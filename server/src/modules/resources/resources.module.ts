@@ -10,18 +10,19 @@ import { ResourcesGateway } from './resources.gateway';
  * Module quản lý resource monitoring với WebSocket realtime
  */
 @Module({
-    imports: [
-        ConfigModule,
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
-            }),
-        }),
-    ],
-    controllers: [ResourcesController],
-    providers: [ResourcesService, ResourcesGateway],
-    exports: [ResourcesService],
+  imports: [
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret:
+          configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
+      }),
+    }),
+  ],
+  controllers: [ResourcesController],
+  providers: [ResourcesService, ResourcesGateway],
+  exports: [ResourcesService],
 })
-export class ResourcesModule { }
+export class ResourcesModule {}

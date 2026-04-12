@@ -6,4 +6,4 @@ export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
 /**
  * Amenity với relations
  */
-export interface IAmenity extends Amenity { }
+export interface IAmenity extends Amenity {}

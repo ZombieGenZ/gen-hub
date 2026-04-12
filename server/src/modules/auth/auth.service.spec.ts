@@ -82,7 +82,9 @@ const createMockConfigService = () => ({
 
 const createMockJwtService = () => ({
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
-  verifyAsync: jest.fn().mockResolvedValue({ userId: 'user-1', is_primary_auth: true }),
+  verifyAsync: jest
+    .fn()
+    .mockResolvedValue({ userId: 'user-1', is_primary_auth: true }),
 });
 
 const createMockI18n = () => ({
@@ -163,7 +165,9 @@ const createMockPrismaService = () => ({
 const createMockAuthCacheKeys = () => ({
   session: jest.fn((email: string) => `auth:session:${email}`),
   sessionTtl: 3600,
-  permissionCheck: jest.fn((uid: string, key: string) => `auth:perm:${uid}:${key}`),
+  permissionCheck: jest.fn(
+    (uid: string, key: string) => `auth:perm:${uid}:${key}`,
+  ),
   permissionTtl: 300,
 });
 
@@ -199,7 +203,10 @@ describe('AuthService', () => {
         { provide: I18nService, useFactory: createMockI18n },
         { provide: UserRepository, useValue: userRepository },
         { provide: RefreshTokenRepository, useValue: refreshTokenRepository },
-        { provide: BackupCodeService, useValue: { verifyBackupCode: jest.fn() } },
+        {
+          provide: BackupCodeService,
+          useValue: { verifyBackupCode: jest.fn() },
+        },
         { provide: EmailService, useValue: emailService },
         { provide: SystemLogService, useFactory: createMockSystemLogService },
         { provide: AppConfigService, useFactory: createMockAppConfigService },
@@ -229,15 +236,24 @@ describe('AuthService', () => {
 
     it('should register successfully and return tokens', async () => {
       userRepository.findByEmail.mockResolvedValue(null);
-      userRepository.create.mockResolvedValue(mockUser({ email: 'new@example.com', name: 'New User' }));
+      userRepository.create.mockResolvedValue(
+        mockUser({ email: 'new@example.com', name: 'New User' }),
+      );
 
       const result = await service.register(registerDto, mockDeviceInfo, 'vi');
 
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
       expect(result.user).toHaveProperty('email', 'new@example.com');
-      expect(turnstileService.verifyToken).toHaveBeenCalledWith('token', '127.0.0.1', 'vi');
-      expect(hunterService.verifyEmail).toHaveBeenCalledWith('new@example.com', 'vi');
+      expect(turnstileService.verifyToken).toHaveBeenCalledWith(
+        'token',
+        '127.0.0.1',
+        'vi',
+      );
+      expect(hunterService.verifyEmail).toHaveBeenCalledWith(
+        'new@example.com',
+        'vi',
+      );
     });
 
     it('should throw ConflictException if email already exists', async () => {
@@ -249,7 +265,9 @@ describe('AuthService', () => {
     });
 
     it('should verify CAPTCHA before checking email', async () => {
-      turnstileService.verifyToken.mockRejectedValue(new BadRequestException('Invalid captcha'));
+      turnstileService.verifyToken.mockRejectedValue(
+        new BadRequestException('Invalid captcha'),
+      );
 
       await expect(
         service.register(registerDto, mockDeviceInfo, 'vi'),
@@ -259,7 +277,9 @@ describe('AuthService', () => {
     });
 
     it('should verify email with Hunter.io', async () => {
-      hunterService.verifyEmail.mockRejectedValue(new BadRequestException('Invalid email'));
+      hunterService.verifyEmail.mockRejectedValue(
+        new BadRequestException('Invalid email'),
+      );
 
       await expect(
         service.register(registerDto, mockDeviceInfo, 'vi'),
@@ -268,7 +288,9 @@ describe('AuthService', () => {
 
     it('should send verification and welcome emails', async () => {
       userRepository.findByEmail.mockResolvedValue(null);
-      userRepository.create.mockResolvedValue(mockUser({ email: 'new@example.com' }));
+      userRepository.create.mockResolvedValue(
+        mockUser({ email: 'new@example.com' }),
+      );
 
       await service.register(registerDto, mockDeviceInfo, 'vi');
 
@@ -306,7 +328,10 @@ describe('AuthService', () => {
       await expect(
         service.login(loginDto, mockDeviceInfo, 'vi'),
       ).rejects.toThrow(UnauthorizedException);
-      expect(bruteForceService.recordFailedAttempt).toHaveBeenCalledWith('test@example.com', '127.0.0.1');
+      expect(bruteForceService.recordFailedAttempt).toHaveBeenCalledWith(
+        'test@example.com',
+        '127.0.0.1',
+      );
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
@@ -333,7 +358,9 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for deleted user', async () => {
-      userRepository.findByEmail.mockResolvedValue(mockUser({ is_deleted: true }));
+      userRepository.findByEmail.mockResolvedValue(
+        mockUser({ is_deleted: true }),
+      );
       (argon2.verify as jest.Mock).mockResolvedValue(true);
 
       await expect(
@@ -418,9 +445,9 @@ describe('AuthService', () => {
     it('should require password when 2FA is not enabled and password missing', async () => {
       userRepository.findById.mockResolvedValue(mockUser());
 
-      await expect(
-        service.verifyAccess('user-1', {}, 'vi'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyAccess('user-1', {}, 'vi')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -516,7 +543,9 @@ describe('AuthService', () => {
         'vi',
       );
 
-      expect(refreshTokenRepository.deleteAllByUserId).toHaveBeenCalledWith('user-1');
+      expect(refreshTokenRepository.deleteAllByUserId).toHaveBeenCalledWith(
+        'user-1',
+      );
     });
   });
 
@@ -531,7 +560,10 @@ describe('AuthService', () => {
         token: 'refresh-token',
       });
 
-      const result = await service.logout({ refresh_token: 'refresh-token' }, 'vi');
+      const result = await service.logout(
+        { refresh_token: 'refresh-token' },
+        'vi',
+      );
 
       expect(result).toHaveProperty('message');
       expect(refreshTokenRepository.softDelete).toHaveBeenCalledWith('rt-1');
@@ -555,8 +587,13 @@ describe('AuthService', () => {
       const result = await service.logoutAll('user-1', 'vi');
 
       expect(result).toHaveProperty('message');
-      expect(refreshTokenRepository.deleteAllByUserId).toHaveBeenCalledWith('user-1');
-      expect(websocketGateway.emitUserLogoutAll).toHaveBeenCalledWith('user-1', expect.any(String));
+      expect(refreshTokenRepository.deleteAllByUserId).toHaveBeenCalledWith(
+        'user-1',
+      );
+      expect(websocketGateway.emitUserLogoutAll).toHaveBeenCalledWith(
+        'user-1',
+        expect.any(String),
+      );
     });
   });
 
@@ -570,10 +607,17 @@ describe('AuthService', () => {
         user_id: 'user-1',
         token: 'refresh-token',
       });
-      jwtService.verifyAsync.mockResolvedValue({ userId: 'user-1', is_primary_auth: true });
+      jwtService.verifyAsync.mockResolvedValue({
+        userId: 'user-1',
+        is_primary_auth: true,
+      });
       userRepository.findById.mockResolvedValue(mockUser());
 
-      const result = await service.refreshToken('refresh-token', mockDeviceInfo, 'vi');
+      const result = await service.refreshToken(
+        'refresh-token',
+        mockDeviceInfo,
+        'vi',
+      );
 
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
@@ -597,7 +641,10 @@ describe('AuthService', () => {
       });
       jwtService.verifyAsync.mockResolvedValue({ userId: 'user-1' });
       userRepository.findById.mockResolvedValue(
-        mockUser({ is_banned: true, banned_end: new Date(Date.now() + 86400000) }),
+        mockUser({
+          is_banned: true,
+          banned_end: new Date(Date.now() + 86400000),
+        }),
       );
 
       await expect(
@@ -614,7 +661,10 @@ describe('AuthService', () => {
     it('should return valid true for existing token', async () => {
       userRepository.findByForgotPasswordToken.mockResolvedValue(mockUser());
 
-      const result = await service.verifyForgotPasswordToken({ token: 'valid' }, 'vi');
+      const result = await service.verifyForgotPasswordToken(
+        { token: 'valid' },
+        'vi',
+      );
 
       expect(result.valid).toBe(true);
     });
@@ -622,7 +672,10 @@ describe('AuthService', () => {
     it('should return valid false for non-existent token', async () => {
       userRepository.findByForgotPasswordToken.mockResolvedValue(null);
 
-      const result = await service.verifyForgotPasswordToken({ token: 'invalid' }, 'vi');
+      const result = await service.verifyForgotPasswordToken(
+        { token: 'invalid' },
+        'vi',
+      );
 
       expect(result.valid).toBe(false);
     });
@@ -633,7 +686,9 @@ describe('AuthService', () => {
   // ─────────────────────────────────────────────────────────
   describe('resendVerificationEmail', () => {
     it('should resend email for unverified user', async () => {
-      userRepository.findById.mockResolvedValue(mockUser({ email_confirmed: false }));
+      userRepository.findById.mockResolvedValue(
+        mockUser({ email_confirmed: false }),
+      );
 
       const result = await service.resendVerificationEmail('user-1', 'vi');
 
@@ -643,7 +698,9 @@ describe('AuthService', () => {
     });
 
     it('should throw if user is already verified', async () => {
-      userRepository.findById.mockResolvedValue(mockUser({ email_confirmed: true }));
+      userRepository.findById.mockResolvedValue(
+        mockUser({ email_confirmed: true }),
+      );
 
       await expect(
         service.resendVerificationEmail('user-1', 'vi'),

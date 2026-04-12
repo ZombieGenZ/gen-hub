@@ -11,12 +11,12 @@ import { BackblazeB2Module } from '../backblaze-b2/backblaze-b2.module';
  */
 @Global()
 @Module({
-    imports: [
-        AiHubModule,
-        forwardRef(() => DatabaseBackupModule),
-        BackblazeB2Module,
-    ],
-    providers: [DiscordService],
-    exports: [DiscordService],
+  imports: [
+    AiHubModule,
+    forwardRef(() => DatabaseBackupModule),
+    BackblazeB2Module,
+  ],
+  providers: [DiscordService],
+  exports: [DiscordService],
 })
-export class DiscordModule { }
+export class DiscordModule {}

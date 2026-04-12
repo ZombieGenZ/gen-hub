@@ -7,24 +7,16 @@ import { ApiKeyService } from './api-key.service';
 import { RedisModule } from '../redis/redis.module';
 import { AdminApiKeyCacheKeys } from './constants/cache-keys.helper';
 
-
 @Module({
-    imports: [
-        SharedModule,
-        OrganizationModule,
-        OrganizationApiKeyModule,
-        RedisModule,
-    ],
+  imports: [
+    SharedModule,
+    OrganizationModule,
+    OrganizationApiKeyModule,
+    RedisModule,
+  ],
 
-    controllers: [ApiKeyController],
-    providers: [
-        ApiKeyService,
-        AdminApiKeyCacheKeys,
-    ],
-    exports: [
-        ApiKeyService,
-        AdminApiKeyCacheKeys,
-    ],
-
+  controllers: [ApiKeyController],
+  providers: [ApiKeyService, AdminApiKeyCacheKeys],
+  exports: [ApiKeyService, AdminApiKeyCacheKeys],
 })
-export class ApiKeyModule { }
+export class ApiKeyModule {}

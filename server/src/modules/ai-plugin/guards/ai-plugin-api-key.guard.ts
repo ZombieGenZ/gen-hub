@@ -23,7 +23,8 @@ export class AiPluginApiKeyGuard implements CanActivate {
 
     if (!expectedApiKey) return true;
     if (!apiKey) throw new UnauthorizedException('API key is required');
-    if (apiKey !== expectedApiKey) throw new UnauthorizedException('Invalid API key');
+    if (apiKey !== expectedApiKey)
+      throw new UnauthorizedException('Invalid API key');
 
     return true;
   }

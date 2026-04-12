@@ -8,25 +8,18 @@ import { OrganizationRoleService } from './organization-role.service';
 import { OrganizationRoleRepository } from './organization-role.repository';
 import { OrganizationRoleCacheKeys } from './constants/cache-keys.helper';
 
-
 @Module({
-    imports: [
-        SharedModule,
-        RedisModule,
-        WebsocketModule,
-        OrganizationModule,
-    ],
-    controllers: [OrganizationRoleController],
-    providers: [
-        OrganizationRoleService,
-        OrganizationRoleRepository,
-        OrganizationRoleCacheKeys,
-    ],
-    exports: [
-        OrganizationRoleService,
-        OrganizationRoleRepository,
-        OrganizationRoleCacheKeys,
-    ],
-
+  imports: [SharedModule, RedisModule, WebsocketModule, OrganizationModule],
+  controllers: [OrganizationRoleController],
+  providers: [
+    OrganizationRoleService,
+    OrganizationRoleRepository,
+    OrganizationRoleCacheKeys,
+  ],
+  exports: [
+    OrganizationRoleService,
+    OrganizationRoleRepository,
+    OrganizationRoleCacheKeys,
+  ],
 })
-export class OrganizationRoleModule { }
+export class OrganizationRoleModule {}

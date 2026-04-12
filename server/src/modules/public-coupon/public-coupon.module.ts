@@ -8,9 +8,13 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [PrismaModule, RedisModule, ConfigModule],
-    controllers: [PublicCouponController],
-    providers: [PublicCouponService, PublicCouponRepository, PublicCouponCacheKeys],
-    exports: [PublicCouponService, PublicCouponRepository],
+  imports: [PrismaModule, RedisModule, ConfigModule],
+  controllers: [PublicCouponController],
+  providers: [
+    PublicCouponService,
+    PublicCouponRepository,
+    PublicCouponCacheKeys,
+  ],
+  exports: [PublicCouponService, PublicCouponRepository],
 })
-export class PublicCouponModule { }
+export class PublicCouponModule {}

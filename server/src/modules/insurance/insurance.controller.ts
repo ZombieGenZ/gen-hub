@@ -55,7 +55,7 @@ export class InsuranceController {
     private readonly insuranceService: InsuranceService,
     private readonly i18n: I18nService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -341,8 +341,15 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IInsurance>>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'insurance.list.all');
-    const result = await this.insuranceService.findAll(query, userId, hasListAllPermission);
+    const hasListAllPermission = await this.hasPermission(
+      userId,
+      'insurance.list.all',
+    );
+    const result = await this.insuranceService.findAll(
+      query,
+      userId,
+      hasListAllPermission,
+    );
     return new GetResponse(
       'insurance.list.success',
       result,
@@ -530,8 +537,16 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IInsurance>> {
-    const hasReadAllPermission = await this.hasPermission(userId, 'insurance.read.all');
-    const result = await this.insuranceService.findById(id, userId, hasReadAllPermission, lang);
+    const hasReadAllPermission = await this.hasPermission(
+      userId,
+      'insurance.read.all',
+    );
+    const result = await this.insuranceService.findById(
+      id,
+      userId,
+      hasReadAllPermission,
+      lang,
+    );
     return new GetResponse(
       'insurance.read.success',
       result,
@@ -692,8 +707,17 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IInsurance>> {
-    const hasUpdateAllPermission = await this.hasPermission(userId, 'insurance.update.all');
-    const result = await this.insuranceService.update(id, dto, userId, hasUpdateAllPermission, lang);
+    const hasUpdateAllPermission = await this.hasPermission(
+      userId,
+      'insurance.update.all',
+    );
+    const result = await this.insuranceService.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAllPermission,
+      lang,
+    );
     return new UpdatedResponse(
       'insurance.update.success',
       result,
@@ -769,8 +793,16 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'insurance.delete.all');
-    await this.insuranceService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'insurance.delete.all',
+    );
+    await this.insuranceService.deleteMany(
+      dto.ids,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse(
       'insurance.delete.success',
       null,
@@ -825,8 +857,16 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAllPermission = await this.hasPermission(userId, 'insurance.delete.all');
-    await this.insuranceService.delete(id, userId, hasDeleteAllPermission, lang);
+    const hasDeleteAllPermission = await this.hasPermission(
+      userId,
+      'insurance.delete.all',
+    );
+    await this.insuranceService.delete(
+      id,
+      userId,
+      hasDeleteAllPermission,
+      lang,
+    );
     return new DeletedResponse(
       'insurance.delete.success',
       null,

@@ -13,7 +13,9 @@ interface ErrorSchemaOptions {
   errors?: unknown;
 }
 
-export function buildSuccessResponseSchema(options: SuccessSchemaOptions): SwaggerSchema {
+export function buildSuccessResponseSchema(
+  options: SuccessSchemaOptions,
+): SwaggerSchema {
   const schema: SwaggerSchema = {
     type: 'object',
     properties: {
@@ -39,7 +41,9 @@ export function buildSuccessResponseSchema(options: SuccessSchemaOptions): Swagg
   return schema;
 }
 
-export function buildErrorResponseSchema(options: ErrorSchemaOptions): SwaggerSchema {
+export function buildErrorResponseSchema(
+  options: ErrorSchemaOptions,
+): SwaggerSchema {
   const schema: SwaggerSchema = {
     type: 'object',
     properties: {
@@ -71,7 +75,9 @@ export function buildErrorResponseSchema(options: ErrorSchemaOptions): SwaggerSc
   return schema;
 }
 
-export function buildPaginationDataSchema(itemSchema: SwaggerSchema): SwaggerSchema {
+export function buildPaginationDataSchema(
+  itemSchema: SwaggerSchema,
+): SwaggerSchema {
   return {
     type: 'object',
     properties: {
@@ -87,7 +93,10 @@ export function buildPaginationDataSchema(itemSchema: SwaggerSchema): SwaggerSch
   };
 }
 
-export function buildUuidSchema(description: string, example: string): SwaggerSchema {
+export function buildUuidSchema(
+  description: string,
+  example: string,
+): SwaggerSchema {
   return {
     type: 'string',
     format: 'uuid',

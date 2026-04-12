@@ -40,7 +40,12 @@ const mockInboundReceipt = (overrides: Record<string, any> = {}) => ({
       expected_qty: 100,
       actual_qty: null,
       conversion_rate: 1,
-      product: { id: 'prod-1', name: 'Sản phẩm A', sku: 'SKU-001', image_url: null },
+      product: {
+        id: 'prod-1',
+        name: 'Sản phẩm A',
+        sku: 'SKU-001',
+        image_url: null,
+      },
       batch: null,
       unit: { id: 'unit-1', name: 'Cái' },
     },
@@ -85,15 +90,23 @@ const createMockRepository = () => ({
   generateOutboundCode: jest.fn().mockResolvedValue('OUT-001'),
   findInboundById: jest.fn().mockResolvedValue(mockInboundReceipt()),
   findOutboundById: jest.fn().mockResolvedValue(mockOutboundExport()),
-  listOrgWarehouses: jest.fn().mockResolvedValue([{ id: WAREHOUSE_ID, name: 'Kho A' }]),
+  listOrgWarehouses: jest
+    .fn()
+    .mockResolvedValue([{ id: WAREHOUSE_ID, name: 'Kho A' }]),
 });
 
 const createMockPrisma = () => ({
   $transaction: jest.fn((fn: any) =>
     fn({
-      receipt: { create: jest.fn().mockResolvedValue(mockInboundReceipt()), update: jest.fn() },
+      receipt: {
+        create: jest.fn().mockResolvedValue(mockInboundReceipt()),
+        update: jest.fn(),
+      },
       receiptDetail: { createMany: jest.fn(), update: jest.fn() },
-      export: { create: jest.fn().mockResolvedValue(mockOutboundExport()), update: jest.fn() },
+      export: {
+        create: jest.fn().mockResolvedValue(mockOutboundExport()),
+        update: jest.fn(),
+      },
       exportDetail: { createMany: jest.fn(), update: jest.fn() },
       batch: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       inventory: { findMany: jest.fn().mockResolvedValue([]) },
@@ -111,7 +124,11 @@ const createMockPrisma = () => ({
   },
   productUnit: {
     findMany: jest.fn().mockResolvedValue([
-      { product_id: 'prod-1', unit_id: 'unit-1', conversion_rate: { toNumber: () => 1 } },
+      {
+        product_id: 'prod-1',
+        unit_id: 'unit-1',
+        conversion_rate: { toNumber: () => 1 },
+      },
     ]),
   },
   receipt: {
@@ -155,8 +172,12 @@ const createMockI18n = () => ({
 });
 
 const createMockCacheKeys = () => ({
-  inboundList: jest.fn((orgId: string, params: string) => `inv:inbound:${orgId}:${params}`),
-  outboundList: jest.fn((orgId: string, params: string) => `inv:outbound:${orgId}:${params}`),
+  inboundList: jest.fn(
+    (orgId: string, params: string) => `inv:inbound:${orgId}:${params}`,
+  ),
+  outboundList: jest.fn(
+    (orgId: string, params: string) => `inv:outbound:${orgId}:${params}`,
+  ),
   inboundDetail: jest.fn((id: string) => `inv:inbound:detail:${id}`),
   outboundDetail: jest.fn((id: string) => `inv:outbound:detail:${id}`),
 });
@@ -199,7 +220,10 @@ describe('InventoryRequestService', () => {
           },
         },
         { provide: WebsocketGateway, useFactory: createMockWebsocket },
-        { provide: OrganizationAuditLogService, useFactory: createMockAuditLog },
+        {
+          provide: OrganizationAuditLogService,
+          useFactory: createMockAuditLog,
+        },
         { provide: I18nService, useFactory: createMockI18n },
         { provide: InventoryRequestCacheKeys, useFactory: createMockCacheKeys },
         { provide: ExcelService, useFactory: createMockExcelService },
@@ -215,16 +239,25 @@ describe('InventoryRequestService', () => {
   describe('createInbound', () => {
     const createDto = {
       warehouse_id: WAREHOUSE_ID,
-      details: [
-        { product_id: 'prod-1', unit_id: 'unit-1', expected_qty: 100 },
-      ],
+      details: [{ product_id: 'prod-1', unit_id: 'unit-1', expected_qty: 100 }],
     };
 
     it('should create inbound receipt successfully', async () => {
-      const result = await service.createInbound(ORG_ID, createDto as any, ACTOR_ID, 'vi');
+      const result = await service.createInbound(
+        ORG_ID,
+        createDto as any,
+        ACTOR_ID,
+        'vi',
+      );
       expect(result).toBeDefined();
-      expect(repository.warehouseExistsInOrg).toHaveBeenCalledWith(WAREHOUSE_ID, ORG_ID);
-      expect(repository.warehouseHasActiveContract).toHaveBeenCalledWith(WAREHOUSE_ID, ORG_ID);
+      expect(repository.warehouseExistsInOrg).toHaveBeenCalledWith(
+        WAREHOUSE_ID,
+        ORG_ID,
+      );
+      expect(repository.warehouseHasActiveContract).toHaveBeenCalledWith(
+        WAREHOUSE_ID,
+        ORG_ID,
+      );
     });
 
     it('should throw NotFoundException when warehouse is not in org', async () => {
@@ -276,9 +309,7 @@ describe('InventoryRequestService', () => {
   describe('createOutbound', () => {
     const createDto = {
       warehouse_id: WAREHOUSE_ID,
-      details: [
-        { product_id: 'prod-1', unit_id: 'unit-1', quantity: 50 },
-      ],
+      details: [{ product_id: 'prod-1', unit_id: 'unit-1', quantity: 50 }],
     };
 
     it('should throw NotFoundException when warehouse is not in org', async () => {
@@ -364,7 +395,12 @@ describe('InventoryRequestService', () => {
         status: ReceiptStatus.RECEIVING,
       });
 
-      const result = await service.startReceiving(ORG_ID, 'receipt-1', ACTOR_ID, 'vi');
+      const result = await service.startReceiving(
+        ORG_ID,
+        'receipt-1',
+        ACTOR_ID,
+        'vi',
+      );
 
       expect(prisma.receipt.update).toHaveBeenCalledWith(
         expect.objectContaining({

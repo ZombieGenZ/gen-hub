@@ -34,7 +34,11 @@ import {
 import { JwtAuthGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
 import { BruteForceGuard } from '../brute-force/brute-force.guard';
-import { CreatedResponse, OkResponse, ResponseCode } from '../../common/responses';
+import {
+  CreatedResponse,
+  OkResponse,
+  ResponseCode,
+} from '../../common/responses';
 import type { IJwtPayload } from '../../common/interfaces';
 import {
   ApiValidationErrorResponse,
@@ -47,9 +51,7 @@ import {
  */
 function getDeviceInfo(req: Request) {
   return {
-    ip: (req.ip ||
-      req.headers['x-forwarded-for']?.toString() ||
-      'unknown') as string,
+    ip: req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown',
     device: req.headers['user-agent']?.toString() || 'unknown',
     os: req.headers['sec-ch-ua-platform']?.toString() || 'unknown',
   };
@@ -62,11 +64,12 @@ function getDeviceInfo(req: Request) {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({
     summary: 'Đăng ký tài khoản mới',
-    description: 'Tạo tài khoản mới bằng email. Sau khi đăng ký thành công, hệ thống sẽ gửi email xác thực đến địa chỉ email đã đăng ký. Tài khoản mới sẽ tự động đăng nhập và nhận access token + refresh token.',
+    description:
+      'Tạo tài khoản mới bằng email. Sau khi đăng ký thành công, hệ thống sẽ gửi email xác thực đến địa chỉ email đã đăng ký. Tài khoản mới sẽ tự động đăng nhập và nhận access token + refresh token.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -126,14 +129,24 @@ export class AuthController {
             name: { type: 'string', example: 'Nguyễn Văn A' },
             isVerified: { type: 'boolean', example: false },
             language: { type: 'string', example: 'vi' },
-            createdAt: { type: 'string', format: 'date-time', example: '2024-01-21T09:00:00.000Z' },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2024-01-21T09:00:00.000Z',
+            },
           },
         },
         authorization: {
           type: 'object',
           properties: {
-            access_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-            refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            access_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
+            refresh_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
           },
         },
       },
@@ -166,15 +179,21 @@ export class AuthController {
       deviceInfo,
       lang || 'vi',
     );
-    return new CreatedResponse(ResponseCode.AUTH_REGISTER_SUCCESS, result.user, result.message, {
-      access_token: result.access_token,
-      refresh_token: result.refresh_token,
-    });
+    return new CreatedResponse(
+      ResponseCode.AUTH_REGISTER_SUCCESS,
+      result.user,
+      result.message,
+      {
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Gửi OTP xác minh email trước khi đăng ký',
-    description: 'Kiểm tra thông tin đăng ký, gửi mã OTP 6 chữ số về email. OTP có hiệu lực trong 5 phút.',
+    description:
+      'Kiểm tra thông tin đăng ký, gửi mã OTP 6 chữ số về email. OTP có hiệu lực trong 5 phút.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -193,7 +212,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.send_registration_otp_success' },
-        message: { type: 'string', example: 'Mã OTP đã được gửi đến email của bạn' },
+        message: {
+          type: 'string',
+          example: 'Mã OTP đã được gửi đến email của bạn',
+        },
         success: { type: 'boolean', example: true },
       },
     },
@@ -209,13 +231,22 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const deviceInfo = getDeviceInfo(req);
-    const result = await this.authService.sendRegistrationOtp(dto, deviceInfo, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_SEND_REGISTRATION_OTP_SUCCESS, null, result.message);
+    const result = await this.authService.sendRegistrationOtp(
+      dto,
+      deviceInfo,
+      lang || 'vi',
+    );
+    return new OkResponse(
+      ResponseCode.AUTH_SEND_REGISTRATION_OTP_SUCCESS,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng nhập',
-    description: 'Đăng nhập bằng email và mật khẩu. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA. Nếu không, trả về access token và refresh token.',
+    description:
+      'Đăng nhập bằng email và mật khẩu. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA. Nếu không, trả về access token và refresh token.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -237,7 +268,8 @@ export class AuthController {
       },
       with_turnstile: {
         summary: 'Đăng nhập với Turnstile',
-        description: 'Đăng nhập kèm Cloudflare Turnstile token để vượt qua CAPTCHA',
+        description:
+          'Đăng nhập kèm Cloudflare Turnstile token để vượt qua CAPTCHA',
         value: {
           email: 'user@example.com',
           password: 'Password@123',
@@ -307,7 +339,11 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.login.too_many_attempts' },
-        message: { type: 'string', example: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
+        message: {
+          type: 'string',
+          example:
+            'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -341,15 +377,21 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(ResponseCode.AUTH_LOGIN_SUCCESS, successResult.user, successResult.message, {
-      access_token: successResult.access_token,
-      refresh_token: successResult.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_LOGIN_SUCCESS,
+      successResult.user,
+      successResult.message,
+      {
+        access_token: successResult.access_token,
+        refresh_token: successResult.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng nhập Database Panel',
-    description: 'Đăng nhập vào Database Panel. Yêu cầu tài khoản phải có quyền `database.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
+    description:
+      'Đăng nhập vào Database Panel. Yêu cầu tài khoản phải có quyền `database.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -430,7 +472,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.login.no_permission' },
-        message: { type: 'string', example: 'Bạn không có quyền truy cập Database Panel' },
+        message: {
+          type: 'string',
+          example: 'Bạn không có quyền truy cập Database Panel',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -447,7 +492,11 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const deviceInfo = getDeviceInfo(req);
-    const result = await this.authService.loginDatabasePanel(dto, deviceInfo, lang || 'vi');
+    const result = await this.authService.loginDatabasePanel(
+      dto,
+      deviceInfo,
+      lang || 'vi',
+    );
 
     if ('requires_2fa' in result && result.requires_2fa) {
       return new OkResponse(
@@ -464,15 +513,21 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(ResponseCode.AUTH_LOGIN_DATABASE_PANEL_SUCCESS, successResult.user, successResult.message, {
-      access_token: successResult.access_token,
-      refresh_token: successResult.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_LOGIN_DATABASE_PANEL_SUCCESS,
+      successResult.user,
+      successResult.message,
+      {
+        access_token: successResult.access_token,
+        refresh_token: successResult.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng nhập Feature Flag Panel',
-    description: 'Đăng nhập vào Feature Flag Panel. Yêu cầu tài khoản phải có quyền `featureflag.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
+    description:
+      'Đăng nhập vào Feature Flag Panel. Yêu cầu tài khoản phải có quyền `featureflag.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -553,7 +608,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.login.no_permission' },
-        message: { type: 'string', example: 'Bạn không có quyền truy cập Feature Flag Panel' },
+        message: {
+          type: 'string',
+          example: 'Bạn không có quyền truy cập Feature Flag Panel',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -570,7 +628,11 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const deviceInfo = getDeviceInfo(req);
-    const result = await this.authService.loginFeatureFlagPanel(dto, deviceInfo, lang || 'vi');
+    const result = await this.authService.loginFeatureFlagPanel(
+      dto,
+      deviceInfo,
+      lang || 'vi',
+    );
 
     if ('requires_2fa' in result && result.requires_2fa) {
       return new OkResponse(
@@ -587,15 +649,21 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(ResponseCode.AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS, successResult.user, successResult.message, {
-      access_token: successResult.access_token,
-      refresh_token: successResult.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS,
+      successResult.user,
+      successResult.message,
+      {
+        access_token: successResult.access_token,
+        refresh_token: successResult.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng nhập Resources Panel',
-    description: 'Đăng nhập vào Resources Panel. Yêu cầu tài khoản phải có quyền `resources.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
+    description:
+      'Đăng nhập vào Resources Panel. Yêu cầu tài khoản phải có quyền `resources.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -676,7 +744,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.login.no_permission' },
-        message: { type: 'string', example: 'Bạn không có quyền truy cập Resources Panel' },
+        message: {
+          type: 'string',
+          example: 'Bạn không có quyền truy cập Resources Panel',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -693,7 +764,11 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const deviceInfo = getDeviceInfo(req);
-    const result = await this.authService.loginResourcesPanel(dto, deviceInfo, lang || 'vi');
+    const result = await this.authService.loginResourcesPanel(
+      dto,
+      deviceInfo,
+      lang || 'vi',
+    );
 
     if ('requires_2fa' in result && result.requires_2fa) {
       return new OkResponse(
@@ -710,15 +785,21 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(ResponseCode.AUTH_LOGIN_RESOURCES_PANEL_SUCCESS, successResult.user, successResult.message, {
-      access_token: successResult.access_token,
-      refresh_token: successResult.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_LOGIN_RESOURCES_PANEL_SUCCESS,
+      successResult.user,
+      successResult.message,
+      {
+        access_token: successResult.access_token,
+        refresh_token: successResult.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng nhập Admin Panel',
-    description: 'Đăng nhập vào Admin Panel. Yêu cầu tài khoản phải có ít nhất 1 trong 3 quyền: `database.admin`, `featureflag.admin`, hoặc `resources.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
+    description:
+      'Đăng nhập vào Admin Panel. Yêu cầu tài khoản phải có ít nhất 1 trong 3 quyền: `database.admin`, `featureflag.admin`, hoặc `resources.admin`. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -756,7 +837,11 @@ export class AuthController {
                 id: 'clx1234567890abcdef',
                 email: 'admin@example.com',
                 name: 'Admin User',
-                permissions: ['database.admin', 'featureflag.admin', 'resources.admin'],
+                permissions: [
+                  'database.admin',
+                  'featureflag.admin',
+                  'resources.admin',
+                ],
               },
               authorization: {
                 access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -799,7 +884,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.login.no_permission' },
-        message: { type: 'string', example: 'Bạn không có quyền truy cập Admin Panel' },
+        message: {
+          type: 'string',
+          example: 'Bạn không có quyền truy cập Admin Panel',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -816,7 +904,11 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const deviceInfo = getDeviceInfo(req);
-    const result = await this.authService.loginAdminPanel(dto, deviceInfo, lang || 'vi');
+    const result = await this.authService.loginAdminPanel(
+      dto,
+      deviceInfo,
+      lang || 'vi',
+    );
 
     if ('requires_2fa' in result && result.requires_2fa) {
       return new OkResponse(
@@ -833,15 +925,21 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(ResponseCode.AUTH_LOGIN_ADMIN_PANEL_SUCCESS, successResult.user, successResult.message, {
-      access_token: successResult.access_token,
-      refresh_token: successResult.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_LOGIN_ADMIN_PANEL_SUCCESS,
+      successResult.user,
+      successResult.message,
+      {
+        access_token: successResult.access_token,
+        refresh_token: successResult.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Làm mới access token',
-    description: 'Sử dụng refresh token để lấy access token mới. Refresh token cũ sẽ bị vô hiệu hóa và một refresh token mới được cấp (token rotation).',
+    description:
+      'Sử dụng refresh token để lấy access token mới. Refresh token cũ sẽ bị vô hiệu hóa và một refresh token mới được cấp (token rotation).',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -857,7 +955,8 @@ export class AuthController {
         summary: 'Làm mới token',
         description: 'Gửi refresh token để nhận tokens mới',
         value: {
-          refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyfQ...',
+          refresh_token:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyfQ...',
         },
       },
     },
@@ -875,8 +974,14 @@ export class AuthController {
         authorization: {
           type: 'object',
           properties: {
-            access_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-            refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            access_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
+            refresh_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
           },
         },
       },
@@ -932,15 +1037,21 @@ export class AuthController {
       deviceInfo,
       lang || 'vi',
     );
-    return new OkResponse(ResponseCode.AUTH_REFRESH_TOKEN_SUCCESS, null, result.message, {
-      access_token: result.access_token,
-      refresh_token: result.refresh_token,
-    });
+    return new OkResponse(
+      ResponseCode.AUTH_REFRESH_TOKEN_SUCCESS,
+      null,
+      result.message,
+      {
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      },
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng xuất',
-    description: 'Đăng xuất khỏi thiết bị hiện tại bằng cách hủy refresh token được chỉ định. Access token vẫn còn hiệu lực cho đến khi hết hạn.',
+    description:
+      'Đăng xuất khỏi thiết bị hiện tại bằng cách hủy refresh token được chỉ định. Access token vẫn còn hiệu lực cho đến khi hết hạn.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -985,12 +1096,17 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.logout(dto, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_LOGOUT_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_LOGOUT_SUCCESS,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Đăng xuất tất cả thiết bị',
-    description: 'Đăng xuất khỏi tất cả các thiết bị đã đăng nhập bằng cách hủy tất cả refresh tokens. Hữu ích khi nghi ngờ tài khoản bị xâm nhập.',
+    description:
+      'Đăng xuất khỏi tất cả các thiết bị đã đăng nhập bằng cách hủy tất cả refresh tokens. Hữu ích khi nghi ngờ tài khoản bị xâm nhập.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1005,7 +1121,10 @@ export class AuthController {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.logout_all.success' },
-        message: { type: 'string', example: 'Đã đăng xuất khỏi tất cả thiết bị' },
+        message: {
+          type: 'string',
+          example: 'Đã đăng xuất khỏi tất cả thiết bị',
+        },
         success: { type: 'boolean', example: true },
         data: { type: 'null', example: null },
       },
@@ -1021,12 +1140,17 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.logoutAll(user.userId, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_LOGOUT_ALL_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_LOGOUT_ALL_SUCCESS,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Xác thực email',
-    description: 'Xác thực địa chỉ email bằng token được gửi qua email sau khi đăng ký. Token có thời hạn 24 giờ.',
+    description:
+      'Xác thực địa chỉ email bằng token được gửi qua email sau khi đăng ký. Token có thời hạn 24 giờ.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1078,7 +1202,8 @@ export class AuthController {
             summary: 'Token hết hạn',
             value: {
               code: 'auth.verify_email.token_expired',
-              message: 'Token xác thực đã hết hạn, vui lòng yêu cầu gửi lại email xác thực',
+              message:
+                'Token xác thực đã hết hạn, vui lòng yêu cầu gửi lại email xác thực',
               success: false,
             },
           },
@@ -1103,12 +1228,17 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.verifyEmail(dto, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_VERIFY_EMAIL_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_VERIFY_EMAIL_SUCCESS,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Gửi lại email xác thực',
-    description: 'Gửi lại email xác thực đến địa chỉ email của tài khoản. Giới hạn 3 lần/phút để tránh spam.',
+    description:
+      'Gửi lại email xác thực đến địa chỉ email của tài khoản. Giới hạn 3 lần/phút để tránh spam.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1169,12 +1299,17 @@ export class AuthController {
       user.userId,
       lang || 'vi',
     );
-    return new OkResponse(ResponseCode.AUTH_RESEND_VERIFICATION_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_RESEND_VERIFICATION_SUCCESS,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Xác thực quyền truy cập',
-    description: 'Xác thực quyền truy cập trước khi thực hiện các thao tác nhạy cảm như bật/tắt 2FA, xóa tài khoản, v.v. Nếu đã bật 2FA thì dùng mã 2FA hoặc backup code, nếu chưa bật thì dùng mật khẩu. Token trả về có thời hạn 5 phút.',
+    description:
+      'Xác thực quyền truy cập trước khi thực hiện các thao tác nhạy cảm như bật/tắt 2FA, xóa tài khoản, v.v. Nếu đã bật 2FA thì dùng mã 2FA hoặc backup code, nếu chưa bật thì dùng mật khẩu. Token trả về có thời hạn 5 phút.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1184,7 +1319,8 @@ export class AuthController {
   })
   @ApiBody({
     type: VerifyAccessDto,
-    description: 'Thông tin xác thực (chỉ cần 1 trong 3: password, two_factor_code, hoặc backup_code)',
+    description:
+      'Thông tin xác thực (chỉ cần 1 trong 3: password, two_factor_code, hoặc backup_code)',
     examples: {
       with_password: {
         summary: 'Xác thực bằng mật khẩu',
@@ -1223,7 +1359,8 @@ export class AuthController {
           properties: {
             access_verification_token: {
               type: 'string',
-              description: 'Token xác thực quyền truy cập, dùng cho các thao tác nhạy cảm, có hiệu lực 5 phút',
+              description:
+                'Token xác thực quyền truy cập, dùng cho các thao tác nhạy cảm, có hiệu lực 5 phút',
               example: 'avt_abc123def456...',
             },
           },
@@ -1291,7 +1428,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Yêu cầu đặt lại mật khẩu',
-    description: 'Gửi email chứa link đặt lại mật khẩu đến địa chỉ email đã đăng ký. Link có thời hạn 1 giờ. Để bảo mật, API luôn trả về thành công bất kể email có tồn tại hay không.',
+    description:
+      'Gửi email chứa link đặt lại mật khẩu đến địa chỉ email đã đăng ký. Link có thời hạn 1 giờ. Để bảo mật, API luôn trả về thành công bất kể email có tồn tại hay không.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1322,12 +1460,17 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Email hướng dẫn đã được gửi (nếu email tồn tại trong hệ thống)',
+    description:
+      'Email hướng dẫn đã được gửi (nếu email tồn tại trong hệ thống)',
     schema: {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'auth.forgot_password.sent' },
-        message: { type: 'string', example: 'Nếu email tồn tại, bạn sẽ nhận được email hướng dẫn đặt lại mật khẩu' },
+        message: {
+          type: 'string',
+          example:
+            'Nếu email tồn tại, bạn sẽ nhận được email hướng dẫn đặt lại mật khẩu',
+        },
         success: { type: 'boolean', example: true },
         data: { type: 'null', example: null },
       },
@@ -1343,12 +1486,17 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.forgotPassword(dto, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_FORGOT_PASSWORD_SENT, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_FORGOT_PASSWORD_SENT,
+      null,
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Kiểm tra token đặt lại mật khẩu',
-    description: 'Kiểm tra xem token đặt lại mật khẩu có hợp lệ và còn thời hạn hay không. Dùng để validate trước khi hiển thị form đặt mật khẩu mới.',
+    description:
+      'Kiểm tra xem token đặt lại mật khẩu có hợp lệ và còn thời hạn hay không. Dùng để validate trước khi hiển thị form đặt mật khẩu mới.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1413,12 +1561,17 @@ export class AuthController {
       dto,
       lang || 'vi',
     );
-    return new OkResponse(ResponseCode.AUTH_VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS, { valid: result.valid }, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS,
+      { valid: result.valid },
+      result.message,
+    );
   }
 
   @ApiOperation({
     summary: 'Đặt lại mật khẩu mới',
-    description: 'Đặt mật khẩu mới bằng token từ email quên mật khẩu. Mật khẩu mới phải đáp ứng yêu cầu: ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt. Có thể chọn đăng xuất khỏi tất cả thiết bị sau khi đổi mật khẩu.',
+    description:
+      'Đặt mật khẩu mới bằng token từ email quên mật khẩu. Mật khẩu mới phải đáp ứng yêu cầu: ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt. Có thể chọn đăng xuất khỏi tất cả thiết bị sau khi đổi mật khẩu.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -1508,6 +1661,10 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.resetPassword(dto, lang || 'vi');
-    return new OkResponse(ResponseCode.AUTH_RESET_PASSWORD_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.AUTH_RESET_PASSWORD_SUCCESS,
+      null,
+      result.message,
+    );
   }
 }

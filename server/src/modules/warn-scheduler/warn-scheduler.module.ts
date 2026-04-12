@@ -17,15 +17,15 @@ import { WebsocketModule } from '../websocket/websocket.module';
  * - Áp dụng ban tự động khi user đạt ngưỡng số lần warn
  */
 @Module({
-    imports: [
-        ScheduleModule.forRoot(),
-        PrismaModule,
-        RedisModule,
-        forwardRef(() => BanSchedulerModule),
-        forwardRef(() => WarnPenaltyModule),
-        WebsocketModule,
-    ],
-    providers: [WarnSchedulerService],
-    exports: [WarnSchedulerService],
+  imports: [
+    ScheduleModule.forRoot(),
+    PrismaModule,
+    RedisModule,
+    forwardRef(() => BanSchedulerModule),
+    forwardRef(() => WarnPenaltyModule),
+    WebsocketModule,
+  ],
+  providers: [WarnSchedulerService],
+  exports: [WarnSchedulerService],
 })
-export class WarnSchedulerModule { }
+export class WarnSchedulerModule {}

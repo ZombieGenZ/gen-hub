@@ -8,15 +8,14 @@ import { OrgNotificationModule } from '../org-notification/org-notification.modu
 import { RentalSchedulerService } from './rental-scheduler.service';
 
 @Module({
-    imports: [
-        SharedModule,
-        SystemLogModule,
-        RentalContractSharedModule,
-        OrgNotificationModule,
-        ScheduleModule.forRoot(),
-    ],
-    providers: [RentalSchedulerService],
-    exports: [RentalSchedulerService],
+  imports: [
+    SharedModule,
+    SystemLogModule,
+    RentalContractSharedModule,
+    OrgNotificationModule,
+    ScheduleModule.forRoot(),
+  ],
+  providers: [RentalSchedulerService],
+  exports: [RentalSchedulerService],
 })
-export class RentalSchedulerModule { }
-
+export class RentalSchedulerModule {}

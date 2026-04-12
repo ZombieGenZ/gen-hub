@@ -49,9 +49,11 @@ export class WarehouseService {
     this.WAREHOUSE_LIST_CACHE_TTL =
       this.configService.get<number>('REDIS_WAREHOUSE_LIST_CACHE_TTL') || 60;
     this.WAREHOUSE_KEY_PREFIX =
-      this.configService.get<string>('REDIS_WAREHOUSE_KEY_PREFIX') || 'warehouse:detail';
+      this.configService.get<string>('REDIS_WAREHOUSE_KEY_PREFIX') ||
+      'warehouse:detail';
     this.WAREHOUSE_LIST_KEY_PREFIX =
-      this.configService.get<string>('REDIS_WAREHOUSE_LIST_KEY_PREFIX') || 'warehouse:list';
+      this.configService.get<string>('REDIS_WAREHOUSE_LIST_KEY_PREFIX') ||
+      'warehouse:list';
   }
 
   /**
@@ -300,7 +302,13 @@ export class WarehouseService {
     );
 
     // Emit socket event
-    this.websocketGateway.emitWarehouseUpdated(organizationId, id, warehouse.name || '', updatedFields, userId);
+    this.websocketGateway.emitWarehouseUpdated(
+      organizationId,
+      id,
+      warehouse.name || '',
+      updatedFields,
+      userId,
+    );
 
     return warehouse;
   }
@@ -390,7 +398,10 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
@@ -421,14 +432,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra rack thuộc warehouse
-    const isRackInWarehouse = await this.repository.isRackInWarehouse(rackId, warehouseId);
+    const isRackInWarehouse = await this.repository.isRackInWarehouse(
+      rackId,
+      warehouseId,
+    );
     if (!isRackInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.rack_not_found', { lang }),
@@ -460,14 +477,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra shelf thuộc warehouse
-    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(shelfId, warehouseId);
+    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(
+      shelfId,
+      warehouseId,
+    );
     if (!isShelfInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.shelf_not_found', { lang }),
@@ -498,7 +521,10 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
@@ -529,7 +555,10 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
@@ -568,7 +597,10 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
@@ -591,7 +623,11 @@ export class WarehouseService {
   async updateShelf(
     warehouseId: string,
     shelfId: string,
-    dto: { name?: string; description?: string; assigned_product_id?: string | null },
+    dto: {
+      name?: string;
+      description?: string;
+      assigned_product_id?: string | null;
+    },
     userId: string,
     organizationId: string,
     lang: string,
@@ -608,14 +644,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra shelf thuộc warehouse
-    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(shelfId, warehouseId);
+    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(
+      shelfId,
+      warehouseId,
+    );
     if (!isShelfInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.shelf_not_found', { lang }),
@@ -673,14 +715,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra row thuộc warehouse
-    const isRowInWarehouse = await this.repository.isRowInWarehouse(rowId, warehouseId);
+    const isRowInWarehouse = await this.repository.isRowInWarehouse(
+      rowId,
+      warehouseId,
+    );
     if (!isRowInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.row_not_found', { lang }),
@@ -737,14 +785,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra rack thuộc warehouse
-    const isRackInWarehouse = await this.repository.isRackInWarehouse(rackId, warehouseId);
+    const isRackInWarehouse = await this.repository.isRackInWarehouse(
+      rackId,
+      warehouseId,
+    );
     if (!isRackInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.rack_not_found', { lang }),
@@ -801,14 +855,20 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );
     }
 
     // Kiểm tra block thuộc warehouse
-    const isBlockInWarehouse = await this.repository.isBlockInWarehouse(blockId, warehouseId);
+    const isBlockInWarehouse = await this.repository.isBlockInWarehouse(
+      blockId,
+      warehouseId,
+    );
     if (!isBlockInWarehouse) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.block_not_found', { lang }),
@@ -863,7 +923,10 @@ export class WarehouseService {
 
     // Kiểm tra warehouse tồn tại
     const warehouse = await this.repository.findById(warehouseId);
-    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+    if (
+      !warehouse ||
+      (organizationId && warehouse.organization_id !== organizationId)
+    ) {
       throw new NotFoundException(
         this.i18n.t('warehouse.errors.not_found', { lang }),
       );

@@ -140,9 +140,24 @@ describe('OrganizationService', () => {
         { provide: OrganizationRepository, useValue: repository },
         { provide: RedisService, useValue: redisService },
         { provide: WebsocketGateway, useValue: websocketGateway },
-        { provide: SystemLogService, useValue: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } },
-        { provide: OrganizationAuditLogService, useValue: { logCreate: jest.fn(), logUpdate: jest.fn(), logDelete: jest.fn() } },
-        { provide: EmailService, useValue: { sendOrganizationInviteEmail: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: SystemLogService,
+          useValue: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        },
+        {
+          provide: OrganizationAuditLogService,
+          useValue: {
+            logCreate: jest.fn(),
+            logUpdate: jest.fn(),
+            logDelete: jest.fn(),
+          },
+        },
+        {
+          provide: EmailService,
+          useValue: {
+            sendOrganizationInviteEmail: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         { provide: I18nService, useFactory: createMockI18n },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: CipherService, useFactory: createMockCipher },
@@ -197,7 +212,9 @@ describe('OrganizationService', () => {
       redisService.getOrganizationCache.mockResolvedValue(null);
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findById(ORG_ID, 'vi')).rejects.toThrow(NotFoundException);
+      await expect(service.findById(ORG_ID, 'vi')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException if user is not owner/member and no admin permission', async () => {
@@ -216,7 +233,12 @@ describe('OrganizationService', () => {
       redisService.getOrganizationCache.mockResolvedValue(null);
       repository.findById.mockResolvedValue(org);
 
-      const result = await service.findById(ORG_ID, 'vi', 'stranger-user', true);
+      const result = await service.findById(
+        ORG_ID,
+        'vi',
+        'stranger-user',
+        true,
+      );
       expect(result).toBeDefined();
     });
   });
@@ -244,7 +266,12 @@ describe('OrganizationService', () => {
       repository.findById.mockResolvedValue(mockOrg());
 
       await expect(
-        service.update(ORG_ID, { representative_phone: '0909999999' } as any, 'another-user', 'vi'),
+        service.update(
+          ORG_ID,
+          { representative_phone: '0909999999' } as any,
+          'another-user',
+          'vi',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -252,7 +279,13 @@ describe('OrganizationService', () => {
       repository.findById.mockResolvedValue(mockOrg());
 
       await expect(
-        service.update(ORG_ID, { is_active: false } as any, USER_ID, 'vi', false),
+        service.update(
+          ORG_ID,
+          { is_active: false } as any,
+          USER_ID,
+          'vi',
+          false,
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -289,9 +322,14 @@ describe('OrganizationService', () => {
 
       await service.delete(ORG_ID, USER_ID, 'vi');
 
-      expect(repository.softDeleteAllMembersByOrgId).toHaveBeenCalledWith(ORG_ID, USER_ID);
+      expect(repository.softDeleteAllMembersByOrgId).toHaveBeenCalledWith(
+        ORG_ID,
+        USER_ID,
+      );
       expect(repository.softDeleteAllRolesByOrgId).toHaveBeenCalledWith(ORG_ID);
-      expect(repository.softDeleteAllApiKeysByOrgId).toHaveBeenCalledWith(ORG_ID);
+      expect(repository.softDeleteAllApiKeysByOrgId).toHaveBeenCalledWith(
+        ORG_ID,
+      );
       expect(repository.softDelete).toHaveBeenCalledWith(ORG_ID, USER_ID);
       expect(redisService.invalidateAllOrganizationCache).toHaveBeenCalled();
     });
@@ -330,7 +368,10 @@ describe('OrganizationService', () => {
 
     it('should throw ForbiddenException when transferring to self', async () => {
       redisService.getOrganizationCache.mockResolvedValue(mockOrg());
-      repository.findUserByEmail.mockResolvedValue({ id: USER_ID, email: 'owner@test.com' });
+      repository.findUserByEmail.mockResolvedValue({
+        id: USER_ID,
+        email: 'owner@test.com',
+      });
 
       await expect(
         service.transferOwnership(
@@ -344,7 +385,10 @@ describe('OrganizationService', () => {
 
     it('should throw ForbiddenException when new owner is not a member', async () => {
       redisService.getOrganizationCache.mockResolvedValue(mockOrg());
-      repository.findUserByEmail.mockResolvedValue({ id: 'new-owner-1', email: 'new@test.com' });
+      repository.findUserByEmail.mockResolvedValue({
+        id: 'new-owner-1',
+        email: 'new@test.com',
+      });
       repository.findMemberByUserAndOrg.mockResolvedValue(null);
 
       await expect(
@@ -359,8 +403,13 @@ describe('OrganizationService', () => {
 
     it('should successfully transfer ownership', async () => {
       redisService.getOrganizationCache.mockResolvedValue(mockOrg());
-      repository.findUserByEmail.mockResolvedValue({ id: 'new-owner-1', email: 'new@test.com' });
-      repository.findMemberByUserAndOrg.mockResolvedValue(mockMember({ user_id: 'new-owner-1', is_accepted: true }));
+      repository.findUserByEmail.mockResolvedValue({
+        id: 'new-owner-1',
+        email: 'new@test.com',
+      });
+      repository.findMemberByUserAndOrg.mockResolvedValue(
+        mockMember({ user_id: 'new-owner-1', is_accepted: true }),
+      );
       repository.update.mockResolvedValue(mockOrg({ owner_id: 'new-owner-1' }));
 
       const result = await service.transferOwnership(
@@ -386,12 +435,22 @@ describe('OrganizationService', () => {
     beforeEach(() => {
       // findById needs to work for inviteMember
       redisService.getOrganizationCache.mockResolvedValue(mockOrg());
-      repository.findUserById.mockResolvedValue({ id: USER_ID, name: 'Owner', email: 'owner@test.com' });
+      repository.findUserById.mockResolvedValue({
+        id: USER_ID,
+        name: 'Owner',
+        email: 'owner@test.com',
+      });
     });
 
     it('should skip users that are already members', async () => {
-      repository.findUserByEmail.mockResolvedValue({ id: 'existing', email: 'existing@test.com', name: 'Existing' });
-      repository.findMemberByUserAndOrg.mockResolvedValue(mockMember({ is_accepted: true }));
+      repository.findUserByEmail.mockResolvedValue({
+        id: 'existing',
+        email: 'existing@test.com',
+        name: 'Existing',
+      });
+      repository.findMemberByUserAndOrg.mockResolvedValue(
+        mockMember({ is_accepted: true }),
+      );
       // Mock checkOrgPermission to pass (owner)
       repository.listRolePermissions.mockResolvedValue([]);
       repository.listMemberPermissions.mockResolvedValue([]);
@@ -422,7 +481,11 @@ describe('OrganizationService', () => {
 
     it('should throw ForbiddenException when non-owner tries to bulk delete', async () => {
       repository.findByIds.mockResolvedValue([
-        mockOrg({ id: 'org-1', owner_id: 'other-user', owner: { id: 'other-user', name: 'Other', email: 'other@test.com' } }),
+        mockOrg({
+          id: 'org-1',
+          owner_id: 'other-user',
+          owner: { id: 'other-user', name: 'Other', email: 'other@test.com' },
+        }),
       ]);
 
       await expect(
@@ -458,7 +521,12 @@ describe('OrganizationService', () => {
 
     it('should not filter by userId when hasListAllPermission', async () => {
       redisService.getOrganizationListCache.mockResolvedValue(null);
-      repository.findMany.mockResolvedValue({ items: [], total: 0, page: 1, limit: 10 });
+      repository.findMany.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+      });
 
       await service.findMany({} as any, USER_ID, true);
 

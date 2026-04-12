@@ -4,4 +4,4 @@ import { CreateFaqDto } from './create-faq.dto';
 /**
  * DTO cập nhật FAQ
  */
-export class UpdateFaqDto extends PartialType(CreateFaqDto) { }
+export class UpdateFaqDto extends PartialType(CreateFaqDto) {}

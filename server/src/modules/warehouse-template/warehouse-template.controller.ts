@@ -78,7 +78,7 @@ export class WarehouseTemplateController {
     private readonly service: WarehouseTemplateService,
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -461,7 +461,10 @@ export class WarehouseTemplateController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('warehouse-template.update', 'warehouse-template.update.all')
+  @RequireAnyPermission(
+    'warehouse-template.update',
+    'warehouse-template.update.all',
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Cập nhật thông tin template kho hàng',
@@ -553,8 +556,17 @@ export class WarehouseTemplateController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IWarehouseTemplateWithRelations>> {
-    const hasUpdateAll = await this.hasPermission(userId, 'warehouse-template.update.all');
-    const result = await this.service.update(id, dto, userId, lang, hasUpdateAll ? undefined : userId);
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'warehouse-template.update.all',
+    );
+    const result = await this.service.update(
+      id,
+      dto,
+      userId,
+      lang,
+      hasUpdateAll ? undefined : userId,
+    );
     return new UpdatedResponse(
       ResponseCode.WAREHOUSE_TEMPLATE_UPDATE_SUCCESS,
       result,
@@ -563,7 +575,10 @@ export class WarehouseTemplateController {
 
   @Delete('delete/many')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('warehouse-template.delete', 'warehouse-template.delete.all')
+  @RequireAnyPermission(
+    'warehouse-template.delete',
+    'warehouse-template.delete.all',
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Xóa nhiều template kho hàng',
@@ -619,7 +634,10 @@ export class WarehouseTemplateController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('warehouse-template.delete', 'warehouse-template.delete.all')
+  @RequireAnyPermission(
+    'warehouse-template.delete',
+    'warehouse-template.delete.all',
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Xóa template kho hàng',
@@ -802,7 +820,7 @@ export class WarehouseTemplateController {
               req.i18n?.t('warehouse-template.errors.file_type_invalid', {
                 args: { allowedTypes: ALLOWED_MIME_TYPES.join(', ') },
               }) ||
-              `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
+                `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
             ),
             false,
           );

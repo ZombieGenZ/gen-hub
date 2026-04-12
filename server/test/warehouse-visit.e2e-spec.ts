@@ -27,10 +27,10 @@ describe('WarehouseVisitController (e2e)', () => {
       update: jest.fn(),
     },
     user: {
-      findFirst: jest.fn().mockResolvedValue({ 
+      findFirst: jest.fn().mockResolvedValue({
         id: 'test-user-id',
         system_permissions: [],
-        system_roles: []
+        system_roles: [],
       }),
     },
     contactConversation: {
@@ -185,7 +185,7 @@ describe('WarehouseVisitController (e2e)', () => {
   describe('Push message flow when booking is CONFIRMED', () => {
     it('should push Live Chat message (with phone fallback) when approved', async () => {
       const existingId = randomUUID();
-      
+
       const oldBooking = {
         id: existingId,
         status: 'PENDING',
@@ -199,8 +199,10 @@ describe('WarehouseVisitController (e2e)', () => {
         created_by: 'test-user-id',
       };
 
-      mockPrismaService.warehouseVisitBooking.findUnique.mockResolvedValue(oldBooking);
-      
+      mockPrismaService.warehouseVisitBooking.findUnique.mockResolvedValue(
+        oldBooking,
+      );
+
       mockPrismaService.warehouseVisitBooking.update.mockResolvedValue({
         ...oldBooking,
         status: 'CONFIRMED',
@@ -240,7 +242,9 @@ describe('WarehouseVisitController (e2e)', () => {
         }),
       );
 
-      expect(mockWebsocketGateway.emitContactMessageCreated).toHaveBeenCalledWith(
+      expect(
+        mockWebsocketGateway.emitContactMessageCreated,
+      ).toHaveBeenCalledWith(
         'conv-id-123',
         expect.any(Object),
         'session-id-456',

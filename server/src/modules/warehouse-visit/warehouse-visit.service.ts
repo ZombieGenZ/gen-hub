@@ -595,7 +595,11 @@ export class WarehouseVisitService {
 
     const content = `Ting ting! Lịch hẹn thăm kho của bạn đã được xác nhận. Hẹn gặp bạn vào lúc ${this.normalizeTime(booking.visit_time_start)} ngày ${visitDateText}.`;
 
-    await this.pushLiveChatMessage(booking.visitor_email, booking.visitor_phone, content);
+    await this.pushLiveChatMessage(
+      booking.visitor_email,
+      booking.visitor_phone,
+      content,
+    );
   }
 
   private async sendMorningDirectionMessage(
@@ -621,7 +625,11 @@ export class WarehouseVisitService {
     const mapUrl = this.buildGoogleMapsUrl(booking);
     const content = `Chào buổi sáng! Hôm nay là lịch tham quan kho của bạn lúc ${this.normalizeTime(booking.visit_time_start)}. Đây là link Google Maps chỉ đường đến kho: ${mapUrl}`;
 
-    await this.pushLiveChatMessage(booking.visitor_email, booking.visitor_phone, content);
+    await this.pushLiveChatMessage(
+      booking.visitor_email,
+      booking.visitor_phone,
+      content,
+    );
   }
 
   private buildGoogleMapsUrl(

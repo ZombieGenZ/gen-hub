@@ -10,9 +10,15 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [PrismaModule, RedisModule, WebsocketModule, SystemLogModule, ConfigModule],
-    controllers: [CouponController],
-    providers: [CouponService, CouponRepository, CouponCacheKeys],
-    exports: [CouponService, CouponRepository],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    WebsocketModule,
+    SystemLogModule,
+    ConfigModule,
+  ],
+  controllers: [CouponController],
+  providers: [CouponService, CouponRepository, CouponCacheKeys],
+  exports: [CouponService, CouponRepository],
 })
-export class CouponModule { }
+export class CouponModule {}

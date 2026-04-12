@@ -29,24 +29,70 @@ import {
   RequirePermission,
 } from '../../common/decorators';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { CreatedResponse, DeletedResponse, GetResponse, UpdatedResponse } from '../../common/responses';
-import { buildErrorSchema, buildSuccessSchema } from '../../common/swagger/master-data-swagger.helper';
+import {
+  CreatedResponse,
+  DeletedResponse,
+  GetResponse,
+  UpdatedResponse,
+} from '../../common/responses';
+import {
+  buildErrorSchema,
+  buildSuccessSchema,
+} from '../../common/swagger/master-data-swagger.helper';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PhoneCodeService } from './phone-code.service';
-import { CreatePhoneCodeDto, QueryPhoneCodeDto, UpdatePhoneCodeDto } from './dto';
+import {
+  CreatePhoneCodeDto,
+  QueryPhoneCodeDto,
+  UpdatePhoneCodeDto,
+} from './dto';
 import { IPhoneCode, IPaginatedResponse } from './types';
 
 const phoneCodeItemSchema = {
   type: 'object',
   properties: {
-    id: { type: 'string', format: 'uuid', description: 'ID đầu số điện thoại', example: '550e8400-e29b-41d4-a716-446655440301' },
+    id: {
+      type: 'string',
+      format: 'uuid',
+      description: 'ID đầu số điện thoại',
+      example: '550e8400-e29b-41d4-a716-446655440301',
+    },
     name: { type: 'string', description: 'Tên quốc gia', example: 'Việt Nam' },
-    description: { type: 'string', nullable: true, description: 'Mô tả bổ sung', example: 'Quốc gia Đông Nam Á' },
-    code: { type: 'string', description: 'Đầu số điện thoại quốc gia', example: '+84' },
-    flag_url: { type: 'string', nullable: true, description: 'Đường dẫn ảnh cờ quốc gia', example: 'https://cdn.genhub.dev/flags/vn.svg' },
-    is_active: { type: 'boolean', description: 'Trạng thái hoạt động', example: true },
-    created_at: { type: 'string', format: 'date-time', description: 'Thời điểm tạo', example: '2026-03-13T09:00:00.000Z' },
-    updated_at: { type: 'string', format: 'date-time', nullable: true, description: 'Thời điểm cập nhật gần nhất', example: '2026-03-13T10:10:00.000Z' },
+    description: {
+      type: 'string',
+      nullable: true,
+      description: 'Mô tả bổ sung',
+      example: 'Quốc gia Đông Nam Á',
+    },
+    code: {
+      type: 'string',
+      description: 'Đầu số điện thoại quốc gia',
+      example: '+84',
+    },
+    flag_url: {
+      type: 'string',
+      nullable: true,
+      description: 'Đường dẫn ảnh cờ quốc gia',
+      example: 'https://cdn.genhub.dev/flags/vn.svg',
+    },
+    is_active: {
+      type: 'boolean',
+      description: 'Trạng thái hoạt động',
+      example: true,
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      description: 'Thời điểm tạo',
+      example: '2026-03-13T09:00:00.000Z',
+    },
+    updated_at: {
+      type: 'string',
+      format: 'date-time',
+      nullable: true,
+      description: 'Thời điểm cập nhật gần nhất',
+      example: '2026-03-13T10:10:00.000Z',
+    },
   },
 };
 
@@ -88,7 +134,10 @@ export class PhoneCodeController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     if (!userId) return false;
 
     const user = await this.prisma.user.findFirst({
@@ -116,10 +165,14 @@ export class PhoneCodeController {
 
     if (!user) return false;
 
-    const hasDirect = user.system_permissions.some((p) => p.permission.key === permissionKey);
+    const hasDirect = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
     if (hasDirect) return true;
 
-    return user.system_roles.some((ur) => ur.role.permissions.some((rp) => rp.permission.key === permissionKey));
+    return user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
   }
 
   @Post()
@@ -192,10 +245,34 @@ export class PhoneCodeController {
     description:
       'Lấy danh sách đầu số điện thoại có phân trang, hỗ trợ tìm kiếm theo tên quốc gia, mô tả hoặc đầu số, đồng thời lọc theo trạng thái hoạt động. Người có quyền `phone-code.list.all` xem được toàn bộ dữ liệu, ngược lại chỉ xem dữ liệu do mình tạo.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên quốc gia, mô tả hoặc đầu số', example: '+84' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái hoạt động', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên quốc gia, mô tả hoặc đầu số',
+    example: '+84',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Lọc theo trạng thái hoạt động',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách đầu số điện thoại thành công',
@@ -205,9 +282,21 @@ export class PhoneCodeController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: phoneCodeItemSchema, description: 'Danh sách đầu số điện thoại' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: phoneCodeItemSchema,
+            description: 'Danh sách đầu số điện thoại',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -234,10 +323,34 @@ export class PhoneCodeController {
     description:
       'API public trả về danh sách đầu số đang bật để client sử dụng trong dropdown chọn quốc gia hoặc mã vùng điện thoại.',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi tối đa trên một trang', example: 10 })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách', example: 0 })
-  @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo tên quốc gia, mô tả hoặc đầu số', example: 'Việt Nam' })
-  @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Tham số lọc bổ sung, thông thường luôn là true với API này', example: true })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa trên một trang',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu của danh sách',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm theo tên quốc gia, mô tả hoặc đầu số',
+    example: 'Việt Nam',
+  })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    type: Boolean,
+    description: 'Tham số lọc bổ sung, thông thường luôn là true với API này',
+    example: true,
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách đầu số đang hoạt động thành công',
@@ -247,9 +360,21 @@ export class PhoneCodeController {
       dataSchema: {
         type: 'object',
         properties: {
-          items: { type: 'array', items: phoneCodeItemSchema, description: 'Danh sách đầu số điện thoại đang hoạt động' },
-          total: { type: 'number', description: 'Tổng số bản ghi phù hợp', example: 2 },
-          limit: { type: 'number', description: 'Giới hạn số bản ghi mỗi trang', example: 10 },
+          items: {
+            type: 'array',
+            items: phoneCodeItemSchema,
+            description: 'Danh sách đầu số điện thoại đang hoạt động',
+          },
+          total: {
+            type: 'number',
+            description: 'Tổng số bản ghi phù hợp',
+            example: 2,
+          },
+          limit: {
+            type: 'number',
+            description: 'Giới hạn số bản ghi mỗi trang',
+            example: 10,
+          },
           offset: { type: 'number', description: 'Vị trí bắt đầu', example: 0 },
         },
       },
@@ -257,7 +382,9 @@ export class PhoneCodeController {
     }),
   })
   @ApiValidationErrorResponse()
-  async findAllActive(@Query() query: QueryPhoneCodeDto): Promise<GetResponse<IPaginatedResponse<IPhoneCode>>> {
+  async findAllActive(
+    @Query() query: QueryPhoneCodeDto,
+  ): Promise<GetResponse<IPaginatedResponse<IPhoneCode>>> {
     const result = await this.service.findAllActive(query);
     return new GetResponse('phone-code.list.success', result);
   }
@@ -268,7 +395,12 @@ export class PhoneCodeController {
     description:
       'Lấy thông tin chi tiết một đầu số điện thoại theo ID. Người có quyền `phone-code.read.all` xem được mọi bản ghi, ngược lại chỉ xem được dữ liệu do mình tạo.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID đầu số điện thoại cần lấy chi tiết', example: '550e8400-e29b-41d4-a716-446655440301' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID đầu số điện thoại cần lấy chi tiết',
+    example: '550e8400-e29b-41d4-a716-446655440301',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lấy chi tiết đầu số điện thoại thành công',
@@ -315,7 +447,12 @@ export class PhoneCodeController {
     description:
       'Cập nhật thông tin đầu số điện thoại quốc gia. Hệ thống kiểm tra trùng cả tên quốc gia và đầu số để tránh dữ liệu lặp.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID đầu số điện thoại cần cập nhật', example: '550e8400-e29b-41d4-a716-446655440301' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID đầu số điện thoại cần cập nhật',
+    example: '550e8400-e29b-41d4-a716-446655440301',
+  })
   @ApiBody({
     type: UpdatePhoneCodeDto,
     description: 'Các trường cần cập nhật cho đầu số điện thoại',
@@ -386,8 +523,17 @@ export class PhoneCodeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IPhoneCode>> {
-    const hasUpdateAll = await this.hasPermission(userId, 'phone-code.update.all');
-    const result = await this.service.update(id, dto, userId, hasUpdateAll, lang);
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'phone-code.update.all',
+    );
+    const result = await this.service.update(
+      id,
+      dto,
+      userId,
+      hasUpdateAll,
+      lang,
+    );
     return new UpdatedResponse('phone-code.update.success', result);
   }
 
@@ -418,7 +564,11 @@ export class PhoneCodeController {
     schema: buildSuccessSchema({
       code: 'phone-code.delete.success',
       message: 'Xóa nhiều đầu số điện thoại thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -440,7 +590,10 @@ export class PhoneCodeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'phone-code.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'phone-code.delete.all',
+    );
     await this.service.deleteMany(dto.ids, userId, hasDeleteAll, lang);
     return new DeletedResponse('phone-code.delete.success', null);
   }
@@ -448,17 +601,25 @@ export class PhoneCodeController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Xóa đầu số điện thoại',
-    description:
-      'Soft delete một đầu số điện thoại theo ID.',
+    description: 'Soft delete một đầu số điện thoại theo ID.',
   })
-  @ApiParam({ name: 'id', required: true, description: 'ID đầu số điện thoại cần xóa', example: '550e8400-e29b-41d4-a716-446655440302' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID đầu số điện thoại cần xóa',
+    example: '550e8400-e29b-41d4-a716-446655440302',
+  })
   @ApiResponse({
     status: 200,
     description: 'Xóa đầu số điện thoại thành công',
     schema: buildSuccessSchema({
       code: 'phone-code.delete.success',
       message: 'Xóa đầu số điện thoại thành công',
-      dataSchema: { type: 'null', nullable: true, description: 'API hiện không trả thêm dữ liệu sau khi xóa' },
+      dataSchema: {
+        type: 'null',
+        nullable: true,
+        description: 'API hiện không trả thêm dữ liệu sau khi xóa',
+      },
       dataExample: null,
     }),
   })
@@ -487,7 +648,10 @@ export class PhoneCodeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    const hasDeleteAll = await this.hasPermission(userId, 'phone-code.delete.all');
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'phone-code.delete.all',
+    );
     await this.service.delete(id, userId, hasDeleteAll, lang);
     return new DeletedResponse('phone-code.delete.success', null);
   }

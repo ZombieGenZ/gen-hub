@@ -7,8 +7,8 @@ import { InsuranceRepository } from './insurance.repository';
  * Module cho Insurance - Bảo hiểm
  */
 @Module({
-    controllers: [InsuranceController],
-    providers: [InsuranceService, InsuranceRepository],
-    exports: [InsuranceService, InsuranceRepository],
+  controllers: [InsuranceController],
+  providers: [InsuranceService, InsuranceRepository],
+  exports: [InsuranceService, InsuranceRepository],
 })
-export class InsuranceModule { }
+export class InsuranceModule {}

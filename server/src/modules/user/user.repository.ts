@@ -9,7 +9,7 @@ import { User, Prisma } from '@prisma/client';
  */
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Tìm user theo ID
@@ -32,7 +32,6 @@ export class UserRepository {
       where: { email },
     });
   }
-
 
   /**
    * Tạo user mới
@@ -66,7 +65,9 @@ export class UserRepository {
         language: data.language || 'vi',
         email_verify_token: data.email_verify_token,
         email_verify_expired: data.email_verify_expired,
-        email_confirmed: data.email_confirmed ?? false,        is_verified: data.email_confirmed ?? false,        system_roles: {
+        email_confirmed: data.email_confirmed ?? false,
+        is_verified: data.email_confirmed ?? false,
+        system_roles: {
           create: defaultRoles.map((role) => ({
             role_id: role.id,
           })),
@@ -466,12 +467,18 @@ export class UserRepository {
       // User roles
       this.prisma.userRole.findMany({
         where: { user_id: userId, is_deleted: false, is_active: true },
-        include: { role: { select: { id: true, name: true, description: true } } },
+        include: {
+          role: { select: { id: true, name: true, description: true } },
+        },
       }),
       // User permissions
       this.prisma.userPermission.findMany({
         where: { user_id: userId, is_deleted: false, is_active: true },
-        include: { permission: { select: { id: true, name: true, key: true, description: true } } },
+        include: {
+          permission: {
+            select: { id: true, name: true, key: true, description: true },
+          },
+        },
       }),
       // Owned organizations
       this.prisma.organization.findMany({
@@ -488,7 +495,13 @@ export class UserRepository {
         where: { user_id: userId, is_deleted: false },
         orderBy: { created_at: 'desc' },
         take: 100,
-        select: { id: true, title: true, content: true, is_read: true, created_at: true },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          is_read: true,
+          created_at: true,
+        },
       }),
       // Warnings
       this.prisma.userWarning.findMany({
@@ -498,7 +511,14 @@ export class UserRepository {
       // Sessions (refresh tokens)
       this.prisma.refreshToken.findMany({
         where: { user_id: userId, is_deleted: false },
-        select: { id: true, ip: true, location: true, device: true, os: true, created_at: true },
+        select: {
+          id: true,
+          ip: true,
+          location: true,
+          device: true,
+          os: true,
+          created_at: true,
+        },
       }),
     ]);
 

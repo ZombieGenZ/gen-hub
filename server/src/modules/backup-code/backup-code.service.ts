@@ -11,7 +11,7 @@ import * as argon2 from '@node-rs/argon2';
  */
 @Injectable()
 export class BackupCodeRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Tạo backup codes cho user
@@ -122,7 +122,9 @@ export class BackupCodeService {
   }
   /** Argon2id configuration */
   private get ARGON2_MEMORY_COST(): number {
-    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+    return (
+      Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536
+    );
   }
   private get ARGON2_TIME_COST(): number {
     return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
@@ -134,7 +136,7 @@ export class BackupCodeService {
   constructor(
     private readonly backupCodeRepository: BackupCodeRepository,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Tạo mảng backup codes ngẫu nhiên

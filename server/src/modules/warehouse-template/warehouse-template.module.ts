@@ -8,9 +8,9 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 
 @Module({
-    imports: [SharedModule, RedisModule, WebsocketModule, SystemLogModule],
-    controllers: [WarehouseTemplateController],
-    providers: [WarehouseTemplateService, WarehouseTemplateRepository],
-    exports: [WarehouseTemplateService, WarehouseTemplateRepository],
+  imports: [SharedModule, RedisModule, WebsocketModule, SystemLogModule],
+  controllers: [WarehouseTemplateController],
+  providers: [WarehouseTemplateService, WarehouseTemplateRepository],
+  exports: [WarehouseTemplateService, WarehouseTemplateRepository],
 })
-export class WarehouseTemplateModule { }
+export class WarehouseTemplateModule {}

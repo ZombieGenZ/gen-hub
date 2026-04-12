@@ -4,175 +4,182 @@ import { amenityListSelect, amenityDetailSelect } from './selects';
 
 @Injectable()
 export class AmenityRepository {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    async create(data: {
-        name: string;
-        description?: string;
-        icon?: string;
-        is_active?: boolean;
-        created_by: string;
-    }) {
-        return this.prisma.amenity.create({
-            data: {
-                name: data.name,
-                description: data.description,
-                icon: data.icon,
-                is_active: data.is_active ?? true,
-                created_by: data.created_by,
-            },
-            select: amenityDetailSelect,
-        });
+  async create(data: {
+    name: string;
+    description?: string;
+    icon?: string;
+    is_active?: boolean;
+    created_by: string;
+  }) {
+    return this.prisma.amenity.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        icon: data.icon,
+        is_active: data.is_active ?? true,
+        created_by: data.created_by,
+      },
+      select: amenityDetailSelect,
+    });
+  }
+
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: any;
+    orderBy?: any;
+  }) {
+    const { skip, take, where, orderBy } = params;
+    return this.prisma.amenity.findMany({
+      skip,
+      take,
+      where,
+      orderBy,
+      select: amenityListSelect,
+    });
+  }
+
+  async count(where?: any) {
+    return this.prisma.amenity.count({ where });
+  }
+
+  async findById(id: string, userId?: string, hasReadAllPermission?: boolean) {
+    const where: any = { id, is_deleted: false };
+
+    // Nếu không có quyền read.all, chỉ lấy item của chính user
+    if (!hasReadAllPermission && userId) {
+      where.created_by = userId;
     }
 
-    async findAll(params: {
-        skip?: number;
-        take?: number;
-        where?: any;
-        orderBy?: any;
-    }) {
-        const { skip, take, where, orderBy } = params;
-        return this.prisma.amenity.findMany({
-            skip,
-            take,
-            where,
-            orderBy,
-            select: amenityListSelect,
-        });
+    return this.prisma.amenity.findFirst({
+      where,
+      select: amenityDetailSelect,
+    });
+  }
+
+  async findAllActive(params?: { skip?: number; take?: number }) {
+    const { skip, take } = params || {};
+    const where: any = { is_active: true, is_deleted: false };
+
+    return this.prisma.amenity.findMany({
+      skip,
+      take,
+      where,
+      orderBy: { name: 'asc' },
+      select: amenityListSelect,
+    });
+  }
+
+  async countActive() {
+    return this.prisma.amenity.count({
+      where: { is_active: true, is_deleted: false },
+    });
+  }
+
+  async findByName(name: string, excludeId?: string) {
+    return this.prisma.amenity.findFirst({
+      where: {
+        name,
+        is_deleted: false,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+      select: amenityDetailSelect,
+    });
+  }
+
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      icon?: string;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
+    return this.prisma.amenity.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        icon: data.icon,
+        is_active: data.is_active,
+        updated_by: data.updated_by,
+      },
+      select: amenityDetailSelect,
+    });
+  }
+
+  // Cập nhật is_active của tất cả mapping khi amenity thay đổi is_active
+  async updateMappingStatus(amenityId: string, isActive: boolean) {
+    return this.prisma.amenityOnWarehouseTemplate.updateMany({
+      where: { amenity_id: amenityId, is_deleted: false },
+      data: { is_active: isActive },
+    });
+  }
+
+  async softDelete(id: string, deletedBy: string) {
+    return this.prisma.amenity.update({
+      where: { id },
+      data: {
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: deletedBy,
+      },
+    });
+  }
+
+  // Soft delete tất cả mapping khi amenity bị xóa
+  async softDeleteMappings(amenityId: string, deletedBy: string) {
+    return this.prisma.amenityOnWarehouseTemplate.updateMany({
+      where: { amenity_id: amenityId },
+      data: {
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: deletedBy,
+      },
+    });
+  }
+
+  async softDeleteMany(ids: string[], deletedBy: string) {
+    return this.prisma.amenity.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: deletedBy,
+      },
+    });
+  }
+
+  async softDeleteMappingsMany(amenityIds: string[], deletedBy: string) {
+    return this.prisma.amenityOnWarehouseTemplate.updateMany({
+      where: { amenity_id: { in: amenityIds } },
+      data: {
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: deletedBy,
+      },
+    });
+  }
+
+  async findByIds(
+    ids: string[],
+    userId?: string,
+    hasDeleteAllPermission?: boolean,
+  ) {
+    const where: any = { id: { in: ids }, is_deleted: false };
+
+    // Nếu không có quyền delete.all, chỉ lấy items của chính user
+    if (!hasDeleteAllPermission && userId) {
+      where.created_by = userId;
     }
 
-    async count(where?: any) {
-        return this.prisma.amenity.count({ where });
-    }
-
-    async findById(id: string, userId?: string, hasReadAllPermission?: boolean) {
-        const where: any = { id, is_deleted: false };
-
-        // Nếu không có quyền read.all, chỉ lấy item của chính user
-        if (!hasReadAllPermission && userId) {
-            where.created_by = userId;
-        }
-
-        return this.prisma.amenity.findFirst({
-            where,
-            select: amenityDetailSelect,
-        });
-    }
-
-    async findAllActive(params?: { skip?: number; take?: number }) {
-        const { skip, take } = params || {};
-        const where: any = { is_active: true, is_deleted: false };
-
-        return this.prisma.amenity.findMany({
-            skip,
-            take,
-            where,
-            orderBy: { name: 'asc' },
-            select: amenityListSelect,
-        });
-    }
-
-    async countActive() {
-        return this.prisma.amenity.count({
-            where: { is_active: true, is_deleted: false },
-        });
-    }
-
-    async findByName(name: string, excludeId?: string) {
-        return this.prisma.amenity.findFirst({
-            where: {
-                name,
-                is_deleted: false,
-                ...(excludeId && { id: { not: excludeId } }),
-            },
-            select: amenityDetailSelect,
-        });
-    }
-
-    async update(id: string, data: {
-        name?: string;
-        description?: string;
-        icon?: string;
-        is_active?: boolean;
-        updated_by: string;
-    }) {
-        return this.prisma.amenity.update({
-            where: { id },
-            data: {
-                name: data.name,
-                description: data.description,
-                icon: data.icon,
-                is_active: data.is_active,
-                updated_by: data.updated_by,
-            },
-            select: amenityDetailSelect,
-        });
-    }
-
-    // Cập nhật is_active của tất cả mapping khi amenity thay đổi is_active
-    async updateMappingStatus(amenityId: string, isActive: boolean) {
-        return this.prisma.amenityOnWarehouseTemplate.updateMany({
-            where: { amenity_id: amenityId, is_deleted: false },
-            data: { is_active: isActive },
-        });
-    }
-
-    async softDelete(id: string, deletedBy: string) {
-        return this.prisma.amenity.update({
-            where: { id },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-        });
-    }
-
-    // Soft delete tất cả mapping khi amenity bị xóa
-    async softDeleteMappings(amenityId: string, deletedBy: string) {
-        return this.prisma.amenityOnWarehouseTemplate.updateMany({
-            where: { amenity_id: amenityId },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-        });
-    }
-
-    async softDeleteMany(ids: string[], deletedBy: string) {
-        return this.prisma.amenity.updateMany({
-            where: { id: { in: ids } },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-        });
-    }
-
-    async softDeleteMappingsMany(amenityIds: string[], deletedBy: string) {
-        return this.prisma.amenityOnWarehouseTemplate.updateMany({
-            where: { amenity_id: { in: amenityIds } },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-        });
-    }
-
-    async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
-        const where: any = { id: { in: ids }, is_deleted: false };
-
-        // Nếu không có quyền delete.all, chỉ lấy items của chính user
-        if (!hasDeleteAllPermission && userId) {
-            where.created_by = userId;
-        }
-
-        return this.prisma.amenity.findMany({
-            where,
-            select: amenityListSelect,
-        });
-    }
+    return this.prisma.amenity.findMany({
+      where,
+      select: amenityListSelect,
+    });
+  }
 }

@@ -25,7 +25,12 @@ export class RankRepository {
     });
   }
 
-  async findAll(params: { skip?: number; take?: number; where?: any; orderBy?: any }) {
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: any;
+    orderBy?: any;
+  }) {
     return this.prisma.rank.findMany({
       ...params,
       select: rankListSelect,
@@ -74,14 +79,17 @@ export class RankRepository {
     });
   }
 
-  async update(id: string, data: {
-    name?: string;
-    description?: string;
-    is_default?: boolean;
-    min_loyalty_points?: number;
-    is_active?: boolean;
-    updated_by: string;
-  }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      is_default?: boolean;
+      min_loyalty_points?: number;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
     return this.prisma.rank.update({
       where: { id },
       data,
@@ -100,7 +108,11 @@ export class RankRepository {
     });
   }
 
-  async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+  async findByIds(
+    ids: string[],
+    userId?: string,
+    hasDeleteAllPermission?: boolean,
+  ) {
     const where: any = { id: { in: ids }, is_deleted: false };
     if (!hasDeleteAllPermission && userId) {
       where.created_by = userId;

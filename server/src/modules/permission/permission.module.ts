@@ -9,9 +9,9 @@ import { RedisModule } from '../redis/redis.module';
  * Quản lý danh sách permissions trong hệ thống
  */
 @Module({
-    imports: [RedisModule],
-    controllers: [PermissionController],
-    providers: [PermissionService, PermissionRepository],
-    exports: [PermissionService, PermissionRepository],
+  imports: [RedisModule],
+  controllers: [PermissionController],
+  providers: [PermissionService, PermissionRepository],
+  exports: [PermissionService, PermissionRepository],
 })
-export class PermissionModule { }
+export class PermissionModule {}

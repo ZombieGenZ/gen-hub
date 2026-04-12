@@ -63,7 +63,7 @@ export class OrganizationController {
     private readonly service: OrganizationService,
     private readonly prisma: PrismaService,
     private readonly updateRequestService: OrganizationUpdateRequestService,
-  ) { }
+  ) {}
 
   private async hasPermission(
     userId: string,

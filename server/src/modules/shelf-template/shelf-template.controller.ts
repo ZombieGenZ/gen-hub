@@ -52,12 +52,15 @@ export class ShelfTemplateController {
   constructor(
     private readonly service: ShelfTemplateService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
    */
-  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId },
       include: {

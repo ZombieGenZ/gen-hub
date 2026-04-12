@@ -43,8 +43,12 @@ export class RankSeeder extends BaseSeeder {
       const created = await this.prisma.rank.create({
         data: {
           name: process.env.SEED_DEFAULT_RANK_NAME || 'Thanh vien',
-          description: process.env.SEED_DEFAULT_RANK_DESCRIPTION || 'Default rank for new users',
-          min_loyalty_points: Number(process.env.SEED_DEFAULT_RANK_MIN_LOYALTY_POINTS || '0'),
+          description:
+            process.env.SEED_DEFAULT_RANK_DESCRIPTION ||
+            'Default rank for new users',
+          min_loyalty_points: Number(
+            process.env.SEED_DEFAULT_RANK_MIN_LOYALTY_POINTS || '0',
+          ),
           is_default: true,
           is_active: true,
           is_deleted: false,
@@ -55,7 +59,8 @@ export class RankSeeder extends BaseSeeder {
       await this.updateConfigDefault(created.id);
       this.logger.log('Default rank seeded');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to seed default rank: ${errorMessage}`);
     }
   }

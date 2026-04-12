@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,7 +19,12 @@ import { I18nService, I18nLang } from 'nestjs-i18n';
 import { AppConfigService } from './app-config.service';
 import type { IAppConfig } from './app-config.service';
 import { UpdateAppConfigDto } from './app-config.dto';
-import { Public, RequirePermission, ApiAuthResponses, ApiValidationErrorResponse } from '../decorators';
+import {
+  Public,
+  RequirePermission,
+  ApiAuthResponses,
+  ApiValidationErrorResponse,
+} from '../decorators';
 import { JwtAuthGuard, PermissionGuard } from '../guards';
 import { WebsocketGateway } from '../../modules/websocket/websocket.gateway';
 import { SuccessResponse, ResponseCode } from '../responses';
@@ -23,11 +36,12 @@ export class AppConfigController {
     private readonly appConfigService: AppConfigService,
     private readonly websocketGateway: WebsocketGateway,
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   @ApiOperation({
     summary: 'Lấy cấu hình ứng dụng',
-    description: 'API công khai để lấy toàn bộ cấu hình ứng dụng bao gồm thông tin thương hiệu, bảng màu giao diện và cấu hình phân trang. Không yêu cầu xác thực.',
+    description:
+      'API công khai để lấy toàn bộ cấu hình ứng dụng bao gồm thông tin thương hiệu, bảng màu giao diện và cấu hình phân trang. Không yêu cầu xác thực.',
   })
   @ApiHeader({
     name: 'accept-language',
@@ -47,43 +61,143 @@ export class AppConfigController {
         data: {
           type: 'object',
           properties: {
-            brandName: { type: 'string', description: 'Tên thương hiệu ứng dụng', example: 'GEN-HUB' },
-            supportEmail: { type: 'string', description: 'Địa chỉ email hỗ trợ khách hàng', example: 'support@gen-hub.dev' },
-            supportPhone: { type: 'string', description: 'Số điện thoại hỗ trợ khách hàng', example: '0783 504 540' },
+            brandName: {
+              type: 'string',
+              description: 'Tên thương hiệu ứng dụng',
+              example: 'GEN-HUB',
+            },
+            supportEmail: {
+              type: 'string',
+              description: 'Địa chỉ email hỗ trợ khách hàng',
+              example: 'support@gen-hub.dev',
+            },
+            supportPhone: {
+              type: 'string',
+              description: 'Số điện thoại hỗ trợ khách hàng',
+              example: '0783 504 540',
+            },
             colors: {
               type: 'object',
               description: 'Bảng màu giao diện của ứng dụng',
               properties: {
-                primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
-                primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
-                primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
-                gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
-                gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
-                gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
-                gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
-                gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
-                background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
-                cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
-                sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
-                success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
-                warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
-                error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
-                info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
-                border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
-                shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
+                primary: {
+                  type: 'string',
+                  description: 'Màu chính',
+                  example: '#0F766E',
+                },
+                primaryLight: {
+                  type: 'string',
+                  description: 'Màu chính sáng',
+                  example: '#14B8A6',
+                },
+                primaryDark: {
+                  type: 'string',
+                  description: 'Màu chính tối',
+                  example: '#0D5A52',
+                },
+                gray900: {
+                  type: 'string',
+                  description: 'Màu xám 900',
+                  example: '#1E293B',
+                },
+                gray700: {
+                  type: 'string',
+                  description: 'Màu xám 700',
+                  example: '#334155',
+                },
+                gray500: {
+                  type: 'string',
+                  description: 'Màu xám 500',
+                  example: '#64748B',
+                },
+                gray300: {
+                  type: 'string',
+                  description: 'Màu xám 300',
+                  example: '#CBD5E1',
+                },
+                gray100: {
+                  type: 'string',
+                  description: 'Màu xám 100',
+                  example: '#F1F5F9',
+                },
+                background: {
+                  type: 'string',
+                  description: 'Màu nền trang',
+                  example: '#F8FAFC',
+                },
+                cardSurface: {
+                  type: 'string',
+                  description: 'Màu bề mặt card',
+                  example: '#FFFFFF',
+                },
+                sidebarBg: {
+                  type: 'string',
+                  description: 'Màu nền sidebar',
+                  example: '#F1F5F9',
+                },
+                success: {
+                  type: 'string',
+                  description: 'Màu thành công',
+                  example: '#10B981',
+                },
+                warning: {
+                  type: 'string',
+                  description: 'Màu cảnh báo',
+                  example: '#F59E0B',
+                },
+                error: {
+                  type: 'string',
+                  description: 'Màu lỗi',
+                  example: '#EF4444',
+                },
+                info: {
+                  type: 'string',
+                  description: 'Màu thông tin',
+                  example: '#0EA5E9',
+                },
+                border: {
+                  type: 'string',
+                  description: 'Màu viền',
+                  example: '#E2E8F0',
+                },
+                shadow: {
+                  type: 'string',
+                  description: 'Màu bóng đổ',
+                  example: 'rgba(0, 0, 0, 0.04)',
+                },
               },
             },
             pagination: {
               type: 'object',
               description: 'Cấu hình phân trang mặc định',
               properties: {
-                defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
-                defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
-                maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
-                minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
+                defaultLimit: {
+                  type: 'number',
+                  description: 'Số lượng item mặc định mỗi trang',
+                  example: 10,
+                },
+                defaultOffset: {
+                  type: 'number',
+                  description: 'Vị trí bắt đầu mặc định',
+                  example: 0,
+                },
+                maxLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối đa mỗi trang',
+                  example: 100,
+                },
+                minLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối thiểu mỗi trang',
+                  example: 1,
+                },
               },
             },
-            enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
+            enableAiAutoReply: {
+              type: 'boolean',
+              description: 'Trạng thái bật/tắt AI tự động phản hồi',
+              example: true,
+            },
           },
         },
       },
@@ -129,13 +243,14 @@ export class AppConfigController {
   @Get()
   getConfig(@I18nLang() lang: string): SuccessResponse<IAppConfig> {
     const data = this.appConfigService.getAll();
-    const message = this.i18n.t('config.success.get', { lang }) as string;
+    const message = this.i18n.t('config.success.get', { lang });
     return new SuccessResponse(ResponseCode.CONFIG_GET_SUCCESS, data, message);
   }
 
   @ApiOperation({
     summary: 'Cập nhật cấu hình ứng dụng',
-    description: 'Cập nhật một phần hoặc toàn bộ cấu hình ứng dụng. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `config.update`.',
+    description:
+      'Cập nhật một phần hoặc toàn bộ cấu hình ứng dụng. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `config.update`.',
   })
   @ApiHeader({
     name: 'accept-language',
@@ -145,7 +260,8 @@ export class AppConfigController {
   })
   @ApiBody({
     type: UpdateAppConfigDto,
-    description: 'Dữ liệu cấu hình cần cập nhật (chỉ gửi các trường muốn thay đổi)',
+    description:
+      'Dữ liệu cấu hình cần cập nhật (chỉ gửi các trường muốn thay đổi)',
     examples: {
       update_brand: {
         summary: 'Cập nhật thông tin thương hiệu',
@@ -238,43 +354,143 @@ export class AppConfigController {
         data: {
           type: 'object',
           properties: {
-            brandName: { type: 'string', description: 'Tên thương hiệu', example: 'GEN-HUB' },
-            supportEmail: { type: 'string', description: 'Email hỗ trợ', example: 'support@gen-hub.dev' },
-            supportPhone: { type: 'string', description: 'Số điện thoại hỗ trợ', example: '0783 504 540' },
+            brandName: {
+              type: 'string',
+              description: 'Tên thương hiệu',
+              example: 'GEN-HUB',
+            },
+            supportEmail: {
+              type: 'string',
+              description: 'Email hỗ trợ',
+              example: 'support@gen-hub.dev',
+            },
+            supportPhone: {
+              type: 'string',
+              description: 'Số điện thoại hỗ trợ',
+              example: '0783 504 540',
+            },
             colors: {
               type: 'object',
               description: 'Bảng màu giao diện',
               properties: {
-                primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
-                primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
-                primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
-                gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
-                gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
-                gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
-                gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
-                gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
-                background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
-                cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
-                sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
-                success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
-                warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
-                error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
-                info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
-                border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
-                shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
+                primary: {
+                  type: 'string',
+                  description: 'Màu chính',
+                  example: '#0F766E',
+                },
+                primaryLight: {
+                  type: 'string',
+                  description: 'Màu chính sáng',
+                  example: '#14B8A6',
+                },
+                primaryDark: {
+                  type: 'string',
+                  description: 'Màu chính tối',
+                  example: '#0D5A52',
+                },
+                gray900: {
+                  type: 'string',
+                  description: 'Màu xám 900',
+                  example: '#1E293B',
+                },
+                gray700: {
+                  type: 'string',
+                  description: 'Màu xám 700',
+                  example: '#334155',
+                },
+                gray500: {
+                  type: 'string',
+                  description: 'Màu xám 500',
+                  example: '#64748B',
+                },
+                gray300: {
+                  type: 'string',
+                  description: 'Màu xám 300',
+                  example: '#CBD5E1',
+                },
+                gray100: {
+                  type: 'string',
+                  description: 'Màu xám 100',
+                  example: '#F1F5F9',
+                },
+                background: {
+                  type: 'string',
+                  description: 'Màu nền trang',
+                  example: '#F8FAFC',
+                },
+                cardSurface: {
+                  type: 'string',
+                  description: 'Màu bề mặt card',
+                  example: '#FFFFFF',
+                },
+                sidebarBg: {
+                  type: 'string',
+                  description: 'Màu nền sidebar',
+                  example: '#F1F5F9',
+                },
+                success: {
+                  type: 'string',
+                  description: 'Màu thành công',
+                  example: '#10B981',
+                },
+                warning: {
+                  type: 'string',
+                  description: 'Màu cảnh báo',
+                  example: '#F59E0B',
+                },
+                error: {
+                  type: 'string',
+                  description: 'Màu lỗi',
+                  example: '#EF4444',
+                },
+                info: {
+                  type: 'string',
+                  description: 'Màu thông tin',
+                  example: '#0EA5E9',
+                },
+                border: {
+                  type: 'string',
+                  description: 'Màu viền',
+                  example: '#E2E8F0',
+                },
+                shadow: {
+                  type: 'string',
+                  description: 'Màu bóng đổ',
+                  example: 'rgba(0, 0, 0, 0.04)',
+                },
               },
             },
             pagination: {
               type: 'object',
               description: 'Cấu hình phân trang',
               properties: {
-                defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
-                defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
-                maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
-                minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
+                defaultLimit: {
+                  type: 'number',
+                  description: 'Số lượng item mặc định mỗi trang',
+                  example: 10,
+                },
+                defaultOffset: {
+                  type: 'number',
+                  description: 'Vị trí bắt đầu mặc định',
+                  example: 0,
+                },
+                maxLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối đa mỗi trang',
+                  example: 100,
+                },
+                minLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối thiểu mỗi trang',
+                  example: 1,
+                },
               },
             },
-            enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
+            enableAiAutoReply: {
+              type: 'boolean',
+              description: 'Trạng thái bật/tắt AI tự động phản hồi',
+              example: true,
+            },
           },
         },
       },
@@ -327,15 +543,26 @@ export class AppConfigController {
     @Request() req: any,
     @I18nLang() lang: string,
   ): Promise<SuccessResponse<IAppConfig>> {
-    const result = await this.appConfigService.update(dto as Partial<IAppConfig>);
-    this.websocketGateway.emitConfigUpdated('updated', result as unknown as Record<string, unknown>, req.user?.userId);
-    const message = this.i18n.t('config.success.update', { lang }) as string;
-    return new SuccessResponse(ResponseCode.CONFIG_UPDATE_SUCCESS, result, message);
+    const result = await this.appConfigService.update(
+      dto as Partial<IAppConfig>,
+    );
+    this.websocketGateway.emitConfigUpdated(
+      'updated',
+      result as unknown as Record<string, unknown>,
+      req.user?.userId,
+    );
+    const message = this.i18n.t('config.success.update', { lang });
+    return new SuccessResponse(
+      ResponseCode.CONFIG_UPDATE_SUCCESS,
+      result,
+      message,
+    );
   }
 
   @ApiOperation({
     summary: 'Reset cấu hình về mặc định',
-    description: 'Khôi phục toàn bộ cấu hình ứng dụng về giá trị mặc định được định nghĩa trong biến môi trường (.env). Thao tác này sẽ ghi đè tất cả các tùy chỉnh hiện tại. Yêu cầu quyền `config.reset`.',
+    description:
+      'Khôi phục toàn bộ cấu hình ứng dụng về giá trị mặc định được định nghĩa trong biến môi trường (.env). Thao tác này sẽ ghi đè tất cả các tùy chỉnh hiện tại. Yêu cầu quyền `config.reset`.',
   })
   @ApiHeader({
     name: 'accept-language',
@@ -355,43 +582,143 @@ export class AppConfigController {
         data: {
           type: 'object',
           properties: {
-            brandName: { type: 'string', description: 'Tên thương hiệu', example: 'GEN-HUB' },
-            supportEmail: { type: 'string', description: 'Email hỗ trợ', example: 'support@gen-hub.dev' },
-            supportPhone: { type: 'string', description: 'Số điện thoại hỗ trợ', example: '0783 504 540' },
+            brandName: {
+              type: 'string',
+              description: 'Tên thương hiệu',
+              example: 'GEN-HUB',
+            },
+            supportEmail: {
+              type: 'string',
+              description: 'Email hỗ trợ',
+              example: 'support@gen-hub.dev',
+            },
+            supportPhone: {
+              type: 'string',
+              description: 'Số điện thoại hỗ trợ',
+              example: '0783 504 540',
+            },
             colors: {
               type: 'object',
               description: 'Bảng màu giao diện',
               properties: {
-                primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
-                primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
-                primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
-                gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
-                gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
-                gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
-                gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
-                gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
-                background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
-                cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
-                sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
-                success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
-                warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
-                error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
-                info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
-                border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
-                shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
+                primary: {
+                  type: 'string',
+                  description: 'Màu chính',
+                  example: '#0F766E',
+                },
+                primaryLight: {
+                  type: 'string',
+                  description: 'Màu chính sáng',
+                  example: '#14B8A6',
+                },
+                primaryDark: {
+                  type: 'string',
+                  description: 'Màu chính tối',
+                  example: '#0D5A52',
+                },
+                gray900: {
+                  type: 'string',
+                  description: 'Màu xám 900',
+                  example: '#1E293B',
+                },
+                gray700: {
+                  type: 'string',
+                  description: 'Màu xám 700',
+                  example: '#334155',
+                },
+                gray500: {
+                  type: 'string',
+                  description: 'Màu xám 500',
+                  example: '#64748B',
+                },
+                gray300: {
+                  type: 'string',
+                  description: 'Màu xám 300',
+                  example: '#CBD5E1',
+                },
+                gray100: {
+                  type: 'string',
+                  description: 'Màu xám 100',
+                  example: '#F1F5F9',
+                },
+                background: {
+                  type: 'string',
+                  description: 'Màu nền trang',
+                  example: '#F8FAFC',
+                },
+                cardSurface: {
+                  type: 'string',
+                  description: 'Màu bề mặt card',
+                  example: '#FFFFFF',
+                },
+                sidebarBg: {
+                  type: 'string',
+                  description: 'Màu nền sidebar',
+                  example: '#F1F5F9',
+                },
+                success: {
+                  type: 'string',
+                  description: 'Màu thành công',
+                  example: '#10B981',
+                },
+                warning: {
+                  type: 'string',
+                  description: 'Màu cảnh báo',
+                  example: '#F59E0B',
+                },
+                error: {
+                  type: 'string',
+                  description: 'Màu lỗi',
+                  example: '#EF4444',
+                },
+                info: {
+                  type: 'string',
+                  description: 'Màu thông tin',
+                  example: '#0EA5E9',
+                },
+                border: {
+                  type: 'string',
+                  description: 'Màu viền',
+                  example: '#E2E8F0',
+                },
+                shadow: {
+                  type: 'string',
+                  description: 'Màu bóng đổ',
+                  example: 'rgba(0, 0, 0, 0.04)',
+                },
               },
             },
             pagination: {
               type: 'object',
               description: 'Cấu hình phân trang',
               properties: {
-                defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
-                defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
-                maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
-                minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
+                defaultLimit: {
+                  type: 'number',
+                  description: 'Số lượng item mặc định mỗi trang',
+                  example: 10,
+                },
+                defaultOffset: {
+                  type: 'number',
+                  description: 'Vị trí bắt đầu mặc định',
+                  example: 0,
+                },
+                maxLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối đa mỗi trang',
+                  example: 100,
+                },
+                minLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối thiểu mỗi trang',
+                  example: 1,
+                },
               },
             },
-            enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
+            enableAiAutoReply: {
+              type: 'boolean',
+              description: 'Trạng thái bật/tắt AI tự động phản hồi',
+              example: true,
+            },
           },
         },
       },
@@ -443,14 +770,23 @@ export class AppConfigController {
     @I18nLang() lang: string,
   ): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reset();
-    this.websocketGateway.emitConfigUpdated('reset', result as unknown as Record<string, unknown>, req.user?.userId);
-    const message = this.i18n.t('config.success.reset', { lang }) as string;
-    return new SuccessResponse(ResponseCode.CONFIG_RESET_SUCCESS, result, message);
+    this.websocketGateway.emitConfigUpdated(
+      'reset',
+      result as unknown as Record<string, unknown>,
+      req.user?.userId,
+    );
+    const message = this.i18n.t('config.success.reset', { lang });
+    return new SuccessResponse(
+      ResponseCode.CONFIG_RESET_SUCCESS,
+      result,
+      message,
+    );
   }
 
   @ApiOperation({
     summary: 'Reload cấu hình từ file',
-    description: 'Đọc lại cấu hình từ file `app-config.json` trên server và cập nhật vào bộ nhớ. Hữu ích khi cần đồng bộ cấu hình sau khi chỉnh sửa file trực tiếp trên server. Thao tác này sẽ invalidate Redis cache và force reload từ file. Yêu cầu quyền `config.reload`.',
+    description:
+      'Đọc lại cấu hình từ file `app-config.json` trên server và cập nhật vào bộ nhớ. Hữu ích khi cần đồng bộ cấu hình sau khi chỉnh sửa file trực tiếp trên server. Thao tác này sẽ invalidate Redis cache và force reload từ file. Yêu cầu quyền `config.reload`.',
   })
   @ApiHeader({
     name: 'accept-language',
@@ -470,43 +806,143 @@ export class AppConfigController {
         data: {
           type: 'object',
           properties: {
-            brandName: { type: 'string', description: 'Tên thương hiệu', example: 'GEN-HUB' },
-            supportEmail: { type: 'string', description: 'Email hỗ trợ', example: 'support@gen-hub.dev' },
-            supportPhone: { type: 'string', description: 'Số điện thoại hỗ trợ', example: '0783 504 540' },
+            brandName: {
+              type: 'string',
+              description: 'Tên thương hiệu',
+              example: 'GEN-HUB',
+            },
+            supportEmail: {
+              type: 'string',
+              description: 'Email hỗ trợ',
+              example: 'support@gen-hub.dev',
+            },
+            supportPhone: {
+              type: 'string',
+              description: 'Số điện thoại hỗ trợ',
+              example: '0783 504 540',
+            },
             colors: {
               type: 'object',
               description: 'Bảng màu giao diện',
               properties: {
-                primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
-                primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
-                primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
-                gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
-                gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
-                gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
-                gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
-                gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
-                background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
-                cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
-                sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
-                success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
-                warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
-                error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
-                info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
-                border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
-                shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
+                primary: {
+                  type: 'string',
+                  description: 'Màu chính',
+                  example: '#0F766E',
+                },
+                primaryLight: {
+                  type: 'string',
+                  description: 'Màu chính sáng',
+                  example: '#14B8A6',
+                },
+                primaryDark: {
+                  type: 'string',
+                  description: 'Màu chính tối',
+                  example: '#0D5A52',
+                },
+                gray900: {
+                  type: 'string',
+                  description: 'Màu xám 900',
+                  example: '#1E293B',
+                },
+                gray700: {
+                  type: 'string',
+                  description: 'Màu xám 700',
+                  example: '#334155',
+                },
+                gray500: {
+                  type: 'string',
+                  description: 'Màu xám 500',
+                  example: '#64748B',
+                },
+                gray300: {
+                  type: 'string',
+                  description: 'Màu xám 300',
+                  example: '#CBD5E1',
+                },
+                gray100: {
+                  type: 'string',
+                  description: 'Màu xám 100',
+                  example: '#F1F5F9',
+                },
+                background: {
+                  type: 'string',
+                  description: 'Màu nền trang',
+                  example: '#F8FAFC',
+                },
+                cardSurface: {
+                  type: 'string',
+                  description: 'Màu bề mặt card',
+                  example: '#FFFFFF',
+                },
+                sidebarBg: {
+                  type: 'string',
+                  description: 'Màu nền sidebar',
+                  example: '#F1F5F9',
+                },
+                success: {
+                  type: 'string',
+                  description: 'Màu thành công',
+                  example: '#10B981',
+                },
+                warning: {
+                  type: 'string',
+                  description: 'Màu cảnh báo',
+                  example: '#F59E0B',
+                },
+                error: {
+                  type: 'string',
+                  description: 'Màu lỗi',
+                  example: '#EF4444',
+                },
+                info: {
+                  type: 'string',
+                  description: 'Màu thông tin',
+                  example: '#0EA5E9',
+                },
+                border: {
+                  type: 'string',
+                  description: 'Màu viền',
+                  example: '#E2E8F0',
+                },
+                shadow: {
+                  type: 'string',
+                  description: 'Màu bóng đổ',
+                  example: 'rgba(0, 0, 0, 0.04)',
+                },
               },
             },
             pagination: {
               type: 'object',
               description: 'Cấu hình phân trang',
               properties: {
-                defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
-                defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
-                maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
-                minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
+                defaultLimit: {
+                  type: 'number',
+                  description: 'Số lượng item mặc định mỗi trang',
+                  example: 10,
+                },
+                defaultOffset: {
+                  type: 'number',
+                  description: 'Vị trí bắt đầu mặc định',
+                  example: 0,
+                },
+                maxLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối đa mỗi trang',
+                  example: 100,
+                },
+                minLimit: {
+                  type: 'number',
+                  description: 'Số lượng item tối thiểu mỗi trang',
+                  example: 1,
+                },
               },
             },
-            enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
+            enableAiAutoReply: {
+              type: 'boolean',
+              description: 'Trạng thái bật/tắt AI tự động phản hồi',
+              example: true,
+            },
           },
         },
       },
@@ -558,8 +994,16 @@ export class AppConfigController {
     @I18nLang() lang: string,
   ): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reload();
-    this.websocketGateway.emitConfigUpdated('reloaded', result as unknown as Record<string, unknown>, req.user?.userId);
-    const message = this.i18n.t('config.success.reload', { lang }) as string;
-    return new SuccessResponse(ResponseCode.CONFIG_RELOAD_SUCCESS, result, message);
+    this.websocketGateway.emitConfigUpdated(
+      'reloaded',
+      result as unknown as Record<string, unknown>,
+      req.user?.userId,
+    );
+    const message = this.i18n.t('config.success.reload', { lang });
+    return new SuccessResponse(
+      ResponseCode.CONFIG_RELOAD_SUCCESS,
+      result,
+      message,
+    );
   }
 }

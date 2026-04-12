@@ -8,9 +8,14 @@ import { CouponModule } from '../coupon/coupon.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [forwardRef(() => CouponModule), ConfigModule],
-    controllers: [CouponScheduleController],
-    providers: [CouponScheduleService, CouponScheduleRepository, CouponScheduleCacheKeys, CouponScheduleRunnerService],
-    exports: [CouponScheduleService, CouponScheduleRepository],
+  imports: [forwardRef(() => CouponModule), ConfigModule],
+  controllers: [CouponScheduleController],
+  providers: [
+    CouponScheduleService,
+    CouponScheduleRepository,
+    CouponScheduleCacheKeys,
+    CouponScheduleRunnerService,
+  ],
+  exports: [CouponScheduleService, CouponScheduleRepository],
 })
-export class CouponScheduleModule { }
+export class CouponScheduleModule {}

@@ -25,7 +25,11 @@ import { CouponService } from './coupon.service';
 import { CreateCouponDto, UpdateCouponDto, QueryCouponDto } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import {
+  RequirePermission,
+  RequireAnyPermission,
+  CurrentUser,
+} from '../../common/decorators';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -45,7 +49,7 @@ export class CouponController {
   constructor(
     private readonly couponService: CouponService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -1143,12 +1147,33 @@ export class CouponController {
 
   @ApiOperation({
     summary: 'Lấy danh sách user đã sử dụng coupon',
-    description: 'Lấy danh sách các user đã dùng coupon thông qua hợp đồng thuê kho. Yêu cầu quyền `coupon.read` hoặc `coupon.read.all`.',
+    description:
+      'Lấy danh sách các user đã dùng coupon thông qua hợp đồng thuê kho. Yêu cầu quyền `coupon.read` hoặc `coupon.read.all`.',
   })
-  @ApiParam({ name: 'id', description: 'ID coupon', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'skip', required: false, type: 'number', description: 'Bỏ qua N bản ghi đầu', example: 0 })
-  @ApiQuery({ name: 'take', required: false, type: 'number', description: 'Số bản ghi trả về', example: 20 })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách user đã sử dụng coupon thành công' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID coupon',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiQuery({
+    name: 'skip',
+    required: false,
+    type: 'number',
+    description: 'Bỏ qua N bản ghi đầu',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'take',
+    required: false,
+    type: 'number',
+    description: 'Số bản ghi trả về',
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách user đã sử dụng coupon thành công',
+  })
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -1170,7 +1195,11 @@ export class CouponController {
       Number(skip),
       Number(take),
     );
-    return new GetResponse('coupon.read.success', result, 'Lấy danh sách user đã sử dụng coupon thành công');
+    return new GetResponse(
+      'coupon.read.success',
+      result,
+      'Lấy danh sách user đã sử dụng coupon thành công',
+    );
   }
 
   @ApiOperation({

@@ -64,7 +64,6 @@ export class SuccessResponse<T> implements IBaseResponse<T> {
   }
 }
 
-
 /**
  * Response cho các request tạo mới tài nguyên (HTTP 201)
  */
