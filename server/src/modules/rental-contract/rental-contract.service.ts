@@ -51,6 +51,7 @@ export class RentalContractService {
   private readonly CONTRACT_LIST_CACHE_TTL: number;
   private readonly LOCK_DURATION_SECONDS: number;
   private readonly CONTRACT_PREFIX: string;
+  private readonly VAT_RATE: number;
 
   constructor(
     private readonly repository: RentalContractRepository,
@@ -73,6 +74,7 @@ export class RentalContractService {
     this.CONTRACT_LIST_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') || 60;
     this.LOCK_DURATION_SECONDS = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
     this.CONTRACT_PREFIX = this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
+    this.VAT_RATE = this.configService.get<number>('RENTAL_VAT_RATE') || 0;
   }
 
   /**
@@ -193,7 +195,7 @@ export class RentalContractService {
       const status = dto.type === AdminPaymentType.CASH ? ContractStatus.ACTIVE : ContractStatus.PENDING;
 
       // Tính thuế VAT ban đầu
-      const vatRate = dto.vat_rate ?? 0;
+      const vatRate = this.VAT_RATE;
       const initialVatAmount = Math.round(totalPrice * (vatRate / 100));
 
       const contractData: Prisma.RentalContractCreateInput = {

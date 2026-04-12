@@ -157,19 +157,6 @@ export class OrgCreateRentalContractDto {
     @IsBoolean()
     auto_renew?: boolean;
 
-    @ApiPropertyOptional({
-        description: 'Thuế VAT (%) - mặc định 0%',
-        example: 10
-    })
-    @Transform(({ value }) => {
-        if (value === undefined || value === null) return undefined;
-        return typeof value === 'string' ? parseInt(value, 10) : value;
-    })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    vat_rate?: number;
-
     @ApiPropertyOptional({ description: 'Danh sách ID addon', type: [String] })
     @Transform(({ value }) => {
         if (value === undefined || value === null) return undefined;

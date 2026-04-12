@@ -54,6 +54,7 @@ export class OrgRentalContractService {
     private readonly MAX_PENDING_PER_USER: number;
     private readonly CONTRACT_PREFIX: string;
     private readonly MAX_DELAYED_START_DAYS: number;
+    private readonly VAT_RATE: number;
 
     constructor(
         private readonly repository: RentalContractRepository,
@@ -82,6 +83,7 @@ export class OrgRentalContractService {
         this.MAX_PENDING_PER_USER = this.configService.get<number>('RENTAL_MAX_PENDING_PER_USER') || 3;
         this.CONTRACT_PREFIX = this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
         this.MAX_DELAYED_START_DAYS = this.configService.get<number>('RENTAL_MAX_DELAYED_START_DAYS') || 14;
+        this.VAT_RATE = this.configService.get<number>('RENTAL_VAT_RATE') || 0;
     }
 
     /**
@@ -253,7 +255,7 @@ export class OrgRentalContractService {
             const expiredAt = new Date(startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000);
 
             // Tính thuế VAT ban đầu (chưa có coupon/addon/insurance)
-            const vatRate = dto.vat_rate ?? 0;
+            const vatRate = this.VAT_RATE;
             const initialVatAmount = Math.round(totalPrice * (vatRate / 100));
 
             const contractData: Prisma.RentalContractCreateInput = {
