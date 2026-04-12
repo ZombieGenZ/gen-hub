@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { Package, ScanBarcode, Check, AlertTriangle, X, ChevronDown, TrendingUp, TrendingDown, ClipboardList } from 'lucide-react';
+import { Package, ScanBarcode, Check, AlertTriangle, X, ChevronDown, TrendingUp, TrendingDown, ClipboardList, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { useFloorFeedback } from '@/hooks/useFloorFeedback';
@@ -53,6 +53,7 @@ export default function InventoryCounter({
     const [items, setItems] = useState(initialItems);
     const [lockError, setLockError] = useState<string | null>(null);
     const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const { trigger } = useFloorFeedback();
     const { flash, triggerFlash } = useFlashOverlay();
 
@@ -412,24 +413,34 @@ export default function InventoryCounter({
 
             {/* ── All Done ── */}
             {allDone && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
-                    <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center">
-                        <Check className="w-14 h-14 text-green-500" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                    <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Check className="w-8 h-8 text-teal-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800">Kiểm đếm hoàn tất!</h2>
-                    <p className="text-slate-500 text-center">
-                        Tất cả {items.length} sản phẩm đã được đếm đúng số lượng.
-                    </p>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1">Đã kiểm đếm xong!</h3>
+                    <p className="text-slate-500 mb-4">Tất cả sản phẩm đã được kiểm tra</p>
+                    
+                    {/* Back Button */}
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            disabled={isProcessing}
+                            className="w-full py-3 px-4 mb-3 bg-white border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 text-slate-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Quay lại bước trước
+                        </button>
+                    )}
+                    
                     <button
-                        className="floor-btn floor-btn-giant bg-teal-600 text-white w-full max-w-sm"
                         onClick={handleRequestComplete}
+                        disabled={isProcessing}
+                        className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-semibold rounded-lg transition-colors"
                     >
-                        <Check className="w-7 h-7" />
-                        XÁC NHẬN HOÀN TẤT
+                        {isProcessing ? 'Đang xử lý...' : 'XÁC NHẬN HOÀN TẤT'}
                     </button>
                 </div>
             )}
         </div>
     );
 }
-

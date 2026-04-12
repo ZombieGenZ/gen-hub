@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
@@ -21,6 +22,7 @@ import {
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
     XMarkIcon,
+    ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 import RejectReasonDialog from "./RejectReasonDialog";
@@ -117,6 +119,7 @@ export default function InboundApprovalDetail({
     ticketId,
 }: InboundApprovalDetailProps) {
     const { showToast } = useToast();
+    const router = useRouter();
 
     const [data, setData] = useState<InboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
@@ -713,12 +716,25 @@ export default function InboundApprovalDetail({
                         </Button>
                     )}
                     {data.status === "PROCESSING" && (
-                        <Button disabled={submitting}
-                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={() => handleConfirmPutaway()}>
-                            <CheckCircleIcon className="w-4 h-4" />
-                            {submitting ? "Đang cất hàng..." : "Xác nhận cất hàng vào kho"}
-                        </Button>
+                        <div className="flex gap-2 ml-auto">
+                            <Button type="button" variant="outline" disabled={submitting}
+                                className="gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Back button clicked, navigating to /dashboard/admin/approval');
+                                    router.back();
+                                }}>
+                                <ArrowLeftIcon className="w-4 h-4" />
+                                Quay lại
+                            </Button>
+                            <Button disabled={submitting}
+                                className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                                onClick={() => handleConfirmPutaway()}>
+                                <CheckCircleIcon className="w-4 h-4" />
+                                {submitting ? "Đang cất hàng..." : "Xác nhận cất hàng vào kho"}
+                            </Button>
+                        </div>
                     )}
                 </div>
             )}
