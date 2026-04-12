@@ -291,15 +291,16 @@ export default function RentalDurationTiersPage() {
     };
 
     const openEdit = async (tier: RentalDurationTier) => {
-        // Fetch full detail with gifts
+        // Open modal immediately with available data, then hydrate gifts in background
+        setSheetMode("edit");
+        setSelectedTier(tier);
+        setIsFormDialogOpen(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
             const data: any = await tierService.getRentalDurationTier(token, tier.id);
             const detail = data?.data || data;
-            setSheetMode("edit");
             setSelectedTier(detail);
-            setIsFormDialogOpen(true);
         } catch (error: any) {
             console.error("Failed to fetch tier detail", error);
             showToast(error.message || "Không thể tải chi tiết gói thuê", "error");
@@ -653,7 +654,7 @@ export default function RentalDurationTiersPage() {
 
             {/* ═══ Create/Edit Dialog (was Sheet) ═══ */}
             <Dialog open={isFormDialogOpen} onOpenChange={(open) => { if (!isFormLoading) setIsFormDialogOpen(open); }}>
-                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
+                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-1 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
                         <DialogTitle className="text-xl font-bold">
                             {sheetMode === "create" ? "Tạo gói thuê mới" : "Chỉnh sửa gói thuê"}
@@ -664,7 +665,7 @@ export default function RentalDurationTiersPage() {
                                 : `Đang chỉnh sửa "${selectedTier?.name}"`}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-hidden p-6">
                         <TierForm
                             key={selectedTier?.id || "create"}
                             initialData={selectedTier}
@@ -681,7 +682,7 @@ export default function RentalDurationTiersPage() {
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa gói <strong className="text-foreground">&ldquo;{deleteTier?.name}&rdquo;</strong> không?
                             <br />

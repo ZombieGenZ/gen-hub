@@ -17,10 +17,7 @@ export interface ICurrentUser {
  * Sử dụng: @CurrentUser() user: ICurrentUser
  */
 export const CurrentUser = createParamDecorator(
-  (
-    data: keyof ICurrentUser | undefined,
-    ctx: ExecutionContext,
-  ): ICurrentUser | unknown => {
+  (data: keyof ICurrentUser | undefined, ctx: ExecutionContext): unknown => {
     const request = ctx.switchToHttp().getRequest();
     const user = request.user as ICurrentUser;
 

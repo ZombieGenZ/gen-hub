@@ -497,7 +497,9 @@ export class RentalContractService {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch {}
+      } catch {
+        await this.redisService.del(cacheKey);
+      }
     }
 
     const result = await this.repository.findMany(query);
@@ -828,16 +830,21 @@ export class RentalContractService {
 
     // Email
     if (existing.organization?.owner?.email) {
-      try {
-        // Admin deleting -> use admin name or generic
-        this.emailService.sendContractCancelledEmail(
+      void this.emailService
+        .sendContractCancelledEmail(
           existing.organization.owner.email,
           existing.organization.owner.name || existing.organization.owner.email,
           [existing.code],
           'Admin',
           lang,
-        );
-      } catch (e) {}
+        )
+        .catch((error) => {
+          this.systemLogService.warn(
+            'rental-contract',
+            'send_contract_cancelled_email_failed',
+            `Failed to send contract cancelled email to ${existing.organization?.owner?.email}: ${(error as Error).message}`,
+          );
+        });
     }
 
     this.systemLogService.info(

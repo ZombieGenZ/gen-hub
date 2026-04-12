@@ -134,7 +134,7 @@ export class DatabaseAdminService implements OnModuleInit {
       const relationsForModel = new Map<string, ParsedRelationMetadata>();
 
       for (const relationMatch of modelBody.matchAll(
-        /^\s*(\w+)\s+([\w\[\]\?]+)\s+@relation\(([^)]*)\)/gm,
+        /^\s*(\w+)\s+(\S+)\s+@relation\(([^)]*)\)/gm,
       )) {
         const [, relationFieldName, rawTargetType, relationArgs] =
           relationMatch;
@@ -233,7 +233,8 @@ export class DatabaseAdminService implements OnModuleInit {
                     `);
 
           const rawSize = sizeQuery[0]?.size;
-          const size = rawSize !== null && rawSize !== undefined ? Number(rawSize) : 0;
+          const size =
+            rawSize !== null && rawSize !== undefined ? Number(rawSize) : 0;
 
           return {
             tableName,

@@ -628,7 +628,9 @@ export class OrgRentalContractService {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch {}
+      } catch {
+        await this.redisService.del(cacheKey);
+      }
     }
 
     const result = await this.repository.findMany(query);
@@ -1005,7 +1007,13 @@ export class OrgRentalContractService {
           deleter?.name || userId,
           lang,
         );
-      } catch (error) {}
+      } catch (error) {
+        this.systemLogService.warn(
+          'org-rental-contract',
+          'send_contract_cancelled_email_failed',
+          `Failed to send contract cancelled email to ${org.owner.email}: ${(error as Error).message}`,
+        );
+      }
     }
   }
 

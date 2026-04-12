@@ -473,13 +473,13 @@ export class ProductService {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const name = row.getCell(1).value?.toString();
-      const sku = row.getCell(2).value?.toString();
+      const name = row.getCell(1).text?.trim();
+      const sku = row.getCell(2).text?.trim();
       if (!name || !sku) continue;
 
       try {
         // Find base unit by name
-        const baseUnitName = row.getCell(4).value?.toString();
+        const baseUnitName = row.getCell(4).text?.trim();
         const baseUnit = orgUnits.find(
           (u) => u.name?.toLowerCase() === baseUnitName?.toLowerCase(),
         );
@@ -492,19 +492,19 @@ export class ProductService {
         const createDto: CreateProductDto = {
           name,
           sku,
-          barcode: row.getCell(3).value?.toString(),
+          barcode: row.getCell(3).text?.trim(),
           base_unit_id: baseUnit.id,
           cost_price: Number(row.getCell(5).value) || 0,
           weight: Number(row.getCell(6).value) || 0,
           length: Number(row.getCell(7).value) || 0,
           width: Number(row.getCell(8).value) || 0,
           height: Number(row.getCell(9).value) || 0,
-          description: row.getCell(10).value?.toString(),
+          description: row.getCell(10).text?.trim(),
           is_active: true,
         };
 
         // Handle units string: "Thùng:24:893456, Lốc:6:893457"
-        const unitsStr = row.getCell(11).value?.toString();
+        const unitsStr = row.getCell(11).text?.trim();
         if (unitsStr) {
           const unitParts = unitsStr.split(',').map((s) => s.trim());
           createDto.units = [];

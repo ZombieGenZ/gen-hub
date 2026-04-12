@@ -24,7 +24,7 @@ export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
   handleRequest<TUser = unknown>(
     err: Error | null,
     user: TUser | false,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _info: Error | undefined,
   ): TUser | null {
     // Nếu có lỗi hoặc không có user, trả về null thay vì throw error

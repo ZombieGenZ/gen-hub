@@ -31,6 +31,7 @@ import {
   SlashCommandBuilder,
   REST,
   Routes,
+  ComponentType,
   ChatInputCommandInteraction,
   ModalSubmitInteraction,
 } from 'discord.js';
@@ -704,13 +705,12 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         const disabledRows: ActionRowBuilder<ButtonBuilder>[] = [];
 
         for (const row of message.components) {
-          // Kiểm tra xem row có phải ActionRow không (type = 1)
-          if (row.type !== 1) continue;
+          // Kiểm tra xem row có phải ActionRow không
+          if (row.type !== ComponentType.ActionRow) continue;
 
           const newRow = new ActionRowBuilder<ButtonBuilder>();
           for (const component of (row as any).components) {
-            if (component.type === 2) {
-              // ComponentType.Button = 2
+            if (component.type === ComponentType.Button) {
               const btn = ButtonBuilder.from(component);
               btn.setDisabled(true);
               newRow.addComponents(btn);

@@ -682,6 +682,8 @@ export function CreateInboundDialog({
                 onOpenChange={setBrowseOpen}
                 alreadyAddedIds={addedIds}
                 onConfirm={addMultipleProducts}
+                warehouseId={formWarehouse || undefined}
+                disableOutOfStock={false}
             />
         </>
     );

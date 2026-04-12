@@ -509,7 +509,7 @@ export class DatabaseAdminController {
     required: false,
     type: String,
     description:
-      'JSON string biểu diễn mảng điều kiện lọc. Ví dụ: `[{\"column\":\"email\",\"operator\":\"contains\",\"value\":\"genhub\"}]`.',
+      'JSON string biểu diễn mảng điều kiện lọc. Ví dụ: `[{"column":"email","operator":"contains","value":"genhub"}]`.',
     example: '[{"column":"email","operator":"contains","value":"genhub"}]',
   })
   @ApiResponse({

@@ -1912,7 +1912,7 @@ export class ContactService implements OnModuleInit {
     });
 
     // Nếu có initialMessage, lưu vào database trước
-    let initialMessageRecord: any | null = null;
+    let initialMessageRecord: { id: string; created_at: Date } | null = null;
     if (dto.initialMessage) {
       initialMessageRecord = await this.repository.createMessage({
         conversation_id: conversation.id,

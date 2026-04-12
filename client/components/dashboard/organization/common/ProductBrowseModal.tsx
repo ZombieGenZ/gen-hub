@@ -44,6 +44,8 @@ interface ProductBrowseModalProps {
     onConfirm: (products: Product[]) => void;
     /** ID kho đang chọn — dùng để lấy quantity_available */
     warehouseId?: string;
+    /** Có block sản phẩm hết hàng không (false cho phiếu nhập kho) — mặc định true */
+    disableOutOfStock?: boolean;
 }
 
 /**
@@ -56,6 +58,7 @@ export function ProductBrowseModal({
     alreadyAddedIds,
     onConfirm,
     warehouseId,
+    disableOutOfStock = true,
 }: ProductBrowseModalProps) {
     const [products, setProducts] = useState<Product[]>([]);
     const [search, setSearch] = useState("");
@@ -126,7 +129,7 @@ export function ProductBrowseModal({
         const availableIds = products
             .filter((p) => {
                 if (alreadyAddedSet.has(p.id)) return false;
-                if (warehouseId) {
+                if (warehouseId && disableOutOfStock) {
                     const qty = p.quantity_available ?? null;
                     if (qty !== null && qty <= 0) return false;
                 }
@@ -150,7 +153,7 @@ export function ProductBrowseModal({
 
     const availableCount = products.filter((p) => {
         if (alreadyAddedSet.has(p.id)) return false;
-        if (warehouseId) {
+        if (warehouseId && disableOutOfStock) {
             const qty = p.quantity_available ?? null;
             if (qty !== null && qty <= 0) return false;
         }
@@ -161,7 +164,7 @@ export function ProductBrowseModal({
         products
             .filter((p) => {
                 if (alreadyAddedSet.has(p.id)) return false;
-                if (warehouseId) {
+                if (warehouseId && disableOutOfStock) {
                     const qty = p.quantity_available ?? null;
                     if (qty !== null && qty <= 0) return false;
                 }
@@ -250,7 +253,7 @@ export function ProductBrowseModal({
                             {products.map((product) => {
                                 const isAdded = alreadyAddedSet.has(product.id);
                                 const qtyAvailable = product.quantity_available ?? null;
-                                const outOfStock = warehouseId && qtyAvailable !== null && qtyAvailable <= 0;
+                                const outOfStock = warehouseId && disableOutOfStock && qtyAvailable !== null && qtyAvailable <= 0;
                                 const isDisabled = isAdded || !!outOfStock;
                                 const isSelected = selectedIds.has(product.id);
 

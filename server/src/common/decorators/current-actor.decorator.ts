@@ -55,10 +55,7 @@ export const CurrentActor = createParamDecorator(
  * @CurrentApiKey() apiKey: IApiKeyInfo | undefined
  */
 export const CurrentApiKey = createParamDecorator(
-  (
-    data: keyof IApiKeyInfo | undefined,
-    ctx: ExecutionContext,
-  ): IApiKeyInfo | unknown => {
+  (data: keyof IApiKeyInfo | undefined, ctx: ExecutionContext): unknown => {
     const request = ctx.switchToHttp().getRequest();
     const apiKey = request.apiKey as IApiKeyInfo | undefined;
 
