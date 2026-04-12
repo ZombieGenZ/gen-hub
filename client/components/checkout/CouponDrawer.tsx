@@ -25,6 +25,7 @@ import { CheckIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 import { CouponService } from '@/services/coupons/coupon.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { CouponUIItem } from "@/types/coupons/coupon.type";
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 const extractCouponArray = (data: any): any[] => {
     if (Array.isArray(data)) return data;
@@ -244,9 +245,9 @@ export function CouponDrawer({
     // Format discount display
     const formatDiscount = (coupon: CouponUIItem) => {
         if (coupon.discount_type === 'PERCENT') {
-            return `Giảm ${coupon.discount_value}%${coupon.max_discount_amount ? ` (tối đa ${coupon.max_discount_amount.toLocaleString('vi-VN')}₫)` : ''}`;
+            return `Giảm ${coupon.discount_value}%${coupon.max_discount_amount ? ` (tối đa ${formatCurrencyFull(coupon.max_discount_amount)})` : ''}`;
         }
-        return `Giảm ${coupon.discount_value.toLocaleString('vi-VN')}₫`;
+        return `Giảm ${formatCurrencyFull(coupon.discount_value)}`;
     };
 
     // Format validity  
@@ -286,7 +287,7 @@ export function CouponDrawer({
                                 <p className="font-semibold text-[#0F766E]">{appliedCode}</p>
                                 {appliedCouponData && (
                                     <p className="text-xs text-teal-600">
-                                        Giảm {appliedCouponData.discount_value.toLocaleString('vi-VN')}₫
+                                        Giảm {formatCurrencyFull(appliedCouponData.discount_value)}
                                     </p>
                                 )}
                             </div>
@@ -447,7 +448,7 @@ export function CouponDrawer({
                                                 {coupon.min_order_amount && (
                                                     <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                                                         <div className="w-1 h-1 rounded-full bg-slate-300" />
-                                                        Tối thiểu {coupon.min_order_amount.toLocaleString('vi-VN')}₫
+                                                        Tối thiểu {formatCurrencyFull(coupon.min_order_amount)}
                                                     </span>
                                                 )}
 
@@ -520,7 +521,7 @@ export function CouponTriggerButton({
                             <p className="font-semibold text-[#0F766E]">{appliedCode}</p>
                             {discountAmount !== undefined && (
                                 <p className="text-xs text-teal-600">
-                                    Giảm {discountAmount.toLocaleString('vi-VN')}₫
+                                    Giảm {formatCurrencyFull(discountAmount)}
                                 </p>
                             )}
                         </>

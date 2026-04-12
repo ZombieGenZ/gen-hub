@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 /**
  * Step 1: Xác nhận thông tin thuê
@@ -33,13 +34,6 @@ export function RentalInfoStep() {
 
         setCanProceed(!!hasRequiredInfo);
     }, [session, setCanProceed]);
-
-    const formatCurrency = (amount: number) => {
-        if (amount >= 1000000000) {
-            return `${(amount / 1000000000).toFixed(2).replace('.', ',')} Tỷ`;
-        }
-        return `${Math.round(amount).toLocaleString('vi-VN')}₫`;
-    };
 
     const startDate = session.start_date ? new Date(session.start_date) : new Date();
 
@@ -136,7 +130,7 @@ export function RentalInfoStep() {
                                     {addon.name}
                                     {addon.price > 0 && (
                                         <span className="ml-1 text-slate-500">
-                                            ({formatCurrency(addon.price)})
+                                            ({formatCurrencyFull(addon.price)})
                                         </span>
                                     )}
                                 </Badge>
@@ -164,7 +158,7 @@ export function RentalInfoStep() {
                         {session.insurance_details?.price ? (
                             <span className="ml-1 text-blue-600 opacity-80">
                                 ({session.insurance_details.price > 1000
-                                    ? `${formatCurrency(session.insurance_details.price)}/tháng`
+                                    ? `${formatCurrencyFull(session.insurance_details.price)}/tháng`
                                     : `${session.insurance_details.price}%`})
                             </span>
                         ) : null}
@@ -228,7 +222,7 @@ export function RentalInfoStep() {
                             <div>
                                 <p className="text-teal-100 text-sm mb-1">Tổng giá trị hợp đồng</p>
                                 <p className="text-3xl font-black">
-                                    {formatCurrency(session.quotation.grandTotal)}
+                                    {formatCurrencyFull(session.quotation.grandTotal)}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -242,41 +236,41 @@ export function RentalInfoStep() {
                         {/* Detailed Breakdown inside the green card */}
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between text-teal-50/90">
-                                <span>Giá thuê cơ bản ({formatCurrency(session.quotation.basePrice)}/tháng x {session.duration_months || 0})</span>
-                                <span className="font-medium">{formatCurrency(session.quotation.basePrice * (session.duration_months || 0))}</span>
+                                <span>Giá thuê cơ bản ({formatCurrencyFull(session.quotation.basePrice)}/tháng x {session.duration_months || 0})</span>
+                                <span className="font-medium">{formatCurrencyFull(session.quotation.basePrice * (session.duration_months || 0))}</span>
                             </div>
 
                             {session.quotation.durationDiscountAmount > 0 && (
                                 <div className="flex justify-between text-orange-200">
                                     <span>Giảm giá kỳ hạn ({session.quotation.durationDiscountPercent}%)</span>
-                                    <span>-{formatCurrency(session.quotation.durationDiscountAmount)}</span>
+                                    <span>-{formatCurrencyFull(session.quotation.durationDiscountAmount)}</span>
                                 </div>
                             )}
 
                             {session.quotation.addonsCost > 0 && (
                                 <div className="flex justify-between text-teal-50/90">
                                     <span>Dịch vụ cộng thêm</span>
-                                    <span>+{formatCurrency(session.quotation.addonsCost)}</span>
+                                    <span>+{formatCurrencyFull(session.quotation.addonsCost)}</span>
                                 </div>
                             )}
 
                             {session.quotation.insuranceCost > 0 && (
                                 <div className="flex justify-between text-teal-50/90">
                                     <span>Bảo hiểm ({session.duration_months || 0} tháng)</span>
-                                    <span>+{formatCurrency(session.quotation.insuranceCost + session.quotation.managementFee)}</span>
+                                    <span>+{formatCurrencyFull(session.quotation.insuranceCost + session.quotation.managementFee)}</span>
                                 </div>
                             )}
 
                             {session.quotation.couponDiscount > 0 && (
                                 <div className="flex justify-between text-orange-200">
                                     <span>Mã giảm giá</span>
-                                    <span>-{formatCurrency(session.quotation.couponDiscount)}</span>
+                                    <span>-{formatCurrencyFull(session.quotation.couponDiscount)}</span>
                                 </div>
                             )}
 
                             <div className="flex justify-between text-teal-50/90">
                                 <span>Phí dịch vụ (10%)</span>
-                                <span>+{formatCurrency(session.quotation.serviceFee)}</span>
+                                <span>+{formatCurrencyFull(session.quotation.serviceFee)}</span>
                             </div>
 
                             <Separator className="bg-teal-700/50 my-3" />
@@ -284,7 +278,7 @@ export function RentalInfoStep() {
                             <div className="flex justify-between items-center text-teal-50">
                                 <span className="font-medium">Cọc giữ chỗ (10%)</span>
                                 <span className="font-bold text-lg text-white">
-                                    {formatCurrency(session.deposit_amount || 0)}
+                                    {formatCurrencyFull(session.quotation?.depositAmount || session.deposit_amount || Math.round(session.quotation?.grandTotal * 0.1) || 0)}
                                 </span>
                             </div>
                         </div>

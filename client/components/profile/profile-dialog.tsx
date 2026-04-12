@@ -23,7 +23,7 @@ type Notification = UserNotification | GlobalNotification;
 import { organizationService } from "@/services/organization/organization.service";
 import { CheckoutProvider } from '@/components/checkout/CheckoutWizard';
 import { CompanyInfoStep } from '@/components/checkout/CompanyInfoStep';
-import { RepresentativeInfoStep } from '@/components/checkout/RepresentativeInfoStep';
+import { RepresentativeInfoStep, REPRESENTATIVE_TITLES } from '@/components/checkout/RepresentativeInfoStep';
 import { Organization, OrganizationCreateRequest } from '@/types/organization/organization.type';
 
 import {
@@ -32,8 +32,20 @@ import {
   ModalTitle,
   ModalDescription,
 } from "@/components/ui/modal"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-// Type definitions
+const getTitleLabel = (value: string | undefined | null) => {
+  if (!value) return "Chưa cập nhật";
+  const title = REPRESENTATIVE_TITLES.find(t => t.value === value);
+  return title ? title.label : value;
+};
+
 interface SecurityTabProps {
   userData: UserData | null;
   enabling2FA: boolean;
@@ -960,9 +972,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
             }} className="bg-red-700 hover:bg-red-800 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
           </div>
         ) : userData ? (
-          <div className="flex flex-col md:flex-row h-full w-full bg-background text-slate-950">
+          <div className="flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-screen w-full bg-background text-slate-950 overflow-hidden">
             {/* Sidebar Column */}
-            <div className="w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 flex flex-col">
+            <div className="w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center gap-3 text-xl font-bold text-brand">
                   <Image
@@ -986,7 +998,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
             </div>
 
             {/* Main Content Column */}
-            <div className="flex-1 flex flex-col min-w-0 bg-background dark:bg-slate-950">
+            <div className="flex-1 flex flex-col min-w-0 bg-background dark:bg-slate-950 overflow-hidden">
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
                   <div className="mb-8">
@@ -1249,12 +1261,21 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chức vụ người đại diện</label>
-                                  <Input
+                                  <Select
                                     value={editOrgData.representative_title}
-                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_title: e.target.value })}
-                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                                    placeholder="Nhập chức vụ "
-                                  />
+                                    onValueChange={(value) => setEditOrgData({ ...editOrgData, representative_title: value })}
+                                  >
+                                    <SelectTrigger className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                                      <SelectValue placeholder="Chọn chức vụ" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {REPRESENTATIVE_TITLES.map((title) => (
+                                        <SelectItem key={title.value} value={title.value}>
+                                          {title.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1302,7 +1323,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 <div className="space-y-1">
                                   <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Chức vụ</label>
                                   <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
-                                    {organizationData.representative_title || "Chưa cập nhật"}
+                                    {getTitleLabel(organizationData.representative_title)}
                                   </div>
                                 </div>
                                 <div className="space-y-1">

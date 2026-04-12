@@ -15,6 +15,7 @@ import {
 import { QuotationBreakdown } from '@/types/booking/booking.type';
 import { AddonResponse } from '@/types/addon/addon.type';
 import { Insurance } from '@/types/insurance/Insurance.types';
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 interface QuotationSummaryProps {
     breakdown: QuotationBreakdown;
@@ -43,13 +44,8 @@ export function QuotationSummary({
     className,
     showHeader = true,
 }: QuotationSummaryProps) {
-    const formatCurrency = (amount: number) => {
-        if (amount >= 1000000000) {
-            return `${(amount / 1000000000).toFixed(2).replace('.', ',')} Tỷ`;
-        }
-        return `${Math.round(amount).toLocaleString('vi-VN')}₫`;
-    };
-
+    const depositAmount = breakdown?.depositAmount || Math.round((breakdown?.grandTotal || 0) * 0.1);
+    
     return (
         <div className={cn(
             "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden",
@@ -84,12 +80,12 @@ export function QuotationSummary({
                             <span className="text-slate-700 font-medium">Giá thuê cơ bản</span>
                         </div>
                         <span className="text-slate-900 font-semibold">
-                            {formatCurrency(breakdown.basePrice)}/tháng
+                            {formatCurrencyFull(breakdown.basePrice)}/tháng
                         </span>
                     </div>
                     <div className="flex justify-between items-center text-sm text-slate-500">
                         <span>× {breakdown.durationMonths} tháng</span>
-                        <span>{formatCurrency(breakdown.basePrice * breakdown.durationMonths)}</span>
+                        <span>{formatCurrencyFull(breakdown.basePrice * breakdown.durationMonths)}</span>
                     </div>
                 </div>
 
@@ -103,7 +99,7 @@ export function QuotationSummary({
                             </span>
                         </div>
                         <span className="text-orange-600 font-semibold">
-                            -{formatCurrency(breakdown.durationDiscountAmount)}
+                            -{formatCurrencyFull(breakdown.durationDiscountAmount)}
                         </span>
                     </div>
                 )}
@@ -120,7 +116,7 @@ export function QuotationSummary({
                                 <div key={addon.id} className="flex justify-between text-sm">
                                     <span className="text-slate-600">{addon.name}</span>
                                     <span className="text-slate-700">
-                                        +{addon.price.toLocaleString('vi-VN')}₫/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                        +{formatCurrencyFull(addon.price)}/{addon.is_monthly_payment ? 'tháng' : 'lần'}
                                     </span>
                                 </div>
                             ))}
@@ -128,7 +124,7 @@ export function QuotationSummary({
                         <div className="flex justify-between text-sm pl-6 pt-1 border-t border-dashed border-slate-200">
                             <span className="text-slate-500">Tổng dịch vụ</span>
                             <span className="font-medium text-slate-900">
-                                +{formatCurrency(breakdown.addonsCost)}
+                                +{formatCurrencyFull(breakdown.addonsCost)}
                             </span>
                         </div>
                     </div>
@@ -144,19 +140,19 @@ export function QuotationSummary({
                         <div className="pl-6 flex justify-between text-sm">
                             <span className="text-slate-600">{selectedInsurance.name}</span>
                             <span className="text-slate-700">
-                                +{parseFloat(selectedInsurance.price).toLocaleString('vi-VN')}₫/tháng
+                                +{formatCurrencyFull(parseFloat(selectedInsurance.price))}/tháng
                             </span>
                         </div>
                         {breakdown.managementFee > 0 && (
                             <div className="pl-6 flex justify-between text-xs text-slate-500">
                                 <span>Phí quản lý bảo hiểm</span>
-                                <span>+{formatCurrency(breakdown.managementFee)}</span>
+                                <span>+{formatCurrencyFull(breakdown.managementFee)}</span>
                             </div>
                         )}
                         <div className="flex justify-between text-sm pl-6 pt-1 border-t border-dashed border-slate-200">
                             <span className="text-slate-500">Tổng bảo hiểm ({breakdown.durationMonths} tháng)</span>
                             <span className="font-medium text-slate-900">
-                                +{formatCurrency(breakdown.insuranceCost + breakdown.managementFee)}
+                                +{formatCurrencyFull(breakdown.insuranceCost + breakdown.managementFee)}
                             </span>
                         </div>
                     </div>
@@ -168,7 +164,7 @@ export function QuotationSummary({
                 <div className="flex justify-between items-center">
                     <span className="text-slate-600">Tạm tính</span>
                     <span className="text-slate-900 font-medium">
-                        {formatCurrency(breakdown.subtotal)}
+                        {formatCurrencyFull(breakdown.subtotal)}
                     </span>
                 </div>
 
@@ -176,7 +172,7 @@ export function QuotationSummary({
                 <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-500">Phí dịch vụ (10%)</span>
                     <span className="text-slate-700">
-                        +{formatCurrency(breakdown.serviceFee)}
+                        +{formatCurrencyFull(breakdown.serviceFee)}
                     </span>
                 </div>
 
@@ -202,7 +198,7 @@ export function QuotationSummary({
                             </div>
                         </div>
                         <span className="text-teal-600 font-semibold">
-                            -{formatCurrency(appliedCoupon.discount)}
+                            -{formatCurrencyFull(appliedCoupon.discount)}
                         </span>
                     </div>
                 ) : onCouponClick ? (
@@ -233,7 +229,7 @@ export function QuotationSummary({
                     </div>
                     <div className="text-right">
                         <span className="text-2xl font-black text-slate-900">
-                            {formatCurrency(breakdown.grandTotal)}
+                            {formatCurrencyFull(breakdown.grandTotal)}
                         </span>
                     </div>
                 </div>
@@ -246,14 +242,14 @@ export function QuotationSummary({
                             <span className="text-xs text-teal-600">Thanh toán ngay để khóa kho</span>
                         </div>
                         <span className="text-xl font-bold text-[#0F766E]">
-                            {formatCurrency(1000)}
+                            {formatCurrencyFull(depositAmount)}
                         </span>
                     </div>
                     <Separator className="bg-teal-200" />
                     <div className="flex justify-between items-center opacity-75">
                         <span className="text-sm font-medium text-slate-600">Còn lại (Thanh toán sau)</span>
                         <span className="text-base font-semibold text-slate-700">
-                            {formatCurrency(breakdown.grandTotal - 1000)}
+                            {formatCurrencyFull((breakdown?.grandTotal || 0) - depositAmount)}
                         </span>
                     </div>
                 </div>

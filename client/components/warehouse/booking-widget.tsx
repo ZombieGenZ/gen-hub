@@ -41,6 +41,7 @@ import { CouponService } from '@/services/coupons/coupon.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { publicQuotationService, QuotationApiResponse } from '@/services/public-quotation/public-quotation.service';
 import { CouponDrawer, CouponTriggerButton } from '@/components/checkout/CouponDrawer';
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 interface BookingWidgetProps {
     warehouseId?: string;
@@ -487,10 +488,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                         ) : (
                             <>
                                 <span className="text-3xl font-black text-[#0F766E] tracking-tight">
-                                    {quotation.grandTotal >= 1000000000
-                                        ? `${(quotation.grandTotal / 1000000000).toFixed(2).replace('.', ',')} Tỷ`
-                                        : `${Math.round(quotation.grandTotal).toLocaleString('vi-VN')}₫`
-                                    }
+                                    {formatCurrencyFull(quotation.grandTotal)}
                                 </span>
                                 <span className="text-slate-500 font-medium">/ tổng</span>
                             </>
@@ -498,7 +496,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-slate-500">
-                            ~{Math.round(quotation.grandTotal / durationMonths).toLocaleString('vi-VN')}₫/{unit}
+                            ~{formatCurrencyFull(quotation.grandTotal / durationMonths)}/{unit}
                         </span>
                         {(selectedTier?.discount_percent || 0) > 0 && (
                             <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none">
@@ -587,7 +585,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                                         </div>
                                         <div className="text-right">
                                             <p className="font-bold text-[#0F766E]">
-                                                {row.price_per_month.toLocaleString('vi-VN')}₫
+                                                {formatCurrencyFull(row.price_per_month)}
                                             </p>
                                             <p className="text-xs text-slate-500">/tháng</p>
                                         </div>
@@ -631,13 +629,13 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                                                 {insPrice > 0 && (
                                                     <div className="text-right shrink-0">
                                                         <span className="text-xs font-bold text-[#0F766E]">
-                                                            +{insPrice.toLocaleString('vi-VN')}đ/tháng
+                                                            +{formatCurrencyFull(insPrice)}/tháng
                                                         </span>
                                                         {ins.use_management_fee && (
                                                             <span className="text-[10px] text-slate-400 block">
                                                                 (Phí QL: {ins.management_fee_type === 'PERCENT'
                                                                     ? `${ins.management_fee_value}%`
-                                                                    : `${parseFloat(ins.management_fee_value).toLocaleString('vi-VN')}đ`
+                                                                    : formatCurrencyFull(parseFloat(ins.management_fee_value))
                                                                 })
                                                             </span>
                                                         )}
@@ -684,7 +682,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                                                 {addon.name}
                                             </Label>
                                             <p className="text-xs text-slate-500">
-                                                +{addon.price.toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                                +{formatCurrencyFull(addon.price)}/{addon.is_monthly_payment ? 'tháng' : 'lần'}
                                                 {addon.description && ` • ${addon.description}`}
                                             </p>
                                         </div>
@@ -719,16 +717,16 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 {/* Price Breakdown */}
                 <div className="space-y-2 text-sm pt-2">
                     <div className="flex justify-between text-slate-600">
-                        <span>Giá thuê ({quotation.basePrice.toLocaleString('vi-VN')}₫ x {durationMonths} tháng)</span>
+                        <span>Giá thuê ({formatCurrencyFull(quotation.basePrice)} x {durationMonths} tháng)</span>
                         <span className="font-medium text-slate-900">
-                            {(quotation.basePrice * durationMonths).toLocaleString('vi-VN')}₫
+                            {formatCurrencyFull(quotation.basePrice * durationMonths)}
                         </span>
                     </div>
                     {quotation.durationDiscountAmount > 0 && (
                         <div className="flex justify-between text-orange-600">
                             <span>Giảm giá kỳ hạn ({quotation.durationDiscountPercent}%)</span>
                             <span className="font-medium">
-                                -{quotation.durationDiscountAmount.toLocaleString('vi-VN')}₫
+                                -{formatCurrencyFull(quotation.durationDiscountAmount)}
                             </span>
                         </div>
                     )}
@@ -736,7 +734,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                         <div className="flex justify-between text-slate-600">
                             <span>Dịch vụ cộng thêm</span>
                             <span className="font-medium text-slate-900">
-                                +{quotation.addonsCost.toLocaleString('vi-VN')}₫
+                                +{formatCurrencyFull(quotation.addonsCost)}
                             </span>
                         </div>
                     )}
@@ -744,28 +742,28 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                         <div className="flex justify-between text-slate-600">
                             <span>Bảo hiểm</span>
                             <span className="font-medium text-slate-900">
-                                +{quotation.insuranceCost.toLocaleString('vi-VN')}₫
+                                +{formatCurrencyFull(quotation.insuranceCost)}
                             </span>
                         </div>
                     )}
                     <div className="flex justify-between text-slate-600">
                         <span>Phí dịch vụ (10%)</span>
                         <span className="font-medium text-slate-900">
-                            {quotation.serviceFee.toLocaleString('vi-VN')}₫
+                            +{formatCurrencyFull(quotation.serviceFee)}
                         </span>
                     </div>
                     {appliedCoupon && (
                         <div className="flex justify-between text-[#0F766E]">
                             <span>Giảm giá coupon</span>
                             <span className="font-medium">
-                                -{quotation.couponDiscount.toLocaleString('vi-VN')}₫
+                                -{formatCurrencyFull(quotation.couponDiscount)}
                             </span>
                         </div>
                     )}
                     <div className="flex justify-between items-center text-base pt-2 font-bold text-slate-900 border-t border-slate-100 mt-2">
                         <span>Tổng cộng</span>
                         <span className="text-[#0F766E]">
-                            {Math.round(quotation.grandTotal).toLocaleString('vi-VN')}₫
+                            {formatCurrencyFull(quotation.grandTotal)}
                         </span>
                     </div>
                 </div>

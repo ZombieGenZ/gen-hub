@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { validatePhoneNumber, validateEmail } from '@/lib/validation.utils';
 
 // Common business titles for the representative
-const REPRESENTATIVE_TITLES = [
+export const REPRESENTATIVE_TITLES = [
     { value: 'giam-doc', label: 'Giám đốc' },
     { value: 'tong-giam-doc', label: 'Tổng Giám đốc' },
     { value: 'chu-tich-hdqt', label: 'Chủ tịch HĐQT' },

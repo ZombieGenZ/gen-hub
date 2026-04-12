@@ -75,6 +75,9 @@ export class RentalContractRepository {
                 },
             },
         },
+        payments: {
+            orderBy: { created_at: 'desc' as const },
+        },
     };
 
     // Include với owner info để gửi email

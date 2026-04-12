@@ -13,6 +13,7 @@ export interface QuotationBreakdown {
   couponDiscount: number;
   subtotal: number;
   grandTotal: number;
+  depositAmount?: number;
 }
 
 export interface RowTemplate {
