@@ -4,7 +4,6 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Property, mapWarehouseToProperty } from '@/data/mockProperties';
 import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
-import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import PropertySearch from '@/components/search/PropertySearch';
@@ -34,7 +33,6 @@ const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 function WarehouseSlugPage({ slug }: { slug: string }) {
     return (
         <div className="kho-bai-page">
-            <PrimeNestHeader isLogin={false} />
             <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
                 <PropertySearch initialLocationSlug={slug} />
             </Suspense>

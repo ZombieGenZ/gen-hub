@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
-import { Check, HelpCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -101,7 +100,6 @@ export default function PricingPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900">
-            <PrimeNestHeader isLogin={isLogin} />
 
             <main className="flex-1 w-full flex flex-col items-center">
                 {/* Hero Section */}

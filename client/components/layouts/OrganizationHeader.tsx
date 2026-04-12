@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
+import UserDropdown from "@/components/ui/UserDropdown";
 
 interface OrganizationHeaderProps {
     children?: React.ReactNode;
@@ -95,6 +96,11 @@ export function OrganizationHeader({ children }: OrganizationHeaderProps) {
                         </ol>
                     )}
                 </nav>
+
+                {/* Account Actions */}
+                <div className="flex items-center gap-4 ml-auto">
+                    <UserDropdown />
+                </div>
             </div>
         </header>
     );

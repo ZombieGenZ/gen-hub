@@ -1,7 +1,6 @@
 "use client";
 
 import React, { Suspense } from 'react';
-import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import PropertySearch from '@/components/search/PropertySearch';
 import './kho-bai.css';
