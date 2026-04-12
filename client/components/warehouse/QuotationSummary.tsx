@@ -46,6 +46,9 @@ export function QuotationSummary({
 }: QuotationSummaryProps) {
     const depositAmount = breakdown?.depositAmount || Math.round((breakdown?.grandTotal || 0) * 0.1);
     
+    // Tính giảm giá bao gồm cả VAT (coupon giảm trên tổng trước thuế)
+    const couponDiscountWithVAT = appliedCoupon?.discount || 0;
+    
     return (
         <div className={cn(
             "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden",
@@ -168,12 +171,10 @@ export function QuotationSummary({
                     </span>
                 </div>
 
-                {/* Service Fee */}
-                <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500">Phí dịch vụ (10%)</span>
-                    <span className="text-slate-700">
-                        +{formatCurrencyFull(breakdown.serviceFee)}
-                    </span>
+                {/* VAT */}
+                <div className="flex justify-between items-center text-slate-600">
+                    <span>VAT (10%)</span>
+                    <span className="font-medium text-slate-700">+{formatCurrencyFull(breakdown.serviceFee)}</span>
                 </div>
 
                 {/* Coupon Section */}
@@ -198,7 +199,7 @@ export function QuotationSummary({
                             </div>
                         </div>
                         <span className="text-teal-600 font-semibold">
-                            -{formatCurrencyFull(appliedCoupon.discount)}
+                            -{formatCurrencyFull(couponDiscountWithVAT)}
                         </span>
                     </div>
                 ) : onCouponClick ? (
