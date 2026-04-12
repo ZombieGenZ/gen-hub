@@ -44,6 +44,15 @@ export default function WarehousePickerPage() {
 
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-700/50">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-3 text-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+          </svg>
+          Quay lại Dashboard
+        </button>
         <h1 className="text-2xl font-bold text-white">🏭 Kho 3D — Chọn Kho</h1>
         <p className="text-slate-400 text-sm mt-1">
           Chọn một kho để xem mô hình 3D với dữ liệu thực

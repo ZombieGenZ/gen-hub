@@ -668,7 +668,7 @@ export function WarehouseBookingPanel({
                                                     {addon.name}
                                                 </Label>
                                                 <p className="text-sm font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
-                                                    +{addon.price.toLocaleString('vi-VN')}đ<span className="text-[10px] font-medium opacity-80 text-amber-700 dark:text-amber-400">/{addon.is_monthly_payment ? 'tháng' : 'lần'}</span>
+                                                    +{Number(addon.price).toLocaleString('vi-VN')}đ<span className="text-[10px] font-medium opacity-80 text-amber-700 dark:text-amber-400">/{addon.is_monthly_payment ? 'tháng' : 'lần'}</span>
                                                 </p>
                                             </div>
                                         </div>
