@@ -171,11 +171,10 @@ export function ManageAddonsModal({
                                             return (
                                                 <label
                                                     key={addon.id}
-                                                    className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
-                                                        isChecked
+                                                    className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${isChecked
                                                             ? "border-brand/40 bg-brand/5 shadow-sm"
                                                             : "hover:bg-accent/50 hover:border-border"
-                                                    } ${isLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+                                                        } ${isLocked ? "opacity-60 cursor-not-allowed" : ""}`}
                                                 >
                                                     <Checkbox
                                                         checked={isChecked}
@@ -229,15 +228,13 @@ export function ManageAddonsModal({
                                             return (
                                                 <div
                                                     key={amenity.id}
-                                                    className={`flex items-start gap-3 p-3.5 rounded-xl border ${
-                                                        isIncluded
+                                                    className={`flex items-start gap-3 p-3.5 rounded-xl border ${isIncluded
                                                             ? "border-emerald-200/60 bg-emerald-50/50 dark:bg-emerald-900/10"
                                                             : "border-dashed opacity-50"
-                                                    }`}
+                                                        }`}
                                                 >
-                                                    <div className={`w-4 h-4 mt-0.5 shrink-0 rounded-sm border flex items-center justify-center ${
-                                                        isIncluded ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30"
-                                                    }`}>
+                                                    <div className={`w-4 h-4 mt-0.5 shrink-0 rounded-sm border flex items-center justify-center ${isIncluded ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30"
+                                                        }`}>
                                                         {isIncluded && <span className="text-[10px]">✓</span>}
                                                     </div>
                                                     <div className="flex-1 min-w-0">

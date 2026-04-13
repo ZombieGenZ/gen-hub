@@ -260,13 +260,12 @@ export function ProductBrowseModal({
                                 return (
                                     <label
                                         key={product.id}
-                                        className={`grid ${warehouseId ? 'grid-cols-[auto_1fr_90px_80px_110px]' : 'grid-cols-[auto_1fr_90px_80px_100px]'} gap-4 items-center px-6 py-3 cursor-pointer transition-colors ${
-                                            isDisabled
+                                        className={`grid ${warehouseId ? 'grid-cols-[auto_1fr_90px_80px_110px]' : 'grid-cols-[auto_1fr_90px_80px_100px]'} gap-4 items-center px-6 py-3 cursor-pointer transition-colors ${isDisabled
                                                 ? "opacity-40 cursor-not-allowed bg-muted/20"
                                                 : isSelected
-                                                  ? "bg-[#0F766E]/5"
-                                                  : "hover:bg-muted/40"
-                                        }`}
+                                                    ? "bg-[#0F766E]/5"
+                                                    : "hover:bg-muted/40"
+                                            }`}
                                     >
                                         <Checkbox
                                             checked={isSelected}
@@ -320,9 +319,8 @@ export function ProductBrowseModal({
                                                         Hết hàng
                                                     </span>
                                                 ) : (
-                                                    <span className={`text-sm font-semibold tabular-nums ${
-                                                        qtyAvailable < 10 ? 'text-amber-600' : 'text-[#0F766E]'
-                                                    }`}>
+                                                    <span className={`text-sm font-semibold tabular-nums ${qtyAvailable < 10 ? 'text-amber-600' : 'text-[#0F766E]'
+                                                        }`}>
                                                         {qtyAvailable.toLocaleString('vi-VN')}
                                                     </span>
                                                 )

@@ -302,335 +302,335 @@ export function CreateOutboundDialog({
                     </DialogHeader>
 
                     <div className="flex-1 min-h-0 overflow-y-auto">
-                    {/* Section 1 — Thông tin chung */}
-                    <div className="p-6 border-b">
-                        <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
-                            1. Thông tin chung
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label>Kho xuất *</Label>
-                                <Select value={formWarehouse} onValueChange={setFormWarehouse}>
-                                    <SelectTrigger className="rounded-xl">
-                                        <SelectValue placeholder="Chọn kho" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {warehouses.map((w) => (
-                                            <SelectItem key={w.id} value={w.id}>
-                                                {w.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                        {/* Section 1 — Thông tin chung */}
+                        <div className="p-6 border-b">
+                            <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
+                                1. Thông tin chung
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Kho xuất *</Label>
+                                    <Select value={formWarehouse} onValueChange={setFormWarehouse}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Chọn kho" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {warehouses.map((w) => (
+                                                <SelectItem key={w.id} value={w.id}>
+                                                    {w.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Đối tác nhận</Label>
+                                    <Select value={formPartner} onValueChange={setFormPartner}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Chọn đối tác" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {partners.map((p) => (
+                                                <SelectItem key={p.id} value={p.id}>
+                                                    {p.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Mã SO tham chiếu</Label>
+                                    <Input
+                                        value={formSOCode}
+                                        onChange={(e) => setFormSOCode(e.target.value)}
+                                        placeholder="Nhập mã SO"
+                                        className="rounded-xl"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Đối tác nhận</Label>
-                                <Select value={formPartner} onValueChange={setFormPartner}>
-                                    <SelectTrigger className="rounded-xl">
-                                        <SelectValue placeholder="Chọn đối tác" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {partners.map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>
-                                                {p.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mã SO tham chiếu</Label>
+                            <div className="mt-4 space-y-2">
+                                <Label>Ghi chú</Label>
                                 <Input
-                                    value={formSOCode}
-                                    onChange={(e) => setFormSOCode(e.target.value)}
-                                    placeholder="Nhập mã SO"
+                                    value={formNotes}
+                                    onChange={(e) => setFormNotes(e.target.value)}
+                                    placeholder="Ghi chú cho phiếu xuất..."
                                     className="rounded-xl"
                                 />
                             </div>
                         </div>
-                        <div className="mt-4 space-y-2">
-                            <Label>Ghi chú</Label>
-                            <Input
-                                value={formNotes}
-                                onChange={(e) => setFormNotes(e.target.value)}
-                                placeholder="Ghi chú cho phiếu xuất..."
-                                className="rounded-xl"
-                            />
-                        </div>
-                    </div>
 
-                    {/* Section 2 — Chiến lược xuất hàng */}
-                    <div className="p-6 border-b">
-                        <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
-                            2. Chiến lược xuất hàng
-                        </h3>
-                        <div className="outbound-strategy">
-                            {STRATEGY_OPTIONS.map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    className={`outbound-strategy__option ${formStrategy === opt.value
+                        {/* Section 2 — Chiến lược xuất hàng */}
+                        <div className="p-6 border-b">
+                            <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
+                                2. Chiến lược xuất hàng
+                            </h3>
+                            <div className="outbound-strategy">
+                                {STRATEGY_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        className={`outbound-strategy__option ${formStrategy === opt.value
                                             ? "outbound-strategy__option--active"
                                             : ""
-                                        } btn-raw`}
-                                    onClick={() => setFormStrategy(opt.value)}
-                                >
-                                    <div className="outbound-strategy__option-title">
-                                        {opt.title}
-                                    </div>
-                                    <div className="outbound-strategy__option-desc">
-                                        {opt.desc}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Section 3 — Chi tiết hàng hóa */}
-                    <div className="p-6 border-b">
-                        <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
-                            3. Chi tiết hàng hóa
-                        </h3>
-
-                        {/* ProductSelector */}
-                        <div className="mb-4">
-                            <ProductSelector
-                                value={productSearch}
-                                onChange={setProductSearch}
-                                suggestions={filteredProducts}
-                                onSelect={addProduct}
-                                onBrowse={() => setBrowseOpen(true)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && productSearch.trim()) {
-                                        const barcode = productSearch.trim();
-                                        const directMatch = products.find(
-                                            (p) => p.barcode === barcode,
-                                        );
-                                        if (directMatch) {
-                                            addProduct(directMatch, barcode);
-                                            return;
-                                        }
-                                        for (const p of products) {
-                                            if (p.units) {
-                                                const unitMatch = p.units.find(
-                                                    (pu) => pu.barcode === barcode,
-                                                );
-                                                if (unitMatch) {
-                                                    addProduct(p, barcode);
-                                                    return;
-                                                }
-                                            }
-                                        }
-                                        if (filteredProducts.length === 1) {
-                                            addProduct(filteredProducts[0]);
-                                        }
-                                    }
-                                }}
-                            />
+                                            } btn-raw`}
+                                        onClick={() => setFormStrategy(opt.value)}
+                                    >
+                                        <div className="outbound-strategy__option-title">
+                                            {opt.title}
+                                        </div>
+                                        <div className="outbound-strategy__option-desc">
+                                            {opt.desc}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Table sản phẩm đã thêm */}
-                        {formItems.length > 0 ? (
-                            <div className="border rounded-2xl overflow-hidden">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-muted/40 border-b">
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                Sản phẩm
-                                            </th>
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[130px]">
-                                                Số lượng
-                                            </th>
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
-                                                Đơn vị
-                                            </th>
-                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[100px]">
-                                                Tồn kho
-                                            </th>
-                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
-                                                Giá vốn
-                                            </th>
-                                            <th className="px-4 py-2.5 w-[48px]" />
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {formItems.map((item, idx) => {
-                                            const availableUnits: {
-                                                id: string;
-                                                name: string;
-                                                conversion_rate: number;
-                                            }[] = [];
-                                            if (item.product.base_unit) {
-                                                availableUnits.push({
-                                                    id: item.product.base_unit_id,
-                                                    name:
-                                                        item.product.base_unit.name ||
-                                                        "Đơn vị cơ bản",
-                                                    conversion_rate: 1,
-                                                });
+                        {/* Section 3 — Chi tiết hàng hóa */}
+                        <div className="p-6 border-b">
+                            <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
+                                3. Chi tiết hàng hóa
+                            </h3>
+
+                            {/* ProductSelector */}
+                            <div className="mb-4">
+                                <ProductSelector
+                                    value={productSearch}
+                                    onChange={setProductSearch}
+                                    suggestions={filteredProducts}
+                                    onSelect={addProduct}
+                                    onBrowse={() => setBrowseOpen(true)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && productSearch.trim()) {
+                                            const barcode = productSearch.trim();
+                                            const directMatch = products.find(
+                                                (p) => p.barcode === barcode,
+                                            );
+                                            if (directMatch) {
+                                                addProduct(directMatch, barcode);
+                                                return;
                                             }
-                                            if (item.product.units) {
-                                                for (const pu of item.product.units) {
-                                                    if (pu.is_active && pu.unit) {
-                                                        availableUnits.push({
-                                                            id: pu.unit_id,
-                                                            name: pu.unit.name || "—",
-                                                            conversion_rate: pu.conversion_rate,
-                                                        });
+                                            for (const p of products) {
+                                                if (p.units) {
+                                                    const unitMatch = p.units.find(
+                                                        (pu) => pu.barcode === barcode,
+                                                    );
+                                                    if (unitMatch) {
+                                                        addProduct(p, barcode);
+                                                        return;
                                                     }
                                                 }
                                             }
+                                            if (filteredProducts.length === 1) {
+                                                addProduct(filteredProducts[0]);
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
 
-                                            const currentUnit = availableUnits.find(
-                                                (u) => u.id === item.unit_id,
-                                            );
-                                            const conversionRate =
-                                                currentUnit?.conversion_rate ?? 1;
-                                            const baseUnitName =
-                                                item.product.base_unit?.name || "đv";
-                                            const convertedQty = item.quantity * conversionRate;
-                                            const qtyAvailable = item.product.quantity_available;
+                            {/* Table sản phẩm đã thêm */}
+                            {formItems.length > 0 ? (
+                                <div className="border rounded-2xl overflow-hidden">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-muted/40 border-b">
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                    Sản phẩm
+                                                </th>
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[130px]">
+                                                    Số lượng
+                                                </th>
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
+                                                    Đơn vị
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[100px]">
+                                                    Tồn kho
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
+                                                    Giá vốn
+                                                </th>
+                                                <th className="px-4 py-2.5 w-[48px]" />
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {formItems.map((item, idx) => {
+                                                const availableUnits: {
+                                                    id: string;
+                                                    name: string;
+                                                    conversion_rate: number;
+                                                }[] = [];
+                                                if (item.product.base_unit) {
+                                                    availableUnits.push({
+                                                        id: item.product.base_unit_id,
+                                                        name:
+                                                            item.product.base_unit.name ||
+                                                            "Đơn vị cơ bản",
+                                                        conversion_rate: 1,
+                                                    });
+                                                }
+                                                if (item.product.units) {
+                                                    for (const pu of item.product.units) {
+                                                        if (pu.is_active && pu.unit) {
+                                                            availableUnits.push({
+                                                                id: pu.unit_id,
+                                                                name: pu.unit.name || "—",
+                                                                conversion_rate: pu.conversion_rate,
+                                                            });
+                                                        }
+                                                    }
+                                                }
 
-                                            return (
-                                                <tr
-                                                    key={item.product.id}
-                                                    className="group hover:bg-muted/30 transition-colors"
-                                                >
-                                                    {/* Sản phẩm */}
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <RowProductImage
-                                                                src={item.product.image_url}
-                                                                alt={item.product.name}
-                                                            />
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-medium truncate max-w-[180px]">
-                                                                    {item.product.name}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {item.product.sku}
-                                                                </p>
+                                                const currentUnit = availableUnits.find(
+                                                    (u) => u.id === item.unit_id,
+                                                );
+                                                const conversionRate =
+                                                    currentUnit?.conversion_rate ?? 1;
+                                                const baseUnitName =
+                                                    item.product.base_unit?.name || "đv";
+                                                const convertedQty = item.quantity * conversionRate;
+                                                const qtyAvailable = item.product.quantity_available;
+
+                                                return (
+                                                    <tr
+                                                        key={item.product.id}
+                                                        className="group hover:bg-muted/30 transition-colors"
+                                                    >
+                                                        {/* Sản phẩm */}
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <RowProductImage
+                                                                    src={item.product.image_url}
+                                                                    alt={item.product.name}
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-sm font-medium truncate max-w-[180px]">
+                                                                        {item.product.name}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {item.product.sku}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
+                                                        </td>
 
-                                                    {/* Số lượng */}
-                                                    <td className="px-4 py-3 w-[130px]">
-                                                        <Input
-                                                            type="number"
-                                                            min={1}
-                                                            value={item.quantity}
-                                                            onChange={(e) =>
-                                                                updateItemQty(
-                                                                    idx,
-                                                                    parseInt(e.target.value) || 1,
-                                                                )
-                                                            }
-                                                            className={`rounded-xl h-9 text-sm w-full ${item.stockError
+                                                        {/* Số lượng */}
+                                                        <td className="px-4 py-3 w-[130px]">
+                                                            <Input
+                                                                type="number"
+                                                                min={1}
+                                                                value={item.quantity}
+                                                                onChange={(e) =>
+                                                                    updateItemQty(
+                                                                        idx,
+                                                                        parseInt(e.target.value) || 1,
+                                                                    )
+                                                                }
+                                                                className={`rounded-xl h-9 text-sm w-full ${item.stockError
                                                                     ? "border-red-500 focus-visible:ring-red-500"
                                                                     : ""
-                                                                }`}
-                                                            placeholder="SL"
-                                                        />
-                                                        {conversionRate > 1 && (
-                                                            <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                                                                ={" "}
-                                                                {convertedQty.toLocaleString(
-                                                                    "vi-VN",
-                                                                )}{" "}
-                                                                {baseUnitName}
-                                                            </p>
-                                                        )}
-                                                        {item.stockError && (
-                                                            <p className="text-[10px] text-red-500 mt-0.5">
-                                                                {item.stockError}
-                                                            </p>
-                                                        )}
-                                                    </td>
+                                                                    }`}
+                                                                placeholder="SL"
+                                                            />
+                                                            {conversionRate > 1 && (
+                                                                <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                                                                    ={" "}
+                                                                    {convertedQty.toLocaleString(
+                                                                        "vi-VN",
+                                                                    )}{" "}
+                                                                    {baseUnitName}
+                                                                </p>
+                                                            )}
+                                                            {item.stockError && (
+                                                                <p className="text-[10px] text-red-500 mt-0.5">
+                                                                    {item.stockError}
+                                                                </p>
+                                                            )}
+                                                        </td>
 
-                                                    {/* Đơn vị */}
-                                                    <td className="px-4 py-3 w-[120px]">
-                                                        <Select
-                                                            value={item.unit_id}
-                                                            onValueChange={(v) =>
-                                                                updateItemUnit(idx, v)
-                                                            }
-                                                        >
-                                                            <SelectTrigger className="rounded-xl h-9 text-xs w-full">
-                                                                <SelectValue placeholder="Đơn vị" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {availableUnits.map((u) => (
-                                                                    <SelectItem
-                                                                        key={u.id}
-                                                                        value={u.id}
-                                                                    >
-                                                                        <span>{u.name}</span>
-                                                                        {u.conversion_rate > 1 && (
-                                                                            <span className="text-muted-foreground ml-1">
-                                                                                (×
-                                                                                {u.conversion_rate})
-                                                                            </span>
-                                                                        )}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </td>
+                                                        {/* Đơn vị */}
+                                                        <td className="px-4 py-3 w-[120px]">
+                                                            <Select
+                                                                value={item.unit_id}
+                                                                onValueChange={(v) =>
+                                                                    updateItemUnit(idx, v)
+                                                                }
+                                                            >
+                                                                <SelectTrigger className="rounded-xl h-9 text-xs w-full">
+                                                                    <SelectValue placeholder="Đơn vị" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {availableUnits.map((u) => (
+                                                                        <SelectItem
+                                                                            key={u.id}
+                                                                            value={u.id}
+                                                                        >
+                                                                            <span>{u.name}</span>
+                                                                            {u.conversion_rate > 1 && (
+                                                                                <span className="text-muted-foreground ml-1">
+                                                                                    (×
+                                                                                    {u.conversion_rate})
+                                                                                </span>
+                                                                            )}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </td>
 
-                                                    {/* Tồn kho */}
-                                                    <td className="px-4 py-3 w-[100px] text-right">
-                                                        <span
-                                                            className={`text-sm font-medium tabular-nums ${qtyAvailable != null &&
+                                                        {/* Tồn kho */}
+                                                        <td className="px-4 py-3 w-[100px] text-right">
+                                                            <span
+                                                                className={`text-sm font-medium tabular-nums ${qtyAvailable != null &&
                                                                     item.quantity > qtyAvailable
                                                                     ? "text-red-500"
                                                                     : "text-muted-foreground"
-                                                                }`}
-                                                        >
-                                                            {qtyAvailable != null
-                                                                ? qtyAvailable.toLocaleString(
+                                                                    }`}
+                                                            >
+                                                                {qtyAvailable != null
+                                                                    ? qtyAvailable.toLocaleString(
+                                                                        "vi-VN",
+                                                                    )
+                                                                    : "—"}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* Giá vốn */}
+                                                        <td className="px-4 py-3 w-[110px] text-right text-sm text-muted-foreground tabular-nums">
+                                                            {item.product.cost_price != null
+                                                                ? item.product.cost_price.toLocaleString(
                                                                     "vi-VN",
-                                                                )
+                                                                ) + "đ"
                                                                 : "—"}
-                                                        </span>
-                                                    </td>
+                                                        </td>
 
-                                                    {/* Giá vốn */}
-                                                    <td className="px-4 py-3 w-[110px] text-right text-sm text-muted-foreground tabular-nums">
-                                                        {item.product.cost_price != null
-                                                            ? item.product.cost_price.toLocaleString(
-                                                                "vi-VN",
-                                                            ) + "đ"
-                                                            : "—"}
-                                                    </td>
-
-                                                    {/* Xóa */}
-                                                    <td className="px-4 py-3 w-[48px]">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            onClick={() => removeItem(idx)}
-                                                        >
-                                                            <TrashIcon className="w-4 h-4" />
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
-                                <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu xuất
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                                                        {/* Xóa */}
+                                                        <td className="px-4 py-3 w-[48px]">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                onClick={() => removeItem(idx)}
+                                                            >
+                                                                <TrashIcon className="w-4 h-4" />
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
+                                    <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu xuất
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Footer */}
