@@ -133,6 +133,7 @@ export class TwoFactorService {
       secret: userSecret,
       encoding: 'base32',
       token: dto.two_factor_code,
+      window: 1,
     });
 
     if (!isValid) {

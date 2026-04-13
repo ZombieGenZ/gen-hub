@@ -133,6 +133,17 @@ export default function RoleManagementPage() {
         }));
     };
 
+    const handleToggleModule = (modulePermissions: OrganizationPermission[]) => {
+        const moduleIds = modulePermissions.map((p) => p.id);
+        const allSelected = moduleIds.every((id) => formData.permission_ids.includes(id));
+        setFormData((prev) => ({
+            ...prev,
+            permission_ids: allSelected
+                ? prev.permission_ids.filter((id) => !moduleIds.includes(id))
+                : [...new Set([...prev.permission_ids, ...moduleIds])],
+        }));
+    };
+
     const handleSubmit = async () => {
         if (!formData.name.trim()) {
             showToast("Vui lòng nhập tên vai trò", "error");
@@ -311,13 +322,13 @@ export default function RoleManagementPage() {
             </Card>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
+                <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
                     <DialogHeader>
                         <DialogTitle>{dialogMode === "create" ? "Thêm vai trò mới" : "Chỉnh sửa vai trò"}</DialogTitle>
                         <DialogDescription>Định nghĩa tên, trạng thái và các quyền được gán cho vai trò.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4 py-4 overflow-hidden flex flex-col flex-1">
+                    <div className="flex flex-col flex-1 min-h-0 space-y-4 px-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="role-name">Tên vai trò</Label>
                             <Input
@@ -348,34 +359,60 @@ export default function RoleManagementPage() {
                             />
                         </div>
 
-                        <div className="space-y-2 flex-1 flex flex-col overflow-hidden">
-                            <Label>Quyền hạn</Label>
-                            <ScrollArea className="flex-1 border rounded-md p-4">
-                                {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => (
-                                    <div key={moduleName} className="mb-6 last:mb-0">
-                                        <h3 className="font-semibold text-sm mb-3 text-primary flex items-center gap-2">
-                                            <ShieldCheckIcon className="w-4 h-4" />
-                                            {moduleName}
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-3 ml-2">
+                        <div className="flex flex-col flex-1 min-h-0 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label>Quyền hạn</Label>
+                                <span className="text-xs text-muted-foreground">
+                                    Đã chọn {formData.permission_ids.length}/{permissions.length}
+                                </span>
+                            </div>
+                            <ScrollArea className="flex-1 min-h-0 border rounded-md">
+                                <div className="p-4 space-y-4">
+                                {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => {
+                                    const moduleIds = modulePermissions.map((p) => p.id);
+                                    const selectedCount = moduleIds.filter((id) => formData.permission_ids.includes(id)).length;
+                                    const allSelected = selectedCount === modulePermissions.length;
+                                    return (
+                                    <div key={moduleName} className="border border-border rounded-xl overflow-hidden">
+                                        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/50">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheckIcon className="w-4 h-4 text-primary" />
+                                                <span className="text-sm font-semibold capitalize">{moduleName}</span>
+                                                <Badge variant="secondary" className="text-[10px]">
+                                                    {selectedCount}/{modulePermissions.length}
+                                                </Badge>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleToggleModule(modulePermissions)}
+                                                className="text-xs text-primary hover:underline"
+                                            >
+                                                {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                                            </button>
+                                        </div>
+                                        <div className="p-3 space-y-1.5">
                                             {modulePermissions.map((permission) => (
-                                                <div key={permission.id} className="flex items-start space-x-3">
+                                                <label
+                                                    key={permission.id}
+                                                    htmlFor={permission.id}
+                                                    className="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-muted/30 transition-colors"
+                                                >
                                                     <Checkbox
                                                         id={permission.id}
                                                         checked={formData.permission_ids.includes(permission.id)}
                                                         onCheckedChange={() => handleTogglePermission(permission.id)}
                                                     />
-                                                    <div className="grid gap-1.5 leading-none">
-                                                        <label htmlFor={permission.id} className="text-sm font-medium leading-none">
-                                                            {permission.name}
-                                                        </label>
-                                                        <p className="text-xs text-muted-foreground">{permission.key}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium leading-none">{permission.name}</p>
+                                                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{permission.key}</p>
                                                     </div>
-                                                </div>
+                                                </label>
                                             ))}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
+                                </div>
                             </ScrollArea>
                         </div>
                     </div>

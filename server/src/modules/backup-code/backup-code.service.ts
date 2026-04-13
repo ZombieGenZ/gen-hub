@@ -178,9 +178,10 @@ export class BackupCodeService {
 
     const plainCodes = this.generateBackupCodes();
 
-    const hashedCodes = await Promise.all(
-      plainCodes.map((code) => this.hashCode(code)),
-    );
+    const hashedCodes: string[] = [];
+    for (const code of plainCodes) {
+      hashedCodes.push(await this.hashCode(code));
+    }
     await this.backupCodeRepository.createMany(userId, hashedCodes);
 
     return plainCodes;

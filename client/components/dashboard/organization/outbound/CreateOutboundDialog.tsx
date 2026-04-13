@@ -291,8 +291,8 @@ export function CreateOutboundDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-y-auto rounded-3xl p-0">
-                    <DialogHeader className="p-6 border-b">
+                <DialogContent className="sm:max-w-4xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0">
+                    <DialogHeader className="p-6 border-b shrink-0">
                         <DialogTitle className="text-[20px] leading-[130%]">
                             Tạo phiếu xuất kho
                         </DialogTitle>
@@ -301,6 +301,7 @@ export function CreateOutboundDialog({
                         </DialogDescription>
                     </DialogHeader>
 
+                    <div className="flex-1 min-h-0 overflow-y-auto">
                     {/* Section 1 — Thông tin chung */}
                     <div className="p-6 border-b">
                         <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
@@ -630,9 +631,10 @@ export function CreateOutboundDialog({
                             </div>
                         )}
                     </div>
+                    </div>
 
-                    {/* Footer sticky */}
-                    <div className="sticky bottom-0 bg-white border-t p-4 flex items-center justify-between">
+                    {/* Footer */}
+                    <div className="shrink-0 bg-background border-t p-4 flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
                             <span className="font-semibold text-foreground">
                                 {formItems.length}

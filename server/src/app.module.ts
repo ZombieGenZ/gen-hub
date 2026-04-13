@@ -98,6 +98,7 @@ import { InventoryRequestModule } from './modules/inventory-request/inventory-re
 import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inventory/warehouse-manager-inventory.module';
 import { AppDownloadModule } from './modules/app-download/app-download.module';
 import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
+import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
 
 @Module({
   imports: [
@@ -311,6 +312,9 @@ import { CustomerReviewModule } from './modules/customer-review/customer-review.
 
     // App Download Distribution
     AppDownloadModule,
+
+    // Admin Panel
+    AdminPanelModule,
   ],
   controllers: [AppController],
   providers: [

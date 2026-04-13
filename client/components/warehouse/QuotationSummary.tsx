@@ -44,10 +44,12 @@ export function QuotationSummary({
     className,
     showHeader = true,
 }: QuotationSummaryProps) {
-    const depositAmount = breakdown?.depositAmount || Math.round((breakdown?.grandTotal || 0) * 0.1);
-    
-    // Tính giảm giá bao gồm cả VAT (coupon giảm trên tổng trước thuế)
-    const couponDiscountWithVAT = appliedCoupon?.discount || 0;
+    // Tính phí dịch vụ sau khi áp dụng mã giảm giá
+    const couponAmount = appliedCoupon?.discount || breakdown.couponDiscount || 0;
+    const discountedSubtotal = Math.max(0, breakdown.subtotal - couponAmount);
+    const effectiveServiceFee = Math.round(discountedSubtotal * 0.1);
+    const effectiveGrandTotal = discountedSubtotal + effectiveServiceFee;
+    const depositAmount = breakdown?.depositAmount || Math.round(effectiveGrandTotal * 0.1);
     
     return (
         <div className={cn(
@@ -171,12 +173,6 @@ export function QuotationSummary({
                     </span>
                 </div>
 
-                {/* VAT */}
-                <div className="flex justify-between items-center text-slate-600">
-                    <span>VAT (10%)</span>
-                    <span className="font-medium text-slate-700">+{formatCurrencyFull(breakdown.serviceFee)}</span>
-                </div>
-
                 {/* Coupon Section */}
                 {appliedCoupon && appliedCoupon.discount > 0 ? (
                     <div
@@ -199,7 +195,7 @@ export function QuotationSummary({
                             </div>
                         </div>
                         <span className="text-teal-600 font-semibold">
-                            -{formatCurrencyFull(couponDiscountWithVAT)}
+                            -{formatCurrencyFull(couponAmount)}
                         </span>
                     </div>
                 ) : onCouponClick ? (
@@ -220,6 +216,12 @@ export function QuotationSummary({
                     </button>
                 ) : null}
 
+                {/* Phí dịch vụ - tính trên tổng sau giảm giá */}
+                <div className="flex justify-between items-center text-slate-600">
+                    <span>Phí dịch vụ (10%)</span>
+                    <span className="font-medium text-slate-700">+{formatCurrencyFull(effectiveServiceFee)}</span>
+                </div>
+
                 <Separator className="bg-slate-200" />
 
                 {/* Grand Total */}
@@ -230,7 +232,7 @@ export function QuotationSummary({
                     </div>
                     <div className="text-right">
                         <span className="text-2xl font-black text-slate-900">
-                            {formatCurrencyFull(breakdown.grandTotal)}
+                            {formatCurrencyFull(effectiveGrandTotal)}
                         </span>
                     </div>
                 </div>
@@ -250,7 +252,7 @@ export function QuotationSummary({
                     <div className="flex justify-between items-center opacity-75">
                         <span className="text-sm font-medium text-slate-600">Còn lại (Thanh toán sau)</span>
                         <span className="text-base font-semibold text-slate-700">
-                            {formatCurrencyFull((breakdown?.grandTotal || 0) - depositAmount)}
+                            {formatCurrencyFull(Math.max(0, effectiveGrandTotal - depositAmount))}
                         </span>
                     </div>
                 </div>

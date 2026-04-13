@@ -99,7 +99,6 @@ const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
     serviceFee: quotation.service_fee,
     couponDiscount: quotation.coupon_discount,
     grandTotal: quotation.grand_total,
-    depositAmount: quotation.deposit_amount,
 });
 
 const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
@@ -785,7 +784,7 @@ function CheckoutContainer() {
 
                 // Subtotal (client-side fallback)
                 const subtotal = totalBaseRental - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
-                const serviceFee = subtotal * 0.1; // 10%
+                const serviceFee = subtotal * 0.1; // 10% on original subtotal (for API-based flow)
 
                 // Attempt server-side quotation (authoritative, includes coupon discount)
                 let apiQuotationResult: QuotationApiResponse | null = null;
@@ -807,9 +806,14 @@ function CheckoutContainer() {
                 }
 
                 const couponDiscount = apiQuotationResult ? apiQuotationResult.coupon_discount : 0;
+                // Tính phí dịch vụ sau khi áp dụng mã giảm giá (giảm cả VAT)
+                const discountedSubtotal = Math.max(0, subtotal - couponDiscount);
+                const effectiveServiceFee = apiQuotationResult
+                    ? apiQuotationResult.service_fee
+                    : Math.round(discountedSubtotal * 0.1);
                 const grandTotal = apiQuotationResult
                     ? apiQuotationResult.grand_total
-                    : subtotal + serviceFee - couponDiscount;
+                    : discountedSubtotal + effectiveServiceFee;
 
                 const amount = apiQuotationResult ? apiQuotationResult.deposit_amount : 1000;
 
@@ -885,7 +889,7 @@ function CheckoutContainer() {
                             insuranceCost,
                             managementFee,
                             subtotal,
-                            serviceFee,
+                            serviceFee: effectiveServiceFee,
                             couponDiscount,
                             grandTotal
                         },

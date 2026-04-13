@@ -254,7 +254,7 @@ export function PartnerFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         {mode === "create" ? (
@@ -276,7 +276,7 @@ export function PartnerFormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 overflow-y-auto">
+                <ScrollArea className="flex-1 min-h-0">
                     <div className="space-y-6 px-6 py-6">
                         <div className="space-y-4">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">

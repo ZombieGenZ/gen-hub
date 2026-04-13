@@ -174,7 +174,7 @@ export function ProductBrowseModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl max-h-[88vh] flex flex-col rounded-3xl p-0 gap-0">
+            <DialogContent className="sm:max-w-3xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0 gap-0">
                 {/* Header */}
                 <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle className="text-[20px] leading-[130%]">
