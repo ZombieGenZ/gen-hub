@@ -71,11 +71,14 @@ function RowProductImage({ src, alt }: { src: string | null; alt: string }) {
 /** Một dòng sản phẩm đã thêm vào phiếu — hiển thị theo Table layout */
 function CreateItemRow({
     item,
+    warehouseQty,
     onRemove,
     onUpdate,
 }: {
     item: DrawerItem;
     index: number;
+    /** Tồn kho trong kho đã chọn — undefined nếu chưa chọn kho */
+    warehouseQty?: number;
     onRemove: () => void;
     onUpdate: (updates: Partial<DrawerItem>) => void;
 }) {
@@ -282,6 +285,25 @@ function CreateItemRow({
                     : "—"}
             </td>
 
+            {/* Tồn kho */}
+            <td className="px-4 py-3 w-[90px] text-right text-sm tabular-nums">
+                {warehouseQty != null ? (
+                    <span
+                        className={
+                            warehouseQty <= 0
+                                ? "text-red-500 font-medium"
+                                : warehouseQty < 10
+                                    ? "text-amber-600 font-medium"
+                                    : "text-[#0F766E] font-medium"
+                        }
+                    >
+                        {warehouseQty.toLocaleString("vi-VN")}
+                    </span>
+                ) : (
+                    <span className="text-muted-foreground">—</span>
+                )}
+            </td>
+
             {/* Xóa */}
             <td className="px-4 py-3 w-[48px]">
                 <Button
@@ -325,6 +347,8 @@ export function CreateInboundDialog({
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
     const debouncedProductSearch = useDebounce(productSearch, 300);
+    // Map productId → quantity_available trong kho đang chọn
+    const [warehouseStockMap, setWarehouseStockMap] = useState<Map<string, number>>(new Map());
 
     const loadFormData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -337,6 +361,7 @@ export function CreateInboundDialog({
                 productService.list(token, {
                     limit: 20,
                     keywords: debouncedProductSearch || undefined,
+                    warehouse_id: formWarehouse || undefined,
                 }),
             ]);
             setWarehouses(warehouseList);
@@ -345,11 +370,34 @@ export function CreateInboundDialog({
         } catch {
             // silent fail
         }
-    }, [debouncedProductSearch]);
+    }, [debouncedProductSearch, formWarehouse]);
 
     useEffect(() => {
         if (open) loadFormData();
     }, [open, loadFormData]);
+
+    // Fetch stock map khi thay đổi kho
+    useEffect(() => {
+        if (!formWarehouse) {
+            setWarehouseStockMap(new Map());
+            return;
+        }
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        inventoryService
+            .listStock(token, formWarehouse)
+            .then((res) => {
+                const items = (res?.data ?? []) as Record<string, unknown>[];
+                const map = new Map<string, number>();
+                for (const item of items) {
+                    const pid = item.product_id as string | undefined;
+                    const qty = (item.quantity_available ?? item.available_qty) as number | undefined;
+                    if (pid) map.set(pid, (map.get(pid) ?? 0) + (qty ?? 0));
+                }
+                setWarehouseStockMap(map);
+            })
+            .catch(() => setWarehouseStockMap(new Map()));
+    }, [formWarehouse]);
 
     const resetForm = useCallback(() => {
         setFormWarehouse("");
@@ -587,6 +635,9 @@ export function CreateInboundDialog({
                                             <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
                                                 Giá vốn
                                             </th>
+                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[90px]">
+                                                Tồn kho
+                                            </th>
                                             <th className="px-4 py-2.5 w-[48px]" />
                                         </tr>
                                     </thead>
@@ -596,6 +647,7 @@ export function CreateInboundDialog({
                                                 key={item.product.id}
                                                 item={item}
                                                 index={idx}
+                                                warehouseQty={formWarehouse ? (warehouseStockMap.get(item.product.id) ?? item.product.quantity_available ?? 0) : undefined}
                                                 onRemove={() =>
                                                     setFormItems((prev) =>
                                                         prev.filter((_, i) => i !== idx),
