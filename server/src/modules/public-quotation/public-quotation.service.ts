@@ -158,8 +158,9 @@ export class PublicQuotationService {
       addonsCost +
       insuranceCost +
       managementFee;
-    const serviceFee = Math.round(
-      subtotal * QUOTATION_CONSTANTS.SERVICE_FEE_PERCENT,
+    const serviceFee = Math.max(
+      2_000,
+      Math.round(subtotal * QUOTATION_CONSTANTS.SERVICE_FEE_PERCENT),
     );
 
     // 8. Tính giảm giá coupon
