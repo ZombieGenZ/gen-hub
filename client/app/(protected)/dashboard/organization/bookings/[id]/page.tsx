@@ -129,15 +129,15 @@ export default function BookingDetailPage() {
 
   // ── Computed helpers từ API data thực tế ──────────────────────────────────
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
-    PENDING:        { label: "Chờ thanh toán",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    ACTIVE:         { label: "Đang hoạt động",    color: "bg-green-50 text-green-700 border-green-200" },
-    OVERDUE_LEVEL_1:{ label: "Quá hạn",           color: "bg-red-50 text-red-700 border-red-200" },
-    OVERDUE_LEVEL_2:{ label: "Quá hạn cấp 2",     color: "bg-red-100 text-red-800 border-red-300" },
-    OVERDUE_LEVEL_3:{ label: "Quá hạn cấp 3",     color: "bg-red-200 text-red-900 border-red-400" },
-    SEALED:         { label: "Đã phong tỏa",      color: "bg-gray-50 text-gray-700 border-gray-200" },
-    LIQUIDATED:     { label: "Đã thanh lý",       color: "bg-purple-50 text-purple-700 border-purple-200" },
-    CANCELLED:      { label: "Đã hủy",            color: "bg-red-50 text-red-700 border-red-200" },
-    COMPLETED:      { label: "Đã hoàn thành",     color: "bg-blue-50 text-blue-700 border-blue-200" },
+    PENDING: { label: "Chờ thanh toán", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    ACTIVE: { label: "Đang hoạt động", color: "bg-green-50 text-green-700 border-green-200" },
+    OVERDUE_LEVEL_1: { label: "Quá hạn", color: "bg-red-50 text-red-700 border-red-200" },
+    OVERDUE_LEVEL_2: { label: "Quá hạn cấp 2", color: "bg-red-100 text-red-800 border-red-300" },
+    OVERDUE_LEVEL_3: { label: "Quá hạn cấp 3", color: "bg-red-200 text-red-900 border-red-400" },
+    SEALED: { label: "Đã phong tỏa", color: "bg-gray-50 text-gray-700 border-gray-200" },
+    LIQUIDATED: { label: "Đã thanh lý", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    CANCELLED: { label: "Đã hủy", color: "bg-red-50 text-red-700 border-red-200" },
+    COMPLETED: { label: "Đã hoàn thành", color: "bg-blue-50 text-blue-700 border-blue-200" },
   };
   const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('vi-VN') : 'N/A';
   const fmtCurrency = (v?: number | string) => {
@@ -148,16 +148,29 @@ export default function BookingDetailPage() {
 
   const statusInfo = STATUS_MAP[booking.status] ?? { label: booking.status || '—', color: '' };
   const firstDetail = booking.details?.[0];
-  const warehouseName   = firstDetail?.warehouse_template?.name || firstDetail?.warehouse_name || firstDetail?.warehouse?.name || '—';
+  const warehouseName = firstDetail?.warehouse_template?.name || firstDetail?.warehouse_name || firstDetail?.warehouse?.name || '—';
   const warehouseAddress = firstDetail?.warehouse_template?.address_detail || '—';
-  const contractType    = firstDetail ? (firstDetail.is_whole_warehouse ? 'Thuê Nguyên Kho' : 'Thuê Một Phần') : 'N/A';
-  const rentalDays      = firstDetail?.rental_days;
-  const totalPriceNum   = typeof booking.total_price === 'string' ? parseFloat(booking.total_price) : (booking.total_price ?? 0);
-  const finalPriceNum   = typeof booking.final_price === 'string' ? parseFloat(booking.final_price) : (booking.final_price ?? 0);
-  const vatAmountNum    = typeof booking.vat_amount  === 'string' ? parseFloat(booking.vat_amount)  : (booking.vat_amount  ?? 0);
-  const pendingPayment  = booking.payments?.find((p: any) => p.status === 'PENDING');
-  const addonsList      = booking.addons?.map((a: any) => a.addon ?? a) ?? [];
-  const logsList        = (booking.logs ?? []) as any[];
+  const contractType = firstDetail ? (firstDetail.is_whole_warehouse ? 'Thuê Nguyên Kho' : 'Thuê Một Phần') : 'N/A';
+  const rentalDays = firstDetail?.rental_days;
+  const totalPriceNum = typeof booking.total_price === 'string' ? parseFloat(booking.total_price) : (booking.total_price ?? 0);
+  const finalPriceNum = typeof booking.final_price === 'string' ? parseFloat(booking.final_price) : (booking.final_price ?? 0);
+  const vatAmountNum = typeof booking.vat_amount === 'string' ? parseFloat(booking.vat_amount) : (booking.vat_amount ?? 0);
+  const pendingPayment = booking.payments?.find((p: any) => p.status === 'PENDING');
+  const addonsList = booking.addons?.map((a: any) => a.addon ?? a) ?? [];
+  const logsList = (booking.logs ?? []) as any[];
+
+  // Tính đơn giá / m²
+  const templateBlockLength = parseFloat(firstDetail?.warehouse_template?.block_length ?? '0');
+  const templateBlockWidth = parseFloat(firstDetail?.warehouse_template?.block_width ?? '0');
+  const warehouseAreaM2 = templateBlockLength > 0 && templateBlockWidth > 0 ? templateBlockLength * templateBlockWidth : 0;
+  const detailPricePerMonth = typeof firstDetail?.price_per_month === 'string' ? parseFloat(firstDetail.price_per_month) : (firstDetail?.price_per_month ?? 0);
+  const pricePerM2 = warehouseAreaM2 > 0 ? detailPricePerMonth / warehouseAreaM2 : null;
+
+  // Tính phí dịch vụ (tổng addons price_at_purchase, loại trừ đã hủy và quà tặng)
+  const serviceFeeTotal = (booking.addons ?? []).reduce((sum: number, a: any) => {
+    if (a.is_cancelled || a.is_gift) return sum;
+    return sum + parseFloat(a.price_at_purchase ?? '0');
+  }, 0);
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
@@ -416,7 +429,7 @@ export default function BookingDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Đơn giá / m²</span>
-                  <span>N/A</span>
+                  <span>{pricePerM2 != null ? fmtCurrency(pricePerM2) : '—'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tiền thuê hàng tháng</span>
@@ -424,7 +437,7 @@ export default function BookingDetailPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Phí dịch vụ</span>
-                  <span>N/A</span>
+                  <span>{serviceFeeTotal > 0 ? fmtCurrency(serviceFeeTotal) : '—'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">VAT (10%)</span>
