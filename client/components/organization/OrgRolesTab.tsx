@@ -363,7 +363,7 @@ function RoleFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+            <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>
@@ -374,7 +374,7 @@ function RoleFormDialog({
                                 : "Định nghĩa vai trò mới với các quyền cụ thể"}
                     </DialogDescription>
                 </DialogHeader>
-                <DialogBody className="space-y-5 overflow-y-auto flex-1">
+                <DialogBody className="space-y-5 overflow-y-auto flex-1 min-h-0">
                     <div className="space-y-2">
                         <Label className="text-sm font-medium">Tên vai trò</Label>
                         <Input

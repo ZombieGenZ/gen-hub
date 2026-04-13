@@ -62,7 +62,7 @@ export function EditTicketTagsDialog({ open, onOpenChange, currentTags, onSave }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Quản lý nhãn dán</DialogTitle>
                     <DialogDescription>
@@ -70,7 +70,7 @@ export function EditTicketTagsDialog({ open, onOpenChange, currentTags, onSave }
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-2">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-4 px-1 py-3">
                     <div className="relative">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
@@ -82,7 +82,7 @@ export function EditTicketTagsDialog({ open, onOpenChange, currentTags, onSave }
                         />
                     </div>
 
-                    <div className="max-h-[300px] overflow-y-auto space-y-2">
+                    <div className="space-y-2">
                         {filteredTags.length === 0 ? (
                             <p className="text-center text-sm text-slate-500 py-4">
                                 Không tìm thấy nhãn nào.

@@ -107,7 +107,7 @@ export function RequestRefundModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Yêu cầu Hoàn tiền / Thanh lý</DialogTitle>
                     <DialogDescription>
@@ -115,7 +115,7 @@ export function RequestRefundModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6 my-2">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-6 px-4 py-4">
                     {/* Calculator Box */}
                     <div className="bg-muted/50 border rounded-xl p-4 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
@@ -179,7 +179,7 @@ export function RequestRefundModal({
                     </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="border-t pt-2">
                     <Button variant="outline" onClick={onClose} disabled={loading}>
                         Hủy
                     </Button>
