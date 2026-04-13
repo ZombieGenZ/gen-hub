@@ -79,6 +79,17 @@ export class SepayService {
   }
 
   /**
+   * Trả về thông tin ngân hàng hiện tại
+   */
+  getBankInfo() {
+    return {
+      accountNumber: this.accountNumber,
+      bankName: this.bankName,
+      accountHolder: this.accountHolder,
+    };
+  }
+
+  /**
    * Tạo URL QR code từ qr.sepay.vn
    */
   generateQRUrl(paymentCode: string, amount: number): string {

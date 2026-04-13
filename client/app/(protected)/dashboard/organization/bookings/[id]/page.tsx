@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +23,17 @@ import {
   Plus,
   Loader2,
   XCircle,
+  Copy,
+  Check,
+  RefreshCw,
+  CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { organizationService } from "@/services/organization/organization.service";
+import { paymentService } from "@/services/payment/payment.service";
 import { orgHelper } from '@/lib/organization.utils';
 import { useToast } from '@/contexts/ToastContext';
 import {
@@ -52,6 +57,11 @@ export default function BookingDetailPage() {
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'expired'>('pending');
+  const [copied, setCopied] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -89,11 +99,12 @@ export default function BookingDetailPage() {
       const currentOrgId = orgId || await orgHelper.getOrgId(token);
       setRetryingPayment(true);
       const result = await rentalContractService.retryPayment(token, currentOrgId, id);
-      const paymentUrl = result?.payment?.payment_url || result?.payment_url;
-      if (paymentUrl) {
-        window.open(paymentUrl, "_blank", "noopener,noreferrer");
+      if (result?.payment) {
+        setPaymentData(result.payment);
+        setPaymentStatus('pending');
+        setShowPaymentModal(true);
       } else {
-        showToast("Không tìm thấy link thanh toán", "error");
+        showToast("Không tìm thấy thông tin thanh toán", "error");
       }
     } catch (err: any) {
       showToast(err?.message || "Không thể tạo lại link thanh toán", "error");
@@ -101,6 +112,31 @@ export default function BookingDetailPage() {
       setRetryingPayment(false);
     }
   };
+
+  const checkPaymentStatus = useCallback(async () => {
+    if (!paymentData?.paymentCode) return;
+    try {
+      const data = await paymentService.getPaymentByCode(paymentData.paymentCode);
+      if (data.status === 'PAID') {
+        setPaymentStatus('paid');
+        // Reload booking
+        const token = authStorage.getAccessToken();
+        if (token) {
+          const currentOrgId = orgId || await orgHelper.getOrgId(token);
+          const updated = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, id);
+          setBooking(updated);
+        }
+      } else if (data.status === 'EXPIRED' || data.status === 'CANCELLED') {
+        setPaymentStatus('expired');
+      }
+    } catch { /* silent */ }
+  }, [paymentData?.paymentCode, orgId, id]);
+
+  useEffect(() => {
+    if (!showPaymentModal || paymentStatus !== 'pending') return;
+    const interval = setInterval(checkPaymentStatus, 10_000);
+    return () => clearInterval(interval);
+  }, [showPaymentModal, paymentStatus, checkPaymentStatus]);
 
   const handleCancel = async () => {
     try {
@@ -174,16 +210,7 @@ export default function BookingDetailPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto">
-      {/* Header Navigation */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/dashboard/organization" className="hover:text-emerald-600">Trang chủ</Link>
-        <span className="text-muted-foreground/50">/</span>
-        <Link href="/dashboard/organization/bookings" className="hover:text-emerald-600">Đơn thuê của tôi</Link>
-        <span className="text-muted-foreground/50">/</span>
-        <span className="text-foreground font-medium">{booking?.id}</span>
-      </div>
-
+    <div className="space-y-4 p-6 mx-auto">
       {/* Title & Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -456,7 +483,7 @@ export default function BookingDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-amber-800">Kỳ thanh toán tiếp theo</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Hạn thanh toán: <span className="font-medium text-foreground">{pendingPayment ? fmtDate(pendingPayment.expired_at) : 'N/A'}</span>
+                      Hạn thanh toán: <span className="font-medium text-foreground">{pendingPayment?.expired_at ? fmtDate(pendingPayment.expired_at) : '—'}</span>
                     </p>
                   </div>
                 </div>
@@ -543,6 +570,147 @@ export default function BookingDetailPage() {
               Xác nhận hủy
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal thanh toán QR */}
+      <Dialog open={showPaymentModal} onOpenChange={(open) => {
+        setShowPaymentModal(open);
+        if (!open) { setPaymentData(null); setPaymentStatus('pending'); }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-emerald-600" />
+              {paymentStatus === 'paid' ? 'Thanh toán thành công' : 'Thanh toán đặt cọc'}
+            </DialogTitle>
+            <DialogDescription>
+              {paymentStatus === 'paid'
+                ? 'Hợp đồng của bạn đã được xác nhận.'
+                : 'Quét mã QR hoặc chuyển khoản theo thông tin bên dưới.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentStatus === 'paid' ? (
+            <div className="flex flex-col items-center py-6 gap-4">
+              <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                Hợp đồng <span className="font-semibold text-foreground">{booking?.code}</span> đã được kích hoạt.
+              </p>
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowPaymentModal(false)}>
+                Đóng
+              </Button>
+            </div>
+          ) : paymentStatus === 'expired' ? (
+            <div className="flex flex-col items-center py-6 gap-4">
+              <div className="h-20 w-20 bg-amber-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-10 w-10 text-amber-600" />
+              </div>
+              <p className="text-center text-sm text-muted-foreground">QR đã hết hạn. Vui lòng tạo lại giao dịch.</p>
+              <Button className="w-full" onClick={() => { setShowPaymentModal(false); handleRetryPayment(); }}>
+                Tạo lại giao dịch
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* QR code */}
+              {paymentData?.qrCode && (
+                <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-dashed">
+                  <div className="relative w-52 h-52">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={paymentData.qrCode}
+                      alt="QR thanh toán"
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-emerald-600 rounded-tl-lg" />
+                    <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-emerald-600 rounded-tr-lg" />
+                    <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-emerald-600 rounded-bl-lg" />
+                    <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-emerald-600 rounded-br-lg" />
+                  </div>
+                  <p className="text-xs text-emerald-600 font-medium mt-3 flex items-center gap-1.5 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Đang chờ xác nhận...
+                  </p>
+                </div>
+              )}
+
+              {/* Chi tiết thanh toán */}
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3 text-sm">
+                {paymentData?.bankInfo?.bankName && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Ngân hàng</span>
+                      <span className="font-medium">{paymentData.bankInfo.bankName}</span>
+                    </div>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Số tài khoản</span>
+                      <div className="flex items-center gap-2 font-mono font-medium">
+                        {paymentData.bankInfo.accountNumber}
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(paymentData.bankInfo.accountNumber); showToast('Đã sao chép', 'success'); }}
+                          className="text-muted-foreground hover:text-emerald-600 transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Chủ tài khoản</span>
+                      <span className="font-medium">{paymentData.bankInfo.accountHolder}</span>
+                    </div>
+                    <div className="h-px bg-border/50" />
+                  </>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Nội dung CK</span>
+                  <div className="flex items-center gap-2 font-mono font-medium text-emerald-700">
+                    {paymentData?.paymentCode}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(paymentData?.paymentCode || '');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                        showToast('Đã sao chép nội dung CK', 'success');
+                      }}
+                      className="text-muted-foreground hover:text-emerald-600 transition-colors"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="h-px bg-border/50" />
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Số tiền cọc</span>
+                  <span className="font-bold text-base text-emerald-700">{fmtCurrency(paymentData?.amount)}</span>
+                </div>
+                {paymentData?.expiredAt && (
+                  <>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Hết hạn lúc</span>
+                      <span className="font-medium text-amber-600">{new Date(paymentData.expiredAt).toLocaleString('vi-VN')}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+                onClick={async () => { setCheckingPayment(true); await checkPaymentStatus(); setCheckingPayment(false); }}
+                disabled={checkingPayment}
+              >
+                {checkingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Kiểm tra trạng thái
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

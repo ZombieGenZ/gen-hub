@@ -1088,6 +1088,7 @@ export class OrgRentalContractService {
           payment_url: currentPayment.qr_code || undefined, // Thêm để frontend redirect
           status: currentPayment.status.toString(),
           expiredAt: currentPayment.expired_at,
+          bankInfo: this.sepayService.getBankInfo(),
         },
       };
     }
@@ -1157,6 +1158,7 @@ export class OrgRentalContractService {
         payment_url: paymentResult.qrCode, // Thêm để frontend redirect
         status: paymentResult.status,
         expiredAt: paymentResult.expiredAt,
+        bankInfo: this.sepayService.getBankInfo(),
       },
     };
   }

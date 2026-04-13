@@ -105,6 +105,11 @@ export interface IPaymentInfo {
   payment_url?: string; // Alias cho qrCode hoặc link thanh toán
   status: string;
   expiredAt: Date;
+  bankInfo?: {
+    accountNumber: string;
+    bankName: string;
+    accountHolder: string;
+  };
 }
 
 /**

@@ -387,10 +387,36 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
 
     // Gift lists
     const [addonGifts, setAddonGifts] = useState<Omit<TierAddonGift, "addon">[]>(
-        () => (initialData?.tier_addon_gifts ?? []).map(({ addon: _a, ...g }) => g)
+        () => (initialData?.tier_addon_gifts ?? []).map((g) => ({
+            ...(g.id ? { id: g.id } : {}),
+            addon_id: g.addon_id,
+            require_min_order_amount: g.require_min_order_amount,
+            min_order_amount: g.min_order_amount ?? null,
+            require_min_warehouses: g.require_min_warehouses,
+            min_warehouses: g.min_warehouses ?? null,
+            require_min_rows: g.require_min_rows,
+            min_rows: g.min_rows ?? null,
+            is_until_service_end: g.is_until_service_end,
+            gift_duration_value: g.gift_duration_value ?? null,
+            gift_duration_unit: g.gift_duration_unit ?? null,
+            is_active: g.is_active,
+        }))
     );
     const [insuranceGifts, setInsuranceGifts] = useState<Omit<TierInsuranceGift, "insurance">[]>(
-        () => (initialData?.tier_insurance_gifts ?? []).map(({ insurance: _i, ...g }) => g)
+        () => (initialData?.tier_insurance_gifts ?? []).map((g) => ({
+            ...(g.id ? { id: g.id } : {}),
+            insurance_id: g.insurance_id,
+            require_min_order_amount: g.require_min_order_amount,
+            min_order_amount: g.min_order_amount ?? null,
+            require_min_warehouses: g.require_min_warehouses,
+            min_warehouses: g.min_warehouses ?? null,
+            require_min_rows: g.require_min_rows,
+            min_rows: g.min_rows ?? null,
+            is_until_service_end: g.is_until_service_end,
+            gift_duration_value: g.gift_duration_value ?? null,
+            gift_duration_unit: g.gift_duration_unit ?? null,
+            is_active: g.is_active,
+        }))
     );
 
     // Available options loaded from API
@@ -463,14 +489,42 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
     };
 
     const handleSubmit = async () => {
+        const sanitizeAddon = (g: Omit<TierAddonGift, "addon">) => ({
+            ...(g.id ? { id: g.id } : {}),
+            addon_id: g.addon_id,
+            require_min_order_amount: g.require_min_order_amount,
+            min_order_amount: g.min_order_amount ?? null,
+            require_min_warehouses: g.require_min_warehouses,
+            min_warehouses: g.min_warehouses ?? null,
+            require_min_rows: g.require_min_rows,
+            min_rows: g.min_rows ?? null,
+            is_until_service_end: g.is_until_service_end,
+            gift_duration_value: g.gift_duration_value ?? null,
+            gift_duration_unit: g.gift_duration_unit ?? null,
+            is_active: g.is_active,
+        });
+        const sanitizeInsurance = (g: Omit<TierInsuranceGift, "insurance">) => ({
+            ...(g.id ? { id: g.id } : {}),
+            insurance_id: g.insurance_id,
+            require_min_order_amount: g.require_min_order_amount,
+            min_order_amount: g.min_order_amount ?? null,
+            require_min_warehouses: g.require_min_warehouses,
+            min_warehouses: g.min_warehouses ?? null,
+            require_min_rows: g.require_min_rows,
+            min_rows: g.min_rows ?? null,
+            is_until_service_end: g.is_until_service_end,
+            gift_duration_value: g.gift_duration_value ?? null,
+            gift_duration_unit: g.gift_duration_unit ?? null,
+            is_active: g.is_active,
+        });
         const payload: RentalDurationTierRequest = {
             name,
             duration_value: durationValue,
             duration_unit: durationUnit,
             description: description || undefined,
             is_active: isActive,
-            addon_gifts: addonGifts.length > 0 ? addonGifts : undefined,
-            insurance_gifts: insuranceGifts.length > 0 ? insuranceGifts : undefined,
+            addon_gifts: addonGifts.map(sanitizeAddon),
+            insurance_gifts: insuranceGifts.map(sanitizeInsurance),
         };
         await onSubmit(payload);
     };

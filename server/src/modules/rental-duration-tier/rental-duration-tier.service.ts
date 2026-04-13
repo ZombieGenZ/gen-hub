@@ -559,7 +559,9 @@ export class RentalDurationTierService {
   }
 
   private async invalidateCache(id: string) {
-    await this.redisService.del(this.getCacheKey(id));
+    const base = this.getCacheKey(id);
+    await this.redisService.del(base);
+    await this.redisService.delByPattern(`${base}:detail*`);
   }
 
   private async invalidateListCache() {

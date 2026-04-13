@@ -333,16 +333,28 @@ export default function RentalDurationTiersPage() {
                 // Set order to max+1
                 const maxOrder = tiers.length > 0 ? Math.max(...tiers.map((t) => t.order)) : -1;
                 payload.order = maxOrder + 1;
-                await tierService.createRentalDurationTier(token, payload);
+                const created: any = await tierService.createRentalDurationTier(token, payload);
                 showToast("Đã tạo gói thuê mới thành công! 🎉", "success");
+                setIsFormDialogOpen(false);
+                setSelectedTier(null);
+                // Server returns full tier (with gifts) in create response — use it directly
+                const createdData = created?.data || created;
+                if (createdData?.id) {
+                    setTiers((prev) => [...prev, createdData].sort((a, b) => a.order - b.order));
+                }
+                fetchTiers();
             } else if (selectedTier) {
-                await tierService.updateRentalDurationTier(token, selectedTier.id, payload);
+                const updated: any = await tierService.updateRentalDurationTier(token, selectedTier.id, payload);
                 showToast("Đã cập nhật gói thuê thành công! ✅", "success");
+                setIsFormDialogOpen(false);
+                // Server returns full tier (with gifts) in update response — use it directly
+                const updatedData = updated?.data || updated;
+                if (updatedData?.id) {
+                    setTiers((prev) => prev.map((t) => t.id === updatedData.id ? updatedData : t));
+                }
+                setSelectedTier(null);
+                fetchTiers();
             }
-
-            setIsFormDialogOpen(false);
-            setSelectedTier(null);
-            fetchTiers();
         } catch (error: any) {
             console.error("Failed to save tier", error);
             showToast(error?.message || "Lưu gói thuê thất bại", "error");
@@ -688,14 +700,14 @@ export default function RentalDurationTiersPage() {
                                 Đang tải...
                             </div>
                         ) : (
-                        <TierForm
-                            key={formKey}
-                            initialData={selectedTier}
-                            onSubmit={handleFormSubmit}
-                            onCancel={() => setIsFormDialogOpen(false)}
-                            isEdit={sheetMode === "edit"}
-                            loading={isFormLoading}
-                        />
+                            <TierForm
+                                key={formKey}
+                                initialData={selectedTier}
+                                onSubmit={handleFormSubmit}
+                                onCancel={() => setIsFormDialogOpen(false)}
+                                isEdit={sheetMode === "edit"}
+                                loading={isFormLoading}
+                            />
                         )}
                     </div>
                 </DialogContent>
