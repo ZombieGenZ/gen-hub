@@ -87,19 +87,30 @@ const normalizeRepresentativeTitle = (rawTitle?: string) => {
     return REPRESENTATIVE_TITLE_LABELS[rawTitle] || rawTitle;
 };
 
-const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
-    basePrice: quotation.base_price_per_month,
-    durationMonths: quotation.duration_months,
-    durationDiscountPercent: quotation.duration_discount_percent,
-    durationDiscountAmount: quotation.duration_discount_amount ?? ((quotation.base_price_per_month * quotation.duration_months) * (quotation.duration_discount_percent / 100)),
-    addonsCost: quotation.addons_cost ?? 0,
-    insuranceCost: quotation.insurance_cost ?? 0,
-    managementFee: quotation.management_fee ?? 0,
-    subtotal: quotation.subtotal,
-    serviceFee: quotation.service_fee,
-    couponDiscount: quotation.coupon_discount,
-    grandTotal: quotation.grand_total,
-});
+const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => {
+    const couponDiscount = quotation.coupon_discount ?? 0;
+    const discountedSubtotal = Math.max(0, quotation.subtotal - couponDiscount);
+    // Tính lại phí dịch vụ sau khi giảm giá để đảm bảo coupon giảm cả VAT
+    const effectiveServiceFee = couponDiscount > 0
+        ? Math.round(discountedSubtotal * 0.1)
+        : quotation.service_fee;
+    const effectiveGrandTotal = couponDiscount > 0
+        ? discountedSubtotal + effectiveServiceFee
+        : quotation.grand_total;
+    return {
+        basePrice: quotation.base_price_per_month,
+        durationMonths: quotation.duration_months,
+        durationDiscountPercent: quotation.duration_discount_percent,
+        durationDiscountAmount: quotation.duration_discount_amount ?? ((quotation.base_price_per_month * quotation.duration_months) * (quotation.duration_discount_percent / 100)),
+        addonsCost: quotation.addons_cost ?? 0,
+        insuranceCost: quotation.insurance_cost ?? 0,
+        managementFee: quotation.management_fee ?? 0,
+        subtotal: quotation.subtotal,
+        serviceFee: effectiveServiceFee,
+        couponDiscount,
+        grandTotal: effectiveGrandTotal,
+    };
+};
 
 const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
 const EMAIL_NOT_VERIFIED_CODE = 'error.forbidden.email_not_confirmed';
@@ -784,7 +795,7 @@ function CheckoutContainer() {
 
                 // Subtotal (client-side fallback)
                 const subtotal = totalBaseRental - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
-                const serviceFee = subtotal * 0.1; // 10%
+                const serviceFee = subtotal * 0.1; // 10% on original subtotal (for API-based flow)
 
                 // Attempt server-side quotation (authoritative, includes coupon discount)
                 let apiQuotationResult: QuotationApiResponse | null = null;
@@ -806,9 +817,14 @@ function CheckoutContainer() {
                 }
 
                 const couponDiscount = apiQuotationResult ? apiQuotationResult.coupon_discount : 0;
+                // Tính phí dịch vụ sau khi áp dụng mã giảm giá (giảm cả VAT)
+                const discountedSubtotal = Math.max(0, subtotal - couponDiscount);
+                const effectiveServiceFee = apiQuotationResult
+                    ? apiQuotationResult.service_fee
+                    : Math.round(discountedSubtotal * 0.1);
                 const grandTotal = apiQuotationResult
                     ? apiQuotationResult.grand_total
-                    : subtotal + serviceFee - couponDiscount;
+                    : discountedSubtotal + effectiveServiceFee;
 
                 const amount = apiQuotationResult ? apiQuotationResult.deposit_amount : 1000;
 
@@ -884,7 +900,7 @@ function CheckoutContainer() {
                             insuranceCost,
                             managementFee,
                             subtotal,
-                            serviceFee,
+                            serviceFee: effectiveServiceFee,
                             couponDiscount,
                             grandTotal
                         },
