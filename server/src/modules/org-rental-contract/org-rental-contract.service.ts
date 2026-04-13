@@ -48,6 +48,7 @@ import { PdfService } from '../rental-contract-shared/pdf.service';
 import { DocusignService } from '../rental-contract-shared/docusign.service';
 import { PublicCouponService } from '../public-coupon/public-coupon.service';
 import { SendDocusignDto } from './dto';
+import { QUOTATION_CONSTANTS } from '../public-quotation/constants/public-quotation.constants';
 
 const Decimal = Prisma.Decimal;
 
@@ -135,16 +136,17 @@ export class OrgRentalContractService {
     );
     if (hasDirectPermission) return;
 
-    // Note: Role permission checking logic should be implemented if roles are used
-    const hasRolePermission = false;
+    // Check permissions via roles
+    const hasRolePermission = member.roles?.some((mr) =>
+      mr.role?.permissions?.some((rp) => rp.permission?.key === permissionKey),
+    );
+    if (hasRolePermission) return;
 
-    if (!hasRolePermission && !hasDirectPermission) {
-      throw new ForbiddenException(
-        await this.i18n.translate('rental-contract.errors.no_permission', {
-          lang,
-        }),
-      );
-    }
+    throw new ForbiddenException(
+      await this.i18n.translate('rental-contract.errors.no_permission', {
+        lang,
+      }),
+    );
   }
 
   /**
@@ -536,12 +538,18 @@ export class OrgRentalContractService {
       );
       await this.invalidateContractListCache();
 
+      const finalPriceNum = Math.round(parseFloat(contract.final_price.toString()));
+      const vatAmountNum = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
+      const depositAmount = Math.max(
+        QUOTATION_CONSTANTS.MIN_DEPOSIT_AMOUNT,
+        Math.round(finalPriceNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT),
+      );
+      const depositVatAmount = Math.round(vatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT);
+
       const paymentResult = await this.sepayService.createContractPayment({
         rentalContractId: contract.id,
-        amount: Math.round(parseFloat(contract.final_price.toString())),
-        vat_amount: Math.round(
-          parseFloat(contract.vat_amount?.toString() || '0'),
-        ),
+        amount: depositAmount,
+        vat_amount: depositVatAmount,
         description: `${code}`,
         type: 'NEW_CONTRACT',
         userId,
@@ -1112,12 +1120,18 @@ export class OrgRentalContractService {
       this.paymentScheduler.cancelScheduledExpire(currentPayment.id);
     }
 
+    const retryFinalPriceNum = Math.round(parseFloat(contract.final_price.toString()));
+    const retryVatAmountNum = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
+    const retryDepositAmount = Math.max(
+      QUOTATION_CONSTANTS.MIN_DEPOSIT_AMOUNT,
+      Math.round(retryFinalPriceNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT),
+    );
+    const retryDepositVatAmount = Math.round(retryVatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT);
+
     const paymentResult = await this.sepayService.createContractPayment({
       rentalContractId: contractId,
-      amount: Math.round(parseFloat(contract.final_price.toString())),
-      vat_amount: Math.round(
-        parseFloat(contract.vat_amount?.toString() || '0'),
-      ),
+      amount: retryDepositAmount,
+      vat_amount: retryDepositVatAmount,
       description: contract.code,
       type: 'NEW_CONTRACT',
       userId,
