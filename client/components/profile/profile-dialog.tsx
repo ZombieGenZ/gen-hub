@@ -803,8 +803,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
     setIsSubmitting2FA(true)
     try {
       const token = authStorage.getAccessToken()
-      const access_verification_token = authStorage.getVerificationToken()
-      if (!token || !access_verification_token) {
+      const access_verification_token = authStorage.getVerificationToken() || ''
+      if (!token) {
+        showToast('Vui lòng đăng nhập lại', 'error')
         router.push('/login')
         return
       }
