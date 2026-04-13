@@ -37,6 +37,8 @@ export class RentalContractRepository {
             id: true,
             name: true,
             address_detail: true,
+            block_length: true,
+            block_width: true,
             images: {
               where: { is_deleted: false },
               select: { id: true, url: true, thumbnail_url: true, order: true },

@@ -40,6 +40,16 @@ export class RentalDurationTierRepository {
       take,
       where,
       orderBy: orderBy ?? { order: 'asc' },
+      include: {
+        tier_addon_gifts: {
+          where: { is_deleted: false },
+          include: { addon: { select: { id: true, name: true } } },
+        },
+        tier_insurance_gifts: {
+          where: { is_deleted: false },
+          include: { insurance: { select: { id: true, name: true } } },
+        },
+      },
     });
   }
 
