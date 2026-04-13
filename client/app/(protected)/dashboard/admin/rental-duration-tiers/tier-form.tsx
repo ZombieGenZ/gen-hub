@@ -400,24 +400,31 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
 
     const fetchOptions = useCallback(async () => {
         setLoadingOptions(true);
+        const parseItems = (res: any): any[] => {
+            if (Array.isArray(res?.data?.items)) return res.data.items;
+            if (Array.isArray(res?.data)) return res.data;
+            if (Array.isArray(res?.items)) return res.items;
+            if (Array.isArray(res)) return res;
+            return [];
+        };
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            const [addonsRes, insuranceRes] = await Promise.all([
-                addonsService.getAllAddonActive(token),
+            const [addonsResult, insuranceResult] = await Promise.allSettled([
+                addonsService.getAllAddons(token, { limit: 200, is_active: true }),
                 insuranceService.getActiveInsurance(token),
             ]);
 
-            const parseItems = (res: any): any[] => {
-                if (Array.isArray(res?.data?.items)) return res.data.items;
-                if (Array.isArray(res?.data)) return res.data;
-                if (Array.isArray(res?.items)) return res.items;
-                if (Array.isArray(res)) return res;
-                return [];
-            };
-
-            setAddonList(parseItems(addonsRes));
-            setInsuranceList(parseItems(insuranceRes));
+            if (addonsResult.status === "fulfilled") {
+                setAddonList(parseItems(addonsResult.value));
+            } else {
+                console.error("Failed to load addons:", addonsResult.reason);
+            }
+            if (insuranceResult.status === "fulfilled") {
+                setInsuranceList(parseItems(insuranceResult.value));
+            } else {
+                console.error("Failed to load insurances:", insuranceResult.reason);
+            }
         } catch (e) {
             console.error("Failed to load addon/insurance options", e);
         } finally {
@@ -469,8 +476,8 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 space-y-6 overflow-y-auto p-1">
+        <div className="flex flex-col gap-6">
+            <div className="space-y-6">
 
                 {/* ── Section 1: Định danh ─────────────────────────────────── */}
                 <div className="space-y-4">
@@ -681,7 +688,7 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
             </div>
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-between pt-6 mt-6 border-t">
+            <div className="flex items-center justify-between pt-5 border-t">
                 <div className="text-xs text-muted-foreground">
                     {addonGifts.length + insuranceGifts.length > 0 && (
                         <span>

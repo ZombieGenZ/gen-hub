@@ -23,7 +23,6 @@ import {
     TrashIcon,
     ChevronUpIcon,
     ChevronDownIcon,
-    GiftIcon,
     ShieldCheckIcon,
     WrenchScrewdriverIcon,
     CheckCircleIcon,
@@ -152,23 +151,27 @@ function TierCard({
 
                     {/* Incentives Summary */}
                     {totalGifts > 0 ? (
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex flex-col gap-1 mt-1">
                             {addonCount > 0 && (
-                                <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full">
-                                    <WrenchScrewdriverIcon className="w-3 h-3" />
-                                    <span>{addonCount} Dịch vụ</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <WrenchScrewdriverIcon className="w-3 h-3 text-blue-500 shrink-0" />
+                                    {tier.tier_addon_gifts!.map((g) => (
+                                        <span key={g.addon_id} className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                                            {g.addon?.name || g.addon_id}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
                             {insuranceCount > 0 && (
-                                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full">
-                                    <ShieldCheckIcon className="w-3 h-3" />
-                                    <span>{insuranceCount} Bảo hiểm</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <ShieldCheckIcon className="w-3 h-3 text-emerald-500 shrink-0" />
+                                    {tier.tier_insurance_gifts!.map((g) => (
+                                        <span key={g.insurance_id} className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
+                                            {g.insurance?.name || g.insurance_id}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
-                            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                                <GiftIcon className="w-3.5 h-3.5" />
-                                <span className="font-medium">+{totalGifts} Quà tặng</span>
-                            </div>
                         </div>
                     ) : (
                         <p className="text-xs text-muted-foreground/60 italic">Chưa có quà tặng kèm</p>
@@ -227,9 +230,18 @@ export default function RentalDurationTiersPage() {
 
     // ─── Dialog (Create/Edit) ────────────────────────────────────────────
     const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+    useEffect(() => {
+        if (isFormDialogOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => { document.body.style.overflow = ""; };
+    }, [isFormDialogOpen]);
     const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
     const [selectedTier, setSelectedTier] = useState<RentalDurationTier | null>(null);
     const [isFormLoading, setIsFormLoading] = useState(false);
+    const [formKey, setFormKey] = useState(0);
 
     // ─── Delete Dialog ──────────────────────────────────────────────────
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -287,13 +299,13 @@ export default function RentalDurationTiersPage() {
     const openCreate = () => {
         setSheetMode("create");
         setSelectedTier(null);
+        setFormKey((k) => k + 1);
         setIsFormDialogOpen(true);
     };
 
     const openEdit = async (tier: RentalDurationTier) => {
-        // Open modal immediately with available data, then hydrate gifts in background
         setSheetMode("edit");
-        setSelectedTier(tier);
+        setSelectedTier(null);
         setIsFormDialogOpen(true);
         try {
             const token = authStorage.getAccessToken();
@@ -301,7 +313,11 @@ export default function RentalDurationTiersPage() {
             const data: any = await tierService.getRentalDurationTier(token, tier.id);
             const detail = data?.data || data;
             setSelectedTier(detail);
+            setFormKey((k) => k + 1);
         } catch (error: any) {
+            // Fallback: use tier data without gifts
+            setSelectedTier(tier);
+            setFormKey((k) => k + 1);
             console.error("Failed to fetch tier detail", error);
             showToast(error.message || "Không thể tải chi tiết gói thuê", "error");
         }
@@ -665,15 +681,22 @@ export default function RentalDurationTiersPage() {
                                 : `Đang chỉnh sửa "${selectedTier?.name}"`}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-hidden p-6">
+                    <div className="flex-1 overflow-y-auto overscroll-contain p-6">
+                        {sheetMode === "edit" && !selectedTier ? (
+                            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm gap-2">
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                Đang tải...
+                            </div>
+                        ) : (
                         <TierForm
-                            key={selectedTier?.id || "create"}
+                            key={formKey}
                             initialData={selectedTier}
                             onSubmit={handleFormSubmit}
                             onCancel={() => setIsFormDialogOpen(false)}
                             isEdit={sheetMode === "edit"}
                             loading={isFormLoading}
                         />
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
