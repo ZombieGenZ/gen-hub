@@ -1,6 +1,6 @@
 import AdminJS from 'adminjs';
 import { Database, Resource } from '@adminjs/prisma';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
@@ -27,6 +27,24 @@ const getPrismaClient = (): PrismaClient => {
       adapter,
       log: isRds ? [] : ['warn', 'error'],
     });
+
+    // Mock _baseDmmf for @adminjs/prisma compatibility (Prisma 7 removed this)
+    (adminPrismaClient as any)._baseDmmf = {
+      datamodelEnumMap: Prisma.dmmf.datamodel.enums.reduce(
+        (map, enumDef) => {
+          map[enumDef.name] = enumDef;
+          return map;
+        },
+        {} as Record<string, any>,
+      ),
+      modelMap: Prisma.dmmf.datamodel.models.reduce(
+        (map, model) => {
+          map[model.name] = model;
+          return map;
+        },
+        {} as Record<string, any>,
+      ),
+    };
   }
   return adminPrismaClient;
 };
@@ -85,11 +103,12 @@ const checkAdminPermission = async (userId: string, prismaClient: PrismaClient):
 
 export const createAdminJS = async (cookieSecret: string) => {
   const prismaClient = getPrismaClient();
-  
+  const modelMap = (prismaClient as any)._baseDmmf.modelMap;
+
   const admin = new AdminJS({
     resources: [
       {
-        resource: { model: prismaClient.user, client: prismaClient },
+        resource: { model: modelMap.User, client: prismaClient },
         options: {
           name: 'Người dùng',
           navigation: { name: 'Quản lý hệ thống' },
@@ -121,7 +140,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.role, client: prismaClient },
+        resource: { model: modelMap.Role, client: prismaClient },
         options: {
           name: 'Vai trò',
           navigation: { name: 'Phân quyền' },
@@ -137,7 +156,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.permission, client: prismaClient },
+        resource: { model: modelMap.Permission, client: prismaClient },
         options: {
           name: 'Quyền hạn',
           navigation: { name: 'Phân quyền' },
@@ -152,7 +171,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.userRole, client: prismaClient },
+        resource: { model: modelMap.UserRole, client: prismaClient },
         options: {
           name: 'Vai trò người dùng',
           navigation: { name: 'Phân quyền' },
@@ -165,7 +184,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.userPermission, client: prismaClient },
+        resource: { model: modelMap.UserPermission, client: prismaClient },
         options: {
           name: 'Quyền hạn người dùng',
           navigation: { name: 'Phân quyền' },
@@ -178,7 +197,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.organization, client: prismaClient },
+        resource: { model: modelMap.Organization, client: prismaClient },
         options: {
           name: 'Tổ chức',
           navigation: { name: 'Quản lý hệ thống' },
@@ -194,7 +213,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.systemLog, client: prismaClient },
+        resource: { model: modelMap.SystemLog, client: prismaClient },
         options: {
           name: 'Nhật ký hệ thống',
           navigation: { name: 'Nhật ký' },
@@ -213,7 +232,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prismaClient.databaseLog, client: prismaClient },
+        resource: { model: modelMap.DatabaseLog, client: prismaClient },
         options: {
           name: 'Nhật ký database',
           navigation: { name: 'Nhật ký' },
