@@ -57,6 +57,19 @@ export class RentalContractRepository {
                 },
               },
             },
+            managers: {
+              where: { is_deleted: false, is_active: true },
+              take: 1,
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
           },
         },
         warehouse: {

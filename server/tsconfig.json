@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "resolvePackageJsonExports": false,
+    "module": "ES2015",
+    "moduleResolution": "bundler",
+    "resolvePackageJsonExports": true,
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,

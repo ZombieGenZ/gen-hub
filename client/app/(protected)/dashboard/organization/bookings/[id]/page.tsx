@@ -186,11 +186,23 @@ export default function BookingDetailPage() {
   const firstDetail = booking.details?.[0];
   const warehouseName = firstDetail?.warehouse_template?.name || firstDetail?.warehouse_name || firstDetail?.warehouse?.name || '—';
   const warehouseAddress = firstDetail?.warehouse_template?.address_detail || '—';
+  const warehouseManager = firstDetail?.warehouse_template?.managers?.[0]?.user?.name || 'N/A';
+  const warehouseEmail = firstDetail?.warehouse_template?.managers?.[0]?.user?.email || 'N/A';
   const contractType = firstDetail ? (firstDetail.is_whole_warehouse ? 'Thuê Nguyên Kho' : 'Thuê Một Phần') : 'N/A';
   const rentalDays = firstDetail?.rental_days;
   const totalPriceNum = typeof booking.total_price === 'string' ? parseFloat(booking.total_price) : (booking.total_price ?? 0);
   const finalPriceNum = typeof booking.final_price === 'string' ? parseFloat(booking.final_price) : (booking.final_price ?? 0);
-  const vatAmountNum = typeof booking.vat_amount === 'string' ? parseFloat(booking.vat_amount) : (booking.vat_amount ?? 0);
+  const vatRateNum = typeof booking.vat_rate === 'string' ? parseFloat(booking.vat_rate) : (booking.vat_rate ?? 0);
+  const vatAmountRaw = typeof booking.vat_amount === 'string' ? parseFloat(booking.vat_amount) : (booking.vat_amount ?? 0);
+  
+  // Tính phí dịch vụ (tổng addons price_at_purchase, loại trừ đã hủy và quà tặng)
+  const serviceFeeTotal = (booking.addons ?? []).reduce((sum: number, a: any) => {
+    if (a.is_cancelled || a.is_gift) return sum;
+    return sum + parseFloat(a.price_at_purchase ?? '0');
+  }, 0);
+  
+  // Nếu vat_amount trong DB bằng 0 nhưng final_price > total_price, tính ngược từ chênh lệch
+  const vatAmountNum = vatAmountRaw > 0 ? vatAmountRaw : Math.max(0, finalPriceNum - totalPriceNum - serviceFeeTotal);
   const pendingPayment = booking.payments?.find((p: any) => p.status === 'PENDING');
   const addonsList = booking.addons?.map((a: any) => a.addon ?? a) ?? [];
   const logsList = (booking.logs ?? []) as any[];
@@ -201,12 +213,6 @@ export default function BookingDetailPage() {
   const warehouseAreaM2 = templateBlockLength > 0 && templateBlockWidth > 0 ? templateBlockLength * templateBlockWidth : 0;
   const detailPricePerMonth = typeof firstDetail?.price_per_month === 'string' ? parseFloat(firstDetail.price_per_month) : (firstDetail?.price_per_month ?? 0);
   const pricePerM2 = warehouseAreaM2 > 0 ? detailPricePerMonth / warehouseAreaM2 : null;
-
-  // Tính phí dịch vụ (tổng addons price_at_purchase, loại trừ đã hủy và quà tặng)
-  const serviceFeeTotal = (booking.addons ?? []).reduce((sum: number, a: any) => {
-    if (a.is_cancelled || a.is_gift) return sum;
-    return sum + parseFloat(a.price_at_purchase ?? '0');
-  }, 0);
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
@@ -460,7 +466,7 @@ export default function BookingDetailPage() {
                   <span>{serviceFeeTotal > 0 ? fmtCurrency(serviceFeeTotal) : '—'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">VAT (10%)</span>
+                  <span className="text-muted-foreground">VAT ({vatRateNum > 0 ? vatRateNum : 10}%)</span>
                   <span>{fmtCurrency(vatAmountNum)}</span>
                 </div>
                 <Separator className="bg-emerald-200/50" />
@@ -678,7 +684,30 @@ export default function BookingDetailPage() {
                 </div>
                 <div className="h-px bg-border/50" />
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Số tiền cọc</span>
+                  <span className="text-muted-foreground">Tiền thuê</span>
+                  <span className="font-medium">{fmtCurrency(totalPriceNum)}</span>
+                </div>
+                {serviceFeeTotal > 0 && (
+                  <>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Phí dịch vụ</span>
+                      <span className="font-medium">{fmtCurrency(serviceFeeTotal)}</span>
+                    </div>
+                  </>
+                )}
+                {vatAmountNum > 0 && (
+                  <>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">VAT (10%)</span>
+                      <span className="font-medium">{fmtCurrency(vatAmountNum)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="h-px bg-border/50" />
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Tổng thanh toán</span>
                   <span className="font-bold text-base text-emerald-700">{fmtCurrency(paymentData?.amount)}</span>
                 </div>
                 {paymentData?.expiredAt && (
