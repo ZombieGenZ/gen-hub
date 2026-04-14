@@ -1,6 +1,8 @@
 import AdminJS from 'adminjs';
 import { Database, Resource } from '@adminjs/prisma';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
 
 // Register Prisma adapter for AdminJS
@@ -11,11 +13,20 @@ let adminPrismaClient: PrismaClient | null = null;
 
 const getPrismaClient = (): PrismaClient => {
   if (!adminPrismaClient) {
-    const isRds = process.env.DATABASE_URL?.includes('amazonaws.com');
-    
+    const connectionString = process.env.DATABASE_URL;
+    const isRds = connectionString?.includes('amazonaws.com');
+    const sslConfig = isRds ? { rejectUnauthorized: false } : undefined;
+
+    const pool = new Pool({
+      connectionString,
+      ssl: sslConfig,
+    });
+    const adapter = new PrismaPg(pool);
+
     adminPrismaClient = new PrismaClient({
+      adapter,
       log: isRds ? [] : ['warn', 'error'],
-    } as any);
+    });
   }
   return adminPrismaClient;
 };
