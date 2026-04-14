@@ -1,12 +1,53 @@
 import AdminJS from 'adminjs';
 import { Database, Resource } from '@adminjs/prisma';
-import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
+import bcrypt from 'bcrypt';
 
 // Register Prisma adapter for AdminJS
 AdminJS.registerAdapter({ Database, Resource });
 
-const prisma = new PrismaClient();
+// Lazy initialize PrismaClient for AdminJS
+let adminPrismaClient: PrismaClient | null = null;
+
+const getPrismaClient = (): PrismaClient => {
+  if (!adminPrismaClient) {
+    const connectionString = process.env.DATABASE_URL;
+    const isRds = connectionString?.includes('amazonaws.com');
+    const sslConfig = isRds ? { rejectUnauthorized: false } : undefined;
+
+    const pool = new Pool({
+      connectionString,
+      ssl: sslConfig,
+    });
+    const adapter = new PrismaPg(pool);
+
+    adminPrismaClient = new PrismaClient({
+      adapter,
+      log: isRds ? [] : ['warn', 'error'],
+    });
+
+    // Mock _baseDmmf for @adminjs/prisma compatibility (Prisma 7 removed this)
+    (adminPrismaClient as any)._baseDmmf = {
+      datamodelEnumMap: Prisma.dmmf.datamodel.enums.reduce(
+        (map, enumDef) => {
+          map[enumDef.name] = enumDef;
+          return map;
+        },
+        {} as Record<string, any>,
+      ),
+      modelMap: Prisma.dmmf.datamodel.models.reduce(
+        (map, model) => {
+          map[model.name] = model;
+          return map;
+        },
+        {} as Record<string, any>,
+      ),
+    };
+  }
+  return adminPrismaClient;
+};
 
 const checkAdminPermission = async (userId: string, prismaClient: PrismaClient): Promise<boolean> => {
   // Check direct permissions
@@ -61,10 +102,13 @@ const checkAdminPermission = async (userId: string, prismaClient: PrismaClient):
 };
 
 export const createAdminJS = async (cookieSecret: string) => {
+  const prismaClient = getPrismaClient();
+  const modelMap = (prismaClient as any)._baseDmmf.modelMap;
+
   const admin = new AdminJS({
     resources: [
       {
-        resource: { model: prisma.user, client: prisma },
+        resource: { model: modelMap.User, client: prismaClient },
         options: {
           name: 'Người dùng',
           navigation: { name: 'Quản lý hệ thống' },
@@ -96,7 +140,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.role, client: prisma },
+        resource: { model: modelMap.Role, client: prismaClient },
         options: {
           name: 'Vai trò',
           navigation: { name: 'Phân quyền' },
@@ -112,7 +156,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.permission, client: prisma },
+        resource: { model: modelMap.Permission, client: prismaClient },
         options: {
           name: 'Quyền hạn',
           navigation: { name: 'Phân quyền' },
@@ -127,7 +171,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.userRole, client: prisma },
+        resource: { model: modelMap.UserRole, client: prismaClient },
         options: {
           name: 'Vai trò người dùng',
           navigation: { name: 'Phân quyền' },
@@ -140,7 +184,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.userPermission, client: prisma },
+        resource: { model: modelMap.UserPermission, client: prismaClient },
         options: {
           name: 'Quyền hạn người dùng',
           navigation: { name: 'Phân quyền' },
@@ -153,7 +197,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.organization, client: prisma },
+        resource: { model: modelMap.Organization, client: prismaClient },
         options: {
           name: 'Tổ chức',
           navigation: { name: 'Quản lý hệ thống' },
@@ -169,7 +213,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.systemLog, client: prisma },
+        resource: { model: modelMap.SystemLog, client: prismaClient },
         options: {
           name: 'Nhật ký hệ thống',
           navigation: { name: 'Nhật ký' },
@@ -188,7 +232,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.databaseLog, client: prisma },
+        resource: { model: modelMap.DatabaseLog, client: prismaClient },
         options: {
           name: 'Nhật ký database',
           navigation: { name: 'Nhật ký' },
@@ -351,7 +395,7 @@ export const createAdminJS = async (cookieSecret: string) => {
           },
         },
       },
-    },
+    } as any,
   });
 
   return {
@@ -359,7 +403,7 @@ export const createAdminJS = async (cookieSecret: string) => {
     auth: {
       authenticate: async (email: string, password: string) => {
         try {
-          const user = await prisma.user.findFirst({
+          const user = await prismaClient.user.findFirst({
             where: { email, is_deleted: false },
           });
 
@@ -373,7 +417,7 @@ export const createAdminJS = async (cookieSecret: string) => {
           }
 
           // Check if user has server.admin permission
-          const hasAdminPermission = await checkAdminPermission(user.id, prisma);
+          const hasAdminPermission = await checkAdminPermission(user.id, prismaClient);
           if (!hasAdminPermission) {
             return null;
           }

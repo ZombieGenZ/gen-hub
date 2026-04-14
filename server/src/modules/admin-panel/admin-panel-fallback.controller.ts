@@ -2,12 +2,14 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ApiTags, ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../../common/decorators';
 
 @ApiTags('Admin Panel')
 @ApiExcludeController()
+@Public()
 @Controller('admin')
 export class AdminPanelFallbackController {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) { }
 
   @Get()
   getAdminPanel(@Res() res: Response) {
@@ -112,10 +114,8 @@ export class AdminPanelFallbackController {
               <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
-              <div class="badge">DISABLED</div>
               <h1>Admin Panel</h1>
               <h2>Trang quản trị đang bị vô hiệu hóa</h2>
-              <p>Để bật trang quản trị, hãy đặt biến môi trường <code>ADMIN_PANEL_ENABLED=true</code> trong file .env</p>
             </div>
           </div>
         </body>
