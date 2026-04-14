@@ -2,9 +2,11 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ApiTags, ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../../common/decorators';
 
 @ApiTags('Admin Panel')
 @ApiExcludeController()
+@Public()
 @Controller('admin')
 export class AdminPanelFallbackController {
   constructor(private readonly configService: ConfigService) {}
