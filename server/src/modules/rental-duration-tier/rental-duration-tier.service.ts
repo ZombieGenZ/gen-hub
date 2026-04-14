@@ -359,22 +359,39 @@ export class RentalDurationTierService {
             updated_by: userId,
           });
         } else {
-          // Create
-          await this.repository.createAddonGift({
-            duration_tier_id: id,
-            addon_id: gift.addon_id,
-            require_min_order_amount: gift.require_min_order_amount,
-            min_order_amount: gift.min_order_amount,
-            require_min_warehouses: gift.require_min_warehouses,
-            min_warehouses: gift.min_warehouses,
-            require_min_rows: gift.require_min_rows,
-            min_rows: gift.min_rows,
-            is_until_service_end: gift.is_until_service_end,
-            gift_duration_value: gift.gift_duration_value,
-            gift_duration_unit: gift.gift_duration_unit,
-            is_active: gift.is_active,
-            created_by: userId,
-          });
+          // Check for soft-deleted record with same (duration_tier_id, addon_id) to avoid unique constraint violation
+          const softDeleted = await this.repository.findAddonGiftIncludingDeleted(id, gift.addon_id);
+          if (softDeleted) {
+            await this.repository.restoreAddonGift(softDeleted.id, {
+              require_min_order_amount: gift.require_min_order_amount,
+              min_order_amount: gift.min_order_amount,
+              require_min_warehouses: gift.require_min_warehouses,
+              min_warehouses: gift.min_warehouses,
+              require_min_rows: gift.require_min_rows,
+              min_rows: gift.min_rows,
+              is_until_service_end: gift.is_until_service_end,
+              gift_duration_value: gift.gift_duration_value,
+              gift_duration_unit: gift.gift_duration_unit,
+              is_active: gift.is_active,
+              updated_by: userId,
+            });
+          } else {
+            await this.repository.createAddonGift({
+              duration_tier_id: id,
+              addon_id: gift.addon_id,
+              require_min_order_amount: gift.require_min_order_amount,
+              min_order_amount: gift.min_order_amount,
+              require_min_warehouses: gift.require_min_warehouses,
+              min_warehouses: gift.min_warehouses,
+              require_min_rows: gift.require_min_rows,
+              min_rows: gift.min_rows,
+              is_until_service_end: gift.is_until_service_end,
+              gift_duration_value: gift.gift_duration_value,
+              gift_duration_unit: gift.gift_duration_unit,
+              is_active: gift.is_active,
+              created_by: userId,
+            });
+          }
         }
       }
     }
@@ -424,22 +441,39 @@ export class RentalDurationTierService {
             updated_by: userId,
           });
         } else {
-          // Create
-          await this.repository.createInsuranceGift({
-            duration_tier_id: id,
-            insurance_id: gift.insurance_id,
-            require_min_order_amount: gift.require_min_order_amount,
-            min_order_amount: gift.min_order_amount,
-            require_min_warehouses: gift.require_min_warehouses,
-            min_warehouses: gift.min_warehouses,
-            require_min_rows: gift.require_min_rows,
-            min_rows: gift.min_rows,
-            is_until_service_end: gift.is_until_service_end,
-            gift_duration_value: gift.gift_duration_value,
-            gift_duration_unit: gift.gift_duration_unit,
-            is_active: gift.is_active,
-            created_by: userId,
-          });
+          // Check for soft-deleted record with same (duration_tier_id, insurance_id) to avoid unique constraint violation
+          const softDeleted = await this.repository.findInsuranceGiftIncludingDeleted(id, gift.insurance_id);
+          if (softDeleted) {
+            await this.repository.restoreInsuranceGift(softDeleted.id, {
+              require_min_order_amount: gift.require_min_order_amount,
+              min_order_amount: gift.min_order_amount,
+              require_min_warehouses: gift.require_min_warehouses,
+              min_warehouses: gift.min_warehouses,
+              require_min_rows: gift.require_min_rows,
+              min_rows: gift.min_rows,
+              is_until_service_end: gift.is_until_service_end,
+              gift_duration_value: gift.gift_duration_value,
+              gift_duration_unit: gift.gift_duration_unit,
+              is_active: gift.is_active,
+              updated_by: userId,
+            });
+          } else {
+            await this.repository.createInsuranceGift({
+              duration_tier_id: id,
+              insurance_id: gift.insurance_id,
+              require_min_order_amount: gift.require_min_order_amount,
+              min_order_amount: gift.min_order_amount,
+              require_min_warehouses: gift.require_min_warehouses,
+              min_warehouses: gift.min_warehouses,
+              require_min_rows: gift.require_min_rows,
+              min_rows: gift.min_rows,
+              is_until_service_end: gift.is_until_service_end,
+              gift_duration_value: gift.gift_duration_value,
+              gift_duration_unit: gift.gift_duration_unit,
+              is_active: gift.is_active,
+              created_by: userId,
+            });
+          }
         }
       }
     }

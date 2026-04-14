@@ -269,6 +269,49 @@ export class RentalDurationTierRepository {
     });
   }
 
+  async findAddonGiftIncludingDeleted(tierId: string, addonId: string) {
+    return this.prisma.tierAddonGift.findFirst({
+      where: { duration_tier_id: tierId, addon_id: addonId },
+    });
+  }
+
+  async restoreAddonGift(
+    id: string,
+    data: {
+      require_min_order_amount?: boolean;
+      min_order_amount?: number;
+      require_min_warehouses?: boolean;
+      min_warehouses?: number;
+      require_min_rows?: boolean;
+      min_rows?: number;
+      is_until_service_end?: boolean;
+      gift_duration_value?: number;
+      gift_duration_unit?: string;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
+    return this.prisma.tierAddonGift.update({
+      where: { id },
+      data: {
+        require_min_order_amount: data.require_min_order_amount,
+        min_order_amount: data.min_order_amount,
+        require_min_warehouses: data.require_min_warehouses,
+        min_warehouses: data.min_warehouses,
+        require_min_rows: data.require_min_rows,
+        min_rows: data.min_rows,
+        is_until_service_end: data.is_until_service_end,
+        gift_duration_value: data.gift_duration_value,
+        gift_duration_unit: data.gift_duration_unit as any,
+        is_active: data.is_active ?? true,
+        is_deleted: false,
+        deleted_at: null,
+        deleted_by: null,
+        updated_by: data.updated_by,
+      },
+    });
+  }
+
   // Insurance Gift methods
   async createInsuranceGift(data: {
     duration_tier_id: string;
@@ -365,6 +408,49 @@ export class RentalDurationTierRepository {
         is_active: false,
         deleted_at: new Date(),
         deleted_by: deletedBy,
+      },
+    });
+  }
+
+  async findInsuranceGiftIncludingDeleted(tierId: string, insuranceId: string) {
+    return this.prisma.tierInsuranceGift.findFirst({
+      where: { duration_tier_id: tierId, insurance_id: insuranceId },
+    });
+  }
+
+  async restoreInsuranceGift(
+    id: string,
+    data: {
+      require_min_order_amount?: boolean;
+      min_order_amount?: number;
+      require_min_warehouses?: boolean;
+      min_warehouses?: number;
+      require_min_rows?: boolean;
+      min_rows?: number;
+      is_until_service_end?: boolean;
+      gift_duration_value?: number;
+      gift_duration_unit?: string;
+      is_active?: boolean;
+      updated_by: string;
+    },
+  ) {
+    return this.prisma.tierInsuranceGift.update({
+      where: { id },
+      data: {
+        require_min_order_amount: data.require_min_order_amount,
+        min_order_amount: data.min_order_amount,
+        require_min_warehouses: data.require_min_warehouses,
+        min_warehouses: data.min_warehouses,
+        require_min_rows: data.require_min_rows,
+        min_rows: data.min_rows,
+        is_until_service_end: data.is_until_service_end,
+        gift_duration_value: data.gift_duration_value,
+        gift_duration_unit: data.gift_duration_unit as any,
+        is_active: data.is_active ?? true,
+        is_deleted: false,
+        deleted_at: null,
+        deleted_by: null,
+        updated_by: data.updated_by,
       },
     });
   }

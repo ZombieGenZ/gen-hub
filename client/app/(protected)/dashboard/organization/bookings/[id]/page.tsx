@@ -329,16 +329,13 @@ export default function BookingDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground block mb-1">Quản lý kho:</span>
-                      <span className="font-medium">—</span>
+                      <span className="font-medium">{warehouseManager || 'N/A'}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block mb-1">Liên hệ:</span>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" /> —
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3" /> —
+                          <Mail className="h-3 w-3" /> {warehouseEmail || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -454,10 +451,6 @@ export default function BookingDetailPage() {
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Đơn giá / m²</span>
-                  <span>{pricePerM2 != null ? fmtCurrency(pricePerM2) : '—'}</span>
-                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tiền thuê hàng tháng</span>
                   <span>{fmtCurrency(totalPriceNum)}</span>
