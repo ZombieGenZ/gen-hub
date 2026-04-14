@@ -351,7 +351,7 @@ export const createAdminJS = async (cookieSecret: string) => {
           },
         },
       },
-    },
+    } as any,
   });
 
   return {
