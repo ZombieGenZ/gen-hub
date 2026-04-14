@@ -11,6 +11,7 @@ import {
     CheckIcon,
     ExclamationCircleIcon,
     ChatBubbleLeftRightIcon,
+    XMarkIcon,
 } from '@heroicons/react/24/outline';
 import {
     Dialog,
@@ -631,50 +632,72 @@ export function WarehouseBookingPanel({
 
                     <Separator className="bg-slate-100" />
 
-                    {/* Addons Section */}
+                    {/* Addons Section - Dropdown Style */}
                     {addons.length > 0 && (
-                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-amber-600">
                                       <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5z" clipRule="evenodd" />
                                     </svg>
                                 </div>
-                                <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Dịch Vụ Thêm</Label>
+                                <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Dịch Vụ Bổ Sung</Label>
                             </div>
-                            <div className="grid grid-cols-1 gap-3">
-                                {addons.map((addon) => {
-                                    const isSelected = selectedAddons.includes(addon.id);
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Chọn dịch vụ từ menu để thêm vào danh sách:</p>
 
-                                    return (
-                                        <div
-                                            key={addon.id}
-                                            className={cn(
-                                                "relative flex items-center space-x-3 p-3.5 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden group",
-                                                isSelected 
-                                                    ? "border-amber-400/60 bg-gradient-to-r from-amber-50/40 to-white dark:from-amber-900/10 dark:to-slate-900 shadow-sm" 
-                                                    : "border-slate-100 dark:border-slate-800 hover:border-amber-200/50 bg-white dark:bg-slate-900"
-                                            )}
-                                            onClick={() => toggleAddon(addon.id)}
-                                        >
-                                            <Checkbox
-                                                id={`addon-${addon.id}`}
-                                                checked={isSelected}
-                                                onCheckedChange={() => toggleAddon(addon.id)}
-                                                className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                                            />
-                                            <div className="flex-1 flex justify-between items-center gap-2">
-                                                <Label htmlFor={`addon-${addon.id}`} className={cn("font-medium cursor-pointer", isSelected ? "text-amber-900 dark:text-amber-100" : "text-slate-700 dark:text-slate-300")}>
-                                                    {addon.name}
-                                                </Label>
-                                                <p className="text-sm font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
-                                                    +{Number(addon.price).toLocaleString('vi-VN')}đ<span className="text-[10px] font-medium opacity-80 text-amber-700 dark:text-amber-400">/{addon.is_monthly_payment ? 'tháng' : 'lần'}</span>
-                                                </p>
+                            {/* Dropdown select */}
+                            <select
+                                value=""
+                                onChange={(e) => {
+                                    const addonId = e.target.value;
+                                    if (addonId && !selectedAddons.includes(addonId)) {
+                                        setSelectedAddons(prev => [...prev, addonId]);
+                                    }
+                                    e.currentTarget.value = "";
+                                }}
+                                className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
+                            >
+                                <option value="">-- Nhấn để chọn dịch vụ --</option>
+                                {addons
+                                    .filter(addon => !selectedAddons.includes(addon.id))
+                                    .map(addon => (
+                                        <option key={addon.id} value={addon.id}>
+                                            {addon.name} — +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+
+                            {/* Selected addons list */}
+                            {selectedAddons.length > 0 && (
+                                <div className="space-y-2 mt-1">
+                                    {selectedAddons.map(addonId => {
+                                        const addon = addons.find(a => a.id === addonId);
+                                        if (!addon) return null;
+                                        return (
+                                            <div
+                                                key={addonId}
+                                                className="flex items-center justify-between px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800"
+                                            >
+                                                <div>
+                                                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{addon.name}</span>
+                                                    <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">
+                                                        +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleAddon(addonId)}
+                                                    className="ml-3 text-red-400 hover:text-red-600 transition-colors"
+                                                    aria-label={`Xóa ${addon.name}`}
+                                                >
+                                                    <XMarkIcon className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
