@@ -1,12 +1,24 @@
 import AdminJS from 'adminjs';
 import { Database, Resource } from '@adminjs/prisma';
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 
 // Register Prisma adapter for AdminJS
 AdminJS.registerAdapter({ Database, Resource });
 
-const prisma = new PrismaClient();
+// Lazy initialize PrismaClient for AdminJS
+let adminPrismaClient: PrismaClient | null = null;
+
+const getPrismaClient = (): PrismaClient => {
+  if (!adminPrismaClient) {
+    const isRds = process.env.DATABASE_URL?.includes('amazonaws.com');
+    
+    adminPrismaClient = new PrismaClient({
+      log: isRds ? [] : ['warn', 'error'],
+    } as any);
+  }
+  return adminPrismaClient;
+};
 
 const checkAdminPermission = async (userId: string, prismaClient: PrismaClient): Promise<boolean> => {
   // Check direct permissions
@@ -61,10 +73,12 @@ const checkAdminPermission = async (userId: string, prismaClient: PrismaClient):
 };
 
 export const createAdminJS = async (cookieSecret: string) => {
+  const prismaClient = getPrismaClient();
+  
   const admin = new AdminJS({
     resources: [
       {
-        resource: { model: prisma.user, client: prisma },
+        resource: { model: prismaClient.user, client: prismaClient },
         options: {
           name: 'Người dùng',
           navigation: { name: 'Quản lý hệ thống' },
@@ -96,7 +110,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.role, client: prisma },
+        resource: { model: prismaClient.role, client: prismaClient },
         options: {
           name: 'Vai trò',
           navigation: { name: 'Phân quyền' },
@@ -112,7 +126,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.permission, client: prisma },
+        resource: { model: prismaClient.permission, client: prismaClient },
         options: {
           name: 'Quyền hạn',
           navigation: { name: 'Phân quyền' },
@@ -127,7 +141,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.userRole, client: prisma },
+        resource: { model: prismaClient.userRole, client: prismaClient },
         options: {
           name: 'Vai trò người dùng',
           navigation: { name: 'Phân quyền' },
@@ -140,7 +154,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.userPermission, client: prisma },
+        resource: { model: prismaClient.userPermission, client: prismaClient },
         options: {
           name: 'Quyền hạn người dùng',
           navigation: { name: 'Phân quyền' },
@@ -153,7 +167,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.organization, client: prisma },
+        resource: { model: prismaClient.organization, client: prismaClient },
         options: {
           name: 'Tổ chức',
           navigation: { name: 'Quản lý hệ thống' },
@@ -169,7 +183,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.systemLog, client: prisma },
+        resource: { model: prismaClient.systemLog, client: prismaClient },
         options: {
           name: 'Nhật ký hệ thống',
           navigation: { name: 'Nhật ký' },
@@ -188,7 +202,7 @@ export const createAdminJS = async (cookieSecret: string) => {
         },
       },
       {
-        resource: { model: prisma.databaseLog, client: prisma },
+        resource: { model: prismaClient.databaseLog, client: prismaClient },
         options: {
           name: 'Nhật ký database',
           navigation: { name: 'Nhật ký' },
@@ -359,7 +373,7 @@ export const createAdminJS = async (cookieSecret: string) => {
     auth: {
       authenticate: async (email: string, password: string) => {
         try {
-          const user = await prisma.user.findFirst({
+          const user = await prismaClient.user.findFirst({
             where: { email, is_deleted: false },
           });
 
@@ -373,7 +387,7 @@ export const createAdminJS = async (cookieSecret: string) => {
           }
 
           // Check if user has server.admin permission
-          const hasAdminPermission = await checkAdminPermission(user.id, prisma);
+          const hasAdminPermission = await checkAdminPermission(user.id, prismaClient);
           if (!hasAdminPermission) {
             return null;
           }
