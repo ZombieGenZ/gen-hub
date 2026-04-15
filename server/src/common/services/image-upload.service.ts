@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
-import ImageKit from 'imagekit';
+import ImageKit = require('imagekit');
 
 /**
  * Vị trí watermark được hỗ trợ

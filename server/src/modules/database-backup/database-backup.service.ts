@@ -17,12 +17,14 @@ import { I18nService } from 'nestjs-i18n';
 import { IBackupResult, IBackupListItem, IBackupListQuery } from './interfaces';
 import * as fs from 'fs';
 import * as path from 'path';
-import archiver from 'archiver';
-import archiverZipEncrypted from 'archiver-zip-encrypted';
+import * as archiver from 'archiver';
+import * as archiverZipEncrypted from 'archiver-zip-encrypted';
 import { DiscordService } from '../discord/discord.service';
 
 // Đăng ký format zip-encrypted cho mã hóa AES-256
-archiver.registerFormat('zip-encrypted', archiverZipEncrypted);
+if (archiverZipEncrypted.default) {
+  archiver.registerFormat('zip-encrypted', archiverZipEncrypted.default);
+}
 
 /**
  * Service xử lý sao lưu database tự động
@@ -340,11 +342,11 @@ export class DatabaseBackupService implements OnModuleInit {
 
       // Tạo archive với mã hóa AES-256 nếu có password
       const archive = this.backupPassword
-        ? archiver.create('zip-encrypted', {
+        ? (archiver as any).create('zip-encrypted', {
             zlib: { level: 9 },
             encryptionMethod: 'aes256',
             password: this.backupPassword,
-          } as archiver.ArchiverOptions)
+          })
         : archiver('zip', {
             zlib: { level: 9 },
           });
