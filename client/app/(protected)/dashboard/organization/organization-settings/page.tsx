@@ -225,6 +225,23 @@ export default function CustomerOrganizationSettingsPage() {
         }
     };
 
+    const handleUpdateMember = async (memberId: string, displayName: string, roleIds: string[]) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        try {
+            await Promise.all([
+                memberService.updateMemberDisplayName(token, organization.id, memberId, displayName),
+                memberService.assignRoles(token, organization.id, memberId, roleIds),
+            ]);
+            await fetchMembers(organization.id);
+            showToast("Đã cập nhật thành viên", "success");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Cập nhật thành viên thất bại"), "error");
+            throw err;
+        }
+    };
+
     const handleCancelInvite = async (memberId: string) => {
         if (!organization) return;
         const token = getToken();
@@ -368,6 +385,7 @@ export default function CustomerOrganizationSettingsPage() {
                             onInviteMembers={handleInviteMembers}
                             onRemoveMember={handleRemoveMember}
                             onAssignRoles={handleAssignRoles}
+                            onUpdateMember={handleUpdateMember}
                             onCancelInvite={handleCancelInvite}
                             isAdminView={false}
                         />

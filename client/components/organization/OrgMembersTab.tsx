@@ -26,6 +26,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { AddMemberDialog } from "./AddMemberDialog";
+import { EditMemberDialog } from "./EditMemberDialog";
 import { OrganizationMember } from "@/types/organization/organization_member.type";
 import { OrganizationRole } from "@/types/organization/organization_role.type";
 
@@ -35,6 +36,7 @@ interface OrgMembersTabProps {
     onInviteMembers: (emails: string[]) => Promise<void>;
     onRemoveMember: (memberId: string) => Promise<void>;
     onAssignRoles: (memberId: string, roleIds: string[]) => Promise<void>;
+    onUpdateMember?: (memberId: string, displayName: string, roleIds: string[]) => Promise<void>;
     onCancelInvite?: (memberId: string) => Promise<void>;
     /** true = System Admin view (read-only), false = Org Owner view */
     isAdminView?: boolean;
@@ -46,6 +48,7 @@ export function OrgMembersTab({
     onInviteMembers,
     onRemoveMember,
     onAssignRoles,
+    onUpdateMember,
     onCancelInvite,
     isAdminView = false,
 }: OrgMembersTabProps) {
@@ -55,6 +58,7 @@ export function OrgMembersTab({
     const [sortBy, setSortBy] = useState<"joined" | "name">("joined");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [addDialogOpen, setAddDialogOpen] = useState(false);
+    const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
@@ -383,9 +387,12 @@ export function OrgMembersTab({
                                                     <DropdownMenuContent align="end" className="w-48">
                                                         {member.is_accepted ? (
                                                             <>
-                                                                <DropdownMenuItem className="cursor-pointer">
+                                                                <DropdownMenuItem
+                                                                    onClick={() => setEditingMember(member)}
+                                                                    className="cursor-pointer"
+                                                                >
                                                                     <UserCog className="w-3.5 h-3.5 mr-2" />
-                                                                    Đổi vai trò
+                                                                    Sửa thành viên
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
                                                                 <DropdownMenuItem
@@ -445,6 +452,16 @@ export function OrgMembersTab({
                     open={addDialogOpen}
                     onOpenChange={setAddDialogOpen}
                     onSubmit={onInviteMembers}
+                />
+            )}
+
+            {!isAdminView && onUpdateMember && (
+                <EditMemberDialog
+                    open={!!editingMember}
+                    onOpenChange={(isOpen) => { if (!isOpen) setEditingMember(null); }}
+                    member={editingMember}
+                    orgRoles={orgRoles}
+                    onSubmit={onUpdateMember}
                 />
             )}
         </div>
