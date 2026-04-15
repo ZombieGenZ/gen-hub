@@ -2109,6 +2109,154 @@ export class InventoryRequestService {
   }
 
   /**
+   * Hoàn tác bắt đầu kiểm đếm: RECEIVING → APPROVED
+   */
+  async revertToApproved(
+    orgId: string,
+    id: string,
+    actorId: string,
+    lang: string,
+  ): Promise<IInboundRequest> {
+    const receipt = await this.prisma.receipt.findFirst({
+      where: { id, organization_id: orgId, is_deleted: false },
+    });
+    if (!receipt) {
+      throw new NotFoundException(
+        await this.i18n.translate(
+          'inventory-request.errors.receipt_not_found',
+          { lang },
+        ),
+      );
+    }
+    if (receipt.status !== ReceiptStatus.RECEIVING) {
+      throw new BadRequestException(
+        await this.i18n.translate('inventory-request.errors.invalid_status', {
+          lang,
+        }),
+      );
+    }
+
+    const updated = await this.prisma.receipt.update({
+      where: { id },
+      data: {
+        status: ReceiptStatus.APPROVED,
+        checker_id: null,
+        receiving_started_at: null,
+        updated_by: actorId,
+      },
+      include: {
+        warehouse: { select: { id: true, name: true } },
+        partner: { select: { id: true, name: true, code: true } },
+        details: {
+          where: { is_deleted: false },
+          include: {
+            product: {
+              select: { id: true, name: true, sku: true, image_url: true },
+            },
+            batch: { select: { id: true, code: true, expiry_date: true } },
+            unit: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    await Promise.all([
+      this.redisService.del(this.getInboundDetailCacheKey(id)),
+      this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+    ]);
+
+    this.websocketGateway.emitToOrganization(orgId, 'inbound:approved', {
+      receiptId: id,
+      code: updated.code,
+      revertedBy: actorId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return updated as unknown as IInboundRequest;
+  }
+
+  /**
+   * Hoàn tác xác nhận kiểm đếm: PROCESSING → RECEIVING
+   */
+  async revertToReceiving(
+    orgId: string,
+    id: string,
+    actorId: string,
+    lang: string,
+  ): Promise<IInboundRequest> {
+    const receipt = await this.prisma.receipt.findFirst({
+      where: { id, organization_id: orgId, is_deleted: false },
+      include: { details: { where: { is_deleted: false } } },
+    });
+    if (!receipt) {
+      throw new NotFoundException(
+        await this.i18n.translate(
+          'inventory-request.errors.receipt_not_found',
+          { lang },
+        ),
+      );
+    }
+    if (receipt.status !== ReceiptStatus.PROCESSING) {
+      throw new BadRequestException(
+        await this.i18n.translate('inventory-request.errors.invalid_status', {
+          lang,
+        }),
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Reset actual_qty về expected_qty để kiểm đếm lại
+      for (const detail of receipt.details) {
+        await tx.receiptDetail.update({
+          where: { id: detail.id },
+          data: { actual_qty: detail.expected_qty },
+        });
+      }
+      return tx.receipt.update({
+        where: { id },
+        data: {
+          status: ReceiptStatus.RECEIVING,
+          receiving_completed_at: null,
+          is_customer_mismatch_agreed: false,
+          updated_by: actorId,
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          partner: { select: { id: true, name: true, code: true } },
+          details: {
+            where: { is_deleted: false },
+            include: {
+              product: {
+                select: { id: true, name: true, sku: true, image_url: true },
+              },
+              batch: { select: { id: true, code: true, expiry_date: true } },
+              unit: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
+    });
+
+    await Promise.all([
+      this.redisService.del(this.getInboundDetailCacheKey(id)),
+      this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+    ]);
+
+    this.websocketGateway.emitToOrganization(
+      orgId,
+      'inbound:receiving-started',
+      {
+        receiptId: id,
+        code: updated.code,
+        revertedBy: actorId,
+        timestamp: new Date().toISOString(),
+      },
+    );
+
+    return updated as unknown as IInboundRequest;
+  }
+
+  /**
    * Xác nhận kiểm đếm: RECEIVING → PROCESSING
    */
   async confirmReceiving(

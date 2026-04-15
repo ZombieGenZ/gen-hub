@@ -617,6 +617,38 @@ export class InventoryService {
     }
 
     /**
+     * Hoàn tác kiểm đếm: RECEIVING → APPROVED
+     */
+    async revertInboundToApproved(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/revert-to-approved`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể hoàn tác bước kiểm đếm');
+        }
+        return response.json();
+    }
+
+    /**
+     * Hoàn tác xác nhận kiểm đếm: PROCESSING → RECEIVING
+     */
+    async revertInboundToReceiving(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/revert-to-receiving`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể hoàn tác bước cất hàng');
+        }
+        return response.json();
+    }
+
+    /**
      * Xác nhận đã cất hàng vào kho
      * @param token Token xác thực
      * @param id ID của phiếu PO

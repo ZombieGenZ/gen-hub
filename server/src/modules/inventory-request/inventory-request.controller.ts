@@ -1744,6 +1744,58 @@ export class InventoryRequestController {
     );
   }
 
+  @Patch('inbound/:id/revert-to-approved')
+  @RequireOrgPermission('org.inventory.inbound.approve')
+  @ApiOperation({
+    summary: 'Hoàn tác kiểm đếm — RECEIVING → APPROVED',
+    description:
+      'Quay phiếu nhập từ trạng thái `RECEIVING` về `APPROVED` khi cần làm lại bước kiểm đếm. Yêu cầu quyền `org.inventory.inbound.approve`.',
+  })
+  async revertToApproved(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentActor() actorId: string,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.inventoryRequestService.revertToApproved(
+      orgId,
+      id,
+      actorId,
+      lang,
+    );
+    return new UpdatedResponse(
+      'inventory-request.revert_to_approved',
+      result,
+      lang === 'vi' ? 'Đã quay lại bước Đã duyệt' : 'Reverted to Approved',
+    );
+  }
+
+  @Patch('inbound/:id/revert-to-receiving')
+  @RequireOrgPermission('org.inventory.inbound.approve')
+  @ApiOperation({
+    summary: 'Hoàn tác xác nhận kiểm đếm — PROCESSING → RECEIVING',
+    description:
+      'Quay phiếu nhập từ trạng thái `PROCESSING` về `RECEIVING` khi cần kiểm đếm lại. Số lượng thực tế sẽ được reset về số lượng dự kiến. Yêu cầu quyền `org.inventory.inbound.approve`.',
+  })
+  async revertToReceiving(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentActor() actorId: string,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.inventoryRequestService.revertToReceiving(
+      orgId,
+      id,
+      actorId,
+      lang,
+    );
+    return new UpdatedResponse(
+      'inventory-request.revert_to_receiving',
+      result,
+      lang === 'vi' ? 'Đã quay lại bước Kiểm đếm' : 'Reverted to Receiving',
+    );
+  }
+
   @Patch('inbound/:id/confirm-putaway')
   @RequireOrgPermission('org.inventory.inbound.approve')
   @ApiOperation({

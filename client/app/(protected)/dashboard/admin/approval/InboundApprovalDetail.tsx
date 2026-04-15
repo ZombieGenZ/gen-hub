@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
@@ -119,7 +118,6 @@ export default function InboundApprovalDetail({
     ticketId,
 }: InboundApprovalDetailProps) {
     const { showToast } = useToast();
-    const router = useRouter();
 
     const [data, setData] = useState<InboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
@@ -302,6 +300,30 @@ export default function InboundApprovalDetail({
                 return;
             }
             fetchData();
+        } finally { setSubmitting(false); }
+    };
+
+    const handleRevertToApproved = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await inventoryService.revertInboundToApproved(token, ticketId);
+            showToast("Đã quay lại bước Đã duyệt — có thể bắt đầu kiểm đếm lại", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể hoàn tác bước kiểm đếm", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    const handleRevertToReceiving = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await inventoryService.revertInboundToReceiving(token, ticketId);
+            showToast("Đã quay lại bước Kiểm đếm — số lượng thực tế đã được reset", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể hoàn tác bước cất hàng", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -708,25 +730,28 @@ export default function InboundApprovalDetail({
                         </Button>
                     )}
                     {data.status === "RECEIVING" && (
-                        <Button disabled={submitting}
-                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={() => handleConfirmReceiving()}>
-                            <CheckCircleIcon className="w-4 h-4" />
-                            {submitting ? "Đang xử lý..." : "Xác nhận kiểm đếm"}
-                        </Button>
+                        <div className="flex gap-2 ml-auto">
+                            <Button type="button" variant="outline" disabled={submitting}
+                                className="gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                                onClick={handleRevertToApproved}>
+                                <ArrowLeftIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Quay lại bước trước"}
+                            </Button>
+                            <Button disabled={submitting}
+                                className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                                onClick={() => handleConfirmReceiving()}>
+                                <CheckCircleIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Xác nhận kiểm đếm"}
+                            </Button>
+                        </div>
                     )}
                     {data.status === "PROCESSING" && (
                         <div className="flex gap-2 ml-auto">
                             <Button type="button" variant="outline" disabled={submitting}
                                 className="gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('Back button clicked, navigating to /dashboard/admin/approval');
-                                    router.back();
-                                }}>
+                                onClick={handleRevertToReceiving}>
                                 <ArrowLeftIcon className="w-4 h-4" />
-                                Quay lại
+                                {submitting ? "Đang xử lý..." : "Quay lại bước trước"}
                             </Button>
                             <Button disabled={submitting}
                                 className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
