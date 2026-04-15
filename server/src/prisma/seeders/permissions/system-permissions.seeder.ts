@@ -14,12 +14,40 @@ export class SystemPermissionsSeeder extends BaseSeeder {
   }
 
   async run(): Promise<void> {
+    await this.seedServerAdminPermission();
     await this.seedDatabaseAdminPermission();
     await this.seedFeatureFlagPermission();
     await this.seedResourcesAdminPermission();
     await this.seedSystemLogsAdminPermission();
     await this.seedBackupAdminPermission();
     await this.seedSuperadminBypassPermission();
+  }
+
+  /**
+   * Seed permission server.admin cho AdminJS
+   */
+  private async seedServerAdminPermission() {
+    try {
+      const permissionId = await this.createPermissionIfNotExists(
+        'server.admin',
+        'Server Admin',
+        'Quyền truy cập vào trang quản trị AdminJS của server',
+      );
+
+      if (permissionId) {
+        const superAdminRole = await this.getRoleByName('Super Admin');
+        if (superAdminRole) {
+          await this.assignPermissionToRole(superAdminRole.id, permissionId);
+          this.logger.log('✅ Server admin permission assigned to Super Admin');
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed server admin permission: ${errorMessage}`,
+      );
+    }
   }
 
   /**

@@ -3,7 +3,7 @@ import { Database, Resource } from '@adminjs/prisma';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import bcrypt from 'bcrypt';
+import * as argon2 from '@node-rs/argon2';
 
 // Register Prisma adapter for AdminJS
 AdminJS.registerAdapter({ Database, Resource });
@@ -411,7 +411,7 @@ export const createAdminJS = async (cookieSecret: string) => {
             return null;
           }
 
-          const validPassword = await bcrypt.compare(password, user.password);
+          const validPassword = await argon2.verify(user.password, password);
           if (!validPassword) {
             return null;
           }
