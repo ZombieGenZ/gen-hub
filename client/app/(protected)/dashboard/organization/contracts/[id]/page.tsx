@@ -24,6 +24,7 @@ import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import { RequestRefundModal } from "@/components/contract/RequestRefundModal";
 import { ManageAddonsModal } from "@/components/contract/ManageAddonsModal";
+import { SePayQRModal, type SePayPaymentData } from "@/components/contract/SePayQRModal";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 import { useUserRealtime } from "@/hooks/useUserRealtime";
@@ -53,6 +54,8 @@ export default function CustomerContractDetailPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [retryingPaymentId, setRetryingPaymentId] = useState<string | null>(null);
     const [fetchError, setFetchError] = useState<string | null>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentData, setPaymentData] = useState<SePayPaymentData | null>(null);
 
     const refreshContract = async () => {
         try {
@@ -109,28 +112,52 @@ export default function CustomerContractDetailPage() {
             }
 
             setRetryingPaymentId(paymentId ?? contractId);
-            const updated = await rentalContractService.retryPayment(token, currentOrgId, contractId);
+            const result = await rentalContractService.retryPayment(token, currentOrgId, contractId);
 
-            const paymentUrl = updated?.payment?.payment_url || updated?.payment_url;
-            if (paymentUrl) {
-                window.open(paymentUrl, "_blank", "noopener,noreferrer");
-            }
+            // Build payment data for QR modal
+            const payment = result?.payment ?? result;
+            const qrCode =
+                payment?.qrCode ||
+                payment?.qr_code_url ||
+                payment?.qr_code;
 
-            await refreshContract();
-            setActiveTab("payment");
-            showToast("Đã tạo lại liên kết thanh toán", "success");
+            setPaymentData({
+                paymentCode: payment?.payment_code || payment?.paymentCode,
+                amount: payment?.amount,
+                qrCode,
+                qr_code: payment?.qr_code,
+                qr_code_url: payment?.qr_code_url,
+                payment_url: payment?.payment_url,
+                expired_at: payment?.expired_at,
+                description: payment?.description,
+                bankInfo: result?.bankInfo ?? payment?.bankInfo,
+                contractCode: contract?.code,
+                contractName: contract?.name,
+            });
+            setShowPaymentModal(true);
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : "";
-            // If payment is still active, try to find the existing QR URL from contract payments
+            // If payment is still active, surface the existing pending payment
             if (errMsg.includes("payment_still_active")) {
                 const pendingPayment = contract?.payments?.find(
                     (p) => p.status === "PENDING"
                 );
-                const existingUrl = pendingPayment?.payment_url || pendingPayment?.qr_code || pendingPayment?.qr_code_url;
-                if (existingUrl) {
-                    window.open(existingUrl, "_blank", "noopener,noreferrer");
-                    setActiveTab("payment");
-                    showToast("Đang mở trang thanh toán hiện tại", "success");
+                if (pendingPayment) {
+                    setPaymentData({
+                        paymentCode: pendingPayment.transaction_code,
+                        amount: typeof pendingPayment.amount === "string"
+                            ? parseFloat(pendingPayment.amount)
+                            : pendingPayment.amount,
+                        qrCode: pendingPayment.qr_code_url || pendingPayment.qr_code,
+                        qr_code: pendingPayment.qr_code,
+                        qr_code_url: pendingPayment.qr_code_url,
+                        payment_url: pendingPayment.payment_url,
+                        expired_at: pendingPayment.expired_at,
+                        description: pendingPayment.description,
+                        contractCode: contract?.code,
+                        contractName: contract?.name,
+                    });
+                    setShowPaymentModal(true);
                 } else {
                     await refreshContract();
                     setActiveTab("payment");
@@ -188,6 +215,8 @@ export default function CustomerContractDetailPage() {
             if (eventName === "payment:paid" || eventName === "contract:activated") {
                 void refreshContract();
                 setActiveTab("payment");
+                setShowPaymentModal(false);
+                setPaymentData(null);
                 showToast(
                     eventName === "payment:paid"
                         ? "Đã nhận được thanh toán thành công!"
@@ -464,6 +493,24 @@ export default function CustomerContractDetailPage() {
                 })()}
                 lockedAddonIds={(contract as any).addons?.filter((a: any) => !a.is_cancelled && !a.is_gift && (new Date().getTime() - new Date(a.created_at).getTime() > 2 * 24 * 60 * 60 * 1000)).map((a: any) => a.addon_id || a.id) ?? []}
                 onSave={handleSaveAddons}
+            />
+
+            <SePayQRModal
+                open={showPaymentModal}
+                onOpenChange={(open) => {
+                    setShowPaymentModal(open);
+                    if (!open) setPaymentData(null);
+                }}
+                paymentData={paymentData}
+                onPaymentSuccess={() => {
+                    void refreshContract();
+                    setActiveTab("payment");
+                    showToast("Thanh toán thành công! Hợp đồng đã được kích hoạt.", "success");
+                }}
+                onPaymentExpired={() => {
+                    void refreshContract();
+                    showToast("Giao dịch đã hết hạn. Vui lòng thử lại.", "info");
+                }}
             />
         </div>
     );

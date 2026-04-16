@@ -36,6 +36,7 @@ import { organizationService } from "@/services/organization/organization.servic
 import { paymentService } from "@/services/payment/payment.service";
 import { orgHelper } from '@/lib/organization.utils';
 import { useToast } from '@/contexts/ToastContext';
+import { useUserRealtime } from '@/hooks/useUserRealtime';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ export default function BookingDetailPage() {
   const [organizationDetails, setOrganizationDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -69,6 +71,8 @@ export default function BookingDetailPage() {
         setLoading(true);
         const token = authStorage.getAccessToken();
         if (!token) { router.push("/login"); return; }
+        const currentUserId = authStorage.getUserID();
+        setUserId(currentUserId);
         const currentOrgId = orgId || await orgHelper.getOrgId(token);
         const result = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, id);
         setBooking(result);
@@ -138,6 +142,32 @@ export default function BookingDetailPage() {
     return () => clearInterval(interval);
   }, [showPaymentModal, paymentStatus, checkPaymentStatus]);
 
+  useUserRealtime({
+    userId,
+    events: ['payment:paid', 'contract:activated', 'payment:expired', 'payment:cancelled'],
+    enabled: !!userId,
+    onEvent: useCallback((eventName: string) => {
+      if (eventName === 'payment:paid' || eventName === 'contract:activated') {
+        setPaymentStatus('paid');
+        setShowPaymentModal(false);
+        setPaymentData(null);
+        const token = authStorage.getAccessToken();
+        if (token) {
+          orgHelper.getOrgId(token).then((currentOrgId) => {
+            rentalContractService.getOrgRentalContractFull(token, currentOrgId, id).then(setBooking);
+          });
+        }
+        showToast(
+          eventName === 'payment:paid' ? 'Đã nhận được thanh toán thành công!' : 'Hợp đồng đã được kích hoạt',
+          'success'
+        );
+      } else if (eventName === 'payment:expired' || eventName === 'payment:cancelled') {
+        setPaymentStatus('expired');
+        showToast('Giao dịch thanh toán đã hết hạn hoặc bị hủy', 'info');
+      }
+    }, [id, showToast]),
+  });
+
   const handleCancel = async () => {
     try {
       const token = authStorage.getAccessToken();
@@ -204,6 +234,7 @@ export default function BookingDetailPage() {
   // Nếu vat_amount trong DB bằng 0 nhưng final_price > total_price, tính ngược từ chênh lệch
   const vatAmountNum = vatAmountRaw > 0 ? vatAmountRaw : Math.max(0, finalPriceNum - totalPriceNum - serviceFeeTotal);
   const pendingPayment = booking.payments?.find((p: any) => p.status === 'PENDING');
+  const latestPayment = booking.payments?.[0]; // payments ordered by created_at desc
   const addonsList = booking.addons?.map((a: any) => a.addon ?? a) ?? [];
   const logsList = (booking.logs ?? []) as any[];
 
@@ -462,10 +493,6 @@ export default function BookingDetailPage() {
                   <span>{fmtCurrency(totalPriceNum)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Phí dịch vụ</span>
-                  <span>{serviceFeeTotal > 0 ? fmtCurrency(serviceFeeTotal) : '—'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">VAT ({vatRateNum > 0 ? vatRateNum : 10}%)</span>
                   <span>{fmtCurrency(vatAmountNum)}</span>
                 </div>
@@ -474,6 +501,26 @@ export default function BookingDetailPage() {
                   <span>Tổng cộng</span>
                   <span>{fmtCurrency(finalPriceNum)}</span>
                 </div>
+                <Separator className="bg-emerald-200/50" />
+                {(() => {
+                  const depositAmt = pendingPayment?.amount
+                    ? (typeof pendingPayment.amount === 'string' ? parseFloat(pendingPayment.amount) : pendingPayment.amount)
+                    : Math.max(2000, Math.round(finalPriceNum * 0.1));
+                  // Còn lại = toàn bộ giá trị hợp đồng (không trừ cọc vì cọc là khoản đặt cọc riêng)
+                  const remaining = finalPriceNum;
+                  return (
+                    <div className="bg-emerald-50 rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-700 font-medium">Cọc giữ chỗ (10%)</span>
+                        <span className="font-semibold text-emerald-700">{fmtCurrency(depositAmt)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Còn lại (Thanh toán sau)</span>
+                        <span>{fmtCurrency(remaining)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm">
@@ -482,7 +529,7 @@ export default function BookingDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-amber-800">Kỳ thanh toán tiếp theo</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Hạn thanh toán: <span className="font-medium text-foreground">{pendingPayment?.expired_at ? fmtDate(pendingPayment.expired_at) : '—'}</span>
+                      Hạn thanh toán: <span className="font-medium text-foreground">{(pendingPayment ?? latestPayment)?.expired_at ? fmtDate((pendingPayment ?? latestPayment)!.expired_at) : '—'}</span>
                     </p>
                   </div>
                 </div>
