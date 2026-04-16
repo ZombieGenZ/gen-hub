@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -276,8 +275,8 @@ export function PartnerFormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 min-h-0">
-                    <div className="space-y-6 px-6 py-6">
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                    <div className="space-y-6">
                         <div className="space-y-4">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                                 <IdentificationIcon className="w-4 h-4" />
@@ -457,7 +456,7 @@ export function PartnerFormDialog({
                             <Switch checked={formActive} onCheckedChange={setFormActive} />
                         </div>
                     </div>
-                </ScrollArea>
+                </div>
 
                 <DialogFooter className="px-6 py-4 border-t border-slate-100 shrink-0">
                     <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)} disabled={isSubmitting}>

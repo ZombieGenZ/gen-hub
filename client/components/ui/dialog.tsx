@@ -40,8 +40,6 @@ function DialogOverlay({
                 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-black/20 fixed inset-0 z-[100]',
                 className,
             )}
-            onWheel={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
             {...props}
         />
     );

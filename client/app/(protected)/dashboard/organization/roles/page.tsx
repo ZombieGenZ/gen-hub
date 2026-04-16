@@ -33,7 +33,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PlusIcon, PencilSquareIcon, ShieldCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
@@ -322,102 +321,102 @@ export default function RoleManagementPage() {
             </Card>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+                    <DialogHeader className="shrink-0">
                         <DialogTitle>{dialogMode === "create" ? "Thêm vai trò mới" : "Chỉnh sửa vai trò"}</DialogTitle>
                         <DialogDescription>Định nghĩa tên, trạng thái và các quyền được gán cho vai trò.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex flex-col flex-1 min-h-0 space-y-4 px-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="role-name">Tên vai trò</Label>
-                            <Input
-                                id="role-name"
-                                value={formData.name}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="role-description">Mô tả</Label>
-                            <Input
-                                id="role-description"
-                                value={formData.description}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
-                                placeholder="Mô tả ngắn gọn về vai trò này"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-md border p-3">
-                            <div>
-                                <Label>Trạng thái vai trò</Label>
-                                <p className="text-sm text-muted-foreground">Cho phép khóa hoặc mở khóa vai trò ngay khi chỉnh sửa.</p>
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="role-name">Tên vai trò</Label>
+                                <Input
+                                    id="role-name"
+                                    value={formData.name}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                                />
                             </div>
-                            <Switch
-                                checked={formData.is_active}
-                                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
-                            />
-                        </div>
 
-                        <div className="flex flex-col flex-1 min-h-0 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label>Quyền hạn</Label>
-                                <span className="text-xs text-muted-foreground">
-                                    Đã chọn {formData.permission_ids.length}/{permissions.length}
-                                </span>
+                            <div className="space-y-2">
+                                <Label htmlFor="role-description">Mô tả</Label>
+                                <Input
+                                    id="role-description"
+                                    value={formData.description}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                                    placeholder="Mô tả ngắn gọn về vai trò này"
+                                />
                             </div>
-                            <ScrollArea className="flex-1 min-h-0 border rounded-md">
-                                <div className="p-4 space-y-4">
-                                {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => {
-                                    const moduleIds = modulePermissions.map((p) => p.id);
-                                    const selectedCount = moduleIds.filter((id) => formData.permission_ids.includes(id)).length;
-                                    const allSelected = selectedCount === modulePermissions.length;
-                                    return (
-                                    <div key={moduleName} className="border border-border rounded-xl overflow-hidden">
-                                        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/50">
-                                            <div className="flex items-center gap-2">
-                                                <ShieldCheckIcon className="w-4 h-4 text-primary" />
-                                                <span className="text-sm font-semibold capitalize">{moduleName}</span>
-                                                <Badge variant="secondary" className="text-[10px]">
-                                                    {selectedCount}/{modulePermissions.length}
-                                                </Badge>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleToggleModule(modulePermissions)}
-                                                className="text-xs text-primary hover:underline"
-                                            >
-                                                {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
-                                            </button>
-                                        </div>
-                                        <div className="p-3 space-y-1.5">
-                                            {modulePermissions.map((permission) => (
-                                                <label
-                                                    key={permission.id}
-                                                    htmlFor={permission.id}
-                                                    className="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-muted/30 transition-colors"
-                                                >
-                                                    <Checkbox
-                                                        id={permission.id}
-                                                        checked={formData.permission_ids.includes(permission.id)}
-                                                        onCheckedChange={() => handleTogglePermission(permission.id)}
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium leading-none">{permission.name}</p>
-                                                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{permission.key}</p>
-                                                    </div>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    );
-                                })}
+
+                            <div className="flex items-center justify-between rounded-md border p-3">
+                                <div>
+                                    <Label>Trạng thái vai trò</Label>
+                                    <p className="text-sm text-muted-foreground">Cho phép khóa hoặc mở khóa vai trò ngay khi chỉnh sửa.</p>
                                 </div>
-                            </ScrollArea>
+                                <Switch
+                                    checked={formData.is_active}
+                                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label>Quyền hạn</Label>
+                                    <span className="text-xs text-muted-foreground">
+                                        Đã chọn {formData.permission_ids.length}/{permissions.length}
+                                    </span>
+                                </div>
+                                <div className="border rounded-md p-4 space-y-4">
+                                    {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => {
+                                        const moduleIds = modulePermissions.map((p) => p.id);
+                                        const selectedCount = moduleIds.filter((id) => formData.permission_ids.includes(id)).length;
+                                        const allSelected = selectedCount === modulePermissions.length;
+                                        return (
+                                        <div key={moduleName} className="border border-border rounded-xl overflow-hidden">
+                                            <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/50">
+                                                <div className="flex items-center gap-2">
+                                                    <ShieldCheckIcon className="w-4 h-4 text-primary" />
+                                                    <span className="text-sm font-semibold capitalize">{moduleName}</span>
+                                                    <Badge variant="secondary" className="text-[10px]">
+                                                        {selectedCount}/{modulePermissions.length}
+                                                    </Badge>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleModule(modulePermissions)}
+                                                    className="text-xs text-primary hover:underline"
+                                                >
+                                                    {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                                                </button>
+                                            </div>
+                                            <div className="p-3 space-y-1.5">
+                                                {modulePermissions.map((permission) => (
+                                                    <label
+                                                        key={permission.id}
+                                                        htmlFor={permission.id}
+                                                        className="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-muted/30 transition-colors"
+                                                    >
+                                                        <Checkbox
+                                                            id={permission.id}
+                                                            checked={formData.permission_ids.includes(permission.id)}
+                                                            onCheckedChange={() => handleTogglePermission(permission.id)}
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium leading-none">{permission.name}</p>
+                                                            <p className="text-xs text-muted-foreground font-mono mt-0.5">{permission.key}</p>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="shrink-0">
                         <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                             Hủy
                         </Button>

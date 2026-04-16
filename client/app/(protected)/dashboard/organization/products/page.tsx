@@ -273,8 +273,8 @@ export default function ProductMasterListPage() {
     })();
 
     return (
-        <div className="flex-1 overflow-auto bg-slate-50/50">
-            <main className="pt-0 py-4 px-4 space-y-6">
+        <div className="bg-slate-50/50 -m-4 p-4 min-h-full">
+            <main className="space-y-6">
                 <ProductHeader
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
