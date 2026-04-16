@@ -25,10 +25,10 @@ export default function ContractSigningPage() {
             try {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
-                
+
                 const orderService = new OrderService();
                 const order = await orderService.getOrderById(token, orderId);
-                
+
                 const session: Partial<CheckoutSession> = {
                     warehouse_template_id: order.warehouse_template_id,
                     warehouse_name: order.warehouse_name,
@@ -38,7 +38,7 @@ export default function ContractSigningPage() {
                     start_date: order.started_at,
                     organization_id: order.organization_id,
                     quotation: order.quotation,
-                    deposit_amount: order.payment_info?.amount || Math.max(2000000, (order.quotation?.grandTotal || 0) * 0.1),
+                    deposit_amount: order.payment_info?.amount || Math.max(2000, (order.quotation?.grandTotal || 0) * 0.1),
                     contract_id: order.contract_id,
                     status: order.status
                 };
@@ -96,7 +96,7 @@ export default function ContractSigningPage() {
             const rentalContractService = new RentalContractService();
             const baseUrl = window.location.origin;
             const returnUrl = `${baseUrl}/orders/${orderId}/contract/callback`;
-            
+
             const response = await rentalContractService.sendToDocusign(
                 contractSession.organization_id,
                 contractSession.contract_id,
