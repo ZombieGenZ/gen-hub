@@ -139,9 +139,18 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
     const handleChange = useCallback((field: keyof RepresentativeData, value: string) => {
         let processedValue = value;
         
-        // Auto-trim cho tên
+        // Filter input cho tên - chỉ cho phép chữ (kể cả tiếng Việt), số, dấu cách, gạch, chấm
         if (field === 'representative_name') {
-            processedValue = value.replace(/\s+/g, ' ').trimStart(); // Loại bỏ khoảng trắng thừa
+            // Loại bỏ ký tự đặc biệt, giữ lại chữ, số, dấu cách, gạch, chấm
+            processedValue = value
+                .replace(/[^a-zA-Z0-9À-ỿ\s\-\.]/g, '') // Xóa ký tự đặc biệt
+                .replace(/\s+/g, ' ') // Gộp khoảng trắng
+                .trimStart(); // Xóa khoảng trắng đầu
+        }
+        
+        // Filter input cho số điện thoại - chỉ cho phép số, +, -, khoảng trắng
+        if (field === 'representative_phone') {
+            processedValue = value.replace(/[^\d+\-()\s]/g, ''); // Chỉ giữ số, +, -, (), khoảng trắng
         }
         
         setFormData(prev => ({ ...prev, [field]: processedValue }));
