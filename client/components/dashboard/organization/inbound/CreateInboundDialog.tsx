@@ -26,9 +26,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TrashIcon, InboxIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, InboxIcon, PhotoIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 import { ProductSelector } from "@/components/dashboard/organization/common/ProductSelector";
 import { ProductBrowseModal } from "@/components/dashboard/organization/common/ProductBrowseModal";
+import { SupplierPOImportModal, type MatchedItem } from "@/components/dashboard/organization/inbound/SupplierPOImportModal";
 import type { CreateInboundPayload, InboundDetailPayload } from "@/services/inventory/inventory.types";
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
@@ -333,6 +334,7 @@ export function CreateInboundDialog({
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [browseOpen, setBrowseOpen] = useState(false);
+    const [supplierPOOpen, setSupplierPOOpen] = useState(false);
 
     // Form states
     const [formWarehouse, setFormWarehouse] = useState("");
@@ -445,6 +447,27 @@ export function CreateInboundDialog({
             return [...prev, ...newItems];
         });
     };
+
+    /** Thêm sản phẩm từ phiếu NCC (với số lượng từ phiếu) */
+    const handleSupplierPOImport = useCallback((items: MatchedItem[]) => {
+        setFormItems((prev) => {
+            const existingIds = new Set(prev.map((i) => i.product.id));
+            // Cập nhật qty nếu sản phẩm đã có, thêm mới nếu chưa có
+            const updated = prev.map((existing) => {
+                const fromPO = items.find((it) => it.product.id === existing.product.id);
+                if (fromPO) return { ...existing, expected_qty: fromPO.qty };
+                return existing;
+            });
+            const brandNew: DrawerItem[] = items
+                .filter((it) => !existingIds.has(it.product.id))
+                .map((it) => ({
+                    product: it.product,
+                    expected_qty: it.qty,
+                    unit_id: it.product.base_unit_id || "",
+                }));
+            return [...updated, ...brandNew];
+        });
+    }, []);
 
     const handleSubmit = async () => {
         if (!formWarehouse) {
@@ -578,8 +601,9 @@ export function CreateInboundDialog({
                     <div className="inbound-drawer__section">
                         <h3 className="inbound-drawer__section-title">2. Chi tiết hàng hóa</h3>
 
-                        {/* ProductSelector */}
-                        <div className="mb-4">
+                        {/* Toolbar: ProductSelector + Nút nhập từ NCC */}
+                        <div className="mb-4 flex items-start gap-2">
+                            <div className="flex-1">
                             <ProductSelector
                                 value={productSearch}
                                 onChange={setProductSearch}
@@ -613,6 +637,16 @@ export function CreateInboundDialog({
                                     }
                                 }}
                             />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-xl h-10 shrink-0 gap-1.5 text-sm border-[#0F766E] text-[#0F766E] hover:bg-[#0F766E]/10"
+                                onClick={() => setSupplierPOOpen(true)}
+                            >
+                                <DocumentArrowDownIcon className="w-4 h-4" />
+                                Nhập từ phiếu NCC
+                            </Button>
                         </div>
 
                         {/* Table sản phẩm đã thêm */}
@@ -738,6 +772,14 @@ export function CreateInboundDialog({
                 onConfirm={addMultipleProducts}
                 warehouseId={formWarehouse || undefined}
                 disableOutOfStock={false}
+            />
+
+            {/* Modal nhập từ phiếu NCC */}
+            <SupplierPOImportModal
+                open={supplierPOOpen}
+                onOpenChange={setSupplierPOOpen}
+                onImport={handleSupplierPOImport}
+                warehouseId={formWarehouse || undefined}
             />
         </>
     );

@@ -10,6 +10,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -24,7 +25,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { TrashIcon, InboxIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, InboxIcon, PhotoIcon, BuildingStorefrontIcon, UserIcon, MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
 import { ProductSelector } from "@/components/dashboard/organization/common/ProductSelector";
 import { ProductBrowseModal } from "@/components/dashboard/organization/common/ProductBrowseModal";
 import type {
@@ -98,6 +99,9 @@ export function CreateOutboundDialog({
     const [formNotes, setFormNotes] = useState("");
     const [formStrategy, setFormStrategy] = useState<PickingStrategy | "MANUAL">("FEFO");
     const [formItems, setFormItems] = useState<DrawerItem[]>([]);
+    const [formDeliveryAddress, setFormDeliveryAddress] = useState("");
+    const [formRequiredDate, setFormRequiredDate] = useState("");
+    const [formVehicleInfo, setFormVehicleInfo] = useState("");
 
     // Data resources
     const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
@@ -157,6 +161,22 @@ export function CreateOutboundDialog({
         if (open) loadFormData();
     }, [open, loadFormData]);
 
+    // Auto-fill địa chỉ giao hàng khi chọn đối tác
+    useEffect(() => {
+        if (!formPartner) return;
+        const partner = partners.find((p) => p.id === formPartner);
+        if (partner) {
+            const parts = [
+                partner.address_detail,
+                partner.ward?.name,
+                partner.ward?.province?.name,
+            ].filter(Boolean);
+            if (parts.length > 0) {
+                setFormDeliveryAddress(parts.join(", "));
+            }
+        }
+    }, [formPartner, partners]);
+
     const resetForm = useCallback(() => {
         setFormWarehouse("");
         setFormPartner("");
@@ -165,6 +185,9 @@ export function CreateOutboundDialog({
         setFormStrategy("FEFO");
         setFormItems([]);
         setProductSearch("");
+        setFormDeliveryAddress("");
+        setFormRequiredDate("");
+        setFormVehicleInfo("");
     }, []);
 
     const handleClose = useCallback(() => {
@@ -256,6 +279,9 @@ export function CreateOutboundDialog({
                 sales_order_code: formSOCode || undefined,
                 notes: formNotes || undefined,
                 picking_strategy: formStrategy !== "MANUAL" ? formStrategy : undefined,
+                required_date: formRequiredDate || undefined,
+                vehicle_info: formVehicleInfo || undefined,
+                delivery_address: formDeliveryAddress || undefined,
                 details: formItems.map((item) => {
                     const detail: OutboundDetailPayload = {
                         product_id: item.product.id,
@@ -303,16 +329,21 @@ export function CreateOutboundDialog({
 
                     <div className="flex-1 min-h-0 overflow-y-auto">
                         {/* Section 1 — Thông tin chung */}
-                        <div className="p-6 border-b">
-                            <h3 className="text-[16px] font-semibold leading-[150%] mb-4">
+                        <div className="p-6 border-b space-y-4">
+                            <h3 className="text-[16px] font-semibold leading-[150%]">
                                 1. Thông tin chung
                             </h3>
+
+                            {/* Row 1: Từ — Cho ai — Ngày xuất */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Kho xuất *</Label>
+                                    <Label className="flex items-center gap-1.5">
+                                        <BuildingStorefrontIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Kho xuất *
+                                    </Label>
                                     <Select value={formWarehouse} onValueChange={setFormWarehouse}>
                                         <SelectTrigger className="rounded-xl">
-                                            <SelectValue placeholder="Chọn kho" />
+                                            <SelectValue placeholder="Xuất từ kho nào?" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {warehouses.map((w) => (
@@ -324,38 +355,93 @@ export function CreateOutboundDialog({
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Đối tác nhận</Label>
+                                    <Label className="flex items-center gap-1.5">
+                                        <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Xuất cho ai
+                                    </Label>
                                     <Select value={formPartner} onValueChange={setFormPartner}>
                                         <SelectTrigger className="rounded-xl">
-                                            <SelectValue placeholder="Chọn đối tác" />
+                                            <SelectValue placeholder="Chọn đối tác nhận hàng" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {partners.map((p) => (
                                                 <SelectItem key={p.id} value={p.id}>
-                                                    {p.name}
+                                                    <div className="flex flex-col">
+                                                        <span>{p.name}</span>
+                                                        {p.code && (
+                                                            <span className="text-xs text-muted-foreground">{p.code}</span>
+                                                        )}
+                                                    </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label>Ngày xuất dự kiến</Label>
+                                    <Input
+                                        type="date"
+                                        value={formRequiredDate}
+                                        onChange={(e) => setFormRequiredDate(e.target.value)}
+                                        className="rounded-xl"
+                                        min={new Date().toISOString().split("T")[0]}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Row 2: Địa chỉ giao hàng — Xe nhận */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <MapPinIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Địa chỉ giao hàng
+                                        {formPartner && formDeliveryAddress && (
+                                            <span className="text-[10px] text-teal-600 font-normal">(tự động từ đối tác)</span>
+                                        )}
+                                    </Label>
+                                    <Textarea
+                                        value={formDeliveryAddress}
+                                        onChange={(e) => setFormDeliveryAddress(e.target.value)}
+                                        placeholder="Nhập địa chỉ giao hàng..."
+                                        className="rounded-xl resize-none min-h-18"
+                                        rows={2}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <TruckIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Thông tin xe nhận hàng
+                                    </Label>
+                                    <Textarea
+                                        value={formVehicleInfo}
+                                        onChange={(e) => setFormVehicleInfo(e.target.value)}
+                                        placeholder="Biển số, loại xe, tài xế..."
+                                        className="rounded-xl resize-none min-h-18"
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Row 3: Mã SO — Ghi chú */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
                                     <Label>Mã SO tham chiếu</Label>
                                     <Input
                                         value={formSOCode}
                                         onChange={(e) => setFormSOCode(e.target.value)}
-                                        placeholder="Nhập mã SO"
+                                        placeholder="Nhập mã đơn bán hàng (SO)"
                                         className="rounded-xl"
                                     />
                                 </div>
-                            </div>
-                            <div className="mt-4 space-y-2">
-                                <Label>Ghi chú</Label>
-                                <Input
-                                    value={formNotes}
-                                    onChange={(e) => setFormNotes(e.target.value)}
-                                    placeholder="Ghi chú cho phiếu xuất..."
-                                    className="rounded-xl"
-                                />
+                                <div className="space-y-2">
+                                    <Label>Ghi chú</Label>
+                                    <Input
+                                        value={formNotes}
+                                        onChange={(e) => setFormNotes(e.target.value)}
+                                        placeholder="Ghi chú cho phiếu xuất..."
+                                        className="rounded-xl"
+                                    />
+                                </div>
                             </div>
                         </div>
 

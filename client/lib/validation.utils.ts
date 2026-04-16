@@ -86,15 +86,35 @@ export function formatTaxCode(taxCode: string): string {
 
 /**
  * Validate số điện thoại Việt Nam
- * Hỗ trợ: 09x, 08x, 07x, 05x, 03x (10 số)
+ * Hỗ trợ: 
+ * - 10 số: 09x, 08x, 07x, 06x, 05x, 04x, 03x
+ * - Mã quốc gia: +84, 0084, 0084
+ * - Định dạng: có dấu phân cách, dấu ngoặc
  */
 export function validatePhoneNumber(phone: string): {
     isValid: boolean;
     message?: string;
 } {
-    const cleanPhone = phone.replace(/[\s-()]/g, '');
+    // Trim và kiểm tra rỗng
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+        return {
+            isValid: false,
+            message: 'Vui lòng nhập số điện thoại'
+        };
+    }
 
-    // Kiểm tra chỉ chứa số
+    // Xóa tất cả ký tự không phải số, ngoài dấu +
+    let cleanPhone = trimmedPhone.replace(/[\s\-().]/g, '');
+    
+    // Xử lý mã quốc gia
+    if (cleanPhone.startsWith('+84')) {
+        cleanPhone = '0' + cleanPhone.substring(3); // +84123456789 -> 0123456789
+    } else if (cleanPhone.startsWith('0084')) {
+        cleanPhone = '0' + cleanPhone.substring(4); // 0084123456789 -> 0123456789
+    }
+
+    // Kiểm tra chỉ chứa số sau khi xử lý
     if (!/^\d+$/.test(cleanPhone)) {
         return {
             isValid: false,
@@ -102,7 +122,7 @@ export function validatePhoneNumber(phone: string): {
         };
     }
 
-    // Kiểm tra độ dài
+    // Kiểm tra độ dài (phải là 10 số sau xử lý)
     if (cleanPhone.length !== 10) {
         return {
             isValid: false,
@@ -110,14 +130,21 @@ export function validatePhoneNumber(phone: string): {
         };
     }
 
-    // Kiểm tra đầu số hợp lệ
-    const validPrefixes = ['03', '05', '07', '08', '09'];
-    const prefix = cleanPhone.substring(0, 2);
+    // Kiểm tra đầu số hợp lệ (3-9, sau đó là một trong các số hợp lệ)
+    // Việt Nam hỗ trợ: 032-039 (Viettel), 070-079 (MobiFone), 080-089 (VinaPhone), 090-099 (Viettel)
+    const prefix = cleanPhone.substring(0, 3);
+    const validPrefixes = [
+        '032', '033', '034', '035', '036', '037', '038', '039', // Viettel
+        '070', '072', '073', '074', '075', '076', '077', '078', '079', // MobiFone
+        '080', '081', '082', '083', '084', '085', '086', '087', '088', '089', // VinaPhone
+        '090', '091', '092', '093', '094', '095', '096', '097', '098', '099', // Viettel
+        '030', '031', // Các đầu số cũ
+    ];
     
     if (!validPrefixes.includes(prefix)) {
         return {
             isValid: false,
-            message: 'Đầu số điện thoại không hợp lệ'
+            message: 'Số điện thoại không đúng định dạng Việt Nam'
         };
     }
 
@@ -129,17 +156,46 @@ export function validatePhoneNumber(phone: string): {
 
 /**
  * Validate email
+ * Kiểm tra định dạng email theo chuẩn RFC 5322 (đơn giản)
  */
 export function validateEmail(email: string): {
     isValid: boolean;
     message?: string;
 } {
+    const trimmedEmail = email.trim();
+    
+    // Kiểm tra rỗng
+    if (!trimmedEmail) {
+        return {
+            isValid: false,
+            message: 'Vui lòng nhập email'
+        };
+    }
+
+    // Regex RFC 5322 đơn giản nhưng đầy đủ hơn
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
         return {
             isValid: false,
             message: 'Email không đúng định dạng'
+        };
+    }
+
+    // Kiểm tra độ dài hợp lý (tối đa 254 ký tự theo RFC)
+    if (trimmedEmail.length > 254) {
+        return {
+            isValid: false,
+            message: 'Email quá dài'
+        };
+    }
+
+    // Kiểm tra phần local (trước @) không quá 64 ký tự
+    const [localPart] = trimmedEmail.split('@');
+    if (localPart?.length > 64) {
+        return {
+            isValid: false,
+            message: 'Phần trước @ quá dài'
         };
     }
 

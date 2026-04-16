@@ -252,6 +252,9 @@ export interface CreateOutboundPayload {
     sales_order_code?: string;
     notes?: string;
     picking_strategy?: PickingStrategy;
+    required_date?: string;
+    vehicle_info?: string;
+    delivery_address?: string;
     details: OutboundDetailPayload[];
 }
 

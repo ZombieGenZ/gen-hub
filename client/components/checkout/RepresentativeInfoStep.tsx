@@ -67,8 +67,19 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
     const validateField = useCallback((field: keyof RepresentativeData, value: string): string | undefined => {
         switch (field) {
             case 'representative_name':
-                if (!value || value.trim().length < 2) {
+                const trimmedName = value.trim();
+                if (!trimmedName) {
+                    return 'Vui lòng nhập họ và tên';
+                }
+                if (trimmedName.length < 2) {
                     return 'Tên người đại diện phải có ít nhất 2 ký tự';
+                }
+                if (trimmedName.length > 100) {
+                    return 'Tên người dại diện không được quá 100 ký tự';
+                }
+                // Kiểm tra ký tự hợp lệ (chữ, số, dấu cách, dấu gạch ngang, dấu chấm)
+                if (!/^[a-zA-Z0-9À-ỿ\s\-\.]+$/.test(trimmedName)) {
+                    return 'Tên chỉ được chứa chữ, số, dấu cách, dấu gạch ngang hoặc dấu chấm';
                 }
                 break;
             case 'representative_phone':
@@ -83,6 +94,11 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                     return emailResult.message;
                 }
                 break;
+            case 'representative_title':
+                if (!value || value.trim().length === 0) {
+                    return 'Vui lòng chọn chức danh';
+                }
+                break;
         }
         return undefined;
     }, []);
@@ -91,16 +107,22 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
     const validateAll = useCallback((): boolean => {
         const requiredFields: (keyof RepresentativeData)[] = [
             'representative_name',
+            'representative_title',
             'representative_phone',
             'representative_email'
         ];
         let isValid = true;
+        const newErrors: Partial<Record<keyof RepresentativeData, string>> = {};
 
         requiredFields.forEach(field => {
             const error = validateField(field, formData[field]);
-            if (error) isValid = false;
+            if (error) {
+                isValid = false;
+                newErrors[field] = error;
+            }
         });
 
+        setErrors(newErrors);
         return isValid;
     }, [formData, validateField]);
 
@@ -115,7 +137,14 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
 
     // Handle change
     const handleChange = useCallback((field: keyof RepresentativeData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        let processedValue = value;
+        
+        // Auto-trim cho tên
+        if (field === 'representative_name') {
+            processedValue = value.replace(/\s+/g, ' ').trimStart(); // Loại bỏ khoảng trắng thừa
+        }
+        
+        setFormData(prev => ({ ...prev, [field]: processedValue }));
 
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -125,7 +154,22 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
     // Handle blur
     const handleBlur = useCallback((field: keyof RepresentativeData) => {
         setTouched(prev => ({ ...prev, [field]: true }));
-        const error = validateField(field, formData[field]);
+        
+        let blurValue = formData[field];
+        
+        // Auto-trim cho tên và email
+        if (field === 'representative_name' || field === 'representative_email') {
+            blurValue = blurValue.trim();
+            setFormData(prev => ({ ...prev, [field]: blurValue }));
+        }
+        
+        // Auto-trim cho số điện thoại (loại bỏ khoảng trắng)
+        if (field === 'representative_phone') {
+            blurValue = blurValue.trim();
+            setFormData(prev => ({ ...prev, [field]: blurValue }));
+        }
+        
+        const error = validateField(field, blurValue);
         if (error) {
             setErrors(prev => ({ ...prev, [field]: error }));
         }
@@ -198,12 +242,19 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                     <Label className="text-slate-700 font-medium flex items-center gap-2">
                         <IdentificationIcon className="w-4 h-4 text-slate-400" />
                         Chức danh
+                        <span className="text-red-500">*</span>
                     </Label>
                     <Select
                         value={formData.representative_title}
-                        onValueChange={(value) => handleChange('representative_title', value)}
+                        onValueChange={(value) => {
+                            handleChange('representative_title', value);
+                            setTouched(prev => ({ ...prev, representative_title: true }));
+                        }}
                     >
-                        <SelectTrigger className="h-12 rounded-xl border-slate-200">
+                        <SelectTrigger className={cn(
+                            "h-12 rounded-xl border-slate-200",
+                            touched['representative_title'] && errors['representative_title'] && "border-red-400"
+                        )}>
                             <SelectValue placeholder="Chọn chức danh" />
                         </SelectTrigger>
                         <SelectContent>
@@ -214,6 +265,12 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                             ))}
                         </SelectContent>
                     </Select>
+                    {touched['representative_title'] && errors['representative_title'] && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                            <ExclamationCircleIcon className="w-3 h-3" />
+                            {errors['representative_title']}
+                        </p>
+                    )}
                 </div>
             </div>
 
