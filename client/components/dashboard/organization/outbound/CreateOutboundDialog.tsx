@@ -273,15 +273,21 @@ export function CreateOutboundDialog({
 
         setIsSubmitting(true);
         try {
+            // Gộp thông tin bổ sung vào notes vì schema chưa có column riêng
+            const extraNotes = [
+                formDeliveryAddress ? `Địa chỉ giao: ${formDeliveryAddress}` : "",
+                formVehicleInfo ? `Xe nhận: ${formVehicleInfo}` : "",
+                formRequiredDate ? `Ngày xuất dự kiến: ${formRequiredDate}` : "",
+            ].filter(Boolean).join(" | ");
+
+            const combinedNotes = [formNotes, extraNotes].filter(Boolean).join("\n");
+
             const payload: CreateOutboundPayload = {
                 warehouse_id: formWarehouse,
                 partner_id: formPartner || undefined,
                 sales_order_code: formSOCode || undefined,
-                notes: formNotes || undefined,
+                notes: combinedNotes || undefined,
                 picking_strategy: formStrategy !== "MANUAL" ? formStrategy : undefined,
-                required_date: formRequiredDate || undefined,
-                vehicle_info: formVehicleInfo || undefined,
-                delivery_address: formDeliveryAddress || undefined,
                 details: formItems.map((item) => {
                     const detail: OutboundDetailPayload = {
                         product_id: item.product.id,

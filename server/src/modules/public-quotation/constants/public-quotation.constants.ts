@@ -3,7 +3,7 @@
  */
 export const QUOTATION_CONSTANTS = {
   /** Số tiền cọc tối thiểu (VND) */
-  MIN_DEPOSIT_AMOUNT: 2_000_000,
+  MIN_DEPOSIT_AMOUNT: 2_000,
 
   /** Tỷ lệ % tiền cọc trên tổng hóa đơn */
   DEPOSIT_PERCENT: 0.1,

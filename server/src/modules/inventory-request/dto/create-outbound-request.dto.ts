@@ -169,6 +169,18 @@ export class CreateOutboundRequestDto {
   vehicle_info?: string;
 
   @ApiPropertyOptional({
+    description: 'Địa chỉ giao hàng',
+    example: '123 Đường Lê Lợi, Quận 1, TP.HCM',
+  })
+  @IsOptional()
+  @IsString({
+    message: i18nValidationMessage(
+      'inventory-request.validation.notes_string',
+    ),
+  })
+  delivery_address?: string;
+
+  @ApiPropertyOptional({
     description:
       'Chiến lược xuất kho (FEFO: First Expired First Out, FIFO: First In First Out)',
     enum: PickingStrategy,
