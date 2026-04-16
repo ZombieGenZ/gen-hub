@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
 import { io, Socket } from "socket.io-client";
@@ -37,7 +37,7 @@ import OutboundApprovalDetail from "./OutboundApprovalDetail";
 
 import "./approval.css";
 
-const inventoryService = new InventoryService();
+const inventoryService = new WarehouseManagerInventoryService();
 
 const APPROVAL_REALTIME_EVENTS = [
     "inbound:created",
@@ -335,7 +335,7 @@ export default function ApprovalQueuePage() {
                     if (ticket.type === "inbound") {
                         await inventoryService.approveInbound(token, ticket.id);
                     } else {
-                        await inventoryService.approveOutbound(token, ticket.id);
+                        await inventoryService.approveOutbound(token, ticket.id, {});
                     }
                     successCount++;
                 } catch {

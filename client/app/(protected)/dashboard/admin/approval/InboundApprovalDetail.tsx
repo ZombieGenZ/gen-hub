@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
 import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
@@ -26,7 +26,7 @@ import {
 
 import RejectReasonDialog from "./RejectReasonDialog";
 
-const inventoryService = new InventoryService();
+const inventoryService = new WarehouseManagerInventoryService();
 
 const INBOUND_DETAIL_REALTIME_EVENTS = [
     "inbound:approved",

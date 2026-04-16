@@ -44,11 +44,11 @@ export function QuotationSummary({
     className,
     showHeader = true,
 }: QuotationSummaryProps) {
-    // Tính phí dịch vụ sau khi áp dụng mã giảm giá
+    // Dùng trực tiếp giá trị từ server để đảm bảo khớp với chi tiết hợp đồng
+    // Server tính: serviceFee trên subtotal (trước coupon), grandTotal = subtotal + serviceFee - couponDiscount
     const couponAmount = appliedCoupon?.discount || breakdown.couponDiscount || 0;
-    const discountedSubtotal = Math.max(0, breakdown.subtotal - couponAmount);
-    const effectiveServiceFee = Math.round(discountedSubtotal * 0.1);
-    const effectiveGrandTotal = discountedSubtotal + effectiveServiceFee;
+    const effectiveServiceFee = breakdown.serviceFee;
+    const effectiveGrandTotal = breakdown.grandTotal;
     const depositAmount = breakdown?.depositAmount || Math.round(effectiveGrandTotal * 0.1);
     
     return (

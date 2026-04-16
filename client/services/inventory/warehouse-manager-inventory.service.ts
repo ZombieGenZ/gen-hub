@@ -212,6 +212,7 @@ export class WarehouseManagerInventoryService {
         data: {
             details: { detail_id: string; actual_qty: number }[];
             notes?: string;
+            is_customer_agreed?: boolean;
         },
     ): Promise<ApiResponse<any>> {
         const response = await fetch(
@@ -497,6 +498,63 @@ export class WarehouseManagerInventoryService {
             throw err;
         }
         return await response.json();
+    }
+
+    /**
+     * Hoàn tác kiểm đếm: RECEIVING → APPROVED
+     */
+    async revertInboundToApproved(token: string, id: string): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound/${id}/revert-to-approved`,
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể hoàn tác bước kiểm đếm");
+        }
+        return response.json();
+    }
+
+    /**
+     * Hoàn tác xác nhận kiểm đếm: PROCESSING → RECEIVING
+     */
+    async revertInboundToReceiving(token: string, id: string): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound/${id}/revert-to-receiving`,
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể hoàn tác bước cất hàng");
+        }
+        return response.json();
+    }
+
+    /**
+     * Bổ sung tồn kho sau khi nhập
+     */
+    async refillInventory(token: string, id: string): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound/${id}/refill-inventory`,
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const err: any = new Error(errorData.message || "Không thể bổ sung tồn kho");
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
+        }
+        return response.json();
     }
 
     /**

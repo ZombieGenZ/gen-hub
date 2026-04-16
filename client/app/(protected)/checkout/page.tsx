@@ -99,6 +99,7 @@ const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
     serviceFee: quotation.service_fee,
     couponDiscount: quotation.coupon_discount,
     grandTotal: quotation.grand_total,
+    depositAmount: quotation.deposit_amount,
 });
 
 const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
