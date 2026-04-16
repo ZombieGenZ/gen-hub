@@ -150,15 +150,15 @@ export function SePayQRModal({
                         {status === "paid"
                             ? "Thanh toán thành công"
                             : status === "expired"
-                            ? "Giao dịch hết hạn"
-                            : "Thanh toán qua QR SePay"}
+                                ? "Giao dịch hết hạn"
+                                : "Thanh toán qua QR SePay"}
                     </DialogTitle>
                     <DialogDescription className="text-xs">
                         {status === "paid"
                             ? "Hợp đồng của bạn đã được xác nhận và kích hoạt."
                             : status === "expired"
-                            ? "Giao dịch đã hết hạn hoặc bị hủy. Vui lòng thử lại."
-                            : "Quét mã QR hoặc chuyển khoản theo thông tin bên dưới để hoàn tất."}
+                                ? "Giao dịch đã hết hạn hoặc bị hủy. Vui lòng thử lại."
+                                : "Quét mã QR hoặc chuyển khoản theo thông tin bên dưới để hoàn tất."}
                     </DialogDescription>
                 </DialogHeader>
 

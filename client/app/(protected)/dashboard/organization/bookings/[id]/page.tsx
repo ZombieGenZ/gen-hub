@@ -224,13 +224,13 @@ export default function BookingDetailPage() {
   const finalPriceNum = typeof booking.final_price === 'string' ? parseFloat(booking.final_price) : (booking.final_price ?? 0);
   const vatRateNum = typeof booking.vat_rate === 'string' ? parseFloat(booking.vat_rate) : (booking.vat_rate ?? 0);
   const vatAmountRaw = typeof booking.vat_amount === 'string' ? parseFloat(booking.vat_amount) : (booking.vat_amount ?? 0);
-  
+
   // Tính phí dịch vụ (tổng addons price_at_purchase, loại trừ đã hủy và quà tặng)
   const serviceFeeTotal = (booking.addons ?? []).reduce((sum: number, a: any) => {
     if (a.is_cancelled || a.is_gift) return sum;
     return sum + parseFloat(a.price_at_purchase ?? '0');
   }, 0);
-  
+
   // Nếu vat_amount trong DB bằng 0 nhưng final_price > total_price, tính ngược từ chênh lệch
   const vatAmountNum = vatAmountRaw > 0 ? vatAmountRaw : Math.max(0, finalPriceNum - totalPriceNum - serviceFeeTotal);
   const pendingPayment = booking.payments?.find((p: any) => p.status === 'PENDING');
