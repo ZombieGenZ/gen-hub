@@ -986,6 +986,7 @@ export class AuthService {
           secret: user.two_factor_token || '',
           encoding: 'base32',
           token: dto.two_factor_code,
+          window: 1,
         });
 
         if (!isValid) {
