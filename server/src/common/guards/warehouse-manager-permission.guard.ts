@@ -114,6 +114,51 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
       return JSON.parse(cached) as string[];
     }
 
+    // 1. Check for System Admin
+    const systemRoles = await this.prisma.userRole.findMany({
+      where: { user_id: userId, is_active: true, is_deleted: false },
+      include: { role: true },
+    });
+    const isSystemAdmin = systemRoles.some((ur) =>
+      ['sysadmin', 'admin', 'superadmin'].includes(ur.role?.name?.toLowerCase()),
+    );
+
+    if (isSystemAdmin) {
+      const allWarehouses = await this.prisma.warehouse.findMany({
+        where: { is_active: true, is_deleted: false },
+        select: { id: true },
+      });
+      const warehouseIds = allWarehouses.map((w) => w.id);
+      await this.redisService.set(cacheKey, JSON.stringify(warehouseIds), 300);
+      return warehouseIds;
+    }
+
+    // 2. Locate Organization scopes for Org Owners / Org Admins
+    const ownedOrgs = await this.prisma.organization.findMany({
+      where: { owner_id: userId, is_active: true, is_deleted: false },
+      select: { id: true },
+    });
+
+    const adminRoles = await this.prisma.organizationMemberRole.findMany({
+      where: {
+        member: { user_id: userId, is_active: true, is_deleted: false },
+        role: {
+          name: { in: ['admin', 'owner', 'manager'] },
+          is_active: true,
+          is_deleted: false,
+        },
+        is_active: true,
+        is_deleted: false,
+      },
+      select: { member: { select: { organization_id: true } } },
+    });
+
+    const orgIdsWithFullAccess = new Set([
+      ...ownedOrgs.map((o) => o.id),
+      ...adminRoles.map((a) => a.member.organization_id),
+    ]);
+
+    // 3. Locate Explicit Warehouse Manager assignments
     const managers = await this.prisma.warehouseTemplateManager.findMany({
       where: {
         user_id: userId,
@@ -124,7 +169,7 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
       select: { warehouse_template_id: true },
     });
 
-    if (managers.length === 0) {
+    if (managers.length === 0 && orgIdsWithFullAccess.size === 0) {
       await this.redisService.set(cacheKey, JSON.stringify([]), 300);
       return [];
     }
@@ -132,9 +177,13 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
     const warehouseTemplateIds = managers.map(
       (manager) => manager.warehouse_template_id,
     );
+
     const warehouses = await this.prisma.warehouse.findMany({
       where: {
-        warehouse_template_id: { in: warehouseTemplateIds },
+        OR: [
+          { warehouse_template_id: { in: warehouseTemplateIds } },
+          { organization_id: { in: Array.from(orgIdsWithFullAccess) } },
+        ],
         is_active: true,
         is_deleted: false,
       },
