@@ -101,6 +101,28 @@ export class RentalContractRepository {
     payments: {
       orderBy: { created_at: 'desc' as const },
     },
+    addons: {
+      where: { is_deleted: false },
+      include: { addon: true },
+      orderBy: { created_at: 'asc' as const },
+    },
+    insurances: {
+      where: { is_deleted: false },
+      include: { insurance: true },
+      orderBy: { created_at: 'asc' as const },
+    },
+    coupons: {
+      include: { coupon: true },
+    },
+    logs: {
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    },
+    signatures: {
+      where: { is_deleted: false, is_active: true },
+      orderBy: { created_at: 'desc' },
+      take: 1,
+    },
   };
 
   // Include với owner info để gửi email
@@ -775,31 +797,12 @@ export class RentalContractRepository {
   }
 
   /**
-   * Lấy thông tin hợp đồng đầy đủ với addons, logs, coupons
+   * Lấy thông tin hợp đồng đầy đủ với tất cả các quan hệ
    */
   async findByIdWithFullDetails(id: string) {
     return this.prisma.rentalContract.findFirst({
       where: { id, is_deleted: false },
-      include: {
-        ...this.fullInclude,
-        addons: {
-          where: { is_deleted: false },
-          include: { addon: true },
-          orderBy: { created_at: 'asc' as const },
-        },
-        insurances: {
-          where: { is_deleted: false },
-          include: { insurance: true },
-          orderBy: { created_at: 'asc' as const },
-        },
-        coupons: {
-          include: { coupon: true },
-        },
-        logs: {
-          orderBy: { created_at: 'desc' },
-          take: 20, // Giới hạn 20 logs gần nhất
-        },
-      },
+      include: this.fullInclude,
     });
   }
 }

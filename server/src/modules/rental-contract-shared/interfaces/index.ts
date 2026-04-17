@@ -14,6 +14,12 @@ export interface IRentalContractWithRelations extends RentalContract {
     };
   };
   details?: IRentalContractDetailWithRelations[];
+  payments?: any[];
+  addons?: any[];
+  insurances?: any[];
+  coupons?: any[];
+  logs?: any[];
+  signatures?: any[];
 }
 
 export interface IRentalContractDetailWithRelations extends RentalContractDetail {

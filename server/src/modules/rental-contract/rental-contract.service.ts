@@ -39,6 +39,7 @@ import { EmailService } from '../notification/email.service';
 import { OrganizationRepository } from '../organization/organization.repository';
 import { SepayService } from '../payment/sepay.service';
 import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
+import { RentalContractMapper } from '../rental-contract-shared/helpers/rental-contract-mapper.helper';
 
 const Decimal = Prisma.Decimal;
 
@@ -445,8 +446,11 @@ export class RentalContractService {
         }
       }
 
+      // Re-fetch full contract to include additions
+      const fullContract = await this.repository.findByIdWithFullDetails(contract.id);
+
       return {
-        contract: contract as unknown as IRentalContractWithRelations,
+        contract: RentalContractMapper.mapToFrontend(fullContract),
         payment: paymentResult,
         signature: signatureResult,
       };
@@ -519,27 +523,14 @@ export class RentalContractService {
     userId: string,
     lang: string = 'vi',
   ): Promise<IRentalContractWithRelations> {
-    const contract = await this.repository.findById(id);
+    const contract = await this.repository.findByIdWithFullDetails(id);
     if (!contract) {
       throw new NotFoundException(
         this.i18n.t('rental-contract.errors.not_found', { lang }),
       );
     }
-    // Admin có thể view mọi contract (giả sử permission đã check ở controller level hoặc contract guard)
-    // Serialize safely: BigInt fields (e.g. sepay_transaction_id) cannot be JSON.stringify-ed natively
-    const contractObj = JSON.parse(
-      JSON.stringify(contract, (_key, value) =>
-        typeof value === 'bigint' ? value.toString() : value,
-      ),
-    );
-    return {
-      ...contractObj,
-      payments: contractObj.payments?.map((p: any) => ({
-        ...p,
-        method: contract.payment_method, // Back-fill method from contract
-        transaction_code: p.payment_code, // Map payment_code to transaction_code
-      })),
-    } as unknown as IRentalContractWithRelations;
+    
+    return RentalContractMapper.mapToFrontend(contract);
   }
 
   /**

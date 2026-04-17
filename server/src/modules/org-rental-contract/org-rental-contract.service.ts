@@ -49,6 +49,7 @@ import { DocusignService } from '../rental-contract-shared/docusign.service';
 import { PublicCouponService } from '../public-coupon/public-coupon.service';
 import { SendDocusignDto } from './dto';
 import { QUOTATION_CONSTANTS } from '../public-quotation/constants/public-quotation.constants';
+import { RentalContractMapper } from '../rental-contract-shared/helpers/rental-contract-mapper.helper';
 
 const Decimal = Prisma.Decimal;
 
@@ -598,8 +599,11 @@ export class OrgRentalContractService {
         }
       }
 
+      // Re-fetch full contract to include addons, insurances, etc.
+      const fullContract = await this.repository.findByIdWithFullDetails(contract.id);
+
       return {
-        contract: contract as unknown as IRentalContractWithRelations,
+        contract: RentalContractMapper.mapToFrontend(fullContract),
         payment: paymentResult,
         signature: signatureResult,
       };
@@ -676,7 +680,7 @@ export class OrgRentalContractService {
       'rental-contract.read',
       lang,
     );
-    return contract;
+    return RentalContractMapper.mapToFrontend(contract);
   }
 
   async findByIdWithFullDetails(
@@ -705,20 +709,7 @@ export class OrgRentalContractService {
       lang,
     );
 
-    // Serialize safely: BigInt fields (e.g. sepay_transaction_id) cannot be JSON.stringify-ed natively
-    const contractObj = JSON.parse(
-      JSON.stringify(contract, (_key, value) =>
-        typeof value === 'bigint' ? value.toString() : value,
-      ),
-    );
-    return {
-      ...contractObj,
-      payments: contractObj.payments?.map((p: any) => ({
-        ...p,
-        method: contract.payment_method, // Back-fill method from contract
-        transaction_code: p.payment_code, // Map payment_code to transaction_code
-      })),
-    };
+    return RentalContractMapper.mapToFrontend(contract);
   }
 
   async renew(
@@ -861,7 +852,14 @@ export class OrgRentalContractService {
       }
     }
 
-    return { contract, signature: signatureResult };
+    // Re-fetch full contract to return updated data
+    const fullContract = await this.repository.findByIdWithFullDetails(id);
+
+    return {
+      contract: RentalContractMapper.mapToFrontend(fullContract),
+      signature: signatureResult,
+    };
+  }
   }
 
   async delete(
