@@ -860,7 +860,6 @@ export class OrgRentalContractService {
       signature: signatureResult,
     };
   }
-  }
 
   async delete(
     id: string,

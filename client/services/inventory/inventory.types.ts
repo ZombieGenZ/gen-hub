@@ -162,6 +162,7 @@ export interface OutboundRequest {
     partner_id?: string | null;
     code: string;
     sales_order_code?: string | null;
+    notes?: string | null;
     delivery_address?: string | null;
     vehicle_info?: string | null;
     required_date?: string | null;
@@ -171,6 +172,11 @@ export interface OutboundRequest {
     picker_id?: string | null;
     checker_id?: string | null;
     tracking_number?: string | null;
+    picking_started_at?: string | null;
+    picking_completed_at?: string | null;
+    checking_started_at?: string | null;
+    checking_completed_at?: string | null;
+    shipped_at?: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;

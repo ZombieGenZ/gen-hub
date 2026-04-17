@@ -45,14 +45,16 @@ export class RentalContractMapper {
         created_at: ins.created_at,
       })) ?? [];
 
-    // 4. Map history từ logs
     const mappedHistory = safeContract.logs?.map((log: any) => ({
       id: log.id,
-      type: log.action,
+      type: log.type?.toLowerCase() || 'updated',
       description: log.description,
       metadata: log.metadata,
       created_at: log.created_at,
-      created_by: log.created_by,
+      actor: log.created_by_user ? {
+        name: log.created_by_user.full_name || log.created_by_user.email,
+        role: log.created_by_user.role?.name
+      } : undefined
     })) ?? [];
 
     // 5. Map payments: Đảm bảo đầy đủ thông tin
@@ -62,12 +64,15 @@ export class RentalContractMapper {
       transaction_code: p.payment_code || p.transaction_code,
     })) ?? [];
 
-    // 6. Map signatures
-    const mappedSignatures = safeContract.signatures?.map((s: any) => ({
+    // 6. Map signatures sang signers (Frontend mong đợi định dạng này)
+    const mappedSigners = safeContract.signatures?.map((s: any) => ({
       id: s.id,
+      name: 'Khách hàng', // Hiện tại DB chưa lưu tên người ký cụ thể, để mặc định
+      role: 'Người đại diện',
+      signed: true,
+      signedAt: s.created_at,
+      avatar: s.imagekit_url,
       url: s.imagekit_url,
-      expires_at: s.expires_at,
-      created_at: s.created_at,
     })) ?? [];
 
     return {
@@ -76,7 +81,11 @@ export class RentalContractMapper {
       insurances: mappedInsurances,
       history: mappedHistory,
       payments: mappedPayments,
-      signatures: mappedSignatures,
+      signers: mappedSigners,
+      vat_amount: Number(safeContract.vat_amount || 0),
+      vat_rate: Number(safeContract.vat_rate || 0),
+      total_price: Number(safeContract.total_price || 0),
+      final_price: Number(safeContract.final_price || 0),
       // Map warehouses summary from details if needed
       warehouses: safeContract.details?.map((d: any) => ({
         id: d.warehouse?.id || d.warehouse_template?.id || d.id,

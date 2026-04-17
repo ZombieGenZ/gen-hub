@@ -115,12 +115,12 @@ export class RentalContractRepository {
       include: { coupon: true },
     },
     logs: {
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: 'desc' as const },
       take: 50,
     },
     signatures: {
       where: { is_deleted: false, is_active: true },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: 'desc' as const },
       take: 1,
     },
   };
