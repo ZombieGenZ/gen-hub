@@ -100,6 +100,9 @@ export interface IOutboundRequest {
   code: string;
   sales_order_code?: string | null;
   notes?: string | null;
+  delivery_address?: string | null;
+  vehicle_info?: string | null;
+  required_date?: Date | null;
   status: ExportStatus;
   is_active: boolean;
   created_at: Date;

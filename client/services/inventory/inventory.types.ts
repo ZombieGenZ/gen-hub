@@ -162,6 +162,9 @@ export interface OutboundRequest {
     partner_id?: string | null;
     code: string;
     sales_order_code?: string | null;
+    delivery_address?: string | null;
+    vehicle_info?: string | null;
+    required_date?: string | null;
     status: ExportStatus;
     approved_by?: string | null;
     approved_at?: string | null;
@@ -251,6 +254,9 @@ export interface CreateOutboundPayload {
     partner_id?: string;
     sales_order_code?: string;
     notes?: string;
+    delivery_address?: string;
+    vehicle_info?: string;
+    required_date?: string;
     picking_strategy?: PickingStrategy;
     details: OutboundDetailPayload[];
 }

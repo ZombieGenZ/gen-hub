@@ -18,6 +18,7 @@ import {
     InboxIcon,
     BoltIcon,
     PlusIcon,
+    MapPinIcon,
 } from "@heroicons/react/24/outline";
 import type { OutboundRequest } from "@/services/inventory/inventory.types";
 import { OutboundStatusBadge } from "./OutboundStatusBadge";
@@ -166,7 +167,15 @@ export function OutboundTable({
                                                     {item.warehouse?.name || "—"}
                                                 </td>
                                                 <td className="py-4 px-4 text-sm">
-                                                    {item.partner?.name || "—"}
+                                                    <div>
+                                                        <div className="font-medium">{item.partner?.name || "—"}</div>
+                                                        {item.delivery_address && (
+                                                            <div className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
+                                                                <MapPinIcon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                                                <span className="line-clamp-2" title={item.delivery_address}>{item.delivery_address}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
                                                     <OutboundStatusBadge status={item.status} />

@@ -343,8 +343,17 @@ export default function OutboundDetailPage() {
                                     <InfoRow label="Mã SO" value={data.sales_order_code || "—"} />
                                     <InfoRow label="Kho" value={data.warehouse?.name || "—"} />
                                     <InfoRow label="Đối tác" value={data.partner?.name || "—"} />
+                                    <InfoRow label="Nơi nhận" value={data.delivery_address || "—"} />
+                                    <InfoRow label="Ngày dự kiến" value={data.required_date ? formatDate(data.required_date) : "—"} />
+                                    <InfoRow label="Thông tin xe" value={data.vehicle_info || "—"} />
                                     <InfoRow label="Ngày tạo" value={formatDate(data.created_at)} />
                                     <InfoRow label="Cập nhật" value={formatDate(data.updated_at)} />
+                                    {data.notes && (
+                                        <div className="pt-2 mt-2 border-t border-dashed">
+                                            <p className="text-xs text-muted-foreground mb-1">Ghi chú</p>
+                                            <p className="text-sm">{data.notes}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

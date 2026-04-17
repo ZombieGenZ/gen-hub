@@ -1013,6 +1013,12 @@ export class InventoryRequestService {
           code,
           status: 'PENDING',
           sales_order_code: dto.sales_order_code,
+          notes: dto.notes,
+          delivery_address: dto.delivery_address,
+          vehicle_info: dto.vehicle_info,
+          required_date: dto.required_date
+            ? new Date(dto.required_date)
+            : null,
           organization_id: orgId,
           warehouse: { connect: { id: dto.warehouse_id } },
           ...(dto.partner_id && {

@@ -2591,6 +2591,9 @@ model Export {
   checking_completed_at DateTime?
   shipped_at            DateTime?
   tracking_number       String?
+  delivery_address      String?
+  vehicle_info          String?
+  required_date         DateTime?
   is_active             Boolean      @default(true)
   created_at            DateTime     @default(now())
   updated_at            DateTime     @updatedAt
