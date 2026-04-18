@@ -53,10 +53,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
-    const isLocal =
-      connectionString?.includes('localhost') ||
-      connectionString?.includes('127.0.0.1') ||
-      connectionString?.includes('host.docker.internal');
+    const isLocal = PrismaService.isLocalConnectionString(connectionString);
     const sslConfig =
       !isLocal && connectionString ? { rejectUnauthorized: false } : undefined;
 
@@ -73,13 +70,22 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    */
   private getSslConfig() {
     const connectionString = process.env.DATABASE_URL;
-    const isLocal =
-      connectionString?.includes('localhost') ||
-      connectionString?.includes('127.0.0.1') ||
-      connectionString?.includes('host.docker.internal');
+    const isLocal = PrismaService.isLocalConnectionString(connectionString);
     return !isLocal && connectionString
       ? { rejectUnauthorized: false }
       : undefined;
+  }
+
+  private static isLocalConnectionString(connectionString?: string) {
+    return (
+      connectionString?.includes('localhost') ||
+      connectionString?.includes('127.0.0.1') ||
+      connectionString?.includes('host.docker.internal')
+    );
+  }
+
+  private shouldManageDatabaseLifecycle() {
+    return PrismaService.isLocalConnectionString(process.env.DATABASE_URL);
   }
 
   private isSeedingInProgress = false;
@@ -166,6 +172,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    * Tạo database và extension uuid-ossp nếu chưa tồn tại
    */
   private async ensureDatabaseAndExtension() {
+    if (!this.shouldManageDatabaseLifecycle()) {
+      this.logger.warn(
+        'Skipping database creation flow because the current database is managed remotely.',
+      );
+      return false;
+    }
+
     const config = this.parseDatabaseUrl();
     const sslConfig = this.getSslConfig();
 
@@ -231,6 +244,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    * Xóa và tạo lại database
    */
   private async recreateDatabase() {
+    if (!this.shouldManageDatabaseLifecycle()) {
+      this.logger.warn(
+        'Skipping database recreation because the current database is managed remotely.',
+      );
+      return;
+    }
+
     const config = this.parseDatabaseUrl();
     const sslConfig = this.getSslConfig();
 
@@ -330,6 +350,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.warn(`⚠️ Connection failed: ${errorMessage}`);
+      if (!this.shouldManageDatabaseLifecycle()) {
+        throw new Error(
+          `Database connection failed for managed database: ${errorMessage}`,
+        );
+      }
+
       await this.ensureDatabaseAndExtension();
       needsSchemaSync = true;
     }
@@ -347,6 +373,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.logger.log('✅ Schema synced');
       } catch {
         this.logger.warn('⚠️ Db push failed, recreating...');
+        if (!this.shouldManageDatabaseLifecycle()) {
+          this.logger.error(
+            'âŒ Db push failed on managed database, skipping recreate flow.',
+          );
+          throw new Error(
+            'Failed to initialize database schema on managed database. Automatic recreate is disabled outside local development.',
+          );
+        }
+
         await this.recreateDatabase();
 
         try {
