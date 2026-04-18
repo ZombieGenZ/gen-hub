@@ -53,9 +53,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
-    // Enable SSL for AWS RDS or if explicitly requested
-    const isRds = connectionString?.includes('amazonaws.com');
-    const sslConfig = isRds ? { rejectUnauthorized: false } : undefined;
+    const isLocal =
+      connectionString?.includes('localhost') ||
+      connectionString?.includes('127.0.0.1') ||
+      connectionString?.includes('host.docker.internal');
+    const sslConfig =
+      !isLocal && connectionString ? { rejectUnauthorized: false } : undefined;
 
     const pool = new Pool({
       connectionString,
@@ -65,10 +68,37 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     super({ adapter });
   }
 
+  /**
+   * Get SSL configuration for pg Client/Pool
+   */
+  private getSslConfig() {
+    const connectionString = process.env.DATABASE_URL;
+    const isLocal =
+      connectionString?.includes('localhost') ||
+      connectionString?.includes('127.0.0.1') ||
+      connectionString?.includes('host.docker.internal');
+    return !isLocal && connectionString
+      ? { rejectUnauthorized: false }
+      : undefined;
+  }
+
   private isSeedingInProgress = false;
   private seedAdminId: string | null = null;
 
   async onModuleInit() {
+    // Add sslmode=no-verify to DATABASE_URL if it's missing and we're not local
+    const connectionString = process.env.DATABASE_URL;
+    if (connectionString && !this.getSslConfig()) {
+      // Local or no DATABASE_URL
+    } else if (
+      connectionString &&
+      !connectionString.includes('sslmode=no-verify')
+    ) {
+      const separator = connectionString.includes('?') ? '&' : '?';
+      process.env.DATABASE_URL = `${connectionString}${separator}sslmode=no-verify`;
+      this.logger.log('🔒 Added sslmode=no-verify to DATABASE_URL');
+    }
+
     await this.initializeDatabase();
     await this.$connect();
 
@@ -137,6 +167,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    */
   private async ensureDatabaseAndExtension() {
     const config = this.parseDatabaseUrl();
+    const sslConfig = this.getSslConfig();
 
     // Kết nối tới postgres database mặc định để tạo database
     const adminClient = new Client({
@@ -145,6 +176,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       host: config.host,
       port: config.port,
       database: 'postgres',
+      ssl: sslConfig,
     });
 
     try {
@@ -156,8 +188,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       );
 
       if (dbCheckResult.rows.length === 0) {
-        await adminClient.query(`CREATE DATABASE "${config.database}"`);
-        this.logger.log(`✅ Database "${config.database}" created`);
+        // Skip database creation if on Heroku (it should already exist)
+        const connectionString = process.env.DATABASE_URL;
+        const isHeroku = connectionString?.includes('heroku');
+        if (!isHeroku) {
+          await adminClient.query(`CREATE DATABASE "${config.database}"`);
+          this.logger.log(`✅ Database "${config.database}" created`);
+        } else {
+          this.logger.warn(
+            `⚠️ Database "${config.database}" not found, but skipping creation on Heroku`,
+          );
+        }
       }
 
       await adminClient.end();
@@ -169,6 +210,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         host: config.host,
         port: config.port,
         database: config.database,
+        ssl: sslConfig,
       });
 
       await dbClient.connect();
@@ -190,6 +232,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    */
   private async recreateDatabase() {
     const config = this.parseDatabaseUrl();
+    const sslConfig = this.getSslConfig();
 
     // Đóng kết nối hiện tại
     await this.$disconnect();
@@ -201,22 +244,32 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       host: config.host,
       port: config.port,
       database: 'postgres',
+      ssl: sslConfig,
     });
 
     try {
       await adminClient.connect();
 
-      await adminClient.query(
-        `
+      // Skip database recreation if on Heroku
+      const connectionString = process.env.DATABASE_URL;
+      const isHeroku = connectionString?.includes('heroku');
+
+      if (!isHeroku) {
+        await adminClient.query(
+          `
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
                 WHERE pg_stat_activity.datname = $1
                 AND pid <> pg_backend_pid()
             `,
-        [config.database],
-      );
+          [config.database],
+        );
 
-      await adminClient.query(`CREATE DATABASE "${config.database}"`);
+        await adminClient.query(`CREATE DATABASE "${config.database}"`);
+        this.logger.log('✅ Database recreated');
+      } else {
+        this.logger.warn('⚠️ Skipping database recreation on Heroku');
+      }
 
       await adminClient.end();
 
@@ -226,11 +279,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         host: config.host,
         port: config.port,
         database: config.database,
+        ssl: sslConfig,
       });
 
       await dbClient.connect();
       await dbClient.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-      this.logger.log('✅ Database recreated');
 
       await dbClient.end();
     } catch (error: unknown) {
