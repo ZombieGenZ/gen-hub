@@ -426,6 +426,29 @@ export class UserRepository {
   }
 
   /**
+   * Kiểm tra user có phải System Admin không
+   * Dùng để cấp quyền admin_room trên WebSocket
+   */
+  async isSystemAdmin(userId: string): Promise<boolean> {
+    const systemRoles = await this.prisma.userRole.findMany({
+      where: { user_id: userId, is_active: true, is_deleted: false },
+      include: { role: { select: { name: true } } },
+    });
+    const adminRoleNames = [
+      'sysadmin',
+      'admin',
+      'superadmin',
+      'administrator',
+      'systemadministrator',
+      'quantrivien',
+    ];
+    return systemRoles.some((ur) => {
+      const roleName = ur.role?.name?.toLowerCase().replace(/\s+/g, '') || '';
+      return adminRoleNames.includes(roleName);
+    });
+  }
+
+  /**
    * Soft delete user - đánh dấu tài khoản đã bị xóa
    * @param userId - ID của user cần xóa
    * @param deletedBy - ID của người xóa (có thể là chính user hoặc admin)

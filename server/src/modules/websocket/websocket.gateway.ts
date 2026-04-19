@@ -157,6 +157,12 @@ export class WebsocketGateway
             socket.join(`organization:${orgId}`);
           });
 
+          // Nếu là System Admin, join admin_room để nhận các sự kiện inventory từ mọi tổ chức
+          const isAdmin = await this.userRepository.isSystemAdmin(userId);
+          if (isAdmin) {
+            socket.join('admin_room');
+          }
+
           // Nếu đây là connection đầu tiên của user, set user online
           if (isFirstConnection) {
             await this.setUserOnlineStatus(userId, true);
@@ -1174,17 +1180,21 @@ export class WebsocketGateway
 
   /**
    * Generic emit to organization room - dùng cho các entity khác nhau
+   * Đồng thời emit tới admin_room để admin nhận được real-time updates
    */
   emitToOrganization(
     orgId: string,
     event: string,
     data: Record<string, unknown>,
   ) {
-    this.server.to(`organization:${orgId}`).emit(event, {
+    const payload = {
       ...data,
       organizationId: orgId,
       timestamp: new Date().toISOString(),
-    });
+    };
+    this.server.to(`organization:${orgId}`).emit(event, payload);
+    // Admin cũng cần nhận các sự kiện này để cập nhật trang duyệt phiếu
+    this.server.to('admin_room').emit(event, payload);
   }
 
   /**

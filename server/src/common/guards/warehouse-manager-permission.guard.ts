@@ -121,7 +121,14 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
     });
     const isSystemAdmin = systemRoles.some((ur) => {
       const roleName = ur.role?.name?.toLowerCase().replace(/\s+/g, '') || '';
-      return ['sysadmin', 'admin', 'superadmin', 'administrator', 'quantrivien'].includes(roleName);
+      return [
+        'sysadmin',
+        'admin',
+        'superadmin',
+        'administrator',
+        'systemadministrator',
+        'quantrivien',
+      ].includes(roleName);
     });
 
     if (isSystemAdmin) {
