@@ -96,7 +96,7 @@ export class TrackerService implements OnModuleInit {
             },
           },
         },
-        { upsert: true, new: true },
+        { upsert: true, returnDocument: 'after' },
       );
     } catch (error) {
       this.logger.error(`Lỗi lưu status cho ${type}: ${error.message}`);
