@@ -109,12 +109,7 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
     templateId?: string,
   ): Promise<string[]> {
     const cacheKey = `wm:warehouses:${userId}:${templateId || 'all'}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached) as string[];
-    }
 
-    // 1. Check for System Admin
     const systemRoles = await this.prisma.userRole.findMany({
       where: { user_id: userId, is_active: true, is_deleted: false },
       include: { role: true },
@@ -132,6 +127,11 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
     });
 
     if (isSystemAdmin) {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        const cachedIds = JSON.parse(cached) as string[];
+        if (cachedIds.length > 0) return cachedIds;
+      }
       const allWarehouses = await this.prisma.warehouse.findMany({
         where: { is_active: true, is_deleted: false },
         select: { id: true },
@@ -141,7 +141,13 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
       return warehouseIds;
     }
 
-    // 2. Locate Organization scopes for Org Owners / Org Admins
+    // 2. Với non-admin: dùng cache bình thường
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as string[];
+    }
+
+    // 3. Locate Organization scopes for Org Owners / Org Admins
     const ownedOrgs = await this.prisma.organization.findMany({
       where: { owner_id: userId, is_active: true, is_deleted: false },
       select: { id: true },
