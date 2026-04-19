@@ -148,7 +148,7 @@ export default function Home() {
             <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-3xl border border-dashed border-neutral-300 dark:border-neutral-800">
               <p className="text-xl text-red-500 mb-2">{t('failedData')}</p>
               <button onClick={() => fetchData()} className="mt-4 px-6 py-2 bg-primary text-white rounded-full flex items-center gap-2 mx-auto hover:opacity-90 transition-all">
-                <RefreshCw className="w-4 h-4" /> Try Again
+                <RefreshCw className="w-4 h-4" /> {t('tryAgain')}
               </button>
             </div>
           )}
@@ -161,7 +161,7 @@ export default function Home() {
               <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
                 <Clock className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-bold dark:text-white">Service History</h2>
+              <h2 className="text-2xl font-bold dark:text-white">{t('serviceHistory')}</h2>
             </div>
 
             <RangeSelector
@@ -177,14 +177,14 @@ export default function Home() {
                 <StatusHistory
                   key={type}
                   type={type}
-                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} API Service`}
+                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} ${t('apiService')}`}
                   range={selectedRange}
                 />
               ))
             ) : (
               !loading && (
                 <div className="text-center py-12 text-neutral-400 italic">
-                  No history data available for the selected period.
+                  {t('noHistoryData')}
                 </div>
               )
             )}
