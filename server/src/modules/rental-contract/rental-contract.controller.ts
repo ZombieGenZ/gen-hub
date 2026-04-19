@@ -438,14 +438,10 @@ export class RentalContractController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    const hasListAllPermission = await this.hasPermission(
-      userId,
-      'rental-contract.list.all',
-    );
     const data = await this.rentalContractService.findMany(
       query,
       userId,
-      hasListAllPermission,
+      true,
       lang,
     );
     return new GetResponse('rental-contract.list.success', data);

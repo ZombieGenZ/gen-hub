@@ -460,40 +460,22 @@ export class RentalContractService {
   }
 
   /**
-   * Admin lấy danh sách hợp đồng
+   * Admin lấy danh sách hợp đồng - luôn xem tất cả
    */
   async findMany(
     query: QueryRentalContractDto,
     userId: string,
-    hasListAllPermission: boolean,
+    _hasListAllPermission: boolean,
     lang: string = 'vi',
   ): Promise<IPaginatedResponse<IRentalContractWithRelations>> {
-    // Admin logic: nếu không có list.all, chỉ list contracts của chính mình (nếu admin đóng vai trò user)
-    // Hoặc logic hiện tại: admin xem tất cả nếu có list.all
-    if (!hasListAllPermission && !query.organization_id) {
-      // Trường hợp hy hữu admin không có quyền list all
-      const userOrgs =
-        await this.organizationRepository.findOrgIdsByUser(userId);
-      if (userOrgs.length === 0) {
-        return {
-          items: [],
-          total: 0,
-          limit: query.limit || 10,
-          offset: query.offset || 0,
-          hasMore: false,
-        };
-      }
-      (query as any).organization_ids = userOrgs;
-    }
-
+    // Admin luôn được xem toàn bộ hợp đồng trên hệ thống
+    // (không phân biệt admin nào tạo phiếu)
     const queryParams: Record<string, unknown> = {
       limit: query.limit,
       offset: query.offset,
       keywords: query.keywords,
       status: query.status,
       organization_id: query.organization_id,
-      userId,
-      hasListAllPermission,
     };
     const cacheKey = this.getContractListCacheKey(queryParams);
 

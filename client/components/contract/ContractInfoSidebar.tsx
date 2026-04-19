@@ -29,6 +29,7 @@ interface AddonInfo {
     id: string;
     name: string;
     price?: number;
+    is_gift?: boolean;
 }
 
 interface InsuranceInfo {
@@ -45,6 +46,8 @@ export interface ContractInfoData {
     expired_at: string;
     total_price: number;
     discount_rate?: number;
+    vat_rate?: number;
+    vat_amount?: number;
     final_price: number;
     warehouses?: WarehouseInfo[];
     addons?: AddonInfo[];
@@ -174,19 +177,51 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4 space-y-1.5">
+                    {/* Giá kho (base price) */}
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Tổng tiền</span>
+                        <span className="text-muted-foreground">Giá thuê kho</span>
                         <span>{formatCurrency(data.total_price)}</span>
                     </div>
+
+                    {/* Addon chi tiết */}
+                    {data.addons && data.addons.filter(a => !a.is_gift && (a.price ?? 0) > 0).map((addon) => (
+                        <div key={addon.id} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground truncate max-w-[60%]">{addon.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(addon.price ?? 0)}</span>
+                        </div>
+                    ))}
+
+                    {/* Bảo hiểm chi tiết */}
+                    {data.insurances && data.insurances.filter(ins => (ins.price ?? 0) > 0).map((ins) => (
+                        <div key={ins.id} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground truncate max-w-[60%]">{ins.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(ins.price ?? 0)}</span>
+                        </div>
+                    ))}
+
+                    {/* VAT */}
+                    {data.vat_amount != null && data.vat_amount > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                                VAT{data.vat_rate ? ` (${data.vat_rate}%)` : ""}
+                            </span>
+                            <span className="text-muted-foreground">{formatCurrency(data.vat_amount)}</span>
+                        </div>
+                    )}
+
+                    {/* Giảm giá */}
                     {data.discount_rate && data.discount_rate > 0 && (
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Giảm giá</span>
                             <span className="text-emerald-600">-{data.discount_rate}%</span>
                         </div>
                     )}
+
                     <Separator className="my-1.5" />
+
+                    {/* Tổng thanh toán */}
                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">Thanh toán</span>
+                        <span className="font-semibold">Thanh toán</span>
                         <span className="font-bold text-brand">{formatCurrency(data.final_price)}</span>
                     </div>
                 </CardContent>

@@ -340,6 +340,8 @@ export default function CustomerContractDetailPage() {
                             expired_at: contract.expired_at,
                             total_price: typeof contract.total_price === "string" ? parseFloat(contract.total_price) : contract.total_price,
                             discount_rate: contract.discount_rate,
+                            vat_rate: contract.vat_rate,
+                            vat_amount: contract.vat_amount,
                             final_price: typeof contract.final_price === "string" ? parseFloat(contract.final_price) : contract.final_price,
                             warehouses: contract.warehouses?.length ? contract.warehouses : contract.details?.map(d => ({
                                 id: d.warehouse?.id || d.warehouse_template?.id || d.id,

@@ -114,8 +114,10 @@ export interface RentalContractDetail extends RentalContractListItem {
     cancel_reason?: string;
     cancelled_at?: string;
     discount_rate?: number;
+    vat_rate?: number;
+    vat_amount?: number;
     payment_method?: RentalContractPaymentMethod;
-    addons?: { id: string; name: string; price?: number }[];
+    addons?: { id: string; name: string; price?: number; is_gift?: boolean }[];
     insurances?: { id: string; name: string; price?: number }[];
     warehouses?: {
         id: string;
