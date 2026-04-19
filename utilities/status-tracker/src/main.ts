@@ -11,8 +11,16 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
 
-  // Bật CORS
-  app.enableCors();
+  // Cấu hình CORS
+  app.enableCors({
+    origin: [
+      /localhost(:\d+)?$/,
+      /gen-hub\.dev$/,
+      /\.gen-hub\.dev$/,
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
 
   // Cấu hình Swagger
   const config = new DocumentBuilder()
