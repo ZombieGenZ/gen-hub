@@ -66,11 +66,14 @@ export default function CustomerOrganizationSettingsPage() {
         const token = getToken();
         if (!token) return null;
         try {
-            // Fetch user's organizations and use the first one (customer is typically in 1 org)
-            const response = await organizationService.getOrganizations(token, { limit: 1 });
-            if (response.items?.length > 0) {
-                setOrganization(response.items[0]);
-                return response.items[0];
+            const userID = authStorage.getUserID();
+            const response = await organizationService.getOrganizations(token, { limit: 20 });
+            const found = response.items?.find((o: Organization) => o.owner_id === userID)
+                ?? response.items?.[0];
+            if (found) {
+                const fullOrg = await organizationService.getOrganizationById(token, found.id);
+                setOrganization(fullOrg);
+                return fullOrg;
             }
             return null;
         } catch (err: unknown) {

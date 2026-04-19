@@ -139,7 +139,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
             if (!token) return;
             setHistoryLoading(true);
             try {
-                const data = await requestService.getAll(token, { limit: 50, offset: 0 });
+                const data = await requestService.getAll(token, { limit: 200, offset: 0 });
                 if (!mounted) return;
                 const items = (data.items || []).filter((item) => item.organization_id === organization.id);
                 setRequestHistory(items);
@@ -208,18 +208,9 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
     ]);
 
     const isUnchanged = useMemo(() => {
-        const currentIntl = organization.international_name || "";
-        const sameBase = normalizedName === organization.name && normalizedInternationalName === currentIntl;
-        if (!enableLegalApprovalFlow) return sameBase;
-        return sameBase && !legalChanged;
-    }, [
-        normalizedName,
-        normalizedInternationalName,
-        organization.name,
-        organization.international_name,
-        legalChanged,
-        enableLegalApprovalFlow,
-    ]);
+        if (!enableLegalApprovalFlow) return true;
+        return !legalChanged;
+    }, [legalChanged, enableLegalApprovalFlow]);
 
     const handleCopyId = async () => {
         await navigator.clipboard.writeText(organization.id);
@@ -272,13 +263,10 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
     };
 
     const handleSubmit = async () => {
-        if (!normalizedName || isUnchanged || (enableLegalApprovalFlow && !!pendingRequest)) return;
+        if (isUnchanged || (enableLegalApprovalFlow && !!pendingRequest)) return;
         setSaving(true);
         try {
-            const payload: Partial<OrganizationCreateRequest> = {
-                name: normalizedName,
-                international_name: normalizedInternationalName || undefined,
-            };
+            const payload: Partial<OrganizationCreateRequest> = {};
 
             if (enableLegalApprovalFlow) {
                 payload.tax_code = normalizedTaxCode || undefined;
@@ -298,7 +286,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
     };
 
     const handleSave = async () => {
-        if (!normalizedName || isUnchanged || (enableLegalApprovalFlow && !!pendingRequest)) return;
+        if (isUnchanged || (enableLegalApprovalFlow && !!pendingRequest)) return;
         if (enableLegalApprovalFlow && legalChanged) {
             setConfirmDialogOpen(true);
             return;
@@ -400,8 +388,8 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                                 <Label className="text-sm font-medium text-foreground">Tên tổ chức</Label>
                                 <Input
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Nhập tên tổ chức..."
+                                    readOnly
+                                    className="bg-muted/30 cursor-default"
                                 />
                             </div>
 
@@ -410,8 +398,8 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                                 <Label className="text-sm font-medium text-foreground">Tên quốc tế</Label>
                                 <Input
                                     value={internationalName}
-                                    onChange={(e) => setInternationalName(e.target.value)}
-                                    placeholder="Tên quốc tế (tùy chọn)..."
+                                    readOnly
+                                    className="bg-muted/30 cursor-default"
                                 />
                             </div>
 
@@ -495,12 +483,12 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                                     </label>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Fallback: hiện chỉ xem trước logo cục bộ, API cập nhật logo chưa có trong organization service.
+                                    Tính năng upload logo đang được phát triển.
                                 </p>
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-muted/20 border-t border-border/50 flex justify-end">
-                            <Button onClick={handleSave} disabled={saving || !normalizedName || isUnchanged || hasPendingLock} className="gap-2">
+                            <Button onClick={handleSave} disabled={saving || isUnchanged || hasPendingLock} className="gap-2">
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 {submitLabel}
                             </Button>
@@ -511,7 +499,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50">
                             <h3 className="text-base font-semibold text-foreground">Giới hạn thành viên</h3>
-                            <p className="text-sm text-muted-foreground mt-0.5">Fallback: lưu local theo tổ chức vì backend chưa có trường member_limit</p>
+                            <p className="text-sm text-muted-foreground mt-0.5">Tính năng đang được phát triển. Cài đặt được lưu cục bộ trên trình duyệt.</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
@@ -530,7 +518,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-foreground">Không giới hạn</span>
-                                        <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Fallback</span>
+                                        <span className="text-[10px] font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full border border-border">Đang phát triển</span>
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-0.5">
                                         Trạng thái hiển thị không giới hạn thành viên trong UI.
@@ -573,7 +561,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                         <div className="p-6 space-y-4">
                             <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground flex items-center gap-2">
                                 <Database className="w-4 h-4 text-foreground/60" />
-                                Fallback metadata: chưa có endpoint cập nhật metadata riêng, bạn có thể chỉnh local và sao chép.
+                                Chỉnh sửa bên dưới chỉ áp dụng cục bộ. Sao chép để sử dụng ở nơi khác.
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium">Public</Label>
@@ -621,7 +609,7 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                                 </span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-3">
-                                Fallback: cờ này hiện chỉ áp dụng giao diện, chưa có endpoint cập nhật riêng.
+                                Tính năng đang được phát triển. Cài đặt này chưa được lưu lên server.
                             </p>
                         </div>
                     </div>

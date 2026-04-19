@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(xargs head *)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(xargs ls *)",
+      "Bash(git checkout *)"
+    ]
+  }
+}
