@@ -128,7 +128,15 @@ export class TrackerService implements OnModuleInit {
   }
 
   /**
-   * API lấy dữ liệu theo range
+   * Lấy danh sách các loại service đang được giám sát
+   */
+  async getTrackerTypes() {
+    const types = await this.statusModel.distinct('type').exec();
+    return { types };
+  }
+
+  /**
+   * API lấy dữ liệu theo range, trả về format cho frontend
    */
   async getStatusHistory(type: string, range: string) {
     const now = new Date();
@@ -153,13 +161,83 @@ export class TrackerService implements OnModuleInit {
 
     const startDay = startDate.toISOString().split('T')[0];
 
-    return this.statusModel
+    const records = await this.statusModel
       .find({
         type,
         day: { $gte: startDay },
       })
       .sort({ day: 1, hour: 1 })
       .exec();
+
+    // Transform raw MongoDB documents to frontend format
+    let totalPings = 0;
+    let totalUp = 0;
+    let lastPing = 0;
+
+    const timeline = records.map((record) => {
+      const dataPoints = record.data || [];
+      const upCount = dataPoints.filter((d) => d.s === 0).length;
+      const downCount = dataPoints.filter((d) => d.s === 1).length;
+      const avgPing =
+        dataPoints.length > 0
+          ? Math.round(
+              dataPoints.reduce((sum, d) => sum + d.p, 0) / dataPoints.length,
+            )
+          : 0;
+
+      totalPings += dataPoints.length;
+      totalUp += upCount;
+
+      // Lấy ping cuối cùng
+      if (dataPoints.length > 0) {
+        lastPing = dataPoints[dataPoints.length - 1].p;
+      }
+
+      // Xác định status cho giờ này
+      let status: 'green' | 'yellow' | 'red' = 'green';
+      if (downCount > 0 && upCount > 0) {
+        status = 'yellow';
+      } else if (downCount > 0 && upCount === 0) {
+        status = 'red';
+      }
+
+      return {
+        day: record.day,
+        hour: record.hour,
+        status,
+        avgPing,
+        downCount,
+      };
+    });
+
+    // Tính uptime tổng
+    const uptime = totalPings > 0 ? (totalUp / totalPings) * 100 : 100;
+
+    // Tính overall status
+    let overallStatus: 'green' | 'yellow' | 'red' = 'green';
+    if (records.length > 0) {
+      const lastRecord = records[records.length - 1];
+      const lastData = lastRecord.data || [];
+      if (lastData.length > 0) {
+        const lastStatus = lastData[lastData.length - 1].s;
+        if (lastStatus === 1) {
+          overallStatus = 'red';
+        }
+      }
+      // Nếu có bất kỳ downtime nào trong range
+      const hasDown = timeline.some((t) => t.status === 'red' || t.status === 'yellow');
+      if (hasDown && overallStatus !== 'red') {
+        overallStatus = 'yellow';
+      }
+    }
+
+    return {
+      type,
+      status: overallStatus,
+      currentPing: lastPing,
+      uptime: parseFloat(uptime.toFixed(2)),
+      timeline,
+    };
   }
 
   /**

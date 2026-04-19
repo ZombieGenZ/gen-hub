@@ -7,6 +7,12 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 export class TrackerController {
   constructor(private readonly trackerService: TrackerService) {}
 
+  @Get('types')
+  @ApiOperation({ summary: 'Lấy danh sách các loại service đang được giám sát' })
+  async getTypes() {
+    return this.trackerService.getTrackerTypes();
+  }
+
   @Get(':type')
   @ApiOperation({ summary: 'Lấy lịch sử trạng thái của service theo loại' })
   @ApiQuery({ name: 'range', enum: ['24h', '1d', '3d', '7d'], required: false })
