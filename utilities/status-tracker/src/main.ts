@@ -9,7 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3000);
+  // Ưu tiên lấy PORT từ process.env (Render inject) trước khi dùng ConfigService
+  const port = process.env.PORT || configService.get<number>('PORT', 10000);
 
   // Cấu hình CORS
   app.enableCors({
@@ -33,6 +34,5 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port, '0.0.0.0');
-  logger.log(`Ứng dụng đang chạy tại: http://status-tracker.gen-hub.dev`);
 }
 bootstrap();
