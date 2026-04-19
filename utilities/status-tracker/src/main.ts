@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -23,16 +24,33 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Cấu hình Swagger
+  // Cấu hình Swagger Metadata
   const config = new DocumentBuilder()
-    .setTitle('GenHub Status Tracker API')
-    .setDescription('API theo dõi trạng thái các dịch vụ của GenHub')
+    .setTitle('GEN-HUB Status Tracker Service')
+    .setDescription('Dịch vụ giám sát trạng thái hệ thống (Uptime, Latency) cho GEN-HUB. Hệ thống tự động kiểm tra và báo cáo trạng thái các dịch vụ quan trọng.')
     .setVersion('1.0')
-    .addTag('Tracker')
+    .addTag('System', 'Các API kiểm tra hệ thống')
+    .addTag('Tracker', 'Các API lấy dữ liệu giám sát và lịch sử trạng thái')
     .build();
+    
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
 
+  // Tích hợp Scalar thay cho Swagger UI - Sửa lỗi TypeScript
+  app.use(
+    '/api/docs',
+    apiReference({
+      spec: {
+        content: document,
+      },
+      // @ts-ignore - Một số thuộc tính theme/layout có thể chưa cập nhật trong d.ts của Scalar NestJS
+      theme: 'purple',
+      layout: 'modern',
+    } as any),
+  );
+
+  // Phải lắng nghe trên 0.0.0.0 cho Render
   await app.listen(port, '0.0.0.0');
+  logger.log(`Ứng dụng đang chạy trên cổng: ${port}`);
+  logger.log(`Tài liệu API (Scalar) tại: /api/docs`);
 }
 bootstrap();
