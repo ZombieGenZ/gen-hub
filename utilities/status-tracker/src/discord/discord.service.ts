@@ -5,9 +5,9 @@ import { Client, GatewayIntentBits, User } from 'discord.js';
 @Injectable()
 export class DiscordService implements OnModuleInit {
   private readonly logger = new Logger(DiscordService.name);
-  private client: Client;
+  private client: Client | null = null;
   private readonly enabled: boolean;
-  private readonly token: string;
+  private readonly token: string | undefined;
   private readonly notifyUserIds: string[];
 
   constructor(private configService: ConfigService) {
@@ -19,7 +19,8 @@ export class DiscordService implements OnModuleInit {
     );
     this.notifyUserIds = userIdsStr
       .split(',')
-      .filter((id) => id.trim().length > 0);
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
   }
 
   async onModuleInit() {
@@ -54,8 +55,6 @@ export class DiscordService implements OnModuleInit {
         }
       } catch (error: any) {
         this.logger.error(`Không thể gửi DM cho user ${userId}: ${error.message}`);
-      }
-        );
       }
     }
   }

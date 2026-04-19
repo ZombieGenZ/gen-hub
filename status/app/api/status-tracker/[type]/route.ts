@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
-  const { type } = params;
+  const { type } = await params;
   const searchParams = request.nextUrl.searchParams;
   const range = searchParams.get('range') || '24h';
   
