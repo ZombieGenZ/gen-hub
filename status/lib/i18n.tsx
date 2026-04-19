@@ -31,6 +31,10 @@ const translations: Translations = {
         failedData: 'Failed to load status data.',
         theme: 'Theme',
         language: 'Language',
+        serviceHistory: 'Service History',
+        apiService: 'API Service',
+        noHistoryData: 'No history data available for the selected period.',
+        tryAgain: 'Try Again',
     },
     vi: {
         systemStatus: 'Trạng thái hệ thống',
@@ -52,6 +56,10 @@ const translations: Translations = {
         failedData: 'Không thể tải dữ liệu trạng thái.',
         theme: 'Giao diện',
         language: 'Ngôn ngữ',
+        serviceHistory: 'Lịch sử dịch vụ',
+        apiService: 'Dịch vụ API',
+        noHistoryData: 'Không có dữ liệu lịch sử cho khoảng thời gian đã chọn.',
+        tryAgain: 'Thử lại',
     },
 };
 

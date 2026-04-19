@@ -2,14 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from '@/lib/i18n';
-
 import { LanguageToggle } from '@/components/language-toggle';
-
-type StatusDetail = {
-  status: 'ok' | 'down';
-  uptime?: number;
-  [key: string]: any;
-};
+import { StatusHistory } from '@/components/status-history';
+import { RangeSelector } from '@/components/range-selector';
+import { Clock, RefreshCw } from 'lucide-react';
 
 type ServiceStatus = {
   name: string;
@@ -18,15 +14,11 @@ type ServiceStatus = {
   code?: number;
   error?: string;
   uptime?: number;
-  details?: StatusDetail;
 };
 
 type StatusResponse = {
   client: ServiceStatus;
   server: ServiceStatus;
-  databasePanel?: ServiceStatus;
-  featureFlagPanel?: ServiceStatus;
-  resourcesPanel?: ServiceStatus;
   timestamp: string;
 };
 
@@ -85,6 +77,8 @@ export default function Home() {
   const [data, setData] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [trackerTypes, setTrackerTypes] = useState<string[]>([]);
+  const [selectedRange, setSelectedRange] = useState('24h');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -94,13 +88,19 @@ export default function Home() {
       const json = await res.json();
       setData(json);
       setLastUpdated(new Date());
+
+      // Lấy danh sách service types từ tracker
+      const trackerRes = await fetch('/api/status-tracker');
+      const trackerJson = await trackerRes.json();
+      if (trackerJson.types) {
+        setTrackerTypes(trackerJson.types);
+      }
     } catch (error) {
       console.error("Failed to fetch status", error);
     } finally {
       setLoading(false);
-      // Recursive polling: Schedule next fetch ONLY after current one finishes
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(fetchData, 600000); // 600 seconds
+      timeoutRef.current = setTimeout(fetchData, 300000); // 5 phút refresh 1 lần
     }
   }, []);
 
@@ -111,52 +111,96 @@ export default function Home() {
     };
   }, [fetchData]);
 
-  // Manual refresh should cancel existing timer and restart immediately
-  const handleManualRefresh = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    fetchData();
-  };
-
   return (
-    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
-
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <main className="min-h-screen bg-neutral-50 dark:bg-[#050505] text-foreground transition-colors duration-300">
+      <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="flex justify-end gap-2 mb-8">
           <LanguageToggle />
         </div>
 
         <header className="mb-16 text-center">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4 text-primary">
+          {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            System Live
+          </div> */}
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 bg-gradient-to-b from-neutral-900 to-neutral-600 dark:from-white dark:to-neutral-500 bg-clip-text text-transparent">
             {t('systemStatus')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 text-lg">{t('subtitle')}</p>
+          <p className="text-neutral-500 dark:text-neutral-400 text-lg max-w-2xl mx-auto">{t('subtitle')}</p>
         </header>
 
-        {loading && !data ? (
-          <div className="space-y-6 animate-pulse">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="h-40 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
-              <div className="h-40 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
+        {/* Realtime Status Cards */}
+        <section className="mb-16">
+          {loading && !data ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+              <div className="h-44 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
+              <div className="h-44 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
             </div>
-          </div>
-        ) : data && data.client && data.server ? (
-          <div className="space-y-6">
+          ) : data && data.client && data.server ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatusCard serviceKey="client" service={data.client} />
               <StatusCard serviceKey="server" service={data.server} />
             </div>
-          </div>
-        ) : (
-          <div className="text-center text-red-500">
-            <p className="text-xl mb-2">{t('failedData')}</p>
-            {data && (data as any).error && <p className="text-sm opacity-70">{t('error')}: {(data as any).error}</p>}
-          </div>
-        )}
-
-        <footer className="mt-16 text-center text-neutral-500 text-sm">
-          {lastUpdated && (
-            <p>{t('lastChecked')}: {lastUpdated.toLocaleTimeString()}</p>
+          ) : (
+            <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-3xl border border-dashed border-neutral-300 dark:border-neutral-800">
+              <p className="text-xl text-red-500 mb-2">{t('failedData')}</p>
+              <button onClick={() => fetchData()} className="mt-4 px-6 py-2 bg-primary text-white rounded-full flex items-center gap-2 mx-auto hover:opacity-90 transition-all">
+                <RefreshCw className="w-4 h-4" /> {t('tryAgain')}
+              </button>
+            </div>
           )}
+        </section>
+
+        {/* Service History Section (Status Tracker) */}
+        <section className="space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                <Clock className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold dark:text-white">{t('serviceHistory')}</h2>
+            </div>
+
+            <RangeSelector
+              currentRange={selectedRange}
+              onChange={setSelectedRange}
+              ranges={['24h', '1d', '3d', '7d']}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {trackerTypes.length > 0 ? (
+              trackerTypes.map((type) => (
+                <StatusHistory
+                  key={type}
+                  type={type}
+                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} ${t('apiService')}`}
+                  range={selectedRange}
+                />
+              ))
+            ) : (
+              !loading && (
+                <div className="text-center py-12 text-neutral-400 italic">
+                  {t('noHistoryData')}
+                </div>
+              )
+            )}
+          </div>
+        </section>
+
+        <footer className="mt-20 text-center space-y-4">
+          <div className="h-px w-24 bg-neutral-200 dark:bg-neutral-800 mx-auto"></div>
+          {lastUpdated && (
+            <p className="text-neutral-500 text-xs font-medium uppercase tracking-widest">
+              {t('lastChecked')}: {lastUpdated.toLocaleTimeString()}
+            </p>
+          )}
+          <p className="text-[10px] text-neutral-400 dark:text-neutral-600 font-mono italic">
+            &copy; 2026 GEN-HUB Infrastructure Monitoring System
+          </p>
         </footer>
       </div>
     </main>

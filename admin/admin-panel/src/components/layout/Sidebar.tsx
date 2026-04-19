@@ -321,6 +321,8 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <Activity className="w-5 h-5" />
                                 <span className="font-medium">{t('sidebar.resources') || 'Resources'}</span>
                             </Link>
+
+
                         </>
                     )}
 

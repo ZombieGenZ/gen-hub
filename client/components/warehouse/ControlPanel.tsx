@@ -130,7 +130,7 @@ const ControlPanel = ({
   const selectedBoxInfo = selectedBox ? boxes.find(b => b.id === selectedBox) : null;
 
   return (
-    <div className="w-72 bg-card border-r border-border flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-card flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -139,7 +139,7 @@ const ControlPanel = ({
         </h2>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" data-lenis-prevent="true">
         {/* Collision Warnings */}
         {collisionWarnings.length > 0 && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">

@@ -12,6 +12,8 @@ interface EnhancedBox3DProps {
   viewMode: 'default' | 'category' | 'heatmap';
   isFiltered: boolean;
   isFocused?: boolean; // For barcode scanning - highlight and glow
+  /** When true, the box is dimmed (belongs to another tenant's rack) */
+  isDimmed?: boolean;
 }
 
 const SelectedBoxAnimation = ({ meshRef }: { meshRef: RefObject<THREE.Mesh | null> }) => {
@@ -61,7 +63,7 @@ const FocusedGlowEffect = () => {
   );
 };
 
-const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered, isFocused = false }: EnhancedBox3DProps) => {
+const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered, isFocused = false, isDimmed = false }: EnhancedBox3DProps) => {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
   const outlineRef = useRef<THREE.Mesh>(null);
@@ -172,12 +174,12 @@ const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered, isFocused = false 
       >
         <boxGeometry args={[0.8, 0.6, 0.8]} />
         <meshStandardMaterial
-          map={viewMode === 'default' ? boxMaterial : undefined}
-          color={viewMode !== 'default' ? getColor() : 0xffffff}
+          map={viewMode === 'default' && !isDimmed ? boxMaterial : undefined}
+          color={isDimmed ? 0x555577 : (viewMode !== 'default' ? getColor() : 0xffffff)}
           metalness={0.05}
           roughness={0.85}
-          opacity={isFiltered ? 1 : 0.3}
-          transparent={!isFiltered}
+          opacity={isDimmed ? 0.08 : (isFiltered ? 1 : 0.3)}
+          transparent={isDimmed || !isFiltered}
         />
       </mesh>
 

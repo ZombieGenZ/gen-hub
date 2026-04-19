@@ -11,6 +11,7 @@ on:
       - 'App/**'
       - 'admin/admin-panel/**'
       - 'utilities/api-json/**'
+      - 'utilities/status-tracker/**'
 
   workflow_dispatch:
 
@@ -26,6 +27,7 @@ jobs:
       app: ${{ steps.filter.outputs.app }}
       admin_panel: ${{ steps.filter.outputs.admin_panel }}
       api_json: ${{ steps.filter.outputs.api_json }}
+      status_tracker: ${{ steps.filter.outputs.status_tracker }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -45,6 +47,8 @@ jobs:
               - 'admin/admin-panel/**'
             api_json:
               - 'utilities/api-json/**'
+            status_tracker:
+              - 'utilities/status-tracker/**'
 
   sync-client:
     needs: changes
@@ -277,6 +281,39 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync api-json: ${{ github.event.head_commit.message }}"
+
+  sync-status-tracker:
+    needs: changes
+    if: ${{ needs.changes.outputs.status_tracker == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies and Build
+        run: |
+          cd utilities/status-tracker
+          npm install
+          npm run build
+      - name: Prepare status-tracker sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- utilities/status-tracker | tar --null -T - -cf - | tar -xf - -C .sync
+      - name: Push status-tracker folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: '.sync/utilities/status-tracker'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_STATUS_TRACKER }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync status-tracker: ${{ github.event.head_commit.message }}"
 
   build-app:
     needs: changes

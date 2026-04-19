@@ -56,14 +56,25 @@ function inferCategory(productName: string, sku: string): BoxCategory {
 }
 
 /**
- * Transform layout + stock → { racks: RackConfig[], boxes: BoxItem[] }
+ * Metadata about row rental status returned alongside 3D data
+ */
+export interface RowRentalInfo {
+    rowId: string;
+    rowName: string;
+    isRented: boolean;
+    rackIds: string[];
+}
+
+/**
+ * Transform layout + stock → { racks, boxes, rowRentalInfo }
  */
 export function transformLayoutTo3D(
     layout: WarehouseLayout,
     stock: InventoryStockItem[],
-): { racks: RackConfig[]; boxes: BoxItem[] } {
+): { racks: RackConfig[]; boxes: BoxItem[]; rowRentalInfo: RowRentalInfo[] } {
     const racks: RackConfig[] = [];
     const boxes: BoxItem[] = [];
+    const rowRentalInfo: RowRentalInfo[] = [];
 
     // Index: block_id → inventory items
     const stockByBlock = new Map<string, InventoryStockItem[]>();
@@ -78,6 +89,7 @@ export function transformLayoutTo3D(
     for (const row of layout.rows) {
         const rowX = row.position_x ?? 0;
         const rowZ = row.position_y ?? 0;
+        const rowRackIds: string[] = [];
 
         for (const rack of row.racks) {
             const shelfCount = rack.shelves.length || 1;
@@ -108,9 +120,12 @@ export function transformLayoutTo3D(
                 cellHeight: cellH,
                 cellDepth: rackD,
                 color: RACK_COLORS[rackIndex % RACK_COLORS.length],
+                rowId: row.id,
+                isRowRented: row.is_rented,
             };
 
             racks.push(rackConfig);
+            rowRackIds.push(rack.id);
 
             // Map shelves → levels (bottom-up), blocks → columns
             rack.shelves.forEach((shelf: LayoutShelf, shelfIdx: number) => {
@@ -147,9 +162,51 @@ export function transformLayoutTo3D(
 
             rackIndex++;
         }
+
+        rowRentalInfo.push({
+            rowId: row.id,
+            rowName: row.name || row.code,
+            isRented: row.is_rented,
+            rackIds: rowRackIds,
+        });
     }
 
-    return { racks, boxes };
+    // ─── Private warehouse fallback: generate default 3-4 mockup racks ───
+    // If no real rows/racks exist, create placeholder racks so the user
+    // can visualize the warehouse space (kho riêng with no layout yet).
+    if (racks.length === 0 && layout.length > 0 && layout.width > 0) {
+        const MOCKUP_ROW_COUNT = layout.width >= 60 ? 4 : 3;
+        const warehouseL = layout.length;
+        const warehouseW = layout.width;
+        const rowSpacing = warehouseW / (MOCKUP_ROW_COUNT + 1);
+
+        for (let r = 0; r < MOCKUP_ROW_COUNT; r++) {
+            const racksPerRow = Math.max(1, Math.floor(warehouseL / 14));
+            for (let c = 0; c < racksPerRow; c++) {
+                const mockId = `mockup-row${r}-rack${c}`;
+                racks.push({
+                    id: mockId,
+                    name: `Dãy ${r + 1} - Kệ ${c + 1}`,
+                    position: {
+                        x: 4 + c * 12,
+                        y: 0,
+                        z: rowSpacing * (r + 1),
+                    },
+                    rows: 1,
+                    columns: 4,
+                    levels: 3,
+                    cellWidth: DEFAULT_RACK_WIDTH,
+                    cellHeight: DEFAULT_RACK_HEIGHT,
+                    cellDepth: DEFAULT_RACK_DEPTH,
+                    color: '#5588cc',
+                    rowId: `mockup-row-${r}`,
+                    isRowRented: false,
+                });
+            }
+        }
+    }
+
+    return { racks, boxes, rowRentalInfo };
 }
 
 // ────────────────────────────────────────────────
@@ -229,10 +286,32 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
 
     // ─── Transform DB → 3D ──────────────────────
 
-    const { racks, boxes } = useMemo(() => {
-        if (!layout) return { racks: [], boxes: [] };
+    const { racks, boxes, rowRentalInfo } = useMemo(() => {
+        if (!layout) return { racks: [], boxes: [], rowRentalInfo: [] };
         return transformLayoutTo3D(layout, stock ?? []);
     }, [layout, stock]);
+
+    // ─── Dimming logic for shared warehouses ─────
+    // Racks belonging to rows that are NOT rented by the current user
+    // will be dimmed in the 3D view. For kho chung, this highlights
+    // only the rows that the customer has registered.
+    const dimmedRackIds = useMemo(() => {
+        // If any row is rented, this is a shared warehouse view
+        const hasRentedRows = rowRentalInfo.some(r => r.isRented);
+        const hasNonRentedRows = rowRentalInfo.some(r => !r.isRented);
+        
+        // Only apply dimming when there's a mix (shared warehouse scenario)
+        if (!hasRentedRows || !hasNonRentedRows) return [];
+        
+        // Collect rack IDs from non-rented rows → these get dimmed
+        const dimmed: string[] = [];
+        for (const ri of rowRentalInfo) {
+            if (!ri.isRented) {
+                dimmed.push(...ri.rackIds);
+            }
+        }
+        return dimmed;
+    }, [rowRentalInfo]);
 
     // ─── Stats ──────────────────────────────────
 
@@ -497,5 +576,9 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
 
         // Data
         refresh,
+
+        // Shared warehouse (kho chung) rental info
+        rowRentalInfo,
+        dimmedRackIds,
     };
 }
