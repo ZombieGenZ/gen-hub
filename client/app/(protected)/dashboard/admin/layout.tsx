@@ -19,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     isOpen ? "lg:ml-72" : "lg:ml-20"
                 )}>
                 <AdminHeader />
-                <div className="flex-1 overflow-y-auto pt-0 pb-4 px-4 max-w-full mx-auto w-full">
+                <div data-lenis-prevent className="flex-1 overflow-y-auto pt-0 pb-4 px-4 max-w-full mx-auto w-full">
                     {children}
                 </div>
             </main>
