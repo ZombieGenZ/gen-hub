@@ -48,6 +48,8 @@ interface WarehouseSceneProps {
   isModalOpen?: boolean;
   // Realtime multiplayer
   realtimeUsers?: UserPresence[];
+  /** Rack IDs that belong to other tenants → render dimmed */
+  dimmedRackIds?: string[];
 }
 
 const AxesHelper = () => {
@@ -313,6 +315,7 @@ const WarehouseScene = ({
   onClearBoxFocus,
   isModalOpen = false,
   realtimeUsers = [],
+  dimmedRackIds = [],
 }: WarehouseSceneProps) => {
   const [hoveredRack, setHoveredRack] = useState<string | null>(null);
   const [currentFPS, setCurrentFPS] = useState(60);
@@ -327,6 +330,9 @@ const WarehouseScene = ({
     if (searchQuery && !box.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   }, [filterCategory, searchQuery]);
+
+  // Build dimmed rack ID set for O(1) lookup
+  const dimmedRackIdSet = useMemo(() => new Set(dimmedRackIds), [dimmedRackIds]);
 
   const hoveredRackData = hoveredRack ? racks.find((r) => r.id === hoveredRack) || null : null;
   
@@ -491,6 +497,7 @@ const WarehouseScene = ({
               onDoubleClick={onDoubleClickRack}
               fillRate={fillRate}
               isVisible={true}
+              isDimmed={dimmedRackIdSet.has(rack.id)}
             />
           );
         })}
@@ -504,6 +511,7 @@ const WarehouseScene = ({
             viewMode={viewMode}
             isFiltered={isBoxFiltered(box)}
             isFocused={box.id === focusedBoxId}
+            isDimmed={dimmedRackIdSet.has(box.rackId)}
           />
         ))}
       </Canvas>

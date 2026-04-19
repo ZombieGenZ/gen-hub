@@ -36,6 +36,10 @@ export interface RackConfig {
   cellHeight: number;
   cellDepth: number;
   color: string;
+  /** ID of the layout row this rack belongs to */
+  rowId?: string;
+  /** Whether the row containing this rack is currently rented */
+  isRowRented?: boolean;
 }
 
 export interface BoxItem {

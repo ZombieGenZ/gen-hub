@@ -76,6 +76,7 @@ export default function Warehouse3DLivePage() {
     getRackStats,
     getRackPosition,
     refresh,
+    dimmedRackIds,
   } = useWarehouse3D({ warehouseId });
 
   // Display feature states
@@ -346,6 +347,7 @@ export default function Warehouse3DLivePage() {
           focusedBoxId={state.focusedBoxId}
           onClearBoxFocus={clearBoxFocus}
           realtimeUsers={realtimeUsers}
+          dimmedRackIds={dimmedRackIds}
         />
 
         {/* Online Users List */}
