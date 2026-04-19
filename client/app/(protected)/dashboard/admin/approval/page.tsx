@@ -167,20 +167,21 @@ export default function ApprovalQueuePage() {
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
     // ── Fetch data ──
-    const fetchData = useCallback(async () => {
+    const doFetch = useCallback(async (showLoadingSpinner: boolean) => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) {
                 router.push("/login");
                 return;
             }
-            setLoading(true);
-            setError(null);
+            if (showLoadingSpinner) {
+                setLoading(true);
+                setError(null);
+            }
 
-            // Fetching requests
             const [inboundRes, outboundRes] = await Promise.all([
-                inventoryService.listInbound(token, { limit: 50 }),
-                inventoryService.listOutbound(token, { limit: 50 }),
+                inventoryService.listInbound(token, { limit: 500 }),
+                inventoryService.listOutbound(token, { limit: 500 }),
             ]);
 
             const inData = inboundRes.data?.items ?? [];
@@ -195,11 +196,16 @@ export default function ApprovalQueuePage() {
                 router.push("/login");
                 return;
             }
-            setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
+            if (showLoadingSpinner) {
+                setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
+            }
         } finally {
-            setLoading(false);
+            if (showLoadingSpinner) setLoading(false);
         }
     }, [router]);
+
+    const fetchData = useCallback(() => doFetch(true), [doFetch]);
+    const silentRefresh = useCallback(() => doFetch(false), [doFetch]);
 
     useEffect(() => {
         fetchData();
@@ -217,7 +223,7 @@ export default function ApprovalQueuePage() {
             }
 
             refreshTimeoutRef.current = setTimeout(() => {
-                void fetchData();
+                void silentRefresh();
             }, 250);
         };
 
@@ -245,7 +251,7 @@ export default function ApprovalQueuePage() {
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [fetchData]);
+    }, [silentRefresh]);
 
     // ── Build unified ticket list ──
     const allTickets: ApprovalTicket[] = useMemo(() => {

@@ -254,7 +254,7 @@ export function RentalInfoStep() {
                                 </div>
                             )}
 
-                            {session.quotation.insuranceCost > 0 && (
+                            {(session.quotation.insuranceCost + session.quotation.managementFee) > 0 && (
                                 <div className="flex justify-between text-teal-50/90">
                                     <span>Bảo hiểm ({session.duration_months || 0} tháng)</span>
                                     <span>+{formatCurrencyFull(session.quotation.insuranceCost + session.quotation.managementFee)}</span>

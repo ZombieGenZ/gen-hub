@@ -319,7 +319,7 @@ export function ContractPreview({
                                                 {session.rental_type === 'whole' ? 'Nguyên Kho' : 'Vị trí/Kệ'}
                                             </td>
                                             <td className="border border-slate-300 p-2 text-right font-mono">
-                                                {formatCurrencyFull((session.quotation?.basePrice || 0) / (session.duration_months || 1))}
+                                                {formatCurrencyFull(session.quotation?.basePrice || 0)}
                                             </td>
                                             <td className="border border-slate-300 p-2 text-right">
                                                 {session.duration_months} tháng
