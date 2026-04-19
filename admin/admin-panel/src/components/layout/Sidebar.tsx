@@ -322,17 +322,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <span className="font-medium">{t('sidebar.resources') || 'Resources'}</span>
                             </Link>
 
-                            <Link
-                                href="/status-tracker"
-                                onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/status-tracker' || pathname.startsWith('/status-tracker/')
-                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                                    }`}
-                            >
-                                <Network className="w-5 h-5" />
-                                <span className="font-medium">Status Tracker</span>
-                            </Link>
+
                         </>
                     )}
 
