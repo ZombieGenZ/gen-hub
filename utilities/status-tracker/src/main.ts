@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -36,23 +35,11 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Expose Swagger JSON
-  app.getHttpAdapter().get('/api-docs-json', (req, res) => {
-    res.json(document);
+  // Setup Swagger UI tại /api-docs (tương thích Express 5 + NestJS v11)
+  // jsonDocumentUrl cho phép truy cập JSON tại /api-docs-json
+  SwaggerModule.setup('api-docs', app, document, {
+    jsonDocumentUrl: '/api-docs-json',
   });
-
-  // Tích hợp Scalar thay cho Swagger UI - Sửa lỗi TypeScript
-  app.use(
-    '/api-docs',
-    apiReference({
-      spec: {
-        content: document,
-      },
-      // @ts-ignore - Một số thuộc tính theme/layout có thể chưa cập nhật trong d.ts của Scalar NestJS
-      theme: 'purple',
-      layout: 'modern',
-    } as any),
-  );
 
   // Phải lắng nghe trên 0.0.0.0 cho Render
   await app.listen(port, '0.0.0.0');
@@ -60,3 +47,4 @@ async function bootstrap() {
   logger.log(`Tài liệu API (JSON) tại: ${host}/api-docs-json`);
 }
 bootstrap();
+
