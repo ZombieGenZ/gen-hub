@@ -119,9 +119,10 @@ export class WarehouseManagerPermissionGuard implements CanActivate {
       where: { user_id: userId, is_active: true, is_deleted: false },
       include: { role: true },
     });
-    const isSystemAdmin = systemRoles.some((ur) =>
-      ['sysadmin', 'admin', 'superadmin'].includes(ur.role?.name?.toLowerCase()),
-    );
+    const isSystemAdmin = systemRoles.some((ur) => {
+      const roleName = ur.role?.name?.toLowerCase().replace(/\s+/g, '') || '';
+      return ['sysadmin', 'admin', 'superadmin', 'administrator', 'quantrivien'].includes(roleName);
+    });
 
     if (isSystemAdmin) {
       const allWarehouses = await this.prisma.warehouse.findMany({
