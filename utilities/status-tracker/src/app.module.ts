@@ -19,6 +19,8 @@ import { DiscordModule } from './discord/discord.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
+        serverSelectionTimeoutMS: 5000, // Timeout 5 giây nếu không kết nối được
+        connectTimeoutMS: 10000, // Timeout kết nối 10 giây
       }),
       inject: [ConfigService],
     }),

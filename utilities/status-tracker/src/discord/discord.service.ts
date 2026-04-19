@@ -29,15 +29,30 @@ export class DiscordService implements OnModuleInit {
         intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages],
       });
 
-      try {
-        await this.client.login(this.token);
-        this.logger.log('Discord Bot đã đăng nhập thành công');
-      } catch (error: any) {
-        this.logger.error(`Discord Bot đăng nhập thất bại: ${error.message}`);
-      }
+      // Fire-and-forget: không block bootstrap nếu Discord login chậm/thất bại
+      this.loginDiscord().catch((error) => {
+        this.logger.error(
+          `Discord Bot đăng nhập thất bại: ${error.message}`,
+        );
+        this.client = null;
+      });
     } else {
       this.logger.warn('Discord Bot đang bị tắt hoặc thiếu Token');
     }
+  }
+
+  private async loginDiscord(): Promise<void> {
+    const timeoutMs = 10000; // 10 giây timeout
+    const loginPromise = this.client!.login(this.token);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Discord login timeout sau 10 giây')),
+        timeoutMs,
+      ),
+    );
+
+    await Promise.race([loginPromise, timeoutPromise]);
+    this.logger.log('Discord Bot đã đăng nhập thành công');
   }
 
   /**
