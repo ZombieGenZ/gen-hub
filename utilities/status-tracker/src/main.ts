@@ -16,10 +16,8 @@ async function bootstrap() {
 
     const configService = app.get(ConfigService);
     // Ưu tiên lấy PORT từ process.env (Render inject) trước khi dùng ConfigService
-    const port = parseInt(
-      String(process.env.PORT || configService.get<number>('PORT', 10000)),
-      10,
-    );
+    const rawPort = process.env.PORT ?? configService.get('PORT');
+    const port = rawPort ? parseInt(String(rawPort), 10) : 10000;
     const host = process.env.HOST || 'localhost';
 
     logger.log(`Chuẩn bị lắng nghe trên port ${port}`);
