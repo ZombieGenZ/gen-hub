@@ -119,13 +119,13 @@ export default function Home() {
         </div>
 
         <header className="mb-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
+          {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             System Live
-          </div>
+          </div> */}
           <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 bg-gradient-to-b from-neutral-900 to-neutral-600 dark:from-white dark:to-neutral-500 bg-clip-text text-transparent">
             {t('systemStatus')}
           </h1>
@@ -163,22 +163,22 @@ export default function Home() {
               </div>
               <h2 className="text-2xl font-bold dark:text-white">Service History</h2>
             </div>
-            
-            <RangeSelector 
-              currentRange={selectedRange} 
-              onChange={setSelectedRange} 
-              ranges={['24h', '1d', '3d', '7d']} 
+
+            <RangeSelector
+              currentRange={selectedRange}
+              onChange={setSelectedRange}
+              ranges={['24h', '1d', '3d', '7d']}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-6">
             {trackerTypes.length > 0 ? (
               trackerTypes.map((type) => (
-                <StatusHistory 
-                  key={type} 
-                  type={type} 
-                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} API Service`} 
-                  range={selectedRange} 
+                <StatusHistory
+                  key={type}
+                  type={type}
+                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} API Service`}
+                  range={selectedRange}
                 />
               ))
             ) : (
