@@ -264,7 +264,11 @@ export default function Warehouse3DLivePage() {
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Control Panel */}
-        {controlPanelOpen && (
+        <div 
+          className={`flex-shrink-0 transition-all duration-300 border-r border-border ${
+            controlPanelOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0'
+          }`}
+        >
           <ControlPanel
             onCreateBackground={createBackground}
             onRemoveBackground={removeBackground}
@@ -316,7 +320,7 @@ export default function Warehouse3DLivePage() {
             onOpenOutbound={() => setOutboundOpen(true)}
             onOpenHistory={() => setHistoryOpen(true)}
           />
-        )}
+        </div>
 
         <WarehouseScene
           showBackground={state.showBackground}
