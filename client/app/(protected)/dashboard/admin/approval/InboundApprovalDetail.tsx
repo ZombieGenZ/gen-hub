@@ -234,7 +234,7 @@ export default function InboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    const handleConfirmReceiving = async (is_customer_agreed?: boolean) => {
+    const handleConfirmReceiving = async (is_customer_agreed?: boolean, notes?: string) => {
         const token = getToken(); if (!token) return;
         if (!data?.details?.length) return;
         setSubmitting(true);
@@ -247,12 +247,13 @@ export default function InboundApprovalDetail({
                     detail_id: d.id,
                     actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
                 }));
-            const payload: { details: typeof details; is_customer_agreed?: boolean } = { details };
+            const payload: { details: typeof details; is_customer_agreed?: boolean; notes?: string } = { details };
             if (is_customer_agreed !== undefined) payload.is_customer_agreed = is_customer_agreed;
+            if (notes) payload.notes = notes;
             await inventoryService.confirmReceiving(token, ticketId, payload);
             setMismatchModal({ open: false, mismatches: [], pendingDetails: [] });
             if (is_customer_agreed === false) {
-                showToast("Khách không đồng ý — Phiếu nhập đã bị hủy", "error");
+                showToast("Đã thông báo cho khách hàng — Phiếu nhập bị hủy do lệch số lượng", "error");
             } else {
                 showToast("Đã xác nhận kiểm đếm — chuyển sang Chờ cất hàng", "success");
             }
@@ -427,25 +428,33 @@ export default function InboundApprovalDetail({
                         </div>
 
                         {/* Actions */}
-                        <div className="px-6 pb-6 pt-4 bg-slate-50 border-t flex flex-col gap-2">
+                        <div className="px-6 pb-6 pt-4 bg-slate-50 border-t flex flex-col gap-2.5">
                             <p className="text-xs text-muted-foreground text-center mb-1">
-                                Xác nhận với khách hàng và chọn hành động phù hợp:
+                                Chọn thao tác xử lý khi số lượng thực tế sai lệch:
                             </p>
-                            <button
-                                disabled={submitting}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white text-sm font-semibold transition-colors disabled:opacity-50"
-                                onClick={() => handleConfirmReceiving(true)}
-                            >
-                                <CheckCircleIcon className="w-4 h-4" />
-                                Khách đồng ý — Nhập theo số lượng thực tế
-                            </button>
                             <button
                                 disabled={submitting}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-sm font-semibold transition-colors disabled:opacity-50"
                                 onClick={() => handleConfirmReceiving(false)}
                             >
-                                <XMarkIcon className="w-4 h-4" />
-                                Khách không đồng ý — Hủy phiếu nhập
+                                <XMarkIcon className="w-4 h-4 shrink-0" />
+                                <span className="truncate">Thông báo cho khách hàng</span>
+                            </button>
+                            <button
+                                disabled={submitting}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                                onClick={() => handleConfirmReceiving(true, "Tiếp tục xác nhận nhập hoàn thành đơn PO với số lượng thực tế thiếu")}
+                            >
+                                <CheckCircleIcon className="w-4 h-4 shrink-0" />
+                                <span className="truncate">Tiếp tục xác nhận nhập hoàn thành đơn PO (SL thiếu)</span>
+                            </button>
+                            <button
+                                disabled={submitting}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                                onClick={() => handleConfirmReceiving(true, "Xác nhận nhập và thông báo lại nhà cung cấp để đơn sau nhập kèm số lượng thiếu")}
+                            >
+                                <CheckCircleIcon className="w-4 h-4 shrink-0" />
+                                <span className="truncate">Xác nhận nhập & thông báo NCC nhập bù đơn sau</span>
                             </button>
                         </div>
                     </div>
