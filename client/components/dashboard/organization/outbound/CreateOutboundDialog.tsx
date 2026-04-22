@@ -94,6 +94,7 @@ export function CreateOutboundDialog({
 
     // Form states
     const [formWarehouse, setFormWarehouse] = useState("");
+    const [formRecipientType, setFormRecipientType] = useState<"CUSTOMER" | "CUSTOMER_AGENT" | "TENANT_CUSTOMER">("CUSTOMER");
     const [formPartner, setFormPartner] = useState("");
     const [formSOCode, setFormSOCode] = useState("");
     const [formNotes, setFormNotes] = useState("");
@@ -117,7 +118,7 @@ export function CreateOutboundDialog({
         try {
             const [warehouseRes, partnerRes, productRes] = await Promise.all([
                 inventoryService.listWarehouses(token),
-                partnerService.list(token, { limit: 100 }),
+                partnerService.list(token, { limit: 100, type: "CUSTOMER" }),
                 productService.list(token, {
                     limit: 20,
                     keywords: debouncedProductSearch || undefined,
@@ -179,6 +180,7 @@ export function CreateOutboundDialog({
 
     const resetForm = useCallback(() => {
         setFormWarehouse("");
+        setFormRecipientType("CUSTOMER");
         setFormPartner("");
         setFormSOCode("");
         setFormNotes("");
@@ -189,6 +191,12 @@ export function CreateOutboundDialog({
         setFormRequiredDate("");
         setFormVehicleInfo("");
     }, []);
+
+    // Xóa đối tác đã chọn khi thay đổi loại người nhận
+    useEffect(() => {
+        setFormPartner("");
+        setFormDeliveryAddress("");
+    }, [formRecipientType]);
 
     const handleClose = useCallback(() => {
         if (!isSubmitting) {
@@ -334,8 +342,8 @@ export function CreateOutboundDialog({
                                 1. Thông tin chung
                             </h3>
 
-                            {/* Row 1: Từ — Cho ai — Ngày xuất */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Row 1: Kho xuất — Ngày xuất */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-1.5">
                                         <BuildingStorefrontIcon className="w-3.5 h-3.5 text-muted-foreground" />
@@ -343,35 +351,12 @@ export function CreateOutboundDialog({
                                     </Label>
                                     <Select value={formWarehouse} onValueChange={setFormWarehouse}>
                                         <SelectTrigger className="rounded-xl">
-                                            <SelectValue placeholder="Xuất từ kho nào?" />
+                                            <SelectValue placeholder="Chọn kho cần xuất hàng" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {warehouses.map((w) => (
                                                 <SelectItem key={w.id} value={w.id}>
                                                     {w.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-1.5">
-                                        <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                                        Xuất cho ai
-                                    </Label>
-                                    <Select value={formPartner} onValueChange={setFormPartner}>
-                                        <SelectTrigger className="rounded-xl">
-                                            <SelectValue placeholder="Chọn đối tác nhận hàng" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {partners.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    <div className="flex flex-col">
-                                                        <span>{p.name}</span>
-                                                        {p.code && (
-                                                            <span className="text-xs text-muted-foreground">{p.code}</span>
-                                                        )}
-                                                    </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -386,6 +371,64 @@ export function CreateOutboundDialog({
                                         className="rounded-xl"
                                         min={new Date().toISOString().split("T")[0]}
                                     />
+                                </div>
+                            </div>
+
+                            {/* Row 2: Loại người nhận — Người nhận cụ thể */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Xuất cho ai
+                                    </Label>
+                                    <Select
+                                        value={formRecipientType}
+                                        onValueChange={(v) =>
+                                            setFormRecipientType(v as "CUSTOMER" | "CUSTOMER_AGENT" | "TENANT_CUSTOMER")
+                                        }
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Chọn loại người nhận" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="CUSTOMER">Khách hàng</SelectItem>
+                                            <SelectItem value="CUSTOMER_AGENT">Đại lý của khách hàng</SelectItem>
+                                            <SelectItem value="TENANT_CUSTOMER">Khách hàng của khách thuê kho</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        {formRecipientType === "CUSTOMER" && "Tên khách hàng"}
+                                        {formRecipientType === "CUSTOMER_AGENT" && "Tên đại lý"}
+                                        {formRecipientType === "TENANT_CUSTOMER" && "Tên khách hàng thuê kho"}
+                                    </Label>
+                                    <Select value={formPartner} onValueChange={setFormPartner}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue
+                                                placeholder={
+                                                    formRecipientType === "CUSTOMER"
+                                                        ? "Chọn khách hàng nhận hàng"
+                                                        : formRecipientType === "CUSTOMER_AGENT"
+                                                        ? "Chọn đại lý của khách hàng"
+                                                        : "Chọn khách hàng của khách thuê kho"
+                                                }
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {partners.map((p) => (
+                                                <SelectItem key={p.id} value={p.id}>
+                                                    <div className="flex flex-col">
+                                                        <span>{p.name}</span>
+                                                        {p.code && (
+                                                            <span className="text-xs text-muted-foreground">{p.code}</span>
+                                                        )}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
