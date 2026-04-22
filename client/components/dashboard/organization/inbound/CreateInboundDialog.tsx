@@ -359,7 +359,7 @@ export function CreateInboundDialog({
         try {
             const [warehouseList, partnerRes, productRes] = await Promise.all([
                 inventoryService.listWarehouses(token),
-                partnerService.list(token, { limit: 100 }),
+                partnerService.list(token, { limit: 100, type: "SUPPLIER" }),
                 productService.list(token, {
                     limit: 20,
                     keywords: debouncedProductSearch || undefined,
