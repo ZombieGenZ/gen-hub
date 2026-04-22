@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface WarehouseInfo {
     id: string;
@@ -116,7 +117,12 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                        <p className="text-sm font-medium">{data.organization.name}</p>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <p className="text-sm font-medium truncate cursor-help">{data.organization.name}</p>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">{data.organization.name}</TooltipContent>
+                        </Tooltip>
                     </CardContent>
                 </Card>
             )}
@@ -156,9 +162,14 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     <CardContent className="px-4 pb-4 space-y-2">
                         {data.warehouses.map((wh) => (
                             <div key={wh.id} className="text-sm">
-                                <p className="font-medium">{wh.name}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="font-medium truncate cursor-help">{wh.name}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">{wh.name}</TooltipContent>
+                                </Tooltip>
                                 {wh.rows && wh.rows.length > 0 && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                                         Dãy: {wh.rows.map((r) => r.name).join(", ")}
                                     </p>
                                 )}
@@ -186,7 +197,12 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     {/* Addon chi tiết */}
                     {data.addons && data.addons.filter(a => !a.is_gift && (a.price ?? 0) > 0).map((addon) => (
                         <div key={addon.id} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground truncate max-w-[60%]">{addon.name}</span>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-muted-foreground truncate max-w-[60%] cursor-help">{addon.name}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">{addon.name}</TooltipContent>
+                            </Tooltip>
                             <span className="text-muted-foreground">{formatCurrency(addon.price ?? 0)}</span>
                         </div>
                     ))}
@@ -194,7 +210,12 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     {/* Bảo hiểm chi tiết */}
                     {data.insurances && data.insurances.filter(ins => (ins.price ?? 0) > 0).map((ins) => (
                         <div key={ins.id} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground truncate max-w-[60%]">{ins.name}</span>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-muted-foreground truncate max-w-[60%] cursor-help">{ins.name}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">{ins.name}</TooltipContent>
+                            </Tooltip>
                             <span className="text-muted-foreground">{formatCurrency(ins.price ?? 0)}</span>
                         </div>
                     ))}
@@ -250,7 +271,12 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     {data.addons && data.addons.length > 0 ? (
                         data.addons.map((addon) => (
                             <div key={addon.id} className="flex items-center justify-between text-sm">
-                                <span>{addon.name}</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="truncate max-w-[180px] cursor-help">{addon.name}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">{addon.name}</TooltipContent>
+                                </Tooltip>
                                 {addon.price && (
                                     <span className="text-xs text-muted-foreground">{formatCurrency(addon.price)}</span>
                                 )}
@@ -274,7 +300,12 @@ export function ContractInfoSidebar({ data, className, onManageAddons }: Contrac
                     <CardContent className="px-4 pb-4 space-y-1">
                         {data.insurances.map((ins) => (
                             <div key={ins.id} className="flex items-center justify-between text-sm">
-                                <span>{ins.name}</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="truncate max-w-[180px] cursor-help">{ins.name}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">{ins.name}</TooltipContent>
+                                </Tooltip>
                                 {ins.price && (
                                     <span className="text-xs text-muted-foreground">{formatCurrency(ins.price)}</span>
                                 )}

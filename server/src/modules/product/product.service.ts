@@ -172,6 +172,10 @@ export class ProductService {
       );
     }
 
+    if (query.warehouse_id) {
+      return this.repository.findByOrgId(orgId, query);
+    }
+
     const cacheKey = this.getListCacheKey(orgId, query);
     const cached = await this.redisService.get(cacheKey);
     if (cached) {
