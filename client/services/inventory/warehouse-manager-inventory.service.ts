@@ -231,6 +231,10 @@ export class WarehouseManagerInventoryService {
             const err: any = new Error(errorData.message || "Không thể xác nhận kiểm đếm");
             err.status = response.status;
             err.code = errorData.code;
+            if (errorData.require_customer_agreement) {
+                err.require_customer_agreement = errorData.require_customer_agreement;
+                err.mismatches = errorData.mismatches;
+            }
             throw err;
         }
         return await response.json();
