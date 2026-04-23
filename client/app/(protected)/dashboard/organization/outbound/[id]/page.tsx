@@ -26,6 +26,8 @@ import {
     CubeIcon,
     TruckIcon,
     ClipboardDocumentListIcon,
+    BuildingStorefrontIcon,
+    UserIcon,
 } from "@heroicons/react/24/outline";
 
 import "../outbound.css";
@@ -269,7 +271,10 @@ export default function OutboundDetailPage() {
                                 {statusConfig.label}
                             </Badge>
                         </div>
-                        <p className="text-muted-foreground text-sm mt-1">Tạo lúc {formatDate(data.created_at)}</p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                            {data.warehouse?.name || "—"}
+                            {data.required_date && <> &bull; {formatDate(data.required_date)}</>}
+                        </p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -313,6 +318,54 @@ export default function OutboundDetailPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* ── Summary info cards ── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="border-0 shadow-premium rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-[#0F766E]/10 flex items-center justify-center shrink-0">
+                            <BuildingStorefrontIcon className="w-5 h-5 text-[#0F766E]" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Kho xuất</p>
+                            <p className="text-sm font-semibold truncate mt-0.5">{data.warehouse?.name || "—"}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="border-0 shadow-premium rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                            <UserIcon className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Xuất cho</p>
+                            <p className="text-sm font-semibold truncate mt-0.5">{data.partner?.name || "—"}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="border-0 shadow-premium rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                            <MapPinIcon className="w-5 h-5 text-orange-500" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Địa chỉ giao</p>
+                            <p className="text-sm font-semibold truncate mt-0.5" title={data.delivery_address || undefined}>{data.delivery_address || "—"}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="border-0 shadow-premium rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                            <TruckIcon className="w-5 h-5 text-purple-500" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Ngày xuất dự kiến</p>
+                            <p className="text-sm font-semibold truncate mt-0.5">{data.required_date ? formatDate(data.required_date) : "—"}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* ── Tabs ── */}
             <Tabs defaultValue="details" className="space-y-4">
