@@ -2,7 +2,7 @@ import { Coupon } from "@/types/coupons/coupon.type";
 import { DurationUnit } from "@/types/rental-duration-tier/rental-duration-tier.type";
 
 export interface QuotationBreakdown {
-  basePrice: number;
+  basePrice: number; // Tương ứng base_price_per_month từ API
   durationMonths: number;
   durationDiscountPercent: number;
   durationDiscountAmount: number;
