@@ -7,6 +7,7 @@ import { ToastProvider } from "@/contexts/ToastContext";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { ProfileModalProviderWrapper } from "@/components/providers/ProfileModalProviderWrapper";
 import { LenisProvider } from "@/components/providers/LenisProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const rem = REM({
   variable: "--font-rem",
@@ -62,13 +63,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LenisProvider>
-            <ToastProvider>
-              <LoadingProvider>
-                <ProfileModalProviderWrapper>
-                  {children}
-                </ProfileModalProviderWrapper>
-              </LoadingProvider>
-            </ToastProvider>
+            <TooltipProvider>
+              <ToastProvider>
+                <LoadingProvider>
+                  <ProfileModalProviderWrapper>
+                    {children}
+                  </ProfileModalProviderWrapper>
+                </LoadingProvider>
+              </ToastProvider>
+            </TooltipProvider>
           </LenisProvider>
         </ThemeProvider>
       </body>

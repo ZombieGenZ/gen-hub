@@ -1066,11 +1066,29 @@ export class WarehouseManagerInventoryService {
     }
 
     if (hasMismatch && dto.is_customer_agreed === undefined) {
-      throw new BadRequestException(
-        lang === 'vi'
+      throw new BadRequestException({
+        message: lang === 'vi'
           ? 'Số lượng thực tế khác với dự kiến. Vui lòng xác nhận khách hàng có đồng ý hay không (is_customer_agreed).'
           : 'Actual quantity differs from expected. Please confirm customer agreement (is_customer_agreed).',
-      );
+        require_customer_agreement: true,
+        mismatches: dto.details
+          .map(item => {
+            const existingDetail = receipt.details.find(d => d.id === item.detail_id);
+            if (!existingDetail) return null;
+            const expected = Number(existingDetail.expected_qty);
+            if (expected !== item.actual_qty) {
+              return {
+                detail_id: existingDetail.id,
+                product_id: existingDetail.product_id,
+                expected_qty: expected,
+                actual_qty: item.actual_qty,
+                diff: item.actual_qty - expected
+              };
+            }
+            return null;
+          })
+          .filter(Boolean),
+      });
     }
 
     const finalStatus =

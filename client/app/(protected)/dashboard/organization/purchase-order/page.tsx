@@ -228,9 +228,20 @@ export default function InboundListPage() {
         }
     };
 
-    const handleCreateSuccess = () => {
-        fetchItems();
-    };
+    const handleCreateSuccess = useCallback(() => {
+        // Always navigate back to page 1, "ALL" tab so the new PENDING ticket
+        // is guaranteed to be visible.  If we are already there, the state
+        // setters are no-ops and the fetchItems dependency won't change, so we
+        // call fetchItems() directly as a fallback.
+        if (currentPage !== 1 || activeTab !== "ALL") {
+            setCurrentPage(1);
+            setActiveTab("ALL");
+            // useEffect([fetchItems]) will fire automatically when the
+            // fetchItems useCallback is re-created with the new state values.
+        } else {
+            fetchItems();
+        }
+    }, [currentPage, activeTab, fetchItems]);
 
     return (
         <div className="space-y-6">
