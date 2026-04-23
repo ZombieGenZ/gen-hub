@@ -646,27 +646,28 @@ export function WarehouseBookingPanel({
                             <p className="text-xs text-slate-500 dark:text-slate-400">Chọn dịch vụ từ menu để thêm vào danh sách:</p>
 
                             {/* Dropdown select */}
-                            <select
+                            <Select
                                 value=""
-                                onChange={(e) => {
-                                    const addonId = e.target.value;
+                                onValueChange={(addonId) => {
                                     if (addonId && !selectedAddons.includes(addonId)) {
                                         setSelectedAddons(prev => [...prev, addonId]);
                                     }
-                                    e.currentTarget.value = "";
                                 }}
-                                className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
                             >
-                                <option value="">-- Nhấn để chọn dịch vụ --</option>
-                                {addons
-                                    .filter(addon => !selectedAddons.includes(addon.id))
-                                    .map(addon => (
-                                        <option key={addon.id} value={addon.id}>
-                                            {addon.name} — +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
-                                        </option>
-                                    ))
-                                }
-                            </select>
+                                <SelectTrigger className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-teal-500 cursor-pointer">
+                                    <SelectValue placeholder="-- Nhấn để chọn dịch vụ --" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    {addons
+                                        .filter(addon => !selectedAddons.includes(addon.id))
+                                        .map(addon => (
+                                            <SelectItem key={addon.id} value={addon.id}>
+                                                {addon.name} — +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                            </SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
+                            </Select>
 
                             {/* Selected addons list */}
                             {selectedAddons.length > 0 && (
