@@ -388,46 +388,103 @@
 .hero-search-bar__rental-option {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
     background: var(--background);
     cursor: pointer;
     text-align: left;
-    transition: all 0.15s ease;
+    transition: all 0.18s ease;
+    position: relative;
 }
 
 .hero-search-bar__rental-option:hover {
-    border-color: var(--foreground);
-    background: var(--muted);
+    border-color: #0F766E;
+    background: color-mix(in srgb, #0F766E, transparent 96%);
+    box-shadow: 0 2px 12px color-mix(in srgb, #0F766E, transparent 88%);
 }
 
 .hero-search-bar__rental-option--selected {
-    border-color: var(--primary);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--primary), transparent 97%) 0%, color-mix(in srgb, var(--primary), transparent 92%) 100%);
+    border-color: #0F766E;
+    background: color-mix(in srgb, #0F766E, transparent 94%);
+    box-shadow: 0 2px 16px color-mix(in srgb, #0F766E, transparent 84%);
 }
 
 .hero-search-bar__rental-icon {
-    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     flex-shrink: 0;
+}
+
+.rental-icon-bg--teal {
+    background: linear-gradient(135deg, #ccfbf1, #99f6e4);
+    color: #0F766E;
+}
+
+.rental-icon-bg--blue {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
+}
+
+.rental-icon-bg--violet {
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    color: #6d28d9;
+}
+
+.hero-search-bar__rental-option--selected .rental-icon-bg--teal {
+    background: linear-gradient(135deg, #0F766E, #0d9488);
+    color: #fff;
+}
+
+.hero-search-bar__rental-option--selected .rental-icon-bg--blue {
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    color: #fff;
+}
+
+.hero-search-bar__rental-option--selected .rental-icon-bg--violet {
+    background: linear-gradient(135deg, #6d28d9, #7c3aed);
+    color: #fff;
 }
 
 .hero-search-bar__rental-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    flex: 1;
 }
 
 .hero-search-bar__rental-label {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--foreground);
+    line-height: 1.3;
+}
+
+.hero-search-bar__rental-option--selected .hero-search-bar__rental-label {
+    color: #0F766E;
 }
 
 .hero-search-bar__rental-desc {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted-foreground);
+    line-height: 1.4;
+}
+
+.hero-search-bar__rental-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0F766E;
+    color: #fff;
+    flex-shrink: 0;
 }
 
 /* Dropdown Clear Button */

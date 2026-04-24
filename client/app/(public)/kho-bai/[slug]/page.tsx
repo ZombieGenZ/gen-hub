@@ -331,7 +331,12 @@ function WarehouseDetailPage({ id }: { id: string }) {
 
                     {/* RIGHT COLUMN: Booking Widget (Sticky) */}
                     <div className="lg:col-span-4 relative">
-                        <WarehouseBookingPanel price={property.price} warehouseId={property.id} rows={property.rows} />
+                        <WarehouseBookingPanel 
+                            price={property.price} 
+                            warehouseId={property.id} 
+                            rows={property.rows}
+                            isSharedWarehouse={property.is_shared_warehouse ?? false}
+                        />
                     </div>
 
                 </div >

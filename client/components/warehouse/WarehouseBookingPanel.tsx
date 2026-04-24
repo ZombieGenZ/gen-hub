@@ -46,6 +46,7 @@ interface WarehouseBookingPanelProps {
     warehouseName?: string;
     price: number;
     unit?: string;
+    isSharedWarehouse?: boolean;
     rows?: {
         id: string;
         name: string;
@@ -76,6 +77,7 @@ export function WarehouseBookingPanel({
     warehouseName,
     price,
     unit = "tháng",
+    isSharedWarehouse = false,
     rows: rowsProp,
 }: WarehouseBookingPanelProps) {
     const router = useRouter();
@@ -412,12 +414,18 @@ export function WarehouseBookingPanel({
                 </div>
             )}
 
-            <div className="bg-teal-50/50 border-b border-slate-100 dark:border-slate-700 py-4 px-6">
+            <div className="bg-teal-50/50 border-b border-slate-100 dark:border-slate-700 py-4 px-6 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#0F766E] uppercase tracking-wide">Báo giá thuê kho</h3>
+                {isSharedWarehouse ? (
+                    <Badge className="bg-orange-100 text-orange-700 border-none hover:bg-orange-100 text-[11px]">Kho chia sẻ</Badge>
+                ) : (
+                    <Badge className="bg-teal-100 text-teal-700 border-none hover:bg-teal-100 text-[11px]">Kho riêng</Badge>
+                )}
             </div>
 
             <div className="p-6 space-y-6">
-                {/* Rental Type Tabs */}
+                {/* Rental Type Tabs — chỉ hiển thị khi là kho chia sẻ */}
+                {isSharedWarehouse && (
                 <div className="flex border-b border-slate-100 dark:border-slate-700">
                     <button
                         onClick={() => setRentalType("whole")}
@@ -448,6 +456,7 @@ export function WarehouseBookingPanel({
                         )}
                     </button>
                 </div>
+                )}
 
                 {/* Price Display */}
                 <div>
@@ -525,8 +534,8 @@ export function WarehouseBookingPanel({
                         )}
                     </div>
 
-                    {/* Row Selection (for partial rental) */}
-                    {rentalType === "row" && (
+                    {/* Row Selection — chỉ hiển thị khi kho chia sẻ và đang chọn tab dãy */}
+                    {isSharedWarehouse && rentalType === "row" && (
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                             <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Chọn Dãy/Kệ</Label>
                             {rows.length > 0 ? (
