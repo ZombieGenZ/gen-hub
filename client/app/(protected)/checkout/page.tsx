@@ -866,10 +866,10 @@ function CheckoutContainer() {
                     },
                     rental_type: rentalType,
                     row_template_ids: rowIds,
-                    row_details: rowIds.map(id => ({
-                        id,
-                        name: getFriendlyName(id)
-                    })),
+                    row_details: rowIds.map(id => {
+                        const matchedRow = (property.rows || []).find((r: any) => r.id === id);
+                        return { id, name: matchedRow?.name || id };
+                    }),
                     duration_tier_id: durationId || '',
                     duration_tier_name: durationTierLabel,
                     duration_months: durationMonths,
