@@ -23,7 +23,21 @@ import {
     Ban,
     MoreHorizontal,
     Bell,
+    AlertCircle,
 } from 'lucide-react';
+import {
+    filterReasonInput,
+    filterTitleInput,
+    validateBanReason,
+    validateUnbanNote,
+    validateNotifyTitle,
+    validateNotifyContent,
+    validateBanDuration,
+    hasErrors,
+    parseApiErrors,
+    type FormErrors,
+} from '@/lib/validation.utils';
+import { sanitizeDisplayValue } from '@/lib/sanitize.utils';
 
 type DurationUnit = 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 
@@ -94,6 +108,12 @@ export default function UsersPage() {
     const [notifyContent, setNotifyContent] = useState('');
     const [notifyType, setNotifyType] = useState('INFO');
     const [isSendingNotify, setIsSendingNotify] = useState(false);
+
+    // Validation errors cho từng modal
+    const [bulkBanErrors, setBulkBanErrors] = useState<FormErrors>({});
+    const [banErrors, setBanErrors] = useState<FormErrors>({});
+    const [unbanErrors, setUnbanErrors] = useState<FormErrors>({});
+    const [notifyErrors, setNotifyErrors] = useState<FormErrors>({});
 
     // Debounce search
     useEffect(() => {
@@ -204,26 +224,41 @@ export default function UsersPage() {
     };
 
     const submitBulkBan = async () => {
-        if (selectedIds.size === 0 || !bulkBanReason.trim()) return;
+        if (selectedIds.size === 0) return;
+        // Validate trước khi submit
+        const newErrors: FormErrors = {
+            reason: validateBanReason(bulkBanReason),
+            ...(!isBulkBanPermanent && { duration: validateBanDuration(bulkBanDurationValue) }),
+        };
+        setBulkBanErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error('Vui lòng kiểm tra lại thông tin');
+            return;
+        }
         setIsBulkBanning(true);
         try {
             await userManagementApi.bulkBanUsers({
                 user_ids: Array.from(selectedIds),
-                reason: bulkBanReason,
+                reason: bulkBanReason.trim(),
                 is_permanent: isBulkBanPermanent,
                 duration_value: isBulkBanPermanent ? undefined : bulkBanDurationValue,
                 duration_type: isBulkBanPermanent ? undefined : bulkBanDurationType,
             });
-            toast.success(t('userManagement.bulkBanSuccess') || `Banned ${selectedIds.size} users`);
+            toast.success(t('userManagement.bulkBanSuccess') || `Đã cấm ${selectedIds.size} người dùng`);
             setShowBulkBanModal(false);
             setBulkBanReason('');
+            setBulkBanErrors({});
             setIsBulkBanPermanent(false);
             setSelectedIds(new Set());
             fetchUsers();
             fetchStats();
         } catch (error) {
             console.error('Failed to bulk ban:', error);
-            toast.error(t('common.error') || 'Failed to ban users');
+            const apiErrors = parseApiErrors(error);
+            if (hasErrors(apiErrors)) {
+                setBulkBanErrors(apiErrors);
+            }
+            toast.error(t('common.error') || 'Cấm người dùng thất bại');
         } finally {
             setIsBulkBanning(false);
         }
@@ -251,26 +286,42 @@ export default function UsersPage() {
         setBanDurationValue(1);
         setBanDurationType('days');
         setIsBanPermanent(false);
+        setBanErrors({});
         setShowBanModal(true);
     };
 
     const submitBanUser = async () => {
-        if (!selectedUser || !banReason.trim()) return;
+        if (!selectedUser) return;
+        // Validate trước khi submit
+        const newErrors: FormErrors = {
+            reason: validateBanReason(banReason),
+            ...(!isBanPermanent && { duration: validateBanDuration(banDurationValue) }),
+        };
+        setBanErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error('Vui lòng kiểm tra lại thông tin');
+            return;
+        }
         setIsBanning(true);
         try {
             await userManagementApi.banUser(selectedUser.id, {
-                reason: banReason,
+                reason: banReason.trim(),
                 is_permanent: isBanPermanent,
                 duration_value: isBanPermanent ? undefined : banDurationValue,
                 duration_type: isBanPermanent ? undefined : banDurationType,
             });
-            toast.success(t('userManagement.banSuccess') || 'User banned');
+            toast.success(t('userManagement.banSuccess') || 'Đã cấm người dùng');
             fetchUsers();
             fetchStats();
+            setBanErrors({});
             setShowBanModal(false);
         } catch (error) {
             console.error('Failed to ban:', error);
-            toast.error(t('common.error') || 'Failed to ban user');
+            const apiErrors = parseApiErrors(error);
+            if (hasErrors(apiErrors)) {
+                setBanErrors(apiErrors);
+            }
+            toast.error(t('common.error') || 'Cấm người dùng thất bại');
         } finally {
             setIsBanning(false);
         }
@@ -280,21 +331,27 @@ export default function UsersPage() {
         e.stopPropagation();
         setSelectedUser(user);
         setUnbanNote('');
+        setUnbanErrors({});
         setShowUnbanModal(true);
     };
 
     const submitUnbanUser = async () => {
         if (!selectedUser) return;
+        // Validate ghi chú (optional, nhưng kiểm tra độ dài)
+        const newErrors: FormErrors = { note: validateUnbanNote(unbanNote) };
+        setUnbanErrors(newErrors);
+        if (hasErrors(newErrors)) return;
         setIsUnbanning(true);
         try {
-            await userManagementApi.unbanUser(selectedUser.id, { note: unbanNote });
-            toast.success(t('userManagement.unbanSuccess') || 'User unbanned');
+            await userManagementApi.unbanUser(selectedUser.id, { note: unbanNote.trim() || undefined });
+            toast.success(t('userManagement.unbanSuccess') || 'Đã bỏ cấm người dùng');
             fetchUsers();
             fetchStats();
+            setUnbanErrors({});
             setShowUnbanModal(false);
         } catch (error) {
             console.error('Failed to unban:', error);
-            toast.error(t('common.error') || 'Failed to unban user');
+            toast.error(t('common.error') || 'Bỏ cấm thất bại');
         } finally {
             setIsUnbanning(false);
         }
@@ -304,25 +361,39 @@ export default function UsersPage() {
         setNotifyTitle('');
         setNotifyContent('');
         setNotifyType('INFO');
+        setNotifyErrors({});
         setShowBulkNotifyModal(true);
     };
 
     const submitBulkNotify = async () => {
-        if (selectedIds.size === 0 || !notifyTitle.trim() || !notifyContent.trim()) return;
+        if (selectedIds.size === 0) return;
+        // Validate trước khi submit
+        const newErrors: FormErrors = {
+            title: validateNotifyTitle(notifyTitle),
+            content: validateNotifyContent(notifyContent),
+        };
+        setNotifyErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error('Vui lòng kiểm tra lại thông tin thông báo');
+            return;
+        }
         setIsSendingNotify(true);
         try {
             await userManagementApi.bulkSendNotification({
                 user_ids: Array.from(selectedIds),
-                title: notifyTitle,
-                content: notifyContent,
+                title: notifyTitle.trim(),
+                content: notifyContent.trim(),
                 type: notifyType,
             });
-            toast.success(t('userManagement.bulkNotifySuccess') || `Sent notification to ${selectedIds.size} users`);
+            toast.success(t('userManagement.bulkNotifySuccess') || `Đã gửi thông báo đến ${selectedIds.size} người dùng`);
+            setNotifyErrors({});
             setShowBulkNotifyModal(false);
             setSelectedIds(new Set());
         } catch (error) {
             console.error('Failed to send bulk notification:', error);
-            toast.error(t('common.error') || 'Failed to send notifications');
+            const apiErrors = parseApiErrors(error);
+            if (hasErrors(apiErrors)) setNotifyErrors(apiErrors);
+            toast.error(t('common.error') || 'Gửi thông báo thất bại');
         } finally {
             setIsSendingNotify(false);
         }
@@ -697,20 +768,34 @@ export default function UsersPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">
-                            {t('userManagement.bulkBanTitle') || `Ban ${selectedIds.size} Users`}
+                            {t('userManagement.bulkBanTitle') || `Cấm ${selectedIds.size} người dùng`}
                         </h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.reason') || 'Reason'} *
+                                    {t('userManagement.reason') || 'Lý do'} *
                                 </label>
                                 <textarea
                                     value={bulkBanReason}
-                                    onChange={(e) => setBulkBanReason(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setBulkBanReason(filtered);
+                                        setBulkBanErrors(prev => ({ ...prev, reason: validateBanReason(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        bulkBanErrors.reason ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Enter ban reason...'}
+                                    maxLength={1000}
+                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Nhập lý do cấm (ít nhất 10 ký tự)...'}
                                 />
+                                {bulkBanErrors.reason && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {bulkBanErrors.reason}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{bulkBanReason.length}/1000</p>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -722,7 +807,7 @@ export default function UsersPage() {
                                     className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
                                 />
                                 <label htmlFor="bulkBanPermanent" className="text-white text-sm cursor-pointer select-none">
-                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                    {t('userManagement.permanentBan') || 'Cấm vĩnh viễn'}
                                 </label>
                             </div>
 
@@ -730,30 +815,42 @@ export default function UsersPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.duration') || 'Duration'}
+                                            {t('userManagement.duration') || 'Thời hạn'}
                                         </label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={bulkBanDurationValue}
-                                            onChange={(e) => setBulkBanDurationValue(parseInt(e.target.value) || 1)}
-                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 1;
+                                                setBulkBanDurationValue(val);
+                                                setBulkBanErrors(prev => ({ ...prev, duration: validateBanDuration(val) }));
+                                            }}
+                                            className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white focus:outline-none transition-colors ${
+                                                bulkBanErrors.duration ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                            }`}
                                         />
+                                        {bulkBanErrors.duration && (
+                                            <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                                {bulkBanErrors.duration}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.unit') || 'Unit'}
+                                            {t('userManagement.unit') || 'Đơn vị'}
                                         </label>
                                         <select
                                             value={bulkBanDurationType}
                                             onChange={(e) => setBulkBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
-                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
-                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
-                                            <option value="days">{t('common.days') || 'Days'}</option>
-                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
-                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                            <option value="minutes">{t('common.minutes') || 'Phút'}</option>
+                                            <option value="hours">{t('common.hours') || 'Giờ'}</option>
+                                            <option value="days">{t('common.days') || 'Ngày'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Tuần'}</option>
+                                            <option value="months">{t('common.months') || 'Tháng'}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -761,21 +858,18 @@ export default function UsersPage() {
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => {
-                                    setShowBulkBanModal(false);
-                                    setBulkBanReason('');
-                                }}
+                                onClick={() => { setShowBulkBanModal(false); setBulkBanReason(''); setBulkBanErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={submitBulkBan}
-                                disabled={isBulkBanning || !bulkBanReason.trim()}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isBulkBanning}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isBulkBanning && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.confirmBulkBan') || 'Ban Users'}
+                                {t('userManagement.confirmBulkBan') || 'Cấm người dùng'}
                             </button>
                         </div>
                     </div>
@@ -787,20 +881,34 @@ export default function UsersPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">
-                            {t('userManagement.banUserTitle') || 'Ban User'}: {selectedUser.name}
+                            {t('userManagement.banUserTitle') || 'Cấm người dùng'}: {selectedUser.name}
                         </h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.reason') || 'Reason'} *
+                                    {t('userManagement.reason') || 'Lý do'} *
                                 </label>
                                 <textarea
                                     value={banReason}
-                                    onChange={(e) => setBanReason(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setBanReason(filtered);
+                                        setBanErrors(prev => ({ ...prev, reason: validateBanReason(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        banErrors.reason ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Enter ban reason...'}
+                                    maxLength={1000}
+                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Nhập lý do cấm (ít nhất 10 ký tự)...'}
                                 />
+                                {banErrors.reason && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {banErrors.reason}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{banReason.length}/1000</p>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -812,7 +920,7 @@ export default function UsersPage() {
                                     className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
                                 />
                                 <label htmlFor="banPermanent" className="text-white text-sm cursor-pointer select-none">
-                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                    {t('userManagement.permanentBan') || 'Cấm vĩnh viễn'}
                                 </label>
                             </div>
 
@@ -820,30 +928,42 @@ export default function UsersPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.duration') || 'Duration'}
+                                            {t('userManagement.duration') || 'Thời hạn'}
                                         </label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={banDurationValue}
-                                            onChange={(e) => setBanDurationValue(parseInt(e.target.value) || 1)}
-                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 1;
+                                                setBanDurationValue(val);
+                                                setBanErrors(prev => ({ ...prev, duration: validateBanDuration(val) }));
+                                            }}
+                                            className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white focus:outline-none transition-colors ${
+                                                banErrors.duration ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                            }`}
                                         />
+                                        {banErrors.duration && (
+                                            <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                                {banErrors.duration}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.unit') || 'Unit'}
+                                            {t('userManagement.unit') || 'Đơn vị'}
                                         </label>
                                         <select
                                             value={banDurationType}
                                             onChange={(e) => setBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
-                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
-                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
-                                            <option value="days">{t('common.days') || 'Days'}</option>
-                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
-                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                            <option value="minutes">{t('common.minutes') || 'Phút'}</option>
+                                            <option value="hours">{t('common.hours') || 'Giờ'}</option>
+                                            <option value="days">{t('common.days') || 'Ngày'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Tuần'}</option>
+                                            <option value="months">{t('common.months') || 'Tháng'}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -851,18 +971,18 @@ export default function UsersPage() {
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowBanModal(false)}
+                                onClick={() => { setShowBanModal(false); setBanErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={submitBanUser}
-                                disabled={isBanning || !banReason.trim()}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isBanning}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isBanning && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.ban') || 'Ban'}
+                                {t('userManagement.ban') || 'Cấm'}
                             </button>
                         </div>
                     </div>
@@ -874,28 +994,42 @@ export default function UsersPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">
-                            {t('userManagement.unbanUserTitle') || 'Unban User'}: {selectedUser.name}
+                            {t('userManagement.unbanUserTitle') || 'Bỏ cấm người dùng'}: {selectedUser.name}
                         </h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.note') || 'Note'} ({t('common.optional') || 'Optional'})
+                                    {t('userManagement.note') || 'Ghi chú'} ({t('common.optional') || 'Tùy chọn'})
                                 </label>
                                 <textarea
                                     value={unbanNote}
-                                    onChange={(e) => setUnbanNote(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setUnbanNote(filtered);
+                                        setUnbanErrors(prev => ({ ...prev, note: validateUnbanNote(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        unbanErrors.note ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.unbanNotePlaceholder') || 'Enter note...'}
+                                    maxLength={500}
+                                    placeholder={t('userManagement.unbanNotePlaceholder') || 'Nhập ghi chú...'}
                                 />
+                                {unbanErrors.note && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {unbanErrors.note}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{unbanNote.length}/500</p>
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowUnbanModal(false)}
+                                onClick={() => { setShowUnbanModal(false); setUnbanErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={submitUnbanUser}
@@ -920,10 +1054,10 @@ export default function UsersPage() {
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold text-white">
-                                    {t('userManagement.bulkNotifyTitle') || 'Send Notification'}
+                                    {t('userManagement.bulkNotifyTitle') || 'Gửi thông báo'}
                                 </h2>
                                 <p className="text-sm text-[var(--text-muted)]">
-                                    {t('userManagement.toUsers').replace('{count}', String(selectedIds.size)) || `To ${selectedIds.size} selected users`}
+                                    {t('userManagement.toUsers').replace('{count}', String(selectedIds.size)) || `Đến ${selectedIds.size} người dùng đã chọn`}
                                 </p>
                             </div>
                         </div>
@@ -931,20 +1065,34 @@ export default function UsersPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.notifyTitle') || 'Title'} *
+                                    {t('userManagement.notifyTitle') || 'Tiêu đề'} *
                                 </label>
                                 <input
                                     type="text"
                                     value={notifyTitle}
-                                    onChange={(e) => setNotifyTitle(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                                    placeholder={t('userManagement.notifyTitlePlaceholder') || 'Notification title'}
+                                    onChange={(e) => {
+                                        const filtered = filterTitleInput(e.target.value);
+                                        setNotifyTitle(filtered);
+                                        setNotifyErrors(prev => ({ ...prev, title: validateNotifyTitle(filtered) }));
+                                    }}
+                                    maxLength={200}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none transition-colors ${
+                                        notifyErrors.title ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
+                                    placeholder={t('userManagement.notifyTitlePlaceholder') || 'Tiêu đề thông báo'}
                                 />
+                                {notifyErrors.title && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {notifyErrors.title}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{notifyTitle.length}/200</p>
                             </div>
 
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.notifyType') || 'Type'}
+                                    {t('userManagement.notifyType') || 'Loại'}
                                 </label>
                                 <select
                                     value={notifyType}
@@ -960,32 +1108,46 @@ export default function UsersPage() {
 
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                    {t('userManagement.notifyContent') || 'Content'} *
+                                    {t('userManagement.notifyContent') || 'Nội dung'} *
                                 </label>
                                 <textarea
                                     value={notifyContent}
-                                    onChange={(e) => setNotifyContent(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setNotifyContent(filtered);
+                                        setNotifyErrors(prev => ({ ...prev, content: validateNotifyContent(filtered) }));
+                                    }}
+                                    maxLength={2000}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        notifyErrors.content ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={4}
-                                    placeholder={t('userManagement.notifyContentPlaceholder') || 'Notification content...'}
+                                    placeholder={t('userManagement.notifyContentPlaceholder') || 'Nội dung thông báo...'}
                                 />
+                                {notifyErrors.content && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {notifyErrors.content}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{notifyContent.length}/2000</p>
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowBulkNotifyModal(false)}
+                                onClick={() => { setShowBulkNotifyModal(false); setNotifyErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={submitBulkNotify}
-                                disabled={isSendingNotify || !notifyTitle.trim() || !notifyContent.trim()}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isSendingNotify}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSendingNotify && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('common.send') || 'Send'}
+                                {t('common.send') || 'Gửi'}
                             </button>
                         </div>
                     </div>

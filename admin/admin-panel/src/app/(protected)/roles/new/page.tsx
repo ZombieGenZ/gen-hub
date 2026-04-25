@@ -13,7 +13,17 @@ import {
     Key,
     CheckCircle2,
     Star,
+    AlertCircle,
 } from 'lucide-react';
+import {
+    filterNameInput,
+    filterReasonInput,
+    validateRoleName,
+    validateRoleDescription,
+    hasErrors,
+    parseApiErrors,
+    type FormErrors,
+} from '@/lib/validation.utils';
 
 export default function NewRolePage() {
     const router = useRouter();
@@ -28,6 +38,10 @@ export default function NewRolePage() {
     const [description, setDescription] = useState('');
     const [isDefault, setIsDefault] = useState(false);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<Set<string>>(new Set());
+
+    // Validation errors (real-time)
+    const [errors, setErrors] = useState<FormErrors<'name' | 'description'>>({});
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
 
     // Search for permissions
     const [permissionSearch, setPermissionSearch] = useState('');
@@ -49,8 +63,52 @@ export default function NewRolePage() {
         fetchPermissions();
     }, [fetchPermissions]);
 
+    // Validate toàn bộ form, trả về true nếu hợp lệ
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors<'name' | 'description'> = {
+            name: validateRoleName(name),
+            description: validateRoleDescription(description),
+        };
+        setErrors(newErrors);
+        return !hasErrors(newErrors);
+    };
+
+    // Real-time validate từng field khi người dùng rời khỏi field (blur)
+    const handleNameBlur = () => {
+        setTouched(prev => ({ ...prev, name: true }));
+        setErrors(prev => ({ ...prev, name: validateRoleName(name) }));
+    };
+
+    const handleDescriptionBlur = () => {
+        setTouched(prev => ({ ...prev, description: true }));
+        setErrors(prev => ({ ...prev, description: validateRoleDescription(description) }));
+    };
+
+    // Xử lý thay đổi name — lọc ký tự đặc biệt và validate real-time
+    const handleNameChange = (value: string) => {
+        const filtered = filterNameInput(value);
+        setName(filtered);
+        if (touched.name) {
+            setErrors(prev => ({ ...prev, name: validateRoleName(filtered) }));
+        }
+    };
+
+    // Xử lý thay đổi description — lọc ký tự nguy hiểm và validate real-time
+    const handleDescriptionChange = (value: string) => {
+        const filtered = filterReasonInput(value);
+        setDescription(filtered);
+        if (touched.description) {
+            setErrors(prev => ({ ...prev, description: validateRoleDescription(filtered) }));
+        }
+    };
+
     const handleSave = async () => {
-        if (!name.trim()) return;
+        // Đánh dấu tất cả fields là đã touched
+        setTouched({ name: true, description: true });
+        if (!validateForm()) {
+            toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
+            return;
+        }
         setIsSaving(true);
         try {
             await rolesApi.createRole({
@@ -59,11 +117,18 @@ export default function NewRolePage() {
                 is_default: isDefault,
                 permission_ids: Array.from(selectedPermissionIds),
             });
-            toast.success(t('roles.createSuccess') || 'Role created successfully');
+            toast.success(t('roles.createSuccess') || 'Tạo vai trò thành công');
             router.push('/roles');
         } catch (error) {
             console.error('Failed to create role:', error);
-            toast.error(t('roles.createError') || 'Failed to create role');
+            // Echo API validation errors về field-level
+            const apiErrors = parseApiErrors(error);
+            if (hasErrors(apiErrors)) {
+                setErrors(prev => ({ ...prev, ...apiErrors }));
+                toast.error('Dữ liệu không hợp lệ, vui lòng kiểm tra lại');
+            } else {
+                toast.error(t('roles.createError') || 'Tạo vai trò thất bại');
+            }
         } finally {
             setIsSaving(false);
         }
@@ -114,8 +179,8 @@ export default function NewRolePage() {
                     </div>
                     <button
                         onClick={handleSave}
-                        disabled={isSaving || !name.trim()}
-                        className="flex items-center gap-2 px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white rounded-lg transition-colors disabled:opacity-50"
+                        disabled={isSaving || !name.trim() || hasErrors(errors)}
+                        className="flex items-center gap-2 px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -144,10 +209,25 @@ export default function NewRolePage() {
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                                    placeholder={t('roles.namePlaceholder') || 'Enter role name'}
+                                    onChange={(e) => handleNameChange(e.target.value)}
+                                    onBlur={handleNameBlur}
+                                    maxLength={100}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none transition-colors ${
+                                        touched.name && errors.name
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : touched.name && !errors.name && name.trim()
+                                            ? 'border-green-500 focus:border-green-500'
+                                            : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
+                                    placeholder={t('roles.namePlaceholder') || 'Nhập tên vai trò'}
                                 />
+                                {touched.name && errors.name && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {errors.name}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{name.length}/100</p>
                             </div>
 
                             <div>
@@ -156,11 +236,24 @@ export default function NewRolePage() {
                                 </label>
                                 <textarea
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => handleDescriptionChange(e.target.value)}
+                                    onBlur={handleDescriptionBlur}
                                     rows={3}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                                    placeholder={t('roles.descriptionPlaceholder') || 'Enter role description'}
+                                    maxLength={500}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none transition-colors resize-none ${
+                                        touched.description && errors.description
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
+                                    placeholder={t('roles.descriptionPlaceholder') || 'Nhập mô tả vai trò'}
                                 />
+                                {touched.description && errors.description && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {errors.description}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{description.length}/500</p>
                             </div>
 
                             <div className="flex items-center justify-between py-3 border-t border-[var(--border-primary)]">

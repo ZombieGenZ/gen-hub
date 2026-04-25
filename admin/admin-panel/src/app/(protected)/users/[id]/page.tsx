@@ -40,7 +40,23 @@ import {
     Bell,
     Send,
     Search,
+    AlertCircle,
 } from 'lucide-react';
+import {
+    filterReasonInput,
+    filterTitleInput,
+    validateBanReason,
+    validateUnbanNote,
+    validateWarnReason,
+    validateWarnCategory,
+    validateNotifyTitle,
+    validateNotifyContent,
+    validateBanDuration,
+    hasErrors,
+    parseApiErrors,
+    type FormErrors,
+} from '@/lib/validation.utils';
+import { sanitizeDisplayValue } from '@/lib/sanitize.utils';
 
 type DurationUnit = 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 
@@ -109,6 +125,12 @@ export default function UserDetailPage() {
     const [notificationTitle, setNotificationTitle] = useState('');
     const [notificationContent, setNotificationContent] = useState('');
     const [isSendingNotification, setIsSendingNotification] = useState(false);
+
+    // Validation error states
+    const [banErrors, setBanErrors] = useState<FormErrors<'reason' | 'duration'>>({});
+    const [unbanErrors, setUnbanErrors] = useState<FormErrors<'note'>>({});
+    const [warnErrors, setWarnErrors] = useState<FormErrors<'category' | 'reason' | 'duration'>>({});
+    const [notifErrors, setNotifErrors] = useState<FormErrors<'title' | 'content'>>({});
 
     // Confirmation modal states
     const [showClearWarningsConfirm, setShowClearWarningsConfirm] = useState(false);
@@ -311,7 +333,16 @@ export default function UserDetailPage() {
     }, [activeTab, fetchWarnings, fetchSessions, fetchRolesPermissions, fetchNotifications, sessionPage, notificationPage]);
 
     const handleBanUser = async () => {
-        if (!id || !banReason.trim()) return;
+        if (!id) return;
+        const newErrors: FormErrors<'reason' | 'duration'> = {
+            reason: validateBanReason(banReason),
+            ...(banIsPermanent ? {} : { duration: validateBanDuration(banDurationValue) }),
+        };
+        setBanErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error(t('common.fixErrors') || 'Vui lòng kiểm tra lại các trường bắt buộc');
+            return;
+        }
         setIsBanning(true);
         try {
             const result = await userManagementApi.banUser(id as string, {
@@ -326,10 +357,15 @@ export default function UserDetailPage() {
             setBanIsPermanent(false);
             setBanDurationValue(1);
             setBanDurationType('days');
-            toast.success(t('userManagement.banSuccess') || 'User banned successfully');
+            setBanErrors({});
+            toast.success(t('userManagement.banSuccess') || 'Đã cấm người dùng thành công');
         } catch (error) {
             console.error('Failed to ban user:', error);
-            toast.error(t('userManagement.banError') || 'Failed to ban user');
+            const apiErrors = parseApiErrors(error);
+            if (Object.keys(apiErrors).length > 0) {
+                setBanErrors(apiErrors as FormErrors<'reason' | 'duration'>);
+            }
+            toast.error(t('userManagement.banError') || 'Không thể cấm người dùng');
         } finally {
             setIsBanning(false);
         }
@@ -337,23 +373,40 @@ export default function UserDetailPage() {
 
     const handleUnbanUser = async () => {
         if (!id) return;
+        const newErrors: FormErrors<'note'> = { note: validateUnbanNote(unbanNote) };
+        setUnbanErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error(t('common.fixErrors') || 'Vui lòng kiểm tra lại các trường');
+            return;
+        }
         setIsUnbanning(true);
         try {
             const result = await userManagementApi.unbanUser(id as string, { note: unbanNote });
             setUser(result);
             setShowUnbanModal(false);
             setUnbanNote('');
-            toast.success(t('userManagement.unbanSuccess') || 'User unbanned successfully');
+            setUnbanErrors({});
+            toast.success(t('userManagement.unbanSuccess') || 'Đã bỏ cấm người dùng thành công');
         } catch (error) {
             console.error('Failed to unban user:', error);
-            toast.error(t('userManagement.unbanError') || 'Failed to unban user');
+            toast.error(t('userManagement.unbanError') || 'Không thể bỏ cấm người dùng');
         } finally {
             setIsUnbanning(false);
         }
     };
 
     const handleWarnUser = async () => {
-        if (!id || !warnCategoryId || !warnReason.trim()) return;
+        if (!id) return;
+        const newErrors: FormErrors<'category' | 'reason' | 'duration'> = {
+            category: validateWarnCategory(warnCategoryId),
+            reason: validateWarnReason(warnReason),
+            ...(warnIsPermanent ? {} : { duration: validateBanDuration(warnDurationValue) }),
+        };
+        setWarnErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error(t('common.fixErrors') || 'Vui lòng kiểm tra lại các trường bắt buộc');
+            return;
+        }
         setIsWarning(true);
         try {
             await userManagementApi.warnUser(id as string, {
@@ -369,12 +422,17 @@ export default function UserDetailPage() {
             setWarnIsPermanent(false);
             setWarnDurationValue(1);
             setWarnDurationType('months');
-            toast.success(t('userManagement.warnSuccess') || 'User warned successfully');
+            setWarnErrors({});
+            toast.success(t('userManagement.warnSuccess') || 'Đã cảnh báo người dùng thành công');
             fetchUser();
             fetchWarnings();
         } catch (error) {
             console.error('Failed to warn user:', error);
-            toast.error(t('userManagement.warnError') || 'Failed to warn user');
+            const apiErrors = parseApiErrors(error);
+            if (Object.keys(apiErrors).length > 0) {
+                setWarnErrors(apiErrors as FormErrors<'category' | 'reason' | 'duration'>);
+            }
+            toast.error(t('userManagement.warnError') || 'Không thể cảnh báo người dùng');
         } finally {
             setIsWarning(false);
         }
@@ -408,7 +466,16 @@ export default function UserDetailPage() {
     };
 
     const handleSendNotification = async () => {
-        if (!id || !notificationTitle.trim() || !notificationContent.trim()) return;
+        if (!id) return;
+        const newErrors: FormErrors<'title' | 'content'> = {
+            title: validateNotifyTitle(notificationTitle),
+            content: validateNotifyContent(notificationContent),
+        };
+        setNotifErrors(newErrors);
+        if (hasErrors(newErrors)) {
+            toast.error(t('common.fixErrors') || 'Vui lòng kiểm tra lại các trường bắt buộc');
+            return;
+        }
         setIsSendingNotification(true);
         try {
             await userManagementApi.sendNotification({
@@ -419,11 +486,16 @@ export default function UserDetailPage() {
             setShowSendNotificationModal(false);
             setNotificationTitle('');
             setNotificationContent('');
-            toast.success(t('userManagement.sendNotificationSuccess') || 'Notification sent');
+            setNotifErrors({});
+            toast.success(t('userManagement.sendNotificationSuccess') || 'Đã gửi thông báo thành công');
             fetchNotifications();
         } catch (error) {
             console.error('Failed to send notification:', error);
-            toast.error(t('common.error') || 'Failed to send notification');
+            const apiErrors = parseApiErrors(error);
+            if (Object.keys(apiErrors).length > 0) {
+                setNotifErrors(apiErrors as FormErrors<'title' | 'content'>);
+            }
+            toast.error(t('common.error') || 'Không thể gửi thông báo');
         } finally {
             setIsSendingNotification(false);
         }
@@ -533,7 +605,7 @@ export default function UserDetailPage() {
 
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">{user.name}</h1>
+                        <h1 className="text-3xl font-bold text-white mb-2">{sanitizeDisplayValue(user.name)}</h1>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[var(--text-secondary)]">
                             <span className="flex items-center gap-1 min-w-0 max-w-full sm:max-w-[200px] md:max-w-[300px]">
                                 <Mail className="w-4 h-4 flex-shrink-0" />
@@ -671,7 +743,7 @@ export default function UserDetailPage() {
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-[var(--border-primary)]">
                                         <span className="text-[var(--text-muted)]">{t('userManagement.name') || 'Name'}</span>
-                                        <span className="text-white">{user.name}</span>
+                                        <span className="text-white">{sanitizeDisplayValue(user.name)}</span>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-[var(--border-primary)]">
                                         <span className="text-[var(--text-muted)]">{t('userManagement.email') || 'Email'}</span>
@@ -789,7 +861,7 @@ export default function UserDetailPage() {
                                                             {warning.is_active ? (t('userManagement.active') || 'Active') : (t('userManagement.removed') || 'Removed')}
                                                         </span>
                                                     </div>
-                                                    <p className="text-white mb-2">{warning.reason}</p>
+                                                    <p className="text-white mb-2">{sanitizeDisplayValue(warning.reason)}</p>
                                                     <div className="text-sm text-[var(--text-muted)]">
                                                         <span>{t('userManagement.createdAt') || 'Created'}: {formatDate(warning.created_at)}</span>
                                                         {warning.expires_at && (
@@ -1182,7 +1254,7 @@ export default function UserDetailPage() {
                                                 <div className="flex items-start justify-between">
                                                     <div>
                                                         <h4 className="text-white font-medium mb-1">{notification.title}</h4>
-                                                        <p className="text-[var(--text-muted)] text-sm">{notification.content}</p>
+                                                        <p className="text-[var(--text-muted)] text-sm">{sanitizeDisplayValue(notification.content)}</p>
                                                         <div className="flex items-center gap-2 mt-2">
                                                             <span className="text-xs text-[var(--text-muted)]">
                                                                 {formatDate(notification.created_at)}
@@ -1255,17 +1327,31 @@ export default function UserDetailPage() {
             {showBanModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.banUser') || 'Ban User'}</h2>
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.banUser') || 'Cấm người dùng'}</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.reason') || 'Reason'} *</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.reason') || 'Lý do'} *</label>
                                 <textarea
                                     value={banReason}
-                                    onChange={(e) => setBanReason(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setBanReason(filtered);
+                                        setBanErrors(prev => ({ ...prev, reason: validateBanReason(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        banErrors.reason ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Enter reason for ban...'}
+                                    maxLength={1000}
+                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Nhập lý do cấm (ít nhất 10 ký tự)...'}
                                 />
+                                {banErrors.reason && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {banErrors.reason}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{banReason.length}/1000</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input
@@ -1276,37 +1362,49 @@ export default function UserDetailPage() {
                                     className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
                                 />
                                 <label htmlFor="banPermanent" className="text-white text-sm cursor-pointer select-none">
-                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                    {t('userManagement.permanentBan') || 'Cấm vĩnh viễn'}
                                 </label>
                             </div>
                             {!banIsPermanent && (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.duration') || 'Duration'}
+                                            {t('userManagement.duration') || 'Thời hạn'}
                                         </label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={banDurationValue}
-                                            onChange={(e) => setBanDurationValue(parseInt(e.target.value) || 1)}
-                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 1;
+                                                setBanDurationValue(val);
+                                                setBanErrors(prev => ({ ...prev, duration: validateBanDuration(val) }));
+                                            }}
+                                            className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white focus:outline-none transition-colors ${
+                                                banErrors.duration ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                            }`}
                                         />
+                                        {banErrors.duration && (
+                                            <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                                {banErrors.duration}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.unit') || 'Unit'}
+                                            {t('userManagement.unit') || 'Đơn vị'}
                                         </label>
                                         <select
                                             value={banDurationType}
                                             onChange={(e) => setBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
-                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
-                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
-                                            <option value="days">{t('common.days') || 'Days'}</option>
-                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
-                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                            <option value="minutes">{t('common.minutes') || 'Phút'}</option>
+                                            <option value="hours">{t('common.hours') || 'Giờ'}</option>
+                                            <option value="days">{t('common.days') || 'Ngày'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Tuần'}</option>
+                                            <option value="months">{t('common.months') || 'Tháng'}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1314,18 +1412,18 @@ export default function UserDetailPage() {
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowBanModal(false)}
+                                onClick={() => { setShowBanModal(false); setBanErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={handleBanUser}
-                                disabled={!banReason.trim() || isBanning}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isBanning}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isBanning && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.confirmBan') || 'Ban User'}
+                                {t('userManagement.confirmBan') || 'Cấm người dùng'}
                             </button>
                         </div>
                     </div>
@@ -1336,25 +1434,39 @@ export default function UserDetailPage() {
             {showUnbanModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
-                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.unbanUser') || 'Unban User'}</h2>
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.unbanUser') || 'Bỏ cấm người dùng'}</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.note') || 'Note'} ({t('common.optional') || 'optional'})</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.note') || 'Ghi chú'} ({t('common.optional') || 'Tùy chọn'})</label>
                                 <textarea
                                     value={unbanNote}
-                                    onChange={(e) => setUnbanNote(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setUnbanNote(filtered);
+                                        setUnbanErrors(prev => ({ ...prev, note: validateUnbanNote(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        unbanErrors.note ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.unbanNotePlaceholder') || 'Optional note for unbanning...'}
+                                    maxLength={500}
+                                    placeholder={t('userManagement.unbanNotePlaceholder') || 'Nhập ghi chú...'}
                                 />
+                                {unbanErrors.note && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {unbanErrors.note}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{unbanNote.length}/500</p>
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowUnbanModal(false)}
+                                onClick={() => { setShowUnbanModal(false); setUnbanErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={handleUnbanUser}
@@ -1362,7 +1474,7 @@ export default function UserDetailPage() {
                                 className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {isUnbanning && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.confirmUnban') || 'Unban User'}
+                                {t('userManagement.confirmUnban') || 'Bỏ cấm'}
                             </button>
                         </div>
                     </div>
@@ -1373,30 +1485,55 @@ export default function UserDetailPage() {
             {showWarnModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.warnUser') || 'Warn User'}</h2>
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.warnUser') || 'Cảnh báo người dùng'}</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.category') || 'Category'} *</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.category') || 'Danh mục'} *</label>
                                 <select
                                     value={warnCategoryId}
-                                    onChange={(e) => setWarnCategoryId(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        setWarnCategoryId(e.target.value);
+                                        setWarnErrors(prev => ({ ...prev, category: validateWarnCategory(e.target.value) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white focus:outline-none appearance-none cursor-pointer transition-colors ${
+                                        warnErrors.category ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                 >
-                                    <option value="">{t('userManagement.selectCategory') || 'Select a category'}</option>
+                                    <option value="">{t('userManagement.selectCategory') || 'Chọn danh mục'}</option>
                                     {warnCategories.map((cat) => (
                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                                     ))}
                                 </select>
+                                {warnErrors.category && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {warnErrors.category}
+                                    </p>
+                                )}
                             </div>
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.reason') || 'Reason'} *</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.reason') || 'Lý do'} *</label>
                                 <textarea
                                     value={warnReason}
-                                    onChange={(e) => setWarnReason(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setWarnReason(filtered);
+                                        setWarnErrors(prev => ({ ...prev, reason: validateWarnReason(filtered) }));
+                                    }}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        warnErrors.reason ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={3}
-                                    placeholder={t('userManagement.warnReasonPlaceholder') || 'Enter reason for warning...'}
+                                    maxLength={1000}
+                                    placeholder={t('userManagement.warnReasonPlaceholder') || 'Nhập lý do cảnh báo (ít nhất 10 ký tự)...'}
                                 />
+                                {warnErrors.reason && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {warnErrors.reason}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{warnReason.length}/1000</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input
@@ -1407,37 +1544,49 @@ export default function UserDetailPage() {
                                     className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
                                 />
                                 <label htmlFor="warnPermanent" className="text-white text-sm cursor-pointer select-none">
-                                    {t('userManagement.isPermanent') || 'Permanent Warning'}
+                                    {t('userManagement.isPermanent') || 'Cảnh báo vĩnh viễn'}
                                 </label>
                             </div>
                             {!warnIsPermanent && (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.duration') || 'Duration'}
+                                            {t('userManagement.duration') || 'Thời hạn'}
                                         </label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={warnDurationValue}
-                                            onChange={(e) => setWarnDurationValue(parseInt(e.target.value) || 1)}
-                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 1;
+                                                setWarnDurationValue(val);
+                                                setWarnErrors(prev => ({ ...prev, duration: validateBanDuration(val) }));
+                                            }}
+                                            className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white focus:outline-none transition-colors ${
+                                                warnErrors.duration ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                            }`}
                                         />
+                                        {warnErrors.duration && (
+                                            <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                                {warnErrors.duration}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm text-[var(--text-muted)] mb-1">
-                                            {t('userManagement.unit') || 'Unit'}
+                                            {t('userManagement.unit') || 'Đơn vị'}
                                         </label>
                                         <select
                                             value={warnDurationType}
                                             onChange={(e) => setWarnDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
-                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
-                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
-                                            <option value="days">{t('common.days') || 'Days'}</option>
-                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
-                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                            <option value="minutes">{t('common.minutes') || 'Phút'}</option>
+                                            <option value="hours">{t('common.hours') || 'Giờ'}</option>
+                                            <option value="days">{t('common.days') || 'Ngày'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Tuần'}</option>
+                                            <option value="months">{t('common.months') || 'Tháng'}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1445,18 +1594,18 @@ export default function UserDetailPage() {
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowWarnModal(false)}
+                                onClick={() => { setShowWarnModal(false); setWarnErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={handleWarnUser}
-                                disabled={!warnCategoryId || !warnReason.trim() || isWarning}
-                                className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isWarning}
+                                className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isWarning && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.confirmWarn') || 'Warn User'}
+                                {t('userManagement.confirmWarn') || 'Cảnh báo'}
                             </button>
                         </div>
                     </div>
@@ -1467,43 +1616,71 @@ export default function UserDetailPage() {
             {showSendNotificationModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
-                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.sendNotification') || 'Send Notification'}</h2>
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.sendNotification') || 'Gửi thông báo'}</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.notificationTitle') || 'Title'} *</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.notificationTitle') || 'Tiêu đề'} *</label>
                                 <input
                                     type="text"
                                     value={notificationTitle}
-                                    onChange={(e) => setNotificationTitle(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                                    placeholder={t('userManagement.notificationTitlePlaceholder') || 'Enter notification title...'}
+                                    onChange={(e) => {
+                                        const filtered = filterTitleInput(e.target.value);
+                                        setNotificationTitle(filtered);
+                                        setNotifErrors(prev => ({ ...prev, title: validateNotifyTitle(filtered) }));
+                                    }}
+                                    maxLength={200}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none transition-colors ${
+                                        notifErrors.title ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
+                                    placeholder={t('userManagement.notificationTitlePlaceholder') || 'Tiêu đề thông báo...'}
                                 />
+                                {notifErrors.title && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {notifErrors.title}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{notificationTitle.length}/200</p>
                             </div>
                             <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.notificationContent') || 'Content'} *</label>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.notificationContent') || 'Nội dung'} *</label>
                                 <textarea
                                     value={notificationContent}
-                                    onChange={(e) => setNotificationContent(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    onChange={(e) => {
+                                        const filtered = filterReasonInput(e.target.value);
+                                        setNotificationContent(filtered);
+                                        setNotifErrors(prev => ({ ...prev, content: validateNotifyContent(filtered) }));
+                                    }}
+                                    maxLength={2000}
+                                    className={`w-full px-3 py-2 bg-[var(--background-tertiary)] border rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none resize-none transition-colors ${
+                                        notifErrors.content ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                                    }`}
                                     rows={4}
-                                    placeholder={t('userManagement.notificationContentPlaceholder') || 'Enter notification content...'}
+                                    placeholder={t('userManagement.notificationContentPlaceholder') || 'Nội dung thông báo...'}
                                 />
+                                {notifErrors.content && (
+                                    <p className="flex items-center gap-1 mt-1 text-xs text-red-400">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        {notifErrors.content}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--text-muted)] text-right">{notificationContent.length}/2000</p>
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={() => setShowSendNotificationModal(false)}
+                                onClick={() => { setShowSendNotificationModal(false); setNotifErrors({}); }}
                                 className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                             >
-                                {t('common.cancel') || 'Cancel'}
+                                {t('common.cancel') || 'Hủy'}
                             </button>
                             <button
                                 onClick={handleSendNotification}
-                                disabled={isSendingNotification || !notificationTitle.trim() || !notificationContent.trim()}
-                                className="flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={isSendingNotification}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSendingNotification && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t('userManagement.send') || 'Send'}
+                                {t('userManagement.send') || 'Gửi'}
                             </button>
                         </div>
                     </div>
