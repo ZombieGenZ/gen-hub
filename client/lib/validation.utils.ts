@@ -204,3 +204,194 @@ export function validateEmail(email: string): {
         message: 'Email hợp lệ'
     };
 }
+
+/**
+ * Filter special characters từ display fields
+ * Cho phép: chữ (tiếng Việt), số, dấu cách, dấu gạch ngang, dấu chấm, dấu phẩy
+ * Xóa: các ký tự đặc biệt khác (@#$%^&*()[]{}... v.v.)
+ */
+export function filterSpecialCharacters(text: string, allowComma: boolean = false): string {
+    if (!text) return '';
+    
+    let pattern = /[^a-zA-Z0-9À-ỿ\s\-\.]/g;
+    if (allowComma) {
+        pattern = /[^a-zA-Z0-9À-ỿ\s\-\.,]/g;
+    }
+    
+    return text
+        .replace(pattern, '') // Xóa ký tự đặc biệt
+        .replace(/\s+/g, ' '); // Gộp khoảng trắng liên tiếp thành 1
+}
+
+/**
+ * Filter input cho trường tên (Name field)
+ * Chỉ cho phép: chữ, số, dấu cách, gạch ngang, chấm
+ */
+export function filterNameInput(text: string): string {
+    return filterSpecialCharacters(text);
+}
+
+/**
+ * Filter input cho trường code/SKU
+ * Chỉ cho phép: chữ, số, dấu gạch ngang, dấu gạch dưới
+ */
+export function filterCodeInput(text: string): string {
+    if (!text) return '';
+    return text
+        .replace(/[^a-zA-Z0-9\-_]/g, '')
+        .toUpperCase();
+}
+
+/**
+ * Filter input cho trường ghi chú (Notes field)
+ * Cho phép: chữ, số, dấu cách, dấu gạch ngang, chấm, phẩy
+ */
+export function filterNotesInput(text: string): string {
+    return filterSpecialCharacters(text, true); // Cho phép phẩy
+}
+
+/**
+ * Validate required field
+ */
+export function validateRequired(value: string, fieldName: string): string | undefined {
+    if (!value || !value.trim()) {
+        return `${fieldName} không được để trống`;
+    }
+    return undefined;
+}
+
+/**
+ * Validate min length
+ */
+export function validateMinLength(value: string, minLength: number, fieldName: string): string | undefined {
+    if (value && value.trim().length < minLength) {
+        return `${fieldName} phải có ít nhất ${minLength} ký tự`;
+    }
+    return undefined;
+}
+
+/**
+ * Validate max length
+ */
+export function validateMaxLength(value: string, maxLength: number, fieldName: string): string | undefined {
+    if (value && value.trim().length > maxLength) {
+        return `${fieldName} tối đa ${maxLength} ký tự`;
+    }
+    return undefined;
+}
+
+/**
+ * Validate địa chỉ (Address field)
+ * - Bắt buộc
+ * - Tối thiểu 10 ký tự (đủ để có số, tên đường, quận/huyện)
+ * - Tối đa 500 ký tự
+ * - Không chứa ký tự HTML nguy hiểm
+ */
+export function validateAddress(address: string): {
+    isValid: boolean;
+    message?: string;
+} {
+    const trimmed = address?.trim() ?? '';
+
+    if (!trimmed) {
+        return { isValid: false, message: 'Địa chỉ không được để trống' };
+    }
+
+    if (trimmed.length < 10) {
+        return { isValid: false, message: 'Địa chỉ phải có ít nhất 10 ký tự' };
+    }
+
+    if (trimmed.length > 500) {
+        return { isValid: false, message: 'Địa chỉ tối đa 500 ký tự' };
+    }
+
+    // Ngăn HTML/script injection
+    if (/<[^>]*>|javascript:/i.test(trimmed)) {
+        return { isValid: false, message: 'Địa chỉ chứa ký tự không hợp lệ' };
+    }
+
+    return { isValid: true, message: 'Địa chỉ hợp lệ' };
+}
+
+/**
+ * Filter input cho trường địa chỉ
+ * Cho phép: chữ (tiếng Việt), số, khoảng trắng, gạch ngang, dấu phẩy, dấu chấm, dấu /
+ */
+export function filterAddressInput(text: string): string {
+    if (!text) return '';
+    return text
+        .replace(/[<>{}|\\\^~\[\]`]/g, '')
+        .replace(/\s+/g, ' ');
+}
+
+/**
+ * Validate SKU / Mã sản phẩm
+ * - Bắt buộc
+ * - Chỉ cho phép: chữ hoa, số, gạch ngang, gạch dưới
+ * - Tối thiểu 3 ký tự
+ * - Tối đa 50 ký tự
+ * - Phải bắt đầu bằng chữ hoặc số
+ */
+export function validateSKU(sku: string): {
+    isValid: boolean;
+    message?: string;
+} {
+    const trimmed = sku?.trim() ?? '';
+
+    if (!trimmed) {
+        return { isValid: false, message: 'SKU không được để trống' };
+    }
+
+    if (trimmed.length < 3) {
+        return { isValid: false, message: 'SKU phải có ít nhất 3 ký tự' };
+    }
+
+    if (trimmed.length > 50) {
+        return { isValid: false, message: 'SKU tối đa 50 ký tự' };
+    }
+
+    // Chỉ cho phép chữ hoa, số, gạch ngang, gạch dưới
+    if (!/^[A-Z0-9][A-Z0-9\-_]*$/.test(trimmed)) {
+        return {
+            isValid: false,
+            message: 'SKU chỉ được chứa chữ hoa, số, dấu gạch ngang và gạch dưới, phải bắt đầu bằng chữ hoặc số',
+        };
+    }
+
+    return { isValid: true, message: 'SKU hợp lệ' };
+}
+
+/**
+ * Validate mã sản phẩm / mã đối tượng (Product Code)
+ * Tương tự SKU nhưng cho phép chữ thường và có prefix phân loại
+ * - Bắt buộc
+ * - Tối thiểu 2 ký tự, tối đa 50 ký tự
+ * - Chỉ cho phép: chữ, số, gạch ngang, gạch dưới
+ */
+export function validateProductCode(code: string): {
+    isValid: boolean;
+    message?: string;
+} {
+    const trimmed = code?.trim() ?? '';
+
+    if (!trimmed) {
+        return { isValid: false, message: 'Mã sản phẩm không được để trống' };
+    }
+
+    if (trimmed.length < 2) {
+        return { isValid: false, message: 'Mã sản phẩm phải có ít nhất 2 ký tự' };
+    }
+
+    if (trimmed.length > 50) {
+        return { isValid: false, message: 'Mã sản phẩm tối đa 50 ký tự' };
+    }
+
+    if (!/^[A-Z0-9][A-Z0-9\-_]*$/i.test(trimmed)) {
+        return {
+            isValid: false,
+            message: 'Mã sản phẩm chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới',
+        };
+    }
+
+    return { isValid: true, message: 'Mã sản phẩm hợp lệ' };
+}
