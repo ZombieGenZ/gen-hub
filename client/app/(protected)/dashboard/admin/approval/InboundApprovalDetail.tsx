@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { orgHelper } from "@/lib/organization.utils";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
@@ -307,9 +308,9 @@ export default function InboundApprovalDetail({
     // Tự tạo helper revert cục bộ để gọi đúng endpoint backend yêu cầu (PATCH)
     const revertSteps = async (urlSuffix: string, errorMessage: string, successMessage: string) => {
         const token = getToken(); if (!token) return;
-        const orgId = authStorage.getOrgId();
         setSubmitting(true);
         try {
+            const orgId = await orgHelper.getOrgId(token);
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/organizations/${orgId}/inventory/inbound/${ticketId}/${urlSuffix}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
