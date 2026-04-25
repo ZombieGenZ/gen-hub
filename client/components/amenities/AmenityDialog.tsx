@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
+import { filterNameInput } from '@/lib/validation.utils';
 import {
     Dialog,
     DialogContent,
@@ -98,7 +99,14 @@ export function AmenityDialog({
     };
 
     const handleFieldChange = (field: keyof AmenityRequest, value: string | boolean) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        let processedValue = value;
+        
+        // Filter special characters for name field
+        if (field === 'name' && typeof value === 'string') {
+            processedValue = filterNameInput(value);
+        }
+        
+        setFormData(prev => ({ ...prev, [field]: processedValue }));
 
         // Live validation for touched fields
         if (touched[field] && typeof value === 'string') {

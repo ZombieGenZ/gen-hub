@@ -270,12 +270,12 @@ export function RentalInfoStep() {
 
                             {/*
                             <div className="flex justify-between text-teal-50/90">
-                                <span>Phí dịch vụ (10%)</span>
+                                <span>VAT (10%)</span>
                                 <span>+{formatCurrencyFull(session.quotation.serviceFee)}</span>
                             </div>
                             */}
                             <div className="flex justify-between text-teal-50/90">
-                                <span>Phí dịch vụ (10% trên tổng đã giảm)</span>
+                                <span>VAT (10% trên tổng đã giảm)</span>
                                 <span>+{formatCurrencyFull(Math.round(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) * 0.1))}</span>
                             </div>
 

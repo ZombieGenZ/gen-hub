@@ -48,7 +48,7 @@ export function QuotationSummary({
     // const effectiveServiceFee = breakdown.serviceFee;
     // const effectiveGrandTotal = breakdown.grandTotal;
     // const depositAmount = Math.round(effectiveGrandTotal * 0.1);
-    
+
     // Logic mới: Giảm phí dịch vụ (10%) trên tổng đã trừ coupon
     const subtotal = breakdown.subtotal;
     const couponAmount = appliedCoupon?.discount || breakdown.couponDiscount || 0;
@@ -57,7 +57,7 @@ export function QuotationSummary({
     const effectiveGrandTotal = taxableAmount + effectiveServiceFee;
     const depositAmount = Math.round(effectiveGrandTotal * 0.1);
     // breakdown?.depositAmount || 
-    
+
     return (
         <div className={cn(
             "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden",
@@ -223,9 +223,9 @@ export function QuotationSummary({
                     </button>
                 ) : null}
 
-                {/* Phí dịch vụ - tính trên tổng sau giảm giá */}
+                {/* VAT - tính trên tổng sau giảm giá */}
                 <div className="flex justify-between items-center text-slate-600">
-                    <span>Phí dịch vụ (10%)</span>
+                    <span>VAT (10%)</span>
                     <span className="font-medium text-slate-700">+{formatCurrencyFull(effectiveServiceFee)}</span>
                 </div>
 

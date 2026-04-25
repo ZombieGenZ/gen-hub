@@ -4,6 +4,7 @@ import { PartnerService } from "@/services/partner/partner.service";
 import { LocationService } from "@/services/location/location.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
+import { filterNameInput, filterCodeInput } from "@/lib/validation.utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -202,6 +203,11 @@ export function PartnerFormDialog({
         }
         if (formPhone && formPhone.length > 20) errs.phone = "Số điện thoại tối đa 20 ký tự";
         if (formTaxCode && formTaxCode.length > 20) errs.tax_code = "Mã số thuế tối đa 20 ký tự";
+
+        if (!selectedProvinceId) errs.province = "Tỉnh/Thành phố là bắt buộc";
+        if (!formWardId) errs.ward = "Phường/Xã là bắt buộc";
+        if (!formAddressDetail.trim()) errs.address = "Địa chỉ chi tiết là bắt buộc";
+
         setFormErrors((prev) => ({ ...prev, ...errs }));
         return Object.keys(errs).length === 0;
     };
@@ -223,8 +229,9 @@ export function PartnerFormDialog({
             if (formPhone.trim()) payload.phone = formPhone.trim();
             if (formEmail.trim()) payload.email = formEmail.trim();
             if (formTaxCode.trim()) payload.tax_code = formTaxCode.trim();
-            if (formAddressDetail.trim()) payload.address_detail = formAddressDetail.trim();
-            if (formWardId) payload.ward_id = formWardId;
+            
+            payload.address_detail = formAddressDetail.trim();
+            payload.ward_id = formWardId;
 
             if (mode === "create") {
                 await partnerService.create(token, payload as CreatePartnerPayload);
@@ -312,9 +319,11 @@ export function PartnerFormDialog({
                                 <Input
                                     id="partner-name"
                                     value={formName}
-                                    onChange={(e) => setFormName(e.target.value)}
+                                    onChange={(e) => setFormName(filterNameInput(e.target.value))}
                                     className={`rounded-xl ${formErrors.name ? "border-red-400 focus:ring-red-400" : ""}`}
                                     autoFocus
+                                    maxLength={255}
+                                    placeholder="Tên đối tác không được chứa ký tự đặc biệt"
                                     aria-invalid={!!formErrors.name}
                                     aria-describedby={formErrors.name ? "partner-name-error" : undefined}
                                 />
@@ -327,7 +336,7 @@ export function PartnerFormDialog({
                                         <Input
                                             id="partner-code"
                                             value={formCode}
-                                            onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                                            onChange={(e) => setFormCode(filterCodeInput(e.target.value))}
                                             className={`rounded-xl ${formErrors.code ? "border-red-400 focus:ring-red-400" : ""}`}
                                             aria-invalid={!!formErrors.code}
                                             aria-describedby={formErrors.code ? "partner-code-error" : undefined}
@@ -400,15 +409,16 @@ export function PartnerFormDialog({
                                 Địa chỉ
                             </h3>
                             <div className="space-y-1.5">
-                                <Label>Tỉnh / Thành phố</Label>
+                                <Label>Tỉnh / Thành phố <span className="text-red-500">*</span></Label>
                                 <Select
                                     value={selectedProvinceId}
                                     onValueChange={(v) => {
                                         setSelectedProvinceId(v);
                                         setFormWardId("");
+                                        setFormErrors(prev => ({ ...prev, province: "", ward: "" }));
                                     }}
                                 >
-                                    <SelectTrigger className="rounded-xl">
+                                    <SelectTrigger className={`rounded-xl ${formErrors.province ? "border-red-400 focus:ring-red-400" : ""}`}>
                                         <SelectValue placeholder={loadingProvinces ? "Đang tải..." : "Chọn tỉnh/thành phố"} />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
@@ -417,15 +427,19 @@ export function PartnerFormDialog({
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {formErrors.province && <p className="text-xs text-red-500">{formErrors.province}</p>}
                             </div>
                             <div className="space-y-1.5">
-                                <Label>Phường / Xã</Label>
+                                <Label>Phường / Xã <span className="text-red-500">*</span></Label>
                                 <Select
                                     value={formWardId}
-                                    onValueChange={setFormWardId}
+                                    onValueChange={(v) => {
+                                        setFormWardId(v);
+                                        setFormErrors(prev => ({ ...prev, ward: "" }));
+                                    }}
                                     disabled={!selectedProvinceId}
                                 >
-                                    <SelectTrigger className="rounded-xl">
+                                    <SelectTrigger className={`rounded-xl ${formErrors.ward ? "border-red-400 focus:ring-red-400" : ""}`}>
                                         <SelectValue placeholder={!selectedProvinceId ? "Chọn tỉnh/thành trước" : loadingWards ? "Đang tải..." : "Chọn phường/xã"} />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
@@ -434,15 +448,23 @@ export function PartnerFormDialog({
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {formErrors.ward && <p className="text-xs text-red-500">{formErrors.ward}</p>}
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="partner-address">Số nhà, tên đường</Label>
+                                <Label htmlFor="partner-address">Số nhà, tên đường <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="partner-address"
                                     value={formAddressDetail}
-                                    onChange={(e) => setFormAddressDetail(e.target.value)}
-                                    className="rounded-xl"
+                                    onChange={(e) => {
+                                        setFormAddressDetail(e.target.value);
+                                        if (e.target.value.trim()) {
+                                            setFormErrors(prev => ({ ...prev, address: "" }));
+                                        }
+                                    }}
+                                    className={`rounded-xl ${formErrors.address ? "border-red-400 focus:ring-red-400" : ""}`}
+                                    aria-invalid={!!formErrors.address}
                                 />
+                                {formErrors.address && <p className="text-xs text-red-500">{formErrors.address}</p>}
                             </div>
                         </div>
 

@@ -695,12 +695,12 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
 
                 {/* Coupon Section */}
                 <div className="space-y-3 pt-2">
-                    <CouponTriggerButton 
+                    <CouponTriggerButton
                         appliedCode={appliedCoupon?.code}
                         discountAmount={appliedCoupon?.discount}
                         onClick={() => setCouponDrawerOpen(true)}
                     />
-                    
+
                     <CouponDrawer
                         open={couponDrawerOpen}
                         onOpenChange={setCouponDrawerOpen}
@@ -747,7 +747,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                         </div>
                     )}
                     <div className="flex justify-between text-slate-600">
-                        <span>Phí dịch vụ (10%)</span>
+                        <span>VAT (10%)</span>
                         <span className="font-medium text-slate-900">
                             +{formatCurrencyFull(quotation.serviceFee)}
                         </span>

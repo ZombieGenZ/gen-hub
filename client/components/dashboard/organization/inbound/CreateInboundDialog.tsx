@@ -6,6 +6,7 @@ import { InventoryService } from "@/services/inventory/inventory.service";
 import { ProductService } from "@/services/product/product.service";
 import { PartnerService } from "@/services/partner/partner.service";
 import { BatchService } from "@/services/batch/batch.service";
+import { filterCodeInput, filterNotesInput } from "@/lib/validation.utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
 import { Button } from "@/components/ui/button";
@@ -460,6 +461,10 @@ export function CreateInboundDialog({
             showToast("Vui lòng chọn kho", "error");
             return;
         }
+        if (!formPartner) {
+            showToast("Vui lòng chọn nhà cung cấp", "error");
+            return;
+        }
         if (formItems.length === 0) {
             showToast("Vui lòng thêm ít nhất 1 sản phẩm", "error");
             return;
@@ -528,174 +533,176 @@ export function CreateInboundDialog({
                     </DialogHeader>
 
                     <div className="flex-1 min-h-0 overflow-y-auto">
-                    {/* Section 1 — Thông tin chung */}
-                    <div className="inbound-drawer__section">
-                        <h3 className="inbound-drawer__section-title">1. Thông tin chung</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label>Kho nhập *</Label>
-                                <Select value={formWarehouse} onValueChange={setFormWarehouse}>
-                                    <SelectTrigger className="rounded-xl">
-                                        <SelectValue placeholder="Chọn kho" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {warehouses.map((w) => (
-                                            <SelectItem key={w.id} value={w.id}>
-                                                {w.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                        {/* Section 1 — Thông tin chung */}
+                        <div className="inbound-drawer__section">
+                            <h3 className="inbound-drawer__section-title">1. Thông tin chung</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Kho nhập *</Label>
+                                    <Select value={formWarehouse} onValueChange={setFormWarehouse}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Chọn kho" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {warehouses.map((w) => (
+                                                <SelectItem key={w.id} value={w.id}>
+                                                    {w.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Nhà cung cấp *</Label>
+                                    <Select value={formPartner} onValueChange={setFormPartner}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="Chọn NCC" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {partners.map((p) => (
+                                                <SelectItem key={p.id} value={p.id}>
+                                                    {p.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Mã PO tham chiếu</Label>
+                                    <Input
+                                        value={formPOCode}
+                                        onChange={(e) => setFormPOCode(filterCodeInput(e.target.value))}
+                                        placeholder="Nhập mã PO"
+                                        maxLength={50}
+                                        className="rounded-xl"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Nhà cung cấp</Label>
-                                <Select value={formPartner} onValueChange={setFormPartner}>
-                                    <SelectTrigger className="rounded-xl">
-                                        <SelectValue placeholder="Chọn NCC" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {partners.map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>
-                                                {p.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mã PO tham chiếu</Label>
+                            <div className="mt-4 space-y-2">
+                                <Label>Ghi chú</Label>
                                 <Input
-                                    value={formPOCode}
-                                    onChange={(e) => setFormPOCode(e.target.value)}
-                                    placeholder="Nhập mã PO"
+                                    value={formNotes}
+                                    onChange={(e) => setFormNotes(filterNotesInput(e.target.value))}
+                                    placeholder="Ghi chú cho phiếu PO..."
+                                    maxLength={500}
                                     className="rounded-xl"
                                 />
                             </div>
                         </div>
-                        <div className="mt-4 space-y-2">
-                            <Label>Ghi chú</Label>
-                            <Input
-                                value={formNotes}
-                                onChange={(e) => setFormNotes(e.target.value)}
-                                placeholder="Ghi chú cho phiếu PO..."
-                                className="rounded-xl"
-                            />
-                        </div>
-                    </div>
 
-                    {/* Section 2 — Chi tiết hàng hóa */}
-                    <div className="inbound-drawer__section">
-                        <h3 className="inbound-drawer__section-title">2. Chi tiết hàng hóa</h3>
+                        {/* Section 2 — Chi tiết hàng hóa */}
+                        <div className="inbound-drawer__section">
+                            <h3 className="inbound-drawer__section-title">2. Chi tiết hàng hóa</h3>
 
-                        {/* Toolbar: ProductSelector + Nút nhập từ NCC */}
-                        <div className="mb-4 flex items-start gap-2">
-                            <div className="flex-1">
-                            <ProductSelector
-                                value={productSearch}
-                                onChange={setProductSearch}
-                                suggestions={filteredProducts}
-                                onSelect={addProduct}
-                                onBrowse={() => setBrowseOpen(true)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && productSearch.trim()) {
-                                        const barcode = productSearch.trim();
-                                        const directMatch = products.find(
-                                            (p) => p.barcode === barcode,
-                                        );
-                                        if (directMatch) {
-                                            addProduct(directMatch, barcode);
-                                            return;
-                                        }
-                                        for (const p of products) {
-                                            if (p.units) {
-                                                const unitMatch = p.units.find(
-                                                    (pu) => pu.barcode === barcode,
+                            {/* Toolbar: ProductSelector + Nút nhập từ NCC */}
+                            <div className="mb-4 flex items-start gap-2">
+                                <div className="flex-1">
+                                    <ProductSelector
+                                        value={productSearch}
+                                        onChange={setProductSearch}
+                                        suggestions={filteredProducts}
+                                        onSelect={addProduct}
+                                        onBrowse={() => setBrowseOpen(true)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && productSearch.trim()) {
+                                                const barcode = productSearch.trim();
+                                                const directMatch = products.find(
+                                                    (p) => p.barcode === barcode,
                                                 );
-                                                if (unitMatch) {
-                                                    addProduct(p, barcode);
+                                                if (directMatch) {
+                                                    addProduct(directMatch, barcode);
                                                     return;
                                                 }
+                                                for (const p of products) {
+                                                    if (p.units) {
+                                                        const unitMatch = p.units.find(
+                                                            (pu) => pu.barcode === barcode,
+                                                        );
+                                                        if (unitMatch) {
+                                                            addProduct(p, barcode);
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                                if (filteredProducts.length === 1) {
+                                                    addProduct(filteredProducts[0]);
+                                                }
                                             }
-                                        }
-                                        if (filteredProducts.length === 1) {
-                                            addProduct(filteredProducts[0]);
-                                        }
-                                    }
-                                }}
-                            />
+                                        }}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-xl h-10 shrink-0 gap-1.5 text-sm border-[#0F766E] text-[#0F766E] hover:bg-[#0F766E]/10"
+                                    onClick={() => setSupplierPOOpen(true)}
+                                >
+                                    <DocumentArrowDownIcon className="w-4 h-4" />
+                                    Nhập từ phiếu NCC
+                                </Button>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-xl h-10 shrink-0 gap-1.5 text-sm border-[#0F766E] text-[#0F766E] hover:bg-[#0F766E]/10"
-                                onClick={() => setSupplierPOOpen(true)}
-                            >
-                                <DocumentArrowDownIcon className="w-4 h-4" />
-                                Nhập từ phiếu NCC
-                            </Button>
-                        </div>
 
-                        {/* Table sản phẩm đã thêm */}
-                        {formItems.length > 0 ? (
-                            <div className="border rounded-2xl overflow-hidden">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-muted/40 border-b">
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                Sản phẩm
-                                            </th>
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
-                                                Số lượng
-                                            </th>
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
-                                                Đơn vị
-                                            </th>
-                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[160px]">
-                                                Lô hàng
-                                            </th>
-                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
-                                                Giá vốn
-                                            </th>
-                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[90px]">
-                                                Tồn kho
-                                            </th>
-                                            <th className="px-4 py-2.5 w-[48px]" />
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {formItems.map((item, idx) => (
-                                            <CreateItemRow
-                                                key={item.product.id}
-                                                item={item}
-                                                index={idx}
-                                                warehouseQty={formWarehouse ? (item.product.quantity_available ?? 0) : undefined}
-                                                onRemove={() =>
-                                                    setFormItems((prev) =>
-                                                        prev.filter((_, i) => i !== idx),
-                                                    )
-                                                }
-                                                onUpdate={(updates) =>
-                                                    setFormItems((prev) =>
-                                                        prev.map((it, i) =>
-                                                            i === idx ? { ...it, ...updates } : it,
-                                                        ),
-                                                    )
-                                                }
-                                            />
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
-                                <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu PO
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                            {/* Table sản phẩm đã thêm */}
+                            {formItems.length > 0 ? (
+                                <div className="border rounded-2xl overflow-hidden">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-muted/40 border-b">
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                    Sản phẩm
+                                                </th>
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
+                                                    Số lượng
+                                                </th>
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
+                                                    Đơn vị
+                                                </th>
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[160px]">
+                                                    Lô hàng
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
+                                                    Giá vốn
+                                                </th>
+                                                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[90px]">
+                                                    Tồn kho
+                                                </th>
+                                                <th className="px-4 py-2.5 w-[48px]" />
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {formItems.map((item, idx) => (
+                                                <CreateItemRow
+                                                    key={item.product.id}
+                                                    item={item}
+                                                    index={idx}
+                                                    warehouseQty={formWarehouse ? (item.product.quantity_available ?? 0) : undefined}
+                                                    onRemove={() =>
+                                                        setFormItems((prev) =>
+                                                            prev.filter((_, i) => i !== idx),
+                                                        )
+                                                    }
+                                                    onUpdate={(updates) =>
+                                                        setFormItems((prev) =>
+                                                            prev.map((it, i) =>
+                                                                i === idx ? { ...it, ...updates } : it,
+                                                            ),
+                                                        )
+                                                    }
+                                                />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
+                                    <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu PO
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Footer */}
@@ -715,8 +722,8 @@ export function CreateInboundDialog({
                             </Button>
                             <Button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-[140px]"
+                                disabled={isSubmitting || !formWarehouse || !formPartner || formItems.length === 0}
+                                className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2">

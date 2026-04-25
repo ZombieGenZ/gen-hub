@@ -162,9 +162,9 @@ export function WarehouseBookingPanel({
                 if (addonsRes.status === 'fulfilled' && addonsRes.value.ok) {
                     const addonsData = await addonsRes.value.json();
                     console.log('[WarehouseBookingPanel] Addons from API:', addonsData);
-                    const addonsArray = Array.isArray(addonsData.data?.items) ? addonsData.data.items 
-                        : (Array.isArray(addonsData.data) ? addonsData.data 
-                        : (Array.isArray(addonsData) ? addonsData : []));
+                    const addonsArray = Array.isArray(addonsData.data?.items) ? addonsData.data.items
+                        : (Array.isArray(addonsData.data) ? addonsData.data
+                            : (Array.isArray(addonsData) ? addonsData : []));
                     setAddons(addonsArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Addons API failed:',
@@ -176,9 +176,9 @@ export function WarehouseBookingPanel({
                 if (insuranceRes.status === 'fulfilled' && insuranceRes.value.ok) {
                     const insuranceData = await insuranceRes.value.json();
                     console.log('[WarehouseBookingPanel] Insurances from API:', insuranceData);
-                    const insuranceArray = Array.isArray(insuranceData.data?.items) ? insuranceData.data.items 
-                        : (Array.isArray(insuranceData.data) ? insuranceData.data 
-                        : (Array.isArray(insuranceData) ? insuranceData : []));
+                    const insuranceArray = Array.isArray(insuranceData.data?.items) ? insuranceData.data.items
+                        : (Array.isArray(insuranceData.data) ? insuranceData.data
+                            : (Array.isArray(insuranceData) ? insuranceData : []));
                     setInsurances(insuranceArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Insurances API failed:',
@@ -426,36 +426,36 @@ export function WarehouseBookingPanel({
             <div className="p-6 space-y-6">
                 {/* Rental Type Tabs — chỉ hiển thị khi là kho chia sẻ */}
                 {isSharedWarehouse && (
-                <div className="flex border-b border-slate-100 dark:border-slate-700">
-                    <button
-                        onClick={() => setRentalType("whole")}
-                        className={cn(
-                            "flex-1 py-3 text-xs font-semibold transition-colors relative",
-                            rentalType === "whole"
-                                ? "text-[#0F766E] bg-teal-50/30"
-                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                        )}
-                    >
-                        Thuê nguyên kho
-                        {rentalType === "whole" && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0F766E]" />
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setRentalType("row")}
-                        className={cn(
-                            "flex-1 py-3 text-xs font-semibold transition-colors relative",
-                            rentalType === "row"
-                                ? "text-[#0F766E] bg-teal-50/30"
-                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                        )}
-                    >
-                        Thuê theo dãy/kệ
-                        {rentalType === "row" && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0F766E]" />
-                        )}
-                    </button>
-                </div>
+                    <div className="flex border-b border-slate-100 dark:border-slate-700">
+                        <button
+                            onClick={() => setRentalType("whole")}
+                            className={cn(
+                                "flex-1 py-3 text-xs font-semibold transition-colors relative",
+                                rentalType === "whole"
+                                    ? "text-[#0F766E] bg-teal-50/30"
+                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                            )}
+                        >
+                            Thuê nguyên kho
+                            {rentalType === "whole" && (
+                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0F766E]" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setRentalType("row")}
+                            className={cn(
+                                "flex-1 py-3 text-xs font-semibold transition-colors relative",
+                                rentalType === "row"
+                                    ? "text-[#0F766E] bg-teal-50/30"
+                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                            )}
+                        >
+                            Thuê theo dãy/kệ
+                            {rentalType === "row" && (
+                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0F766E]" />
+                            )}
+                        </button>
+                    </div>
                 )}
 
                 {/* Price Display */}
@@ -590,7 +590,7 @@ export function WarehouseBookingPanel({
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="p-1.5 rounded-md bg-teal-50 dark:bg-teal-900/30">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#0F766E]">
-                                      <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                        <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Gói Bảo Hiểm Toàn Diện</Label>
@@ -605,8 +605,8 @@ export function WarehouseBookingPanel({
                                             key={ins.id}
                                             className={cn(
                                                 "relative flex items-start space-x-3 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer overflow-hidden group",
-                                                isSelected 
-                                                    ? "border-[#0F766E] bg-gradient-to-br from-teal-50/50 to-white dark:from-teal-900/20 dark:to-slate-900 shadow-md shadow-teal-500/10" 
+                                                isSelected
+                                                    ? "border-[#0F766E] bg-gradient-to-br from-teal-50/50 to-white dark:from-teal-900/20 dark:to-slate-900 shadow-md shadow-teal-500/10"
                                                     : "border-slate-100 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-800 bg-white dark:bg-slate-900 hover:shadow-sm"
                                             )}
                                             onClick={() => setSelectedInsuranceId(ins.id)}
@@ -647,7 +647,7 @@ export function WarehouseBookingPanel({
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-amber-600">
-                                      <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5z" clipRule="evenodd" />
+                                        <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Dịch Vụ Bổ Sung</Label>
@@ -729,7 +729,7 @@ export function WarehouseBookingPanel({
                         </div>
                     )}
                     <div className="flex justify-between text-slate-600">
-                        <span>Phí dịch vụ (10%)</span>
+                        <span>VAT (10%)</span>
                         <span className="font-medium text-slate-900">
                             {quotation.serviceFee.toLocaleString('vi-VN')}₫
                         </span>

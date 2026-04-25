@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { filterNameInput } from '@/lib/validation.utils';
 import { useToast } from '@/contexts/ToastContext';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import {
@@ -123,9 +124,15 @@ export default React.memo(function WarehouseVisitBookingForm({
             return;
         }
 
+        // Filter special characters for visitor_name
+        let processedValue = value;
+        if (name === 'visitor_name') {
+            processedValue = filterNameInput(value);
+        }
+
         setFormData((prev) => ({
             ...prev,
-            [name]: name === 'number_of_visitors' ? Number(value) : value,
+            [name]: name === 'number_of_visitors' ? Number(processedValue) : processedValue,
         }));
     };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { CategoryService } from "@/services/article/category.service";
+import { filterNameInput, filterCodeInput } from "@/lib/validation.utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,7 +111,8 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
                             <Input
                                 id="name"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, name: filterNameInput(e.target.value) })}
+                                maxLength={100}
                                 style={{ borderRadius: "12px" }}
                                 className="bg-muted/30"
                             />
@@ -121,10 +123,10 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
                             <Input
                                 id="slug"
                                 value={formData.slug || ""}
-                                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, slug: filterCodeInput(e.target.value) })}
                                 style={{ borderRadius: "12px" }}
                                 placeholder="Để trống để tự động tạo từ tên..."
-                                className="bg-muted/30"
+                                maxLength={50}                                className="bg-muted/30"
                             />
                             <p className="text-xs text-muted-foreground">Chỉ chứa chữ cái, số và dấu gạch ngang (-)</p>
                         </div>
