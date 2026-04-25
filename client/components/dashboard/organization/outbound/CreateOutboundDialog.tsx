@@ -25,7 +25,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { TrashIcon, InboxIcon, PhotoIcon, BuildingStorefrontIcon, UserIcon, MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, InboxIcon, PhotoIcon, BuildingStorefrontIcon, UserIcon, MapPinIcon, TruckIcon, ChevronDownIcon, MagnifyingGlassIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { ProductSelector } from "@/components/dashboard/organization/common/ProductSelector";
 import { ProductBrowseModal } from "@/components/dashboard/organization/common/ProductBrowseModal";
 import type {
@@ -110,6 +112,17 @@ export function CreateOutboundDialog({
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
     const debouncedProductSearch = useDebounce(productSearch, 300);
+    const [partnerSearch, setPartnerSearch] = useState("");
+    const [partnerPopoverOpen, setPartnerPopoverOpen] = useState(false);
+
+    const filteredPartners = useMemo(() => {
+        const q = partnerSearch.trim().toLowerCase();
+        if (!q) return partners;
+        return partners.filter((p) =>
+            p.name?.toLowerCase().includes(q) ||
+            p.code?.toLowerCase().includes(q),
+        );
+    }, [partners, partnerSearch]);
 
     const loadFormData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -190,12 +203,16 @@ export function CreateOutboundDialog({
         setFormDeliveryAddress("");
         setFormRequiredDate("");
         setFormVehicleInfo("");
+        setPartnerSearch("");
+        setPartnerPopoverOpen(false);
     }, []);
 
     // Xóa đối tác đã chọn khi thay đổi loại người nhận
     useEffect(() => {
         setFormPartner("");
         setFormDeliveryAddress("");
+        setPartnerSearch("");
+        setPartnerPopoverOpen(false);
     }, [formRecipientType]);
 
     const handleClose = useCallback(() => {
@@ -404,31 +421,72 @@ export function CreateOutboundDialog({
                                         {formRecipientType === "CUSTOMER_AGENT" && "Tên đại lý"}
                                         {formRecipientType === "TENANT_CUSTOMER" && "Tên khách hàng thuê kho"}
                                     </Label>
-                                    <Select value={formPartner} onValueChange={setFormPartner}>
-                                        <SelectTrigger className="rounded-xl">
-                                            <SelectValue
-                                                placeholder={
-                                                    formRecipientType === "CUSTOMER"
+                                    <Popover open={partnerPopoverOpen} onOpenChange={setPartnerPopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="flex h-9 w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                <span className={cn("truncate", !formPartner && "text-muted-foreground")}>
+                                                    {formPartner
+                                                        ? (partners.find((p) => p.id === formPartner)?.name ?? "")
+                                                        : formRecipientType === "CUSTOMER"
                                                         ? "Chọn khách hàng nhận hàng"
                                                         : formRecipientType === "CUSTOMER_AGENT"
                                                         ? "Chọn đại lý của khách hàng"
-                                                        : "Chọn khách hàng của khách thuê kho"
-                                                }
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {partners.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    <div className="flex flex-col">
-                                                        <span>{p.name}</span>
-                                                        {p.code && (
-                                                            <span className="text-xs text-muted-foreground">{p.code}</span>
-                                                        )}
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                                        : "Chọn khách hàng của khách thuê kho"}
+                                                </span>
+                                                <ChevronDownIcon className="w-4 h-4 shrink-0 opacity-50" />
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="p-0"
+                                            align="start"
+                                            style={{ width: "var(--radix-popover-trigger-width)" }}
+                                        >
+                                            <div className="flex items-center gap-2 border-b px-3 py-2">
+                                                <MagnifyingGlassIcon className="w-4 h-4 shrink-0 text-muted-foreground" />
+                                                <input
+                                                    autoFocus
+                                                    value={partnerSearch}
+                                                    onChange={(e) => setPartnerSearch(e.target.value)}
+                                                    placeholder="Tìm kiếm..."
+                                                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                                />
+                                            </div>
+                                            <div className="max-h-52 overflow-y-auto py-1">
+                                                {filteredPartners.length === 0 ? (
+                                                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">Không tìm thấy</p>
+                                                ) : (
+                                                    filteredPartners.map((p) => (
+                                                        <button
+                                                            key={p.id}
+                                                            type="button"
+                                                            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+                                                            onClick={() => {
+                                                                setFormPartner(p.id);
+                                                                setPartnerSearch("");
+                                                                setPartnerPopoverOpen(false);
+                                                            }}
+                                                        >
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "w-4 h-4 shrink-0",
+                                                                    formPartner === p.id ? "opacity-100 text-teal-600" : "opacity-0",
+                                                                )}
+                                                            />
+                                                            <div className="flex flex-col text-left">
+                                                                <span>{p.name}</span>
+                                                                {p.code && (
+                                                                    <span className="text-xs text-muted-foreground">{p.code}</span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                             </div>
 

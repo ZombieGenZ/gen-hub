@@ -349,8 +349,6 @@ export function CreateInboundDialog({
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
     const debouncedProductSearch = useDebounce(productSearch, 300);
-    // Map productId → quantity_available trong kho đang chọn
-    const [warehouseStockMap, setWarehouseStockMap] = useState<Map<string, number>>(new Map());
 
     const loadFormData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -368,7 +366,18 @@ export function CreateInboundDialog({
             ]);
             setWarehouses(warehouseList);
             setPartners(partnerRes?.data?.items || []);
-            setProducts(productRes?.data?.items || []);
+            const freshProducts: Product[] = productRes?.data?.items || [];
+            setProducts(freshProducts);
+
+            setFormItems((prev) =>
+                prev.map((item) => {
+                    const updated = freshProducts.find((p) => p.id === item.product.id);
+                    if (updated && updated.quantity_available !== undefined) {
+                        return { ...item, product: { ...item.product, quantity_available: updated.quantity_available } };
+                    }
+                    return item;
+                }),
+            );
         } catch {
             // silent fail
         }
@@ -377,29 +386,6 @@ export function CreateInboundDialog({
     useEffect(() => {
         if (open) loadFormData();
     }, [open, loadFormData]);
-
-    // Fetch stock map khi thay đổi kho
-    useEffect(() => {
-        if (!formWarehouse) {
-            setWarehouseStockMap(new Map());
-            return;
-        }
-        const token = authStorage.getAccessToken();
-        if (!token) return;
-        inventoryService
-            .listStock(token, formWarehouse)
-            .then((res) => {
-                const items = (res?.data ?? []) as Record<string, unknown>[];
-                const map = new Map<string, number>();
-                for (const item of items) {
-                    const pid = item.product_id as string | undefined;
-                    const qty = (item.quantity_available ?? item.available_qty) as number | undefined;
-                    if (pid) map.set(pid, (map.get(pid) ?? 0) + (qty ?? 0));
-                }
-                setWarehouseStockMap(map);
-            })
-            .catch(() => setWarehouseStockMap(new Map()));
-    }, [formWarehouse]);
 
     const resetForm = useCallback(() => {
         setFormWarehouse("");
@@ -682,7 +668,7 @@ export function CreateInboundDialog({
                                                 key={item.product.id}
                                                 item={item}
                                                 index={idx}
-                                                warehouseQty={formWarehouse ? (warehouseStockMap.get(item.product.id) ?? item.product.quantity_available ?? 0) : undefined}
+                                                warehouseQty={formWarehouse ? (item.product.quantity_available ?? 0) : undefined}
                                                 onRemove={() =>
                                                     setFormItems((prev) =>
                                                         prev.filter((_, i) => i !== idx),
