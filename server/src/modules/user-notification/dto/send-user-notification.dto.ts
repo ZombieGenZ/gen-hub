@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsUUID,
   MaxLength,
+  MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { NotificationType } from '@prisma/client';
@@ -39,6 +40,11 @@ export class SendUserNotificationDto {
       'user-notification.validation.title_max_length',
     ),
   })
+  @MinLength(3, {
+    message: i18nValidationMessage(
+      'user-notification.validation.title_min_length',
+    ),
+  })
   title: string;
 
   @ApiProperty({
@@ -53,6 +59,16 @@ export class SendUserNotificationDto {
   @IsString({
     message: i18nValidationMessage(
       'user-notification.validation.content_string',
+    ),
+  })
+  @MinLength(10, {
+    message: i18nValidationMessage(
+      'user-notification.validation.content_min_length',
+    ),
+  })
+  @MaxLength(2000, {
+    message: i18nValidationMessage(
+      'user-notification.validation.content_max_length',
     ),
   })
   content: string;

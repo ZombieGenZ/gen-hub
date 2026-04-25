@@ -8,6 +8,8 @@ import {
   IsNumber,
   IsEnum,
   Min,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -58,6 +60,8 @@ export class BanUserDto {
   @ApiProperty({
     description: 'Lý do ban',
     example: 'Vi phạm điều khoản sử dụng',
+    minLength: 10,
+    maxLength: 1000,
   })
   @IsString({
     message: i18nValidationMessage('user-management.validation.reason_string'),
@@ -65,6 +69,16 @@ export class BanUserDto {
   @IsNotEmpty({
     message: i18nValidationMessage(
       'user-management.validation.reason_required',
+    ),
+  })
+  @MinLength(10, {
+    message: i18nValidationMessage(
+      'user-management.validation.reason_min_length',
+    ),
+  })
+  @MaxLength(1000, {
+    message: i18nValidationMessage(
+      'user-management.validation.reason_max_length',
     ),
   })
   reason: string;
@@ -150,6 +164,8 @@ export class WarnUserDto {
   @ApiProperty({
     description: 'Lý do cảnh báo chi tiết',
     example: 'Sử dụng ngôn ngữ không phù hợp',
+    minLength: 10,
+    maxLength: 1000,
   })
   @IsString({
     message: i18nValidationMessage('user-management.validation.reason_string'),
@@ -157,6 +173,16 @@ export class WarnUserDto {
   @IsNotEmpty({
     message: i18nValidationMessage(
       'user-management.validation.reason_required',
+    ),
+  })
+  @MinLength(10, {
+    message: i18nValidationMessage(
+      'user-management.validation.reason_min_length',
+    ),
+  })
+  @MaxLength(1000, {
+    message: i18nValidationMessage(
+      'user-management.validation.reason_max_length',
     ),
   })
   reason: string;

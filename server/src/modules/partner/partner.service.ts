@@ -233,9 +233,10 @@ export class PartnerService {
       }
     }
 
+    const { ward_id, ...updateData } = dto;
     const partner = await this.repository.update(id, {
-      ...dto,
-      ward: dto.ward_id ? { connect: { id: dto.ward_id } } : undefined,
+      ...updateData,
+      ward: ward_id ? { connect: { id: ward_id } } : undefined,
     });
 
     // Invalidate cache
