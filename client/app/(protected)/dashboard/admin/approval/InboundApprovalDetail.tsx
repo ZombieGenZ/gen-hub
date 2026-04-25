@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { orgHelper } from "@/lib/organization.utils";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
@@ -304,29 +305,26 @@ export default function InboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    const handleRevertToApproved = async () => {
+    // Tự tạo helper revert cục bộ để gọi đúng endpoint backend yêu cầu (PATCH)
+    const revertSteps = async (urlSuffix: string, errorMessage: string, successMessage: string) => {
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.revertInboundToApproved(token, ticketId);
-            showToast("Đã quay lại bước Đã duyệt — có thể bắt đầu kiểm đếm lại", "success");
+            const orgId = await orgHelper.getOrgId(token);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/organizations/${orgId}/inventory/inbound/${ticketId}/${urlSuffix}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+            if (!response.ok) throw new Error(errorMessage);
+            showToast(successMessage, "success");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể hoàn tác bước kiểm đếm", "error");
+            showToast(err.message || errorMessage, "error");
         } finally { setSubmitting(false); }
     };
 
-    const handleRevertToReceiving = async () => {
-        const token = getToken(); if (!token) return;
-        setSubmitting(true);
-        try {
-            await inventoryService.revertInboundToReceiving(token, ticketId);
-            showToast("Đã quay lại bước Kiểm đếm — số lượng thực tế đã được reset", "success");
-            fetchData();
-        } catch (err: any) {
-            showToast(err.message || "Không thể hoàn tác bước cất hàng", "error");
-        } finally { setSubmitting(false); }
-    };
+    const handleRevertToApproved = () => revertSteps('revert-to-approved', 'Không thể hoàn tác bước kiểm đếm', 'Đã quay lại bước Đã duyệt');
+    const handleRevertToReceiving = () => revertSteps('revert-to-receiving', 'Không thể hoàn tác bước cất hàng', 'Đã quay lại bước Kiểm đếm');
 
     // ── Loading state ──
     if (loading) {

@@ -10,6 +10,9 @@ import {
     AdjustmentsHorizontalIcon,
     XMarkIcon,
     ChevronDownIcon,
+    BuildingOffice2Icon,
+    UserGroupIcon,
+    ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import './HeroSearchBar.css';
@@ -38,9 +41,27 @@ const AREA_RANGES = [
 ];
 
 const RENTAL_TYPES = [
-    { id: 'full', label: 'Thuê nguyên kho', icon: '🏭', description: 'Thuê toàn bộ kho bãi' },
-    { id: 'shared', label: 'Thuê chung', icon: '🤝', description: 'Chia sẻ không gian với đơn vị khác' },
-    { id: 'fulfillment', label: 'Fulfillment', icon: '📦', description: 'Dịch vụ hoàn thiện đơn hàng' },
+    {
+        id: 'full',
+        label: 'Thuê nguyên kho',
+        Icon: BuildingOffice2Icon,
+        description: 'Độc quyền toàn bộ diện tích kho',
+        iconBg: 'rental-icon-bg--teal',
+    },
+    {
+        id: 'shared',
+        label: 'Thuê chung',
+        Icon: UserGroupIcon,
+        description: 'Chia sẻ không gian với đơn vị khác',
+        iconBg: 'rental-icon-bg--blue',
+    },
+    {
+        id: 'fulfillment',
+        label: 'Fulfillment',
+        Icon: ArchiveBoxIcon,
+        description: 'Dịch vụ lưu kho & hoàn thiện đơn hàng',
+        iconBg: 'rental-icon-bg--violet',
+    },
 ];
 
 interface HeroSearchBarProps {
@@ -382,11 +403,18 @@ export default function HeroSearchBar({
                                         setActiveSection(null);
                                     }}
                                 >
-                                    <span className="hero-search-bar__rental-icon">{rental.icon}</span>
+                                    <span className={cn("hero-search-bar__rental-icon", rental.iconBg)}>
+                                        <rental.Icon className="w-5 h-5" />
+                                    </span>
                                     <div className="hero-search-bar__rental-content">
                                         <span className="hero-search-bar__rental-label">{rental.label}</span>
                                         <span className="hero-search-bar__rental-desc">{rental.description}</span>
                                     </div>
+                                    {selectedRental?.id === rental.id && (
+                                        <span className="hero-search-bar__rental-check">
+                                            <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>

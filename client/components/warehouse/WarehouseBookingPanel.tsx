@@ -46,6 +46,7 @@ interface WarehouseBookingPanelProps {
     warehouseName?: string;
     price: number;
     unit?: string;
+    isSharedWarehouse?: boolean;
     rows?: {
         id: string;
         name: string;
@@ -76,6 +77,7 @@ export function WarehouseBookingPanel({
     warehouseName,
     price,
     unit = "tháng",
+    isSharedWarehouse = false,
     rows: rowsProp,
 }: WarehouseBookingPanelProps) {
     const router = useRouter();
@@ -412,12 +414,18 @@ export function WarehouseBookingPanel({
                 </div>
             )}
 
-            <div className="bg-teal-50/50 border-b border-slate-100 dark:border-slate-700 py-4 px-6">
+            <div className="bg-teal-50/50 border-b border-slate-100 dark:border-slate-700 py-4 px-6 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#0F766E] uppercase tracking-wide">Báo giá thuê kho</h3>
+                {isSharedWarehouse ? (
+                    <Badge className="bg-orange-100 text-orange-700 border-none hover:bg-orange-100 text-[11px]">Kho chia sẻ</Badge>
+                ) : (
+                    <Badge className="bg-teal-100 text-teal-700 border-none hover:bg-teal-100 text-[11px]">Kho riêng</Badge>
+                )}
             </div>
 
             <div className="p-6 space-y-6">
-                {/* Rental Type Tabs */}
+                {/* Rental Type Tabs — chỉ hiển thị khi là kho chia sẻ */}
+                {isSharedWarehouse && (
                 <div className="flex border-b border-slate-100 dark:border-slate-700">
                     <button
                         onClick={() => setRentalType("whole")}
@@ -448,6 +456,7 @@ export function WarehouseBookingPanel({
                         )}
                     </button>
                 </div>
+                )}
 
                 {/* Price Display */}
                 <div>
@@ -525,8 +534,8 @@ export function WarehouseBookingPanel({
                         )}
                     </div>
 
-                    {/* Row Selection (for partial rental) */}
-                    {rentalType === "row" && (
+                    {/* Row Selection — chỉ hiển thị khi kho chia sẻ và đang chọn tab dãy */}
+                    {isSharedWarehouse && rentalType === "row" && (
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                             <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Chọn Dãy/Kệ</Label>
                             {rows.length > 0 ? (
@@ -646,27 +655,28 @@ export function WarehouseBookingPanel({
                             <p className="text-xs text-slate-500 dark:text-slate-400">Chọn dịch vụ từ menu để thêm vào danh sách:</p>
 
                             {/* Dropdown select */}
-                            <select
+                            <Select
                                 value=""
-                                onChange={(e) => {
-                                    const addonId = e.target.value;
+                                onValueChange={(addonId) => {
                                     if (addonId && !selectedAddons.includes(addonId)) {
                                         setSelectedAddons(prev => [...prev, addonId]);
                                     }
-                                    e.currentTarget.value = "";
                                 }}
-                                className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
                             >
-                                <option value="">-- Nhấn để chọn dịch vụ --</option>
-                                {addons
-                                    .filter(addon => !selectedAddons.includes(addon.id))
-                                    .map(addon => (
-                                        <option key={addon.id} value={addon.id}>
-                                            {addon.name} — +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
-                                        </option>
-                                    ))
-                                }
-                            </select>
+                                <SelectTrigger className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-teal-500 cursor-pointer">
+                                    <SelectValue placeholder="-- Nhấn để chọn dịch vụ --" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    {addons
+                                        .filter(addon => !selectedAddons.includes(addon.id))
+                                        .map(addon => (
+                                            <SelectItem key={addon.id} value={addon.id}>
+                                                {addon.name} — +{Number(addon.price).toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                            </SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
+                            </Select>
 
                             {/* Selected addons list */}
                             {selectedAddons.length > 0 && (

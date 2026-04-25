@@ -999,7 +999,7 @@ export class RentalContractService {
                 name: rowTpl.name,
                 code: rowTpl.code,
                 description: rowTpl.description,
-                is_rented: rowTpl.is_rented,
+                is_rented: false,
                 position_x: rowTpl.position_x,
                 position_y: rowTpl.position_y,
                 position_rotation: rowTpl.position_rotation,

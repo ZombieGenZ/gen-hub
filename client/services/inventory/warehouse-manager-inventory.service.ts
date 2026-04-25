@@ -511,7 +511,7 @@ export class WarehouseManagerInventoryService {
         const response = await fetch(
             `${API}/warehouse-manager/inventory/inbound/${id}/revert-to-approved`,
             {
-                method: "POST",
+                method: "PATCH",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             },
         );
@@ -529,7 +529,7 @@ export class WarehouseManagerInventoryService {
         const response = await fetch(
             `${API}/warehouse-manager/inventory/inbound/${id}/revert-to-receiving`,
             {
-                method: "POST",
+                method: "PATCH",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             },
         );

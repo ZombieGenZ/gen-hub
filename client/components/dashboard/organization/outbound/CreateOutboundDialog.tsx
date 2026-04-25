@@ -280,6 +280,18 @@ export function CreateOutboundDialog({
             showToast("Vui lòng chọn kho", "error");
             return;
         }
+        if (!formPartner) {
+            showToast("Vui lòng chọn đối tác nhận hàng", "error");
+            return;
+        }
+        if (!formDeliveryAddress.trim()) {
+            showToast("Vui lòng nhập địa chỉ giao hàng", "error");
+            return;
+        }
+        if (!formRequiredDate) {
+            showToast("Vui lòng chọn ngày xuất dự kiến", "error");
+            return;
+        }
         if (formItems.length === 0) {
             showToast("Vui lòng thêm ít nhất 1 sản phẩm", "error");
             return;
