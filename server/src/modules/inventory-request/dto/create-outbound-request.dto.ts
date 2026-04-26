@@ -120,17 +120,21 @@ export class CreateOutboundRequestDto {
   })
   partner_id?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Mã đơn bán hàng',
     example: 'SO-2026-001',
   })
-  @IsOptional()
+  @IsNotEmpty({
+    message: i18nValidationMessage(
+      'inventory-request.validation.sales_order_code_required',
+    ),
+  })
   @IsString({
     message: i18nValidationMessage(
       'inventory-request.validation.sales_order_code_string',
     ),
   })
-  sales_order_code?: string;
+  sales_order_code: string;
 
   @ApiPropertyOptional({
     description: 'Ghi chú',
@@ -157,16 +161,21 @@ export class CreateOutboundRequestDto {
   )
   required_date?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Thông tin xe đến nhận',
+    example: 'Xe tải 51C-123.45',
   })
-  @IsOptional()
+  @IsNotEmpty({
+    message: i18nValidationMessage(
+      'inventory-request.validation.vehicle_info_required',
+    ),
+  })
   @IsString({
     message: i18nValidationMessage(
       'inventory-request.validation.vehicle_info_string',
     ),
   })
-  vehicle_info?: string;
+  vehicle_info: string;
 
   @ApiPropertyOptional({
     description: 'Địa chỉ giao hàng',
