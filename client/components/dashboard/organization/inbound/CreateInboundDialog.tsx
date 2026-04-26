@@ -351,6 +351,17 @@ export function CreateInboundDialog({
     const [productSearch, setProductSearch] = useState("");
     const debouncedProductSearch = useDebounce(productSearch, 300);
     const [isSyncingStock, setIsSyncingStock] = useState(false);
+    const [partnerSearch, setPartnerSearch] = useState("");
+    const [partnerPopoverOpen, setPartnerPopoverOpen] = useState(false);
+
+    const filteredPartners = useMemo(() => {
+        const q = partnerSearch.trim().toLowerCase();
+        if (!q) return partners;
+        return partners.filter((p) =>
+            p.name?.toLowerCase().includes(q) ||
+            p.code?.toLowerCase().includes(q),
+        );
+    }, [partners, partnerSearch]);
 
     const loadFormData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -445,6 +456,8 @@ export function CreateInboundDialog({
         setFormNotes("");
         setFormItems([]);
         setProductSearch("");
+        setPartnerSearch("");
+        setPartnerPopoverOpen(false);
     }, []);
 
     const handleClose = useCallback(() => {
@@ -511,8 +524,8 @@ export function CreateInboundDialog({
             showToast("Vui lòng chọn kho", "error");
             return;
         }
-        if (!formPartner) {
-            showToast("Vui lòng chọn nhà cung cấp", "error");
+        if (!formPartner && !partnerSearch.trim()) {
+            showToast("Vui lòng chọn hoặc nhập nhà cung cấp", "error");
             return;
         }
         if (formItems.length === 0) {
@@ -529,7 +542,9 @@ export function CreateInboundDialog({
                 warehouse_id: formWarehouse,
                 partner_id: formPartner || undefined,
                 purchase_order_code: formPOCode || undefined,
-                notes: formNotes || undefined,
+                notes: !formPartner && partnerSearch.trim()
+                    ? `[NCC: ${partnerSearch.trim()}] ${formNotes}`.trim()
+                    : formNotes || undefined,
                 details: formItems.map((item) => {
                     const detail: InboundDetailPayload = {
                         product_id: item.product.id,
@@ -602,20 +617,69 @@ export function CreateInboundDialog({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Nhà cung cấp *</Label>
-                                    <Select value={formPartner} onValueChange={setFormPartner}>
-                                        <SelectTrigger className="rounded-xl">
-                                            <SelectValue placeholder="Chọn NCC" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {partners.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    {p.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                 <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <BuildingStorefrontIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Nhà cung cấp *
+                                    </Label>
+                                    <Popover open={partnerPopoverOpen} onOpenChange={setPartnerPopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <div className="relative">
+                                                <Input
+                                                    className="rounded-xl pr-10"
+                                                    placeholder="Gõ tên nhà cung cấp..."
+                                                    value={partnerSearch}
+                                                    onChange={(e) => {
+                                                        setPartnerSearch(e.target.value);
+                                                        setPartnerPopoverOpen(true);
+                                                        if (formPartner) setFormPartner("");
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (partners.length > 0) setPartnerPopoverOpen(true);
+                                                    }}
+                                                />
+                                                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 pointer-events-none" />
+                                            </div>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="p-0"
+                                            align="start"
+                                            onOpenAutoFocus={(e) => e.preventDefault()}
+                                            style={{ width: "var(--radix-popover-trigger-width)" }}
+                                        >
+                                            <div className="max-h-52 overflow-y-auto py-1">
+                                                {filteredPartners.length === 0 ? (
+                                                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">Không tìm thấy nhà cung cấp</p>
+                                                ) : (
+                                                    filteredPartners.map((p) => (
+                                                        <button
+                                                            key={p.id}
+                                                            type="button"
+                                                            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+                                                            onClick={() => {
+                                                                setFormPartner(p.id);
+                                                                setPartnerSearch(p.name || "");
+                                                                setPartnerPopoverOpen(false);
+                                                            }}
+                                                        >
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "w-4 h-4 shrink-0",
+                                                                    formPartner === p.id ? "opacity-100 text-teal-600" : "opacity-0",
+                                                                )}
+                                                            />
+                                                            <div className="flex flex-col text-left">
+                                                                <span>{p.name}</span>
+                                                                {p.code && (
+                                                                    <span className="text-xs text-muted-foreground">{p.code}</span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mã PO tham chiếu</Label>

@@ -336,8 +336,8 @@ export function CreateOutboundDialog({
             showToast("Vui lòng chọn kho", "error");
             return;
         }
-        if (!formPartner) {
-            showToast("Vui lòng chọn đối tác nhận hàng", "error");
+        if (!formPartner && !partnerSearch.trim()) {
+            showToast("Vui lòng chọn hoặc nhập đối tác nhận hàng", "error");
             return;
         }
         if (!formDeliveryAddress.trim()) {
@@ -370,7 +370,9 @@ export function CreateOutboundDialog({
                 warehouse_id: formWarehouse,
                 partner_id: formPartner || undefined,
                 sales_order_code: formSOCode || undefined,
-                notes: formNotes || undefined,
+                notes: !formPartner && partnerSearch.trim() 
+                    ? `[Người nhận: ${partnerSearch.trim()}] ${formNotes}`.trim()
+                    : formNotes || undefined,
                 delivery_address: formDeliveryAddress || undefined,
                 vehicle_info: formVehicleInfo || undefined,
                 required_date: formRequiredDate || undefined,
@@ -491,40 +493,39 @@ export function CreateOutboundDialog({
                                     </Label>
                                     <Popover open={partnerPopoverOpen} onOpenChange={setPartnerPopoverOpen}>
                                         <PopoverTrigger asChild>
-                                            <button
-                                                type="button"
-                                                className="flex h-9 w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <span className={cn("truncate", !formPartner && "text-muted-foreground")}>
-                                                    {formPartner
-                                                        ? (partners.find((p) => p.id === formPartner)?.name ?? "")
-                                                        : formRecipientType === "CUSTOMER"
-                                                        ? "Chọn khách hàng nhận hàng"
-                                                        : formRecipientType === "CUSTOMER_AGENT"
-                                                        ? "Chọn đại lý của khách hàng"
-                                                        : "Chọn khách hàng của khách thuê kho"}
-                                                </span>
-                                                <ChevronDownIcon className="w-4 h-4 shrink-0 opacity-50" />
-                                            </button>
+                                            <div className="relative">
+                                                <Input
+                                                    className="rounded-xl pr-10"
+                                                    placeholder={
+                                                        formRecipientType === "CUSTOMER"
+                                                            ? "Gõ tên khách hàng..."
+                                                            : formRecipientType === "CUSTOMER_AGENT"
+                                                            ? "Gõ tên đại lý..."
+                                                            : "Gõ tên khách hàng thuê kho..."
+                                                    }
+                                                    value={partnerSearch}
+                                                    onChange={(e) => {
+                                                        setPartnerSearch(e.target.value);
+                                                        setPartnerPopoverOpen(true);
+                                                        // Nếu đang gõ mới thì tạm xóa ID cũ
+                                                        if (formPartner) setFormPartner("");
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (partners.length > 0) setPartnerPopoverOpen(true);
+                                                    }}
+                                                />
+                                                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 pointer-events-none" />
+                                            </div>
                                         </PopoverTrigger>
                                         <PopoverContent
                                             className="p-0"
                                             align="start"
+                                            onOpenAutoFocus={(e) => e.preventDefault()}
                                             style={{ width: "var(--radix-popover-trigger-width)" }}
                                         >
-                                            <div className="flex items-center gap-2 border-b px-3 py-2">
-                                                <MagnifyingGlassIcon className="w-4 h-4 shrink-0 text-muted-foreground" />
-                                                <input
-                                                    autoFocus
-                                                    value={partnerSearch}
-                                                    onChange={(e) => setPartnerSearch(e.target.value)}
-                                                    placeholder="Tìm kiếm..."
-                                                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                                                />
-                                            </div>
                                             <div className="max-h-52 overflow-y-auto py-1">
                                                 {filteredPartners.length === 0 ? (
-                                                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">Không tìm thấy</p>
+                                                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">Không tìm thấy đối tác phù hợp</p>
                                                 ) : (
                                                     filteredPartners.map((p) => (
                                                         <button
@@ -533,7 +534,7 @@ export function CreateOutboundDialog({
                                                             className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
                                                             onClick={() => {
                                                                 setFormPartner(p.id);
-                                                                setPartnerSearch("");
+                                                                setPartnerSearch(p.name || "");
                                                                 setPartnerPopoverOpen(false);
                                                             }}
                                                         >
