@@ -37,7 +37,6 @@ import {
     parseApiErrors,
     type FormErrors,
 } from '@/lib/validation.utils';
-import { sanitizeDisplayValue } from '@/lib/sanitize.utils';
 
 type DurationUnit = 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 

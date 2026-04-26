@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3, RefreshCw } from 'lucide-react';
@@ -145,9 +145,9 @@ export default function DashboardPage() {
         },
     ];
 
-    const getTableStats = (tableName: string) => {
+    const getTableStats = useCallback((tableName: string) => {
         return statistics?.tables?.find(t => t.name === tableName);
-    };
+    }, [statistics]);
 
     const sortLabel = language === 'vi' ? 'Sắp xếp theo' : 'Sort by';
     const sortOptions = {
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                     return nameCompare;
             }
         });
-    }, [tables, statistics, quickAccessSort, language]);
+    }, [tables, quickAccessSort, language, getTableStats]);
 
     return (
         <div className="animate-fadeIn">
