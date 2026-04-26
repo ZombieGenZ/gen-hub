@@ -574,7 +574,6 @@ export function CreateInboundDialog({
             });
 
         return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formWarehouse, formItemProductIds, stockRefreshTick]);
 
     const resetForm = useCallback(() => {
@@ -749,7 +748,7 @@ export function CreateInboundDialog({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                 <div className="space-y-2">
+                                <div className="space-y-2">
                                     <Label className="flex items-center gap-1.5">
                                         <BuildingStorefrontIcon className="w-3.5 h-3.5 text-muted-foreground" />
                                         Nhà cung cấp *
