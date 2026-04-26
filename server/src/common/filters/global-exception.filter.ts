@@ -309,6 +309,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ],
         };
       }
+      case 'P2015': {
+        const message = entityName
+          ? `Không tìm thấy bản ghi liên quan: ${entityName}`
+          : 'Không tìm thấy bản ghi liên quan';
+
+        return {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: ResponseCode.ERROR_VALIDATION,
+          clientMessage: 'Dữ liệu đầu vào không hợp lệ',
+          detailMessage: message,
+          errors: [
+            {
+              field: 'unknown',
+              message,
+            },
+          ],
+        };
+      }
+      }
       case 'P2024':
         return {
           status: HttpStatus.SERVICE_UNAVAILABLE,

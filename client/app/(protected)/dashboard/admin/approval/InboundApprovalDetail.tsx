@@ -238,6 +238,34 @@ export default function InboundApprovalDetail({
     const handleConfirmReceiving = async (is_customer_agreed?: boolean, notes?: string) => {
         const token = getToken(); if (!token) return;
         if (!data?.details?.length) return;
+
+        // Client-side mismatch check — hiển thị modal xác nhận trước khi gửi lên API
+        if (is_customer_agreed === undefined) {
+            const mismatches: MismatchItem[] = data.details
+                .filter(d => {
+                    const actual = actualQty[d.id] ?? d.actual_qty ?? 0;
+                    return actual !== d.expected_qty;
+                })
+                .map(d => {
+                    const actual = actualQty[d.id] ?? d.actual_qty ?? 0;
+                    return {
+                        detail_id: d.id,
+                        product_id: d.product_id,
+                        expected_qty: d.expected_qty,
+                        actual_qty: actual,
+                        diff: actual - d.expected_qty,
+                    };
+                });
+            if (mismatches.length > 0) {
+                const pendingDetails = data.details.map(d => ({
+                    detail_id: d.id,
+                    actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
+                }));
+                setMismatchModal({ open: true, mismatches, pendingDetails });
+                return;
+            }
+        }
+
         setSubmitting(true);
         try {
             // Khi gọi từ mismatch modal (is_customer_agreed xác định), dùng pendingDetails đã

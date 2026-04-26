@@ -140,7 +140,7 @@ export default function OrganizationAddonsPage() {
                             name: data.name || item.name,
                             status: data.status || item.status,
                             details,
-                            addons: (data.addons || []).filter((a: any) => !a.is_cancelled),
+                            addons: (data.addons || []).filter((a: any) => !a.is_cancelled && !!a.addon),
                             amenityIds: amenities.map(a => a.id),
                             amenities,
                         };
@@ -338,10 +338,10 @@ export default function OrganizationAddonsPage() {
                                                             className="flex items-center justify-between gap-2 p-2 rounded-lg bg-brand/5 border border-brand/10"
                                                         >
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-semibold truncate">{ca.addon.name}</p>
+                                                                <p className="text-xs font-semibold truncate">{ca.addon?.name ?? ca.addon_id}</p>
                                                                 <p className="text-[10px] text-muted-foreground">
                                                                     {formatCurrency(ca.price_at_purchase)}
-                                                                    {ca.addon.is_monthly_payment ? "/tháng" : ""}
+                                                                    {ca.addon?.is_monthly_payment ? "/tháng" : ""}
                                                                     {ca.is_gift && " · Miễn phí"}
                                                                 </p>
                                                                 {cancelable && remainingTime && (

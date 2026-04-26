@@ -10,7 +10,9 @@
         "not_found": "Không tìm thấy đối tác",
         "organization_not_found": "Không tìm thấy tổ chức",
         "code_exists": "Mã đối tác đã tồn tại trong tổ chức",
-        "ward_not_found": "Không tìm thấy phường/xã"
+        "ward_not_found": "Không tìm thấy phường/xã",
+        "ward_required_with_address": "Vui lòng chọn phường/xã khi cung cấp địa chỉ chi tiết",
+        "address_required_with_ward": "Vui lòng nhập địa chỉ chi tiết khi đã chọn phường/xã"
     },
     "validation": {
         "name_required": "Tên đối tác không được để trống",
@@ -28,7 +30,9 @@
         "tax_code_string": "Mã số thuế phải là chuỗi",
         "tax_code_max_length": "Mã số thuế không được quá 20 ký tự",
         "address_string": "Địa chỉ phải là chuỗi",
+        "address_required": "Địa chỉ chi tiết không được để trống khi đã chọn phường/xã",
         "ward_id_uuid": "ID phường/xã phải là UUID hợp lệ",
+        "ward_id_required": "Phường/xã không được để trống khi cung cấp địa chỉ chi tiết",
         "is_active_boolean": "Trạng thái phải là boolean",
         "limit_int": "Limit phải là số nguyên",
         "limit_min": "Limit phải >= 1",

@@ -24,7 +24,7 @@ export class PartnerRepository {
    */
   async wardExists(wardId: string): Promise<boolean> {
     const ward = await this.prisma.ward.findFirst({
-      where: { id: wardId, is_deleted: false },
+      where: { id: wardId, is_deleted: { not: true } },
       select: { id: true },
     });
     return !!ward;
