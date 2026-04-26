@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { ProductService } from "@/services/product/product.service";
@@ -27,7 +28,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TrashIcon, InboxIcon, PhotoIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { TrashIcon, InboxIcon, PhotoIcon, DocumentArrowDownIcon, CalendarDaysIcon, SparklesIcon, PlusCircleIcon, XMarkIcon, BuildingStorefrontIcon, ChevronDownIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { ProductSelector } from "@/components/dashboard/organization/common/ProductSelector";
 import { ProductBrowseModal } from "@/components/dashboard/organization/common/ProductBrowseModal";
 import { SupplierPOImportModal, type MatchedItem } from "@/components/dashboard/organization/inbound/SupplierPOImportModal";
@@ -76,6 +80,7 @@ function CreateItemRow({
     warehouseQty,
     onRemove,
     onUpdate,
+    onOpenBatchSheet,
 }: {
     item: DrawerItem;
     index: number;
@@ -83,22 +88,46 @@ function CreateItemRow({
     warehouseQty?: number;
     onRemove: () => void;
     onUpdate: (updates: Partial<DrawerItem>) => void;
+    onOpenBatchSheet: () => void;
 }) {
     const token = authStorage.getAccessToken();
     const [batches, setBatches] = useState<Batch[]>([]);
-    const [showNewBatch, setShowNewBatch] = useState(false);
-    const [newBatchCode, setNewBatchCode] = useState("");
-    const [newMfgDate, setNewMfgDate] = useState("");
-    const [newExpDate, setNewExpDate] = useState("");
+    // Combobox state
+    const [batchComboOpen, setBatchComboOpen] = useState(false);
+    const [batchSearch, setBatchSearch] = useState("");
 
     useEffect(() => {
         if (token && item.product.id) {
             batchService
-                .listByProduct(token, item.product.id, { limit: 50 })
+                .listByProduct(token, item.product.id, { limit: 100 })
                 .then((res) => setBatches(res?.data?.items || []))
                 .catch(() => setBatches([]));
         }
     }, [token, item.product.id]);
+
+    /** Lọc lô theo search */
+    const filteredBatches = useMemo(() => {
+        const q = batchSearch.trim().toLowerCase();
+        if (!q) return batches;
+        return batches.filter((b) => b.code.toLowerCase().includes(q));
+    }, [batches, batchSearch]);
+
+    /** Tìm batch đang chọn để hiển thị info */
+    const selectedBatch = useMemo(
+        () => (item.batch_id ? batches.find((b) => b.id === item.batch_id) : undefined),
+        [item.batch_id, batches],
+    );
+
+    /** Format ngày ngắn gọn dd/MM/yyyy */
+    const fmtDate = (d?: string | null) => {
+        if (!d) return null;
+        try {
+            const dt = new Date(d);
+            return dt.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+        } catch {
+            return d;
+        }
+    };
 
     const availableUnits = useMemo(() => {
         const list: { id: string; name: string; conversion_rate: number }[] = [];
@@ -129,7 +158,7 @@ function CreateItemRow({
     const convertedQty = item.expected_qty * conversionRate;
 
     return (
-        <tr className="group hover:bg-muted/30 transition-colors">
+        <tr className="group hover:bg-muted/30 transition-colors align-top">
             {/* Sản phẩm */}
             <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
@@ -189,95 +218,126 @@ function CreateItemRow({
                 </Select>
             </td>
 
-            {/* Lô hàng */}
-            <td className="px-4 py-3 w-[160px]">
-                <Select
-                    value={item.batch_id ?? (item.batch_code ? "__custom__" : "__new__")}
-                    onValueChange={(v) => {
-                        if (v === "__new__") {
-                            onUpdate({ batch_id: undefined, batch_code: undefined });
-                            setShowNewBatch(true);
-                        } else {
-                            onUpdate({ batch_id: v, batch_code: undefined });
-                            setShowNewBatch(false);
-                        }
-                    }}
-                >
-                    <SelectTrigger className="rounded-xl h-9 text-xs w-full">
-                        <SelectValue placeholder="Chọn lô" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {batches.map((b) => (
-                            <SelectItem key={b.id} value={b.id}>
-                                {b.code}
-                            </SelectItem>
-                        ))}
-                        <SelectItem value="__new__">+ Tạo lô mới</SelectItem>
-                    </SelectContent>
-                </Select>
+            {/* Lô hàng — Combobox + Sheet */}
+            <td className="px-4 py-3 w-[200px]">
+                {/* ── Combobox trigger ── */}
+                <Popover open={batchComboOpen} onOpenChange={(o) => { setBatchComboOpen(o); if (!o) setBatchSearch(""); }}>
+                    <PopoverTrigger asChild>
+                        <button
+                            type="button"
+                            className={cn(
+                                "w-full flex items-center justify-between gap-1.5 rounded-xl border bg-background px-3 h-9 text-xs transition-colors hover:bg-accent",
+                                (item.batch_id || item.batch_code) ? "border-[#0F766E]/40 text-foreground" : "border-input text-muted-foreground",
+                            )}
+                        >
+                            <span className="truncate">
+                                {item.batch_id
+                                    ? (batches.find((b) => b.id === item.batch_id)?.code ?? "Lô đã chọn")
+                                    : item.batch_code
+                                        ? item.batch_code
+                                        : "Chọn lô hàng..."}
+                            </span>
+                            <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-64" align="start" side="bottom">
+                        {/* Search */}
+                        <div className="p-2 border-b">
+                            <div className="relative">
+                                <input
+                                    className="w-full rounded-lg border border-input bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-muted-foreground focus:border-[#0F766E]/50"
+                                    placeholder="Tìm mã lô..."
+                                    value={batchSearch}
+                                    onChange={(e) => setBatchSearch(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
 
-                {/* Lô đã nhập thủ công */}
-                {item.batch_code && (
-                    <p className="text-[11px] text-[#0F766E] font-medium mt-1 truncate">
-                        {item.batch_code}
-                    </p>
-                )}
-
-                {/* Popover tạo lô mới */}
-                {showNewBatch && (
-                    <Popover open={showNewBatch} onOpenChange={setShowNewBatch}>
-                        <PopoverTrigger asChild>
-                            <button className="btn-raw text-xs text-[#0F766E] mt-1 underline">
-                                Nhập thông tin lô
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-4 space-y-3" align="start">
-                            <p className="text-sm font-medium">Tạo lô hàng mới</p>
-                            <div className="space-y-2">
-                                <Label className="text-xs">Mã lô</Label>
-                                <Input
-                                    value={newBatchCode}
-                                    onChange={(e) => setNewBatchCode(e.target.value)}
-                                    className="rounded-xl h-8 text-xs"
-                                    placeholder="VD: Nhập mã lô"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs">Ngày sản xuất</Label>
-                                <Input
-                                    type="date"
-                                    value={newMfgDate}
-                                    onChange={(e) => setNewMfgDate(e.target.value)}
-                                    className="rounded-xl h-8 text-xs"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs">Hạn sử dụng</Label>
-                                <Input
-                                    type="date"
-                                    value={newExpDate}
-                                    onChange={(e) => setNewExpDate(e.target.value)}
-                                    className="rounded-xl h-8 text-xs"
-                                />
-                            </div>
-                            <Button
-                                size="sm"
-                                className="w-full rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
-                                onClick={() => {
-                                    onUpdate({
-                                        batch_id: undefined,
-                                        batch_code: newBatchCode,
-                                        manufacturing_date: newMfgDate || undefined,
-                                        expiry_date: newExpDate || undefined,
-                                    });
-                                    setShowNewBatch(false);
-                                }}
+                        {/* Danh sách lô */}
+                        <div className="max-h-48 overflow-y-auto py-1">
+                            {/* Không chọn lô */}
+                            <button
+                                type="button"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors"
+                                onClick={() => { onUpdate({ batch_id: undefined, batch_code: undefined, manufacturing_date: undefined, expiry_date: undefined }); setBatchComboOpen(false); }}
                             >
-                                Xác nhận
-                            </Button>
-                        </PopoverContent>
-                    </Popover>
+                                <XMarkIcon className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                <span className="text-muted-foreground italic">Không chọn lô</span>
+                            </button>
+
+                            {filteredBatches.length === 0 && batchSearch && (
+                                <p className="px-3 py-3 text-center text-xs text-muted-foreground">Không tìm thấy lô</p>
+                            )}
+
+                            {filteredBatches.map((b) => (
+                                <button
+                                    key={b.id}
+                                    type="button"
+                                    className={cn(
+                                        "w-full flex items-start gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors text-left",
+                                        item.batch_id === b.id && "bg-[#0F766E]/8",
+                                    )}
+                                    onClick={() => { onUpdate({ batch_id: b.id, batch_code: undefined }); setBatchComboOpen(false); setBatchSearch(""); }}
+                                >
+                                    <CheckIcon className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", item.batch_id === b.id ? "text-[#0F766E]" : "opacity-0")} />
+                                    <div className="min-w-0">
+                                        <p className="font-medium truncate">{b.code}</p>
+                                        {b.expiry_date && (
+                                            <p className={cn("text-[10px] mt-0.5", new Date(b.expiry_date) < new Date() ? "text-red-500" : "text-muted-foreground")}>
+                                                HSD: {fmtDate(b.expiry_date)}
+                                            </p>
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Nút tạo lô mới — cố định dưới */}
+                        <div className="p-2 border-t">
+                            <button
+                                type="button"
+                                className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#0F766E] hover:bg-[#0F766E]/8 transition-colors border border-dashed border-[#0F766E]/30 hover:border-[#0F766E]/50"
+                                onClick={onOpenBatchSheet}
+                            >
+                                <PlusCircleIcon className="w-4 h-4" />
+                                Tạo lô hàng mới
+                            </button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
+                {/* Info lô đã chọn */}
+                {selectedBatch && (
+                    <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <CalendarDaysIcon className="w-3 h-3 shrink-0" />
+                        <span className={selectedBatch.expiry_date && new Date(selectedBatch.expiry_date) < new Date() ? "text-red-500 font-medium" : ""}>
+                            {selectedBatch.expiry_date ? `HSD: ${fmtDate(selectedBatch.expiry_date)}` : "Không có HSD"}
+                        </span>
+                    </div>
                 )}
+
+                {/* Badge lô mới tạo (custom) */}
+                {item.batch_code && (
+                    <div className="mt-1.5 space-y-0.5">
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#0F766E]/10 text-[#0F766E] max-w-full">
+                            <span className="text-[10px] font-semibold truncate">{item.batch_code}</span>
+                            <button type="button" className="btn-raw p-0 shrink-0 hover:text-destructive" onClick={() => onUpdate({ batch_code: undefined, manufacturing_date: undefined, expiry_date: undefined })}>
+                                <XMarkIcon className="w-3 h-3" />
+                            </button>
+                        </div>
+                        {(item.manufacturing_date || item.expiry_date) && (
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <CalendarDaysIcon className="w-3 h-3 shrink-0" />
+                                {item.manufacturing_date && <span>NSX: {fmtDate(item.manufacturing_date)}</span>}
+                                {item.manufacturing_date && item.expiry_date && <span>·</span>}
+                                {item.expiry_date && <span>HSD: {fmtDate(item.expiry_date)}</span>}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Sheet tạo lô mới — render tại parent để tránh conflict Dialog ── */}
             </td>
 
             {/* Giá vốn */}
@@ -337,7 +397,49 @@ export function CreateInboundDialog({
     const [browseOpen, setBrowseOpen] = useState(false);
     const [supplierPOOpen, setSupplierPOOpen] = useState(false);
 
-    // Form states
+    // Sheet tạo lô mới — render ngoài Dialog để tránh conflict overlay
+    const [batchSheetOpen, setBatchSheetOpen] = useState(false);
+    const [batchSheetItemIdx, setBatchSheetItemIdx] = useState<number>(-1);
+    const [newBatchCode, setNewBatchCode] = useState("");
+    const [newMfgDate, setNewMfgDate] = useState("");
+    const [newExpDate, setNewExpDate] = useState("");
+    const [newNotes, setNewNotes] = useState("");
+    const [batchCodeError, setBatchCodeError] = useState("");
+
+    /** Tự sinh mã lô */
+    const generateBatchCode = useCallback(() => {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+        const rand = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
+        setNewBatchCode(`LOT-${dateStr}-${rand}`);
+        setBatchCodeError("");
+    }, []);
+
+    /** Xác nhận tạo lô mới, update item tương ứng */
+    const confirmNewBatch = useCallback(() => {
+        const trimmed = newBatchCode.trim();
+        if (!trimmed) { setBatchCodeError("Mã lô không được để trống"); return; }
+        setFormItems((prev) =>
+            prev.map((it, i) =>
+                i === batchSheetItemIdx
+                    ? { ...it, batch_id: undefined, batch_code: trimmed, manufacturing_date: newMfgDate || undefined, expiry_date: newExpDate || undefined }
+                    : it,
+            ),
+        );
+        setBatchSheetOpen(false);
+        setBatchCodeError("");
+    }, [newBatchCode, newMfgDate, newExpDate, batchSheetItemIdx]);
+
+    /** Mở Sheet tạo lô cho item index */
+    const openBatchSheet = useCallback((idx: number) => {
+        setBatchSheetItemIdx(idx);
+        setNewBatchCode("");
+        setNewMfgDate("");
+        setNewExpDate("");
+        setNewNotes("");
+        setBatchCodeError("");
+        setBatchSheetOpen(true);
+    }, []);
     const [formWarehouse, setFormWarehouse] = useState("");
     const [formPartner, setFormPartner] = useState("");
     const [formPOCode, setFormPOCode] = useState("");
@@ -587,7 +689,11 @@ export function CreateInboundDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="sm:max-w-4xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0">
+                <DialogContent
+                    className="sm:max-w-4xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0"
+                    onPointerDownOutside={(e) => { if (batchSheetOpen) e.preventDefault(); }}
+                    onInteractOutside={(e) => { if (batchSheetOpen) e.preventDefault(); }}
+                >
                     <DialogHeader className="p-6 border-b shrink-0">
                         <DialogTitle className="text-[20px] leading-[130%]">
                             Tạo phiếu PO
@@ -771,7 +877,7 @@ export function CreateInboundDialog({
                                                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
                                                     Đơn vị
                                                 </th>
-                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[160px]">
+                                                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[200px]">
                                                     Lô hàng
                                                 </th>
                                                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
@@ -810,6 +916,7 @@ export function CreateInboundDialog({
                                                             ),
                                                         )
                                                     }
+                                                    onOpenBatchSheet={() => openBatchSheet(idx)}
                                                 />
                                             ))}
                                         </tbody>
@@ -878,6 +985,120 @@ export function CreateInboundDialog({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Modal tạo lô hàng mới — dùng createPortal để tránh conflict với Radix Dialog */}
+            {batchSheetOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-100 bg-black/50 flex items-center justify-center p-4 animate-in fade-in-0 duration-200"
+                    onClick={() => setBatchSheetOpen(false)}
+                >
+                    {/* Modal content */}
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-120 flex flex-col shadow-2xl max-h-[90vh] animate-in fade-in-0 zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b flex items-start justify-between shrink-0">
+                            <div>
+                                <h2 className="text-[20px] font-semibold leading-[130%]">Tạo lô hàng mới</h2>
+                                {batchSheetItemIdx >= 0 && formItems[batchSheetItemIdx] && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Sản phẩm: <span className="font-semibold text-foreground">{formItems[batchSheetItemIdx].product.name}</span>
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setBatchSheetOpen(false)}
+                                className="rounded-sm opacity-70 transition-opacity hover:opacity-100 ml-4 mt-0.5"
+                                aria-label="Đóng"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                            {/* Mã lô */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-semibold">
+                                    Mã lô hàng <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newBatchCode}
+                                        onChange={(e) => { setNewBatchCode(e.target.value); if (batchCodeError) setBatchCodeError(""); }}
+                                        className={cn("rounded-xl flex-1", batchCodeError && "border-red-400 focus-visible:ring-red-400")}
+                                        placeholder="VD: LOT-2026-001"
+                                        maxLength={50}
+                                    />
+                                    <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" title="Tự sinh mã lô" onClick={generateBatchCode}>
+                                        <SparklesIcon className="w-4 h-4 text-[#0F766E]" />
+                                    </Button>
+                                </div>
+                                {batchCodeError && <p className="text-xs text-red-500 flex items-center gap-1"><XMarkIcon className="w-3.5 h-3.5" />{batchCodeError}</p>}
+                                <p className="text-xs text-muted-foreground">Mã lô phải duy nhất trong toàn bộ sản phẩm này.</p>
+                            </div>
+
+                            {/* NSX + HSD */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                                        <CalendarDaysIcon className="w-4 h-4 text-muted-foreground" />
+                                        Ngày sản xuất
+                                    </Label>
+                                    <Input type="date" value={newMfgDate} onChange={(e) => setNewMfgDate(e.target.value)} className="rounded-xl" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                                        <CalendarDaysIcon className="w-4 h-4 text-amber-500" />
+                                        <span className="text-amber-600">Hạn sử dụng</span>
+                                    </Label>
+                                    <Input type="date" value={newExpDate} onChange={(e) => setNewExpDate(e.target.value)} className="rounded-xl" min={newMfgDate || undefined} />
+                                </div>
+                            </div>
+
+                            {/* Ghi chú lô */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Ghi chú lô</Label>
+                                <Textarea
+                                    value={newNotes}
+                                    onChange={(e) => setNewNotes(e.target.value)}
+                                    placeholder="Thông tin thêm về lô hàng này..."
+                                    className="rounded-xl resize-none"
+                                    rows={3}
+                                    maxLength={500}
+                                />
+                            </div>
+
+                            {/* Tóm tắt */}
+                            {(newBatchCode || newMfgDate || newExpDate) && (
+                                <div className="rounded-xl bg-muted/50 border p-4 space-y-1.5">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tóm tắt lô</p>
+                                    {newBatchCode && <p className="text-sm font-medium">{newBatchCode.trim()}</p>}
+                                    {newMfgDate && <p className="text-xs text-muted-foreground">NSX: {newMfgDate}</p>}
+                                    {newExpDate && <p className={cn("text-xs", new Date(newExpDate) < new Date() ? "text-red-500" : "text-muted-foreground")}>HSD: {newExpDate}</p>}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="shrink-0 border-t px-6 py-4 flex gap-3">
+                            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setBatchSheetOpen(false)}>
+                                Hủy
+                            </Button>
+                            <Button
+                                className="flex-1 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white gap-2"
+                                onClick={confirmNewBatch}
+                            >
+                                <CheckIcon className="w-4 h-4" />
+                                Xác nhận lô
+                            </Button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Modal chọn hàng loạt */}
             <ProductBrowseModal
