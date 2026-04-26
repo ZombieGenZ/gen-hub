@@ -233,11 +233,33 @@ export class PartnerService {
       }
     }
 
-    const { ward_id, ...updateData } = dto;
-    const partner = await this.repository.update(id, {
-      ...updateData,
-      ward: ward_id ? { connect: { id: ward_id } } : undefined,
-    });
+    // Kiểm tra ràng buộc địa chỉ: address_detail và ward_id phải cùng có hoặc cùng không
+    if (dto.address_detail && !dto.ward_id) {
+      throw new BadRequestException(
+        await this.i18n.translate('partner.errors.ward_required_with_address', { lang }),
+      );
+    }
+    if (dto.ward_id && !dto.address_detail) {
+      throw new BadRequestException(
+        await this.i18n.translate('partner.errors.address_required_with_ward', { lang }),
+      );
+    }
+
+    // Explicit field mapping để tránh lỗi type mismatch với Prisma
+    const updatePayload: Record<string, unknown> = {};
+    if (dto.name !== undefined) updatePayload['name'] = dto.name;
+    if (dto.code !== undefined) updatePayload['code'] = dto.code;
+    if (dto.type !== undefined) updatePayload['type'] = dto.type;
+    if (dto.phone !== undefined) updatePayload['phone'] = dto.phone || null;
+    if (dto.email !== undefined) updatePayload['email'] = dto.email || null;
+    if (dto.tax_code !== undefined) updatePayload['tax_code'] = dto.tax_code || null;
+    if (dto.address_detail !== undefined) updatePayload['address_detail'] = dto.address_detail || null;
+    if (dto.is_active !== undefined) updatePayload['is_active'] = dto.is_active;
+    if (dto.ward_id) {
+      updatePayload['ward'] = { connect: { id: dto.ward_id } };
+    }
+
+    const partner = await this.repository.update(id, updatePayload as any);
 
     // Invalidate cache
     await this.redisService.del(this.getDetailCacheKey(id));

@@ -10,7 +10,9 @@
         "not_found": "Partner not found",
         "organization_not_found": "Organization not found",
         "code_exists": "Partner code already exists in this organization",
-        "ward_not_found": "Ward not found"
+        "ward_not_found": "Ward not found",
+        "ward_required_with_address": "Ward is required when providing an address",
+        "address_required_with_ward": "Address detail is required when a ward is selected"
     },
     "validation": {
         "name_required": "Partner name is required",
@@ -28,7 +30,9 @@
         "tax_code_string": "Tax code must be a string",
         "tax_code_max_length": "Tax code cannot exceed 20 characters",
         "address_string": "Address must be a string",
+        "address_required": "Address detail is required when a ward is selected",
         "ward_id_uuid": "Ward ID must be a valid UUID",
+        "ward_id_required": "Ward is required when providing an address detail",
         "is_active_boolean": "Status must be a boolean",
         "limit_int": "Limit must be an integer",
         "limit_min": "Limit must be >= 1",

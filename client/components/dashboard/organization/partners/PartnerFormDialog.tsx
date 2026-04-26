@@ -208,7 +208,7 @@ export function PartnerFormDialog({
         if (!formWardId) errs.ward = "Phường/Xã là bắt buộc";
         if (!formAddressDetail.trim()) errs.address = "Địa chỉ chi tiết là bắt buộc";
 
-        setFormErrors((prev) => ({ ...prev, ...errs }));
+        setFormErrors(errs);
         return Object.keys(errs).length === 0;
     };
 

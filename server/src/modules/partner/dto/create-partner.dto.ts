@@ -8,6 +8,7 @@ import {
   MaxLength,
   IsUUID,
   IsBoolean,
+  ValidateIf,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
@@ -86,14 +87,20 @@ export class CreatePartnerDto {
   tax_code?: string;
 
   @ApiPropertyOptional({ description: 'Địa chỉ chi tiết' })
-  @IsOptional()
+  @ValidateIf((o: CreatePartnerDto) => !!o.ward_id)
+  @IsNotEmpty({
+    message: i18nValidationMessage('partner.validation.address_required'),
+  })
   @IsString({
     message: i18nValidationMessage('partner.validation.address_string'),
   })
   address_detail?: string;
 
   @ApiPropertyOptional({ description: 'ID phường/xã' })
-  @IsOptional()
+  @ValidateIf((o: CreatePartnerDto) => !!o.address_detail)
+  @IsNotEmpty({
+    message: i18nValidationMessage('partner.validation.ward_id_required'),
+  })
   @IsUUID('4', {
     message: i18nValidationMessage('partner.validation.ward_id_uuid'),
   })
