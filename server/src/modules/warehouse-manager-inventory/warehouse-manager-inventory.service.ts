@@ -255,6 +255,18 @@ export class WarehouseManagerInventoryService {
           include: {
             details: {
               where: { is_deleted: false },
+              include: {
+                export_detail: {
+                  include: {
+                    product: {
+                      select: { id: true, name: true, sku: true },
+                    },
+                  },
+                },
+                block: {
+                  select: { id: true, code: true, name: true },
+                },
+              },
               orderBy: { created_at: 'asc' },
             },
           },
