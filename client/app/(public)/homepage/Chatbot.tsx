@@ -25,6 +25,8 @@ import { LiveChatMessage } from "@/types/live-chat/live-chat.type";
 import { publicWarehouseService } from "@/services/public-warehouse/public-warehouse.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import type { WarehouseVisitBooking } from "@/services/warehouse-visit/warehouse-visit.service";
+import { CozeChatbot } from "./CozeChatbot";
+import { DifyChatbot } from "./DifyChatbot";
 
 interface QuickReply {
     id: string;
@@ -241,7 +243,21 @@ function parseMarkdown(text: string): React.ReactNode[] {
     return result;
 }
 
-export function PrimeNestChatbot() {
+
+
+// ---------------------------------------------------------------------------
+// Chatbot provider type
+// ---------------------------------------------------------------------------
+type ChatbotProvider = "api" | "coze" | "dify";
+
+const CHATBOT_PROVIDER: ChatbotProvider =
+    (process.env.NEXT_PUBLIC_CHATBOT_PROVIDER as ChatbotProvider) || "coze";
+
+// ---------------------------------------------------------------------------
+// Internal API Chatbot (original implementation)
+// ---------------------------------------------------------------------------
+function ApiChatbot() {
+
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<ChatMode>("bot");
     const [inputValue, setInputValue] = useState("");
@@ -1560,4 +1576,27 @@ export function PrimeNestChatbot() {
             </div>
         </>
     );
+}
+
+// ---------------------------------------------------------------------------
+// Public export – switches between chatbot providers based on env
+// ---------------------------------------------------------------------------
+/**
+ * Smart Chatbot component that renders the appropriate chatbot based on
+ * the `NEXT_PUBLIC_CHATBOT_PROVIDER` environment variable.
+ *
+ * - `"api"`  → Original custom API chatbot (PrimeNest live-chat)
+ * - `"coze"` → Coze AI embedded chatbot (default)
+ * - `"dify"` → Dify AI embedded chatbot
+ */
+export function PrimeNestChatbot() {
+    switch (CHATBOT_PROVIDER) {
+        case "api":
+            return <ApiChatbot />;
+        case "dify":
+            return <DifyChatbot />;
+        case "coze":
+        default:
+            return <CozeChatbot />;
+    }
 }
