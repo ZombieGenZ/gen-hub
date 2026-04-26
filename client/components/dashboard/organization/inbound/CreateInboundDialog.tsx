@@ -350,6 +350,7 @@ export function CreateInboundDialog({
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
     const debouncedProductSearch = useDebounce(productSearch, 300);
+    const [isSyncingStock, setIsSyncingStock] = useState(false);
 
     const loadFormData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -387,6 +388,55 @@ export function CreateInboundDialog({
     useEffect(() => {
         if (open) loadFormData();
     }, [open, loadFormData]);
+
+    /**
+     * Sync tồn kho real-time: khi kho thay đổi hoặc sản phẩm được thêm vào,
+     * fetch lại quantity_available theo warehouse_id cụ thể.
+     */
+    const formItemProductIds = useMemo(
+        () => formItems.map((i) => i.product.id).join(","),
+        [formItems],
+    );
+
+    useEffect(() => {
+        if (!formWarehouse || formItems.length === 0) return;
+
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        let cancelled = false;
+        setIsSyncingStock(true);
+
+        productService
+            .list(token, { limit: 100, warehouse_id: formWarehouse })
+            .then((res) => {
+                if (cancelled) return;
+                const freshList: Product[] = res?.data?.items || [];
+
+                setFormItems((prev) =>
+                    prev.map((item) => {
+                        const fresh = freshList.find((p) => p.id === item.product.id);
+                        if (fresh !== undefined) {
+                            return {
+                                ...item,
+                                product: {
+                                    ...item.product,
+                                    quantity_available: fresh.quantity_available,
+                                },
+                            };
+                        }
+                        return item;
+                    }),
+                );
+            })
+            .catch(() => { /* silent fail */ })
+            .finally(() => {
+                if (!cancelled) setIsSyncingStock(false);
+            });
+
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formWarehouse, formItemProductIds]);
 
     const resetForm = useCallback(() => {
         setFormWarehouse("");
@@ -664,7 +714,15 @@ export function CreateInboundDialog({
                                                     Giá vốn
                                                 </th>
                                                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[90px]">
-                                                    Tồn kho
+                                                    <span className="flex items-center justify-end gap-1">
+                                                        Tồn kho
+                                                        {isSyncingStock && (
+                                                            <svg className="animate-spin h-3 w-3 text-muted-foreground" viewBox="0 0 24 24" fill="none">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                            </svg>
+                                                        )}
+                                                    </span>
                                                 </th>
                                                 <th className="px-4 py-2.5 w-[48px]" />
                                             </tr>
