@@ -115,6 +115,7 @@ export function CreateOutboundDialog({
     const [partnerSearch, setPartnerSearch] = useState("");
     const [partnerPopoverOpen, setPartnerPopoverOpen] = useState(false);
     const [isSyncingStock, setIsSyncingStock] = useState(false);
+    const [stockRefreshTick, setStockRefreshTick] = useState(0);
 
     const filteredPartners = useMemo(() => {
         const q = partnerSearch.trim().toLowerCase();
@@ -177,16 +178,32 @@ export function CreateOutboundDialog({
     }, [open, loadFormData]);
 
     /**
-     * Sync tồn kho real-time: khi kho thay đổi hoặc sản phẩm được thêm vào,
-     * fetch lại quantity_available theo warehouse_id cụ thể.
+     * Polling: cứ 30 giây làm mới tồn kho khi dialog đang mở và có sản phẩm
+     */
+    useEffect(() => {
+        if (!open || !formWarehouse || formItems.length === 0) return;
+        const timer = setInterval(() => setStockRefreshTick((t) => t + 1), 30_000);
+        return () => clearInterval(timer);
+    }, [open, formWarehouse, formItems.length]);
+
+    /**
+     * Sync tồn kho: khi kho thay đổi, sản phẩm được thêm/xóa, hoặc polling tick.
+     * Fetch từng sản phẩm theo SKU để tránh bỏ sót do phân trang.
      */
     const formItemProductIds = useMemo(
         () => formItems.map((i) => i.product.id).join(","),
         [formItems],
     );
 
+    // Snapshot id+sku chỉ thay đổi khi tập sản phẩm thay đổi (không đổi khi qty thay đổi)
+    const formItemSyncKeys = useMemo(
+        () => formItems.map((i) => ({ id: i.product.id, sku: i.product.sku })),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [formItemProductIds],
+    );
+
     useEffect(() => {
-        if (!formWarehouse || formItems.length === 0) return;
+        if (!formWarehouse || formItemSyncKeys.length === 0) return;
 
         const token = authStorage.getAccessToken();
         if (!token) return;
@@ -194,28 +211,44 @@ export function CreateOutboundDialog({
         let cancelled = false;
         setIsSyncingStock(true);
 
-        productService
-            .list(token, { limit: 100, warehouse_id: formWarehouse })
-            .then((res) => {
+        // Fetch từng sản phẩm theo SKU để đảm bảo không bị phân trang bỏ sót
+        Promise.all(
+            formItemSyncKeys.map(({ id, sku }) =>
+                productService
+                    .list(token, {
+                        limit: sku ? 5 : 100,
+                        keywords: sku || undefined,
+                        warehouse_id: formWarehouse,
+                    })
+                    .then((res) => {
+                        const items: Product[] = Array.isArray(res)
+                            ? (res as unknown as Product[])
+                            : Array.isArray(
+                                  (res as unknown as { data: { items: Product[] } })?.data?.items,
+                              )
+                            ? (res as unknown as { data: { items: Product[] } }).data.items
+                            : [];
+                        const match = items.find((p) => p.id === id);
+                        return { id, qty: match?.quantity_available };
+                    })
+                    .catch(() => ({ id, qty: undefined as number | undefined })),
+            ),
+        )
+            .then((results) => {
                 if (cancelled) return;
-                const freshList: Product[] = Array.isArray(res)
-                    ? res
-                    : Array.isArray(
-                          (res as unknown as { data: { items: Product[] } })?.data?.items,
-                      )
-                    ? (res as unknown as { data: { items: Product[] } }).data.items
-                    : [];
-
                 setFormItems((prev) =>
                     prev.map((item) => {
-                        const fresh = freshList.find((p) => p.id === item.product.id);
-                        if (fresh !== undefined) {
+                        const result = results.find((r) => r.id === item.product.id);
+                        if (result && result.qty !== undefined) {
+                            const available = result.qty;
+                            const stockError =
+                                item.quantity > available
+                                    ? `Tồn kho không đủ (còn ${available})`
+                                    : undefined;
                             return {
                                 ...item,
-                                product: {
-                                    ...item.product,
-                                    quantity_available: fresh.quantity_available,
-                                },
+                                stockError,
+                                product: { ...item.product, quantity_available: available },
                             };
                         }
                         return item;
@@ -229,7 +262,7 @@ export function CreateOutboundDialog({
 
         return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formWarehouse, formItemProductIds]);
+    }, [formWarehouse, formItemProductIds, stockRefreshTick]);
 
     // Auto-fill địa chỉ giao hàng khi chọn đối tác
     useEffect(() => {
