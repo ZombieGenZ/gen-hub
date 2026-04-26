@@ -48,12 +48,12 @@ export function StatusHistory({ type, title, range }: StatusHistoryProps) {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5 shadow-sm animate-pulse">
-        <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded mb-4"></div>
-        <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded mb-2"></div>
-        <div className="grid grid-cols-24 gap-1 mt-4">
+      <div className="rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 p-5 animate-pulse">
+        <div className="h-5 w-40 bg-neutral-200 dark:bg-neutral-800 rounded-lg mb-4"></div>
+        <div className="h-3 w-64 bg-neutral-100 dark:bg-neutral-800 rounded mb-4"></div>
+        <div className="flex gap-1 mt-4">
           {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-100 dark:bg-gray-800 rounded-sm"></div>
+            <div key={i} className="flex-1 h-10 bg-neutral-100 dark:bg-neutral-800 rounded-sm"></div>
           ))}
         </div>
       </div>
@@ -70,99 +70,126 @@ export function StatusHistory({ type, title, range }: StatusHistoryProps) {
     red: 'bg-rose-500',
   };
 
-  const statusIcons = {
-    green: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-    yellow: <Clock className="w-4 h-4 text-amber-500" />,
-    red: <AlertCircle className="w-4 h-4 text-rose-500" />,
+  const statusBadge = {
+    green: {
+      bg: 'bg-emerald-50 dark:bg-emerald-500/10',
+      text: 'text-emerald-700 dark:text-emerald-400',
+      ring: 'ring-emerald-200/80 dark:ring-emerald-500/20',
+      dot: 'bg-emerald-500 dark:bg-emerald-400',
+      label: 'Operational',
+    },
+    yellow: {
+      bg: 'bg-amber-50 dark:bg-amber-500/10',
+      text: 'text-amber-700 dark:text-amber-400',
+      ring: 'ring-amber-200/80 dark:ring-amber-500/20',
+      dot: 'bg-amber-500 dark:bg-amber-400',
+      label: 'Checking',
+    },
+    red: {
+      bg: 'bg-rose-50 dark:bg-rose-500/10',
+      text: 'text-rose-700 dark:text-rose-400',
+      ring: 'ring-rose-200/80 dark:ring-rose-500/20',
+      dot: 'bg-rose-500 dark:bg-rose-400',
+      label: 'Service Down',
+    },
   };
 
+  const badge = statusBadge[data.status];
+
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm transition-all hover:shadow-md">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+    <div className="rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/30 p-5 transition-all duration-200 hover:border-neutral-200 dark:hover:border-neutral-700">
+      {/* Header Row */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-4">
         <div className="flex items-center gap-3">
-          <div className={clsx('p-2 rounded-lg bg-opacity-10', {
-            'bg-emerald-500': data.status === 'green',
-            'bg-amber-500': data.status === 'yellow',
-            'bg-rose-500': data.status === 'red',
+          <div className={clsx('p-2 rounded-lg', {
+            'bg-emerald-500/10': data.status === 'green',
+            'bg-amber-500/10': data.status === 'yellow',
+            'bg-rose-500/10': data.status === 'red',
           })}>
-            <Server className={clsx('w-5 h-5', {
+            <Server className={clsx('w-4.5 h-4.5', {
               'text-emerald-500': data.status === 'green',
               'text-amber-500': data.status === 'yellow',
               'text-rose-500': data.status === 'red',
             })} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Status:</span>
-              <span className="flex items-center gap-1 font-medium capitalize">
-                {statusIcons[data.status]}
-                {data.status === 'green' ? 'Operational' : data.status === 'yellow' ? 'Checking' : 'Service Down'}
-              </span>
+            <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className={clsx(
+                'flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ring-1',
+                badge.bg, badge.text, badge.ring
+              )}>
+                <div className={clsx('w-1.5 h-1.5 rounded-full', badge.dot, {
+                  'animate-pulse': data.status === 'green',
+                })} />
+                {badge.label}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:gap-8">
+        {/* Stats */}
+        <div className="flex gap-6">
           <div className="text-center md:text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Uptime</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{data.uptime.toFixed(2)}%</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-semibold mb-0.5">Uptime</p>
+            <p className="text-lg font-bold text-neutral-900 dark:text-white font-mono">{data.uptime.toFixed(2)}%</p>
           </div>
           <div className="text-center md:text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Response</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-semibold mb-0.5">Response</p>
+            <p className="text-lg font-bold text-neutral-900 dark:text-white font-mono">
               {data.currentPing > 0 ? `${data.currentPing}ms` : '--'}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 mb-1">
+      {/* Timeline */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">
           <span>{data.timeline[0]?.day} {data.timeline[0]?.hour}:00</span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
               <span>Up</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
               <span>Down</span>
             </div>
           </div>
           <span>Now</span>
         </div>
         
-        <div className="flex gap-1 h-12">
+        <div className="flex gap-[3px] h-10">
           {data.timeline.map((point, i) => (
             <div
               key={`${point.day}-${point.hour}-${i}`}
               className={clsx(
-                'flex-1 rounded-sm cursor-help transition-all hover:opacity-80 relative group',
+                'flex-1 rounded-[3px] cursor-help transition-all duration-150 hover:opacity-75 hover:scale-y-110 relative group',
                 statusColors[point.status]
               )}
             >
               {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity">
-                <div className="font-bold border-b border-gray-700 pb-1 mb-1">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-neutral-900 dark:bg-neutral-800 text-white text-[10px] rounded-lg shadow-xl ring-1 ring-white/10 opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-150">
+                <div className="font-bold border-b border-neutral-700 dark:border-neutral-600 pb-1 mb-1.5 text-[11px]">
                   {point.day} @ {point.hour}:00
                 </div>
                 <div className="flex justify-between mb-0.5">
-                  <span>Status:</span>
-                  <span className={clsx({
+                  <span className="text-neutral-400">Status:</span>
+                  <span className={clsx('font-semibold', {
                     'text-emerald-400': point.status === 'green',
                     'text-amber-400': point.status === 'yellow',
                     'text-rose-400': point.status === 'red'
                   })}>{point.status.toUpperCase()}</span>
                 </div>
                 <div className="flex justify-between mb-0.5">
-                  <span>Avg Latency:</span>
-                  <span>{point.avgPing}ms</span>
+                  <span className="text-neutral-400">Avg Latency:</span>
+                  <span className="font-mono">{point.avgPing}ms</span>
                 </div>
                 {point.downCount > 0 && (
                   <div className="flex justify-between text-rose-300">
                     <span>Incidents:</span>
-                    <span>{point.downCount}</span>
+                    <span className="font-mono">{point.downCount}</span>
                   </div>
                 )}
               </div>
@@ -170,12 +197,12 @@ export function StatusHistory({ type, title, range }: StatusHistoryProps) {
           ))}
         </div>
         
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 dark:text-neutral-500">
             <Activity className="w-3 h-3" />
             <span>Last 24 hours monitoring</span>
           </div>
-          <div className="text-[10px] text-gray-300 dark:text-gray-600 font-mono italic">
+          <div className="text-[10px] text-neutral-300 dark:text-neutral-600 font-mono italic">
             GEN-HUB Monitoring Service v1.0
           </div>
         </div>

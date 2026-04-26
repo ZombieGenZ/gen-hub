@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/language-toggle';
 import { StatusHistory } from '@/components/status-history';
 import { RangeSelector } from '@/components/range-selector';
-import { Clock, RefreshCw } from 'lucide-react';
+import { Clock, RefreshCw, Activity } from 'lucide-react';
 
 type ServiceStatus = {
   name: string;
@@ -155,23 +155,30 @@ export default function Home() {
         </section>
 
         {/* Service History Section (Status Tracker) */}
-        <section className="space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-6">
+        <section className="relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 shadow-md">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/80">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
-                <Clock className="w-6 h-6" />
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/15 to-indigo-500/10 text-blue-500 dark:from-blue-400/20 dark:to-indigo-400/15 dark:text-blue-400 ring-1 ring-blue-500/10 dark:ring-blue-400/10">
+                <Activity className="w-5 h-5" />
               </div>
-              <h2 className="text-2xl font-bold dark:text-white">{t('serviceHistory')}</h2>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">{t('serviceHistory')}</h2>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                  {t('subtitle')}
+                </p>
+              </div>
             </div>
 
             <RangeSelector
               currentRange={selectedRange}
               onChange={setSelectedRange}
-              ranges={['24h', '1d', '3d', '7d']}
+              ranges={['24h', '3d', '7d']}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
+          {/* Content */}
+          <div className="p-6 space-y-4">
             {trackerTypes.length > 0 ? (
               trackerTypes.map((type) => (
                 <StatusHistory
@@ -183,8 +190,9 @@ export default function Home() {
               ))
             ) : (
               !loading && (
-                <div className="text-center py-12 text-neutral-400 italic">
-                  {t('noHistoryData')}
+                <div className="text-center py-16 text-neutral-400 dark:text-neutral-500">
+                  <Clock className="w-8 h-8 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
+                  <p className="text-sm font-medium">{t('noHistoryData')}</p>
                 </div>
               )
             )}
