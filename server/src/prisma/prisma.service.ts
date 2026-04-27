@@ -30,6 +30,7 @@ import {
   InventoryWarehouseManagerPermissionsSeeder,
   RevenuePermissionsSeeder,
   AdministrativeSeeder,
+  RedisPermissionsSeeder,
   WarningSeeder,
   AmenitySeeder,
   AddonSeeder,

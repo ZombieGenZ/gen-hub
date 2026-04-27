@@ -1523,7 +1523,8 @@ export class InventoryRequestService {
             orgId,
             {
               warehouse_id: warehouse.id,
-              sales_order_code: soCode === 'DEFAULT' ? undefined : soCode,
+              sales_order_code: soCode === 'DEFAULT' ? `EXCEL-${Date.now()}` : soCode,
+              vehicle_info: firstRow['Thông tin xe'] || firstRow['vehicle_info'] || 'N/A',
               details,
               notes: 'Xuất hàng từ file Excel',
             },

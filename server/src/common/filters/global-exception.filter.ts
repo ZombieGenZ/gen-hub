@@ -327,7 +327,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ],
         };
       }
-      }
       case 'P2024':
         return {
           status: HttpStatus.SERVICE_UNAVAILABLE,

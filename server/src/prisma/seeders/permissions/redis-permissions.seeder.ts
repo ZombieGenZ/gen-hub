@@ -1,7 +1,11 @@
 import { BaseSeeder } from '../base.seeder';
 
 export class RedisPermissionsSeeder extends BaseSeeder {
-  async seed() {
+  constructor(prisma: any) {
+    super(prisma, 'RedisPermissionsSeeder');
+  }
+
+  async run(): Promise<void> {
     const permissions = [
       {
         key: 'redis.manage',
@@ -11,11 +15,18 @@ export class RedisPermissionsSeeder extends BaseSeeder {
     ];
 
     for (const permission of permissions) {
-      await this.prisma.permission.upsert({
-        where: { key: permission.key },
-        update: permission,
-        create: permission,
-      });
+      const permissionId = await this.createPermissionIfNotExists(
+        permission.key,
+        permission.name,
+        permission.description,
+      );
+
+      if (permissionId) {
+        const adminRoles = await this.getAdminRoles();
+        for (const role of adminRoles) {
+          await this.assignPermissionToRole(role.id, permissionId);
+        }
+      }
     }
 
     this.logger.log('✅ Redis permissions seeded');

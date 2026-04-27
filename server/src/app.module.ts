@@ -99,6 +99,7 @@ import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inv
 import { AppDownloadModule } from './modules/app-download/app-download.module';
 import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
 import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
+import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
 
 @Module({
   imports: [
@@ -327,11 +328,6 @@ import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
-    },
-  ],
-})
-export class AppModule {}
-erGuard,
     },
   ],
 })
