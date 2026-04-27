@@ -270,6 +270,8 @@ export enum ResponseCode {
   REDIS_ADMIN_CACHE_DELETE_SUCCESS = 'redis_admin.cache_delete_success',
   REDIS_ADMIN_CACHE_BULK_DELETE_SUCCESS = 'redis_admin.cache_bulk_delete_success',
   REDIS_ADMIN_CACHE_CLEAR_SUCCESS = 'redis_admin.cache_clear_success',
+  REDIS_ADMIN_CACHE_LIST_SUCCESS = 'redis_admin.cache_list_success',
+  REDIS_ADMIN_CACHE_GET_SUCCESS = 'redis_admin.cache_get_success',
   REDIS_ADMIN_CACHE_UPDATE_SUCCESS = 'redis_admin.cache_update_success',
   REDIS_ADMIN_CACHE_BULK_UPDATE_SUCCESS = 'redis_admin.cache_bulk_update_success',
 
