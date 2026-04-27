@@ -2,9 +2,11 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -12,6 +14,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -30,6 +33,7 @@ import {
 import {
   CreatedResponse,
   DeletedResponse,
+  GetResponse,
   UpdatedResponse,
 } from '../../common/responses/success.response';
 import { ResponseCode } from '../../common/responses/response-code.enum';
@@ -252,6 +256,99 @@ export class RedisAdminController {
       ResponseCode.REDIS_ADMIN_CACHE_CLEAR_SUCCESS,
       null,
       i18n.t('redis-admin.cache_clear_success'),
+    );
+  }
+
+  @Get('cache')
+  @RequirePermission('redis.manage')
+  @ApiOperation({
+    summary: 'Lấy danh sách tất cả các cache keys',
+    description:
+      'Lấy danh sách tất cả các cache keys hiện có trong Redis, kèm theo value và TTL. Có thể filter theo pattern. Yêu cầu quyền `redis.manage`.',
+  })
+  @ApiQuery({
+    name: 'pattern',
+    description: 'Pattern để filter keys (ví dụ: user:*). Mặc định là *',
+    required: false,
+    example: 'user:*',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách cache thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'REDIS_ADMIN_CACHE_LIST_SUCCESS' },
+        message: { type: 'string', example: 'Lấy danh sách cache thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              key: { type: 'string', example: 'user:session:abc123' },
+              value: { type: 'string', example: '{"userId":"123"}' },
+              ttl: { type: 'number', example: 3600 },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAllCache(
+    @Query('pattern') pattern: string = '*',
+    @I18n() i18n: I18nContext,
+  ) {
+    const data = await this.redisAdminService.getAllCache(pattern);
+    return new GetResponse(
+      ResponseCode.REDIS_ADMIN_CACHE_LIST_SUCCESS,
+      data,
+      i18n.t('redis-admin.cache_list_success'),
+    );
+  }
+
+  @Get('cache/:key')
+  @RequirePermission('redis.manage')
+  @ApiOperation({
+    summary: 'Lấy chi tiết 1 cache entry theo key',
+    description:
+      'Lấy value và TTL của một cache entry cụ thể. Yêu cầu quyền `redis.manage`.',
+  })
+  @ApiParam({
+    name: 'key',
+    description: 'Key của cache entry cần lấy',
+    example: 'user:session:abc123',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy chi tiết cache thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'REDIS_ADMIN_CACHE_GET_SUCCESS' },
+        message: { type: 'string', example: 'Lấy chi tiết cache thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'user:session:abc123' },
+            value: { type: 'string', example: '{"userId":"123"}' },
+            ttl: { type: 'number', example: 3600 },
+          },
+        },
+      },
+    },
+  })
+  async getCacheByKey(
+    @Param('key') key: string,
+    @I18n() i18n: I18nContext,
+  ) {
+    const data = await this.redisAdminService.getCacheByKey(key);
+    return new GetResponse(
+      ResponseCode.REDIS_ADMIN_CACHE_GET_SUCCESS,
+      data,
+      i18n.t('redis-admin.cache_get_success'),
     );
   }
 

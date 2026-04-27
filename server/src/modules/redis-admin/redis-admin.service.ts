@@ -54,6 +54,30 @@ export class RedisAdminService {
   }
 
   /**
+   * Lấy danh sách tất cả các cache keys (có thể filter theo pattern)
+   */
+  async getAllCache(pattern: string = '*') {
+    const keys = await this.redisService.getClient().keys(pattern);
+    const result = await Promise.all(
+      keys.map(async (key) => {
+        const value = await this.redisService.get(key);
+        const ttl = await this.redisService.ttl(key);
+        return { key, value, ttl };
+      }),
+    );
+    return result;
+  }
+
+  /**
+   * Lấy chi tiết 1 cache entry theo key
+   */
+  async getCacheByKey(key: string) {
+    const value = await this.redisService.get(key);
+    const ttl = await this.redisService.ttl(key);
+    return { key, value, ttl };
+  }
+
+  /**
    * Chỉnh sửa 1 cache entry
    */
   async editCache(key: string, dto: UpdateCacheDto) {

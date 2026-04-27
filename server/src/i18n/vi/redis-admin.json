@@ -4,6 +4,8 @@
   "cache_delete_success": "Xóa cache thành công",
   "cache_bulk_delete_success": "Xóa nhiều cache thành công",
   "cache_clear_success": "Xóa toàn bộ cache thành công",
+  "cache_list_success": "Lấy danh sách cache thành công",
+  "cache_get_success": "Lấy chi tiết cache thành công",
   "cache_update_success": "Cập nhật cache thành công",
   "cache_bulk_update_success": "Cập nhật nhiều cache thành công"
 }
