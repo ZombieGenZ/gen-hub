@@ -21,7 +21,6 @@ import {
     DatabaseBackup,
     Shield,
     Key,
-    Calendar,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
