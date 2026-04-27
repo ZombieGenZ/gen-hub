@@ -198,7 +198,8 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
         setError(null);
         try {
             // Nếu warehouseId rỗng, gọi không filter theo warehouse
-            const res: any = await inventoryService.listStock(token, { warehouse_id: warehouseId || undefined });
+            const wId = warehouseId || undefined;
+            const res: any = await inventoryService.listStock(token, { warehouse_id: wId, limit: 10000 });
             console.log('[InventoryTab] warehouseId:', warehouseId, 'raw API response:', res);
             // Hỗ trợ nhiều response format: { data: [...] }, { data: { items: [...] } }, hoặc trực tiếp [...]
             let items: StockItem[] = [];
@@ -343,10 +344,10 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
         <div className="space-y-5">
             {/* Refresh & Export buttons */}
             <div className="flex justify-end gap-2">
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleExportExcel} 
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportExcel}
                     className="text-xs gap-1.5 h-8"
                     disabled={isExporting}
                 >
