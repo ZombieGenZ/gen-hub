@@ -329,7 +329,28 @@ export class ProductController {
     name: 'orgId',
     description: 'ID của tổ chức',
     example: '550e8400-e29b-41d4-a716-446655440000',
+    schema: { type: 'string', format: 'uuid' },
   })
+  @ApiResponse({
+    status: 200,
+    description: 'File Excel danh sách sản phẩm',
+    headers: {
+      'Content-Type': {
+        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        schema: { type: 'string' },
+      },
+      'Content-Disposition': {
+        description: 'attachment; filename=products-{orgId}.xlsx',
+        schema: { type: 'string' },
+      },
+    },
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
   async export(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Res() res: Response,
@@ -357,6 +378,12 @@ export class ProductController {
     description:
       'Tải lên file Excel để nhập hàng loạt sản phẩm. Yêu cầu quyền `product.import`.',
   })
+  @ApiParam({
+    name: 'orgId',
+    description: 'ID của tổ chức',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    schema: { type: 'string', format: 'uuid' },
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -364,10 +391,42 @@ export class ProductController {
         file: {
           type: 'string',
           format: 'binary',
+          description: 'File Excel (.xlsx) chứa dữ liệu sản phẩm',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Import thành công, trả về thống kê số lượng thành công và thất bại',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'product.import_success' },
+        message: { type: 'string', example: 'Nhập dữ liệu thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            success_count: { type: 'number', example: 120 },
+            failed_count: { type: 'number', example: 2 },
+            errors: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['Dòng 5: Thiếu mã SKU', 'Dòng 12: Giá vốn không hợp lệ'],
+            },
+          },
         },
       },
     },
   })
+  @ApiResponse({
+    status: 400,
+    description: 'File không hợp lệ (sai định dạng, thiếu cột bắt buộc)',
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   async import(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @UploadedFile() file: any,
@@ -394,7 +453,28 @@ export class ProductController {
     name: 'orgId',
     description: 'ID của tổ chức',
     example: '550e8400-e29b-41d4-a716-446655440000',
+    schema: { type: 'string', format: 'uuid' },
   })
+  @ApiResponse({
+    status: 200,
+    description: 'File Excel mẫu nhập sản phẩm',
+    headers: {
+      'Content-Type': {
+        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        schema: { type: 'string' },
+      },
+      'Content-Disposition': {
+        description: 'attachment; filename=product-import-template.xlsx',
+        schema: { type: 'string' },
+      },
+    },
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
   async getTemplate(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Res() res: Response,

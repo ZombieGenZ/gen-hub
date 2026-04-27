@@ -23,6 +23,7 @@ import {
   ApiQuery,
   ApiResponse,
   ApiSecurity,
+  ApiConsumes,
   ApiTags,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
@@ -293,7 +294,7 @@ export class InventoryRequestController {
   constructor(
     private readonly inventoryRequestService: InventoryRequestService,
     private readonly i18n: I18nService,
-  ) {}
+  ) { }
 
   @Get('warehouses')
   @RequireOrgPermission('org.inventory.inbound.list')
@@ -2413,7 +2414,37 @@ export class InventoryRequestController {
 
   @Get('stock/export')
   @RequireOrgPermission('org.inventory.inbound.list')
-  @ApiOperation({ summary: 'Xuất báo cáo tồn kho ra Excel' })
+  @ApiOperation({
+    summary: 'Xuất báo cáo tồn kho ra Excel',
+    description: 'Tải về báo cáo tồn kho chi tiết (thực tế, khả dụng, đang giữ) theo kho. Yêu cầu quyền `org.inventory.inbound.list`.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về file Excel báo cáo tồn kho.',
+    headers: {
+      'Content-Type': {
+        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        schema: { type: 'string' },
+      },
+      'Content-Disposition': {
+        description: 'attachment; filename="inventory-stock-{orgId}.xlsx"',
+        schema: { type: 'string' },
+      },
+    },
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
   async exportStock(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Query('warehouse_id') warehouseId: string | undefined,
@@ -2436,7 +2467,27 @@ export class InventoryRequestController {
 
   @Get('inbound/template')
   @RequireOrgPermission('org.inventory.inbound.create')
-  @ApiOperation({ summary: 'Tải file mẫu nhập kho' })
+  @ApiOperation({
+    summary: 'Tải file mẫu nhập kho',
+    description: 'Tải file Excel mẫu để điền dữ liệu nhập kho hàng loạt. Yêu cầu quyền `org.inventory.inbound.create`.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'File Excel mẫu nhập kho',
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
   async getInboundTemplate(@Res() res: Response) {
     const buffer = await this.inventoryRequestService.getInboundTemplate();
     res.setHeader(
@@ -2452,7 +2503,27 @@ export class InventoryRequestController {
 
   @Get('outbound/template')
   @RequireOrgPermission('org.inventory.outbound.create')
-  @ApiOperation({ summary: 'Tải file mẫu xuất kho' })
+  @ApiOperation({
+    summary: 'Tải file mẫu xuất kho',
+    description: 'Tải file Excel mẫu để điền dữ liệu xuất kho hàng loạt. Yêu cầu quyền `org.inventory.outbound.create`.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'File Excel mẫu xuất kho',
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
   async getOutboundTemplate(@Res() res: Response) {
     const buffer = await this.inventoryRequestService.getOutboundTemplate();
     res.setHeader(
@@ -2467,7 +2538,58 @@ export class InventoryRequestController {
   }
   @Post('inbound/import')
   @RequireOrgPermission('org.inventory.inbound.create')
-  @ApiOperation({ summary: 'Nhập dữ liệu nhập kho từ file Excel' })
+  @ApiOperation({
+    summary: 'Nhập dữ liệu nhập kho từ file Excel',
+    description: 'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu nhập kho. Yêu cầu quyền `org.inventory.inbound.create`.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File Excel (.xlsx) chứa dữ liệu nhập kho',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Import thành công, trả về kết quả số lượng bản ghi xử lý',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.inbound-import',
+      message: 'Nhập dữ liệu thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          success_count: { type: 'number', example: 15 },
+          error_count: { type: 'number', example: 0 },
+          errors: { type: 'array', items: { type: 'string' } },
+        },
+      },
+      dataExample: {
+        success_count: 15,
+        error_count: 0,
+        errors: [],
+      },
+    }),
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'File upload không đúng định dạng hoặc thiếu file',
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   @UseInterceptors(FileInterceptor('file'))
   async importInbound(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -2491,7 +2613,58 @@ export class InventoryRequestController {
 
   @Post('outbound/import')
   @RequireOrgPermission('org.inventory.outbound.create')
-  @ApiOperation({ summary: 'Nhập dữ liệu xuất kho từ file Excel' })
+  @ApiOperation({
+    summary: 'Nhập dữ liệu xuất kho từ file Excel',
+    description: 'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu xuất kho. Yêu cầu quyền `org.inventory.outbound.create`.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File Excel (.xlsx) chứa dữ liệu xuất kho',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Import thành công, trả về kết quả số lượng bản ghi xử lý',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.outbound-import',
+      message: 'Nhập dữ liệu thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          success_count: { type: 'number', example: 15 },
+          error_count: { type: 'number', example: 0 },
+          errors: { type: 'array', items: { type: 'string' } },
+        },
+      },
+      dataExample: {
+        success_count: 15,
+        error_count: 0,
+        errors: [],
+      },
+    }),
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'File upload không đúng định dạng hoặc thiếu file',
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   @UseInterceptors(FileInterceptor('file'))
   async importOutbound(
     @Param('orgId', ParseUUIDPipe) orgId: string,
