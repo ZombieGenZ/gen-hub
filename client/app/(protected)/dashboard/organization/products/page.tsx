@@ -117,11 +117,11 @@ export default function ProductMasterListPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            const res = await inventoryService.listStock(token);
+            const res = await inventoryService.listStock(token, { limit: 10000 });
             const items: { product_id: string; quantity_on_hand: number }[] =
-                Array.isArray(res?.data) ? res.data
-                    : Array.isArray((res?.data as any)?.items) ? (res.data as any).items
-                        : Array.isArray(res) ? (res as any) : [];
+                Array.isArray(res?.data?.items) ? res.data.items
+                    : Array.isArray(res?.data) ? (res.data as any)
+                        : [];
             const map: Record<string, number> = {};
             items.forEach((item) => {
                 map[item.product_id] = (map[item.product_id] || 0) + (item.quantity_on_hand ?? 0);

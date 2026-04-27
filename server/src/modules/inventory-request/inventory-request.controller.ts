@@ -40,6 +40,7 @@ import {
   CreateOutboundRequestDto,
   QueryInboundRequestDto,
   QueryOutboundRequestDto,
+  QueryStockDto,
   RejectRequestDto,
   StartReceivingDto,
   QueryTransactionDto,
@@ -348,9 +349,9 @@ export class InventoryRequestController {
   @Get('stock')
   @RequireOrgPermission('org.inventory.inbound.list')
   @ApiOperation({
-    summary: 'Danh sách tồn kho',
+    summary: 'Danh sách tồn kho (có phân trang)',
     description:
-      'Lấy danh sách tồn kho thực tế của tổ chức theo từng sản phẩm trong kho. Có thể lọc theo kho hoặc từ khóa sản phẩm. Yêu cầu quyền `org.inventory.inbound.list`.',
+      'Lấy danh sách tồn kho thực tế của tổ chức theo từng sản phẩm trong kho. Hỗ trợ lọc theo kho, tìm kiếm theo sản phẩm và phân trang. Yêu cầu quyền `org.inventory.inbound.list`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -359,56 +360,50 @@ export class InventoryRequestController {
     example: ORG_ID,
     schema: { type: 'string', format: 'uuid' },
   })
-  @ApiQuery({
-    name: 'warehouse_id',
-    required: false,
-    type: String,
-    description: 'ID kho cần lọc. Bỏ trống để lấy toàn bộ kho thuộc tổ chức.',
-    example: WAREHOUSE_ID,
-  })
-  @ApiQuery({
-    name: 'keywords',
-    required: false,
-    type: String,
-    description: 'Từ khóa tìm kiếm theo mã hoặc tên sản phẩm',
-    example: 'SP-001',
-  })
   @ApiResponse({
     status: 200,
-    description: 'Trả về danh sách tồn kho theo điều kiện lọc',
+    description: 'Trả về danh sách tồn kho phân trang theo điều kiện lọc',
     schema: buildSuccessResponseSchema({
       code: 'inventory-request.list_stock',
       message: 'Lấy danh sách tồn kho thành công',
-      dataSchema: { type: 'array', items: stockItemSchema },
-      dataExample: [
-        {
-          product_id: PRODUCT_ID,
-          product_code: 'SP-001',
-          product_name: 'Táo Envy New Zealand',
-          warehouse_id: WAREHOUSE_ID,
-          warehouse_name: 'Kho lạnh Quận 7',
-          available_qty: 245,
-          reserved_qty: 30,
-          unit_name: 'Thùng',
-        },
-      ],
+      dataSchema: buildPaginationDataSchema({ type: 'array', items: stockItemSchema }),
+      dataExample: {
+        items: [
+          {
+            product_id: PRODUCT_ID,
+            product_name: 'Táo Envy New Zealand',
+            sku: 'SP-001',
+            warehouse_id: WAREHOUSE_ID,
+            warehouse_name: 'Kho lạnh Quận 7',
+            quantity_on_hand: 275,
+            quantity_allocated: 30,
+            quantity_available: 245,
+            location: 'Hàng A > Kệ 01 > Tầng 2 > Block B',
+            batch_code: 'LOT-2026-001',
+          },
+        ],
+        total: 1,
+        limit: 20,
+        offset: 0,
+      },
     }),
   })
   @ApiAuthResponses()
   async listStock(
     @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Query('warehouse_id') warehouseId: string | undefined,
-    @Query('keywords') keywords: string | undefined,
+    @Query() query: QueryStockDto,
     @I18nLang() lang: string,
   ) {
-    const items = await this.inventoryRequestService.listInventoryStock(
+    const { items, total } = await this.inventoryRequestService.listInventoryStock(
       orgId,
-      warehouseId,
-      keywords,
+      query.warehouse_id,
+      query.keywords,
+      query.limit ?? 20,
+      query.offset ?? 0,
     );
     return new GetResponse(
       'inventory-request.list_stock',
-      items,
+      { items, total, limit: query.limit ?? 20, offset: query.offset ?? 0 },
       lang === 'vi'
         ? 'Lấy danh sách tồn kho thành công'
         : 'Stock list retrieved',
