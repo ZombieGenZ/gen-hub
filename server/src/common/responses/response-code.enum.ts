@@ -264,6 +264,15 @@ export enum ResponseCode {
   SYSTEM_LOG_MODULES_SUCCESS = 'system_log.modules_success',
   SYSTEM_LOG_LEVELS_SUCCESS = 'system_log.levels_success',
 
+  // Redis Admin
+  REDIS_ADMIN_CACHE_CREATE_SUCCESS = 'redis_admin.cache_create_success',
+  REDIS_ADMIN_CACHE_BULK_CREATE_SUCCESS = 'redis_admin.cache_bulk_create_success',
+  REDIS_ADMIN_CACHE_DELETE_SUCCESS = 'redis_admin.cache_delete_success',
+  REDIS_ADMIN_CACHE_BULK_DELETE_SUCCESS = 'redis_admin.cache_bulk_delete_success',
+  REDIS_ADMIN_CACHE_CLEAR_SUCCESS = 'redis_admin.cache_clear_success',
+  REDIS_ADMIN_CACHE_UPDATE_SUCCESS = 'redis_admin.cache_update_success',
+  REDIS_ADMIN_CACHE_BULK_UPDATE_SUCCESS = 'redis_admin.cache_bulk_update_success',
+
   // Permission
   PERMISSION_LIST_SUCCESS = 'permission.list_success',
 

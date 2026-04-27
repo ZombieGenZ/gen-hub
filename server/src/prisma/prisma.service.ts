@@ -521,6 +521,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new InventoryPermissionsSeeder(this),
         new InventoryWarehouseManagerPermissionsSeeder(this),
         new RevenuePermissionsSeeder(this),
+        new RedisPermissionsSeeder(this),
       ];
 
       // Run permission seeders in batches of 3

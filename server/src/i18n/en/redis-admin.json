@@ -1,0 +1,9 @@
+{
+  "cache_create_success": "Cache created successfully",
+  "cache_bulk_create_success": "Bulk cache created successfully",
+  "cache_delete_success": "Cache deleted successfully",
+  "cache_bulk_delete_success": "Bulk cache deleted successfully",
+  "cache_clear_success": "All cache cleared successfully",
+  "cache_update_success": "Cache updated successfully",
+  "cache_bulk_update_success": "Bulk cache updated successfully"
+}

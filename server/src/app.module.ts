@@ -120,6 +120,7 @@ import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
     // Core Infrastructure
     SharedModule,
     RedisModule,
+    RedisAdminModule,
     WebsocketModule,
 
     I18nModule.forRoot({
@@ -326,6 +327,11 @@ import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
+    },
+  ],
+})
+export class AppModule {}
+erGuard,
     },
   ],
 })
