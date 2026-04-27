@@ -1,216 +1,157 @@
-# Inventory Request Module Documentation
+---
+title: "Inventory Request Module API"
+description: "Tài liệu kỹ thuật API Quản lý Nhập Xuất Tồn kho cho Tổ chức"
+version: "1.0"
+---
 
-## Tổng Quan
+# Inventory Request API Documentation
 
-Module `inventory-request` quản lý các yêu cầu nhập kho (Inbound) và xuất kho (Outbound) trong phạm vi Tổ Chức (Organization).
-Quy trình hoạt động dựa trên mô hình:
-1. **Request**: Nhân viên tạo yêu cầu (Pending)
-2. **Review**: Quản lý kho duyệt yêu cầu (Processing/Approved/Rejected)
-3. **Execution**: Thực hiện nhập/xuất thực tế (Completed)
+## Tổng quan
+Module **Inventory Request** là trái tim của hệ thống quản lý kho, cung cấp các API để tổ chức quản lý luồng hàng hóa (Nhập kho - Inbound, Xuất kho - Outbound), theo dõi tồn kho (Stock), xem lịch sử giao dịch (Transactions) và thực hiện tái cấu trúc kho (Rebalance).
+
+## Kiến trúc
+
+```mermaid
+flowchart LR
+    A[Organization Client] -->|HTTP GET/POST/PATCH| B(InventoryRequest Controller)
+    B --> C{InventoryRequest Service}
+    C --> D[Prisma Client]
+    D -->|Query/Mutate| E[(Database)]
+    C -->|Format Data| F[Response Data]
+    C -->|Generate/Parse Excel| G[Excel File]
+    F --> B
+    G --> B
+    B --> A
+```
+
+## Xác thực & Phân quyền
+- **Xác thực**: Hỗ trợ đồng thời JWT token (qua header `Authorization: Bearer <token>`) và API Key (qua header `X-API-Key`) thông qua `CombinedAuthGuard`.
+- **Phân quyền**: Yêu cầu các quyền riêng biệt cho từng nghiệp vụ (ví dụ: `org.inventory.inbound.list`, `org.inventory.inbound.create`, `org.inventory.inbound.approve`, v.v.).
 
 ---
 
-## Permission
+## 1. Quản lý Nhập kho (Inbound)
 
-| Action | Permission Key | Mô tả |
-|--------|----------------|-------|
-| Tạo phiếu nhập | `org.inventory.inbound.create` | Quyền tạo yêu cầu nhập kho |
-| Xem phiếu nhập | `org.inventory.inbound.list` | Quyền xem danh sách và chi tiết phiếu nhập |
-| Tạo phiếu xuất | `org.inventory.outbound.create` | Quyền tạo yêu cầu xuất kho |
-| Xem phiếu xuất | `org.inventory.outbound.list` | Quyền xem danh sách và chi tiết phiếu xuất |
+### Lấy file mẫu nhập kho
+**Endpoint:** `GET /organizations/:orgId/inventory/inbound/template`
+**Quyền:** `org.inventory.inbound.create`
+- **Mô tả:** Tải file Excel mẫu để điền dữ liệu nhập kho hàng loạt.
+- **Response 200:** File binary Excel.
 
----
-
-## API Endpoints
-
-> [!TIP]
-> Tất cả các API đều yêu cầu header `Authorization: Bearer <token>` và `x-api-key`.
-> Hỗ trợ `Accept-Language: vi` (default) hoặc `en`.
-
-### 1. Inbound Requests (Nhập Kho)
-
-#### 1.1 Tạo yêu cầu nhập kho
-
-**POST** `/organizations/:orgId/inventory/inbound`
-
-**Mô tả:** Tạo phiếu nhập kho mới. Có thể nhập hàng mới (tạo batch mới) hoặc nhập bổ sung vào batch đã có.
-
-**Body Examples:**
-
-<details>
-<summary><b>Nhập hàng tạo lô mới</b></summary>
-
+### Import file nhập kho
+**Endpoint:** `POST /organizations/:orgId/inventory/inbound/import`
+**Quyền:** `org.inventory.inbound.create`
+- **Mô tả:** Upload file Excel (`multipart/form-data`) để tạo hàng loạt phiếu nhập kho.
+- **Response 201:**
 ```json
 {
-  "warehouse_id": "550e8400-e29b-41d4-a716-446655440003",
-  "partner_id": "550e8400-e29b-41d4-a716-446655440004",
-  "purchase_order_code": "PO-2026-001",
-  "notes": "Nhập hàng đầu tháng 2",
-  "details": [
-    {
-      "product_id": "550e8400-e29b-41d4-a716-446655440000",
-      "unit_id": "550e8400-e29b-41d4-a716-446655440002",
-      "expected_qty": 100,
-      "batch_code": "LOT-202602-01",
-      "manufacturing_date": "2026-01-15T00:00:00Z",
-      "expiry_date": "2027-01-15T00:00:00Z",
-      "import_price": 50000
-    }
-  ]
-}
-```
-</details>
-
-<details>
-<summary><b>Nhập hàng vào lô có sẵn</b></summary>
-
-```json
-{
-  "warehouse_id": "550e8400-e29b-41d4-a716-446655440003",
-  "details": [
-    {
-      "product_id": "550e8400-e29b-41d4-a716-446655440000",
-      "unit_id": "550e8400-e29b-41d4-a716-446655440002",
-      "expected_qty": 50,
-      "batch_id": "550e8400-e29b-41d4-a716-446655440001",
-      "import_price": 50000
-    }
-  ]
-}
-```
-</details>
-
-**Response (201 Created):**
-
-```json
-{
-  "code": "inventory-request.create_inbound",
-  "message": "Tạo yêu cầu nhập kho thành công",
+  "code": "inventory-request.inbound-import",
+  "message": "Nhập dữ liệu thành công",
   "success": true,
   "data": {
-    "id": "uuid",
-    "code": "PN-202602-0001",
-    "status": "PENDING",
-    "warehouse": {
-      "id": "uuid",
-      "name": "Kho A"
-    },
-    "created_at": "2026-02-08T10:00:00Z"
+    "success_count": 15,
+    "error_count": 0,
+    "errors": []
   }
 }
 ```
 
-#### 1.2 Danh sách yêu cầu nhập kho
+### Xuất danh sách nhập kho
+**Endpoint:** `GET /organizations/:orgId/inventory/inbound/export`
+**Quyền:** `org.inventory.inbound.export`
+- **Mô tả:** Tải về file Excel chứa danh sách phiếu nhập dựa trên bộ lọc (`warehouse_id`, `status`, `keywords`).
+- **Response 200:** File binary Excel.
 
-**GET** `/organizations/:orgId/inventory/inbound`
-
-**Filter Query Parameters:**
-- `warehouse_id`: ID kho
-- `status`: `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED`
-- `keywords`: Tìm theo mã phiếu, mã đơn mua
-- `limit`: Default 10
-- `offset`: Default 0
-
-**Response (200 OK):**
-
-```json
-{
-  "code": "inventory-request.list_inbound",
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "uuid",
-        "code": "PN-202602-0001",
-        "status": "PENDING",
-        "total_products": 5,
-        "created_at": "2026-02-08T10:00:00Z"
-      }
-    ],
-    "total": 50,
-    "limit": 10,
-    "offset": 0
-  }
-}
-```
-
-#### 1.3 Chi tiết yêu cầu nhập kho
-
-**GET** `/organizations/:orgId/inventory/inbound/:id`
+*(Ghi chú: Module còn chứa các API cơ bản như list, get detail, create, approve, reject, start-receiving, confirm-receiving, confirm-putaway cho luồng Inbound).*
 
 ---
 
-### 2. Outbound Requests (Xuất Kho)
+## 2. Quản lý Xuất kho (Outbound)
 
-#### 2.1 Tạo yêu cầu xuất kho
+### Lấy file mẫu xuất kho
+**Endpoint:** `GET /organizations/:orgId/inventory/outbound/template`
+**Quyền:** `org.inventory.outbound.create`
+- **Mô tả:** Tải file Excel mẫu để điền dữ liệu xuất kho hàng loạt.
+- **Response 200:** File binary Excel.
 
-**POST** `/organizations/:orgId/inventory/outbound`
+### Import file xuất kho
+**Endpoint:** `POST /organizations/:orgId/inventory/outbound/import`
+**Quyền:** `org.inventory.outbound.create`
+- **Mô tả:** Upload file Excel (`multipart/form-data`) để tạo hàng loạt phiếu xuất kho.
+- **Response 201:** Tương tự như Import Inbound.
 
-**Mô tả:** Tạo phiếu xuất kho. Hỗ trợ các chiến lược picking tự động (FEFO, FIFO) hoặc chỉ định lô cụ thể.
+### Xuất danh sách xuất kho
+**Endpoint:** `GET /organizations/:orgId/inventory/outbound/export`
+**Quyền:** `org.inventory.outbound.export`
+- **Mô tả:** Tải về file Excel chứa danh sách phiếu xuất dựa trên bộ lọc.
+- **Response 200:** File binary Excel.
 
-**Body Examples:**
+*(Ghi chú: Module còn chứa các API cơ bản như list, get detail, create, approve, reject, confirm-picking, confirm-checking, complete-shipment cho luồng Outbound).*
 
-<details>
-<summary><b>Xuất kho theo FEFO (First Expired First Out)</b></summary>
+---
 
+## 3. Quản lý Tồn kho & Giao dịch (Stock & Transactions)
+
+### Lấy chỉ số tổng hợp tồn kho
+**Endpoint:** `GET /organizations/:orgId/inventory/inventory-total/:warehouseId`
+**Quyền:** `org.inventory.inbound.list`
+- **Mô tả:** Lấy các chỉ số tổng cộng về tồn kho để hiển thị trên dashboard.
+- **Response 200:**
 ```json
 {
-  "warehouse_id": "uuid",
-  "picking_strategy": "FEFO",
-  "sales_order_code": "SO-2026-01",
-  "details": [
-    {
-      "product_id": "uuid",
-      "unit_id": "uuid",
-      "quantity": 20
-    }
-  ]
-}
-```
-</details>
-
-<details>
-<summary><b>Xuất kho chỉ định lô (Manual)</b></summary>
-
-```json
-{
-  "warehouse_id": "uuid",
-  "details": [
-    {
-      "product_id": "uuid",
-      "unit_id": "uuid",
-      "quantity": 10,
-      "required_batch_id": "batch-uuid"
-    }
-  ]
-}
-```
-</details>
-
-**Response (201 Created):**
-
-```json
-{
-  "code": "inventory-request.create_outbound",
-  "message": "Tạo yêu cầu xuất kho thành công",
+  "code": "inventory-request.get_total",
+  "message": "Lấy tổng hợp tồn kho thành công",
   "success": true,
   "data": {
-    "id": "uuid",
-    "code": "PX-202602-0001",
-    "status": "PENDING"
+    "warehouse_id": "550e8400-e29b-41d4-a716-446655440003",
+    "warehouse_name": "Kho lạnh Quận 7",
+    "total_qty": 1250,
+    "available_qty": 970,
+    "reserved_qty": 280,
+    "total_skus": 42
   }
 }
 ```
 
-#### 2.2 Danh sách yêu cầu xuất kho
+### Lịch sử giao dịch kho
+**Endpoint:** `GET /organizations/:orgId/inventory/transactions`
+**Quyền:** `org.inventory.inbound.list`
+- **Mô tả:** Lấy danh sách lịch sử biến động kho (INBOUND, OUTBOUND, TRANSFER, ADJUSTMENT, RETURN).
+- **Parameters:** `warehouse_id`, `keywords`, `type`, `limit`, `offset`.
+- **Response 200:** Danh sách phân trang các giao dịch.
 
-**GET** `/organizations/:orgId/inventory/outbound`
+### Tái cấu trúc sắp xếp kho (Rebalance)
+**Endpoint:** `POST /organizations/:orgId/inventory/stock/rebalance`
+**Quyền:** `org.inventory.inbound.approve`
+- **Mô tả:** Tự động phân bổ lại hàng hóa trong các ô lưu trữ (chống chồng lấp, mở rộng nếu thiếu).
+- **Parameters (Query):** `warehouse_id`
+- **Response 201:**
+```json
+{
+  "code": "inventory-request.rebalance_success",
+  "message": "Tái cấu trúc kho thành công",
+  "success": true,
+  "data": {
+    "rebalanced_slots": 15,
+    "expanded_slots": 3,
+    "message": "Đã tái cấu trúc 15 ô, tạo thêm 3 ô mới"
+  }
+}
+```
 
-**Filter Query Parameters:**
-- `warehouse_id`: ID kho
-- `status`: `PENDING`, `PICKING`, `PACKED`, `SHIPPED`, `CANCELLED`
-- `keywords`: Tìm theo mã phiếu, mã đơn bán
+### Xuất báo cáo tồn kho
+**Endpoint:** `GET /organizations/:orgId/inventory/stock/export`
+**Quyền:** `org.inventory.inbound.list`
+- **Mô tả:** Tải về báo cáo Excel chứa thông tin tồn kho chi tiết.
+- **Response 200:** File binary Excel.
 
-#### 2.3 Chi tiết yêu cầu xuất kho
+---
 
-**GET** `/organizations/:orgId/inventory/outbound/:id`
+## Error Responses chung
+| Status | Code | Message | Description |
+|--------|------|---------|-------------|
+| 400 | `invalid_operation` | Bad Request | Dữ liệu không hợp lệ hoặc thao tác sai trạng thái quy trình |
+| 401 | `unauthorized` | Unauthorized | Token/API key không hợp lệ |
+| 403 | `forbidden` | Forbidden | Không có quyền tương ứng |
+| 404 | `not_found` | Not Found | Không tìm thấy kho, phiếu hoặc chi tiết |
+| 409 | `conflict` | Conflict | Xung đột tồn kho hoặc trạng thái đang xử lý |

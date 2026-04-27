@@ -489,10 +489,78 @@ export class RevenueAnalyticsController {
   @Get('export')
   @RequirePermission('revenue.analytics.view')
   @ApiOperation({
-    summary: 'Xuất báo cáo doanh thu ra Excel',
+    summary: 'Xuất báo cáo doanh thu ra Excel/PDF',
     description:
-      'Tải về file Excel chứa báo cáo doanh thu theo bộ lọc. Yêu cầu quyền `revenue.analytics.view`.',
+      'Tải về file Excel hoặc PDF chứa báo cáo doanh thu đầy đủ theo bộ lọc được chọn. File bao gồm các KPI tổng hợp, chi tiết giao dịch theo từng kỳ và thống kê theo phương thức thanh toán. Yêu cầu quyền `revenue.analytics.view`.',
   })
+  @ApiQuery({
+    name: 'preset',
+    required: false,
+    enum: DatePreset,
+    default: DatePreset.THIS_MONTH,
+    description: 'Preset khoảng thời gian cần thống kê. Dùng `CUSTOM` kết hợp `from_date` và `to_date` để tùy chỉnh khoảng ngày.',
+    example: DatePreset.THIS_MONTH,
+  })
+  @ApiQuery({
+    name: 'from_date',
+    required: false,
+    type: String,
+    description: 'Ngày bắt đầu (ISO 8601), chỉ áp dụng khi `preset=CUSTOM`.',
+    example: '2026-01-01',
+  })
+  @ApiQuery({
+    name: 'to_date',
+    required: false,
+    type: String,
+    description: 'Ngày kết thúc (ISO 8601), chỉ áp dụng khi `preset=CUSTOM`.',
+    example: '2026-01-31',
+  })
+  @ApiQuery({
+    name: 'province_id',
+    required: false,
+    type: String,
+    description: 'Lọc theo tỉnh/thành phố (UUID). Bỏ trống để lấy tất cả tỉnh/thành.',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiQuery({
+    name: 'warehouse_template_id',
+    required: false,
+    type: String,
+    description: 'Lọc theo mẫu kho cụ thể (UUID). Bỏ trống để lấy tất cả kho.',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+  })
+  @ApiQuery({
+    name: 'format',
+    required: false,
+    enum: ['excel', 'pdf'],
+    default: 'excel',
+    description: 'Định dạng file xuất ra. `excel` trả về file `.xlsx`, `pdf` trả về file `.pdf`.',
+    example: 'excel',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về file báo cáo doanh thu dạng binary (Excel hoặc PDF). Header `Content-Disposition` chứa tên file đề xuất.',
+    headers: {
+      'Content-Type': {
+        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet (excel) hoặc application/pdf',
+        schema: { type: 'string' },
+      },
+      'Content-Disposition': {
+        description: 'attachment; filename=revenue-report-{timestamp}.xlsx',
+        schema: { type: 'string' },
+      },
+    },
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+      'application/pdf': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   async export(@Query() dto: ExportRevenueDto, @Res() res: any) {
     const buffer = await this.service.exportReport(dto);
 

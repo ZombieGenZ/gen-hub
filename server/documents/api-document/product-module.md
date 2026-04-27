@@ -1,102 +1,139 @@
-# Product Module API Documentation
+---
+title: "Product Module API"
+description: "Tài liệu kỹ thuật API Quản lý Danh mục Sản phẩm"
+version: "1.0"
+---
 
-## 1. Tổng quan
-Module quản lý sản phẩm trong hệ thống. Hỗ trợ quản lý thông tin sản phẩm, đơn vị tính, đơn vị quy đổi và các thuộc tính liên quan đến kích thước, trọng lượng.
+# Product API Documentation
 
-## 2. Danh sách API
+## Tổng quan
+Module **Product** quản lý danh mục sản phẩm của từng Tổ chức, bao gồm thông tin chung, SKU, giá bán, giá nhập, đơn vị tính và các thuộc tính liên quan khác. Hỗ trợ đầy đủ các thao tác CRUD và import/export bằng file Excel.
 
-### 2.1. Tạo sản phẩm mới
-- **Endpoint:** `POST /organizations/:orgId/products`
-- **Mô tả:** Tạo một sản phẩm mới kèm đơn vị tính quy đổi (nếu có).
-- **Quyền:** `product.create`
-- **Request Body:** `CreateProductDto`
-- **Response:**
-  - `201 Created`: Tạo thành công (trả về `CreatedResponse<IProduct>`)
-  - `400 Bad Request`: Dữ liệu không hợp lệ
-  - `404 Not Found`: Không tìm thấy tổ chức hoặc đơn vị tính gốc
-  - `409 Conflict`: Mã SKU đã tồn tại
+## Kiến trúc
 
-### 2.2. Lấy danh sách sản phẩm
-- **Endpoint:** `GET /organizations/:orgId/products`
-- **Mô tả:** Lấy danh sách sản phẩm có phân trang và lọc.
-- **Quyền:** `product.list`
-- **Query Parameters:**
-  - `limit`: Số lượng bản ghi (default: 20)
-  - `offset`: Vị trí bắt đầu (default: 0)
-  - `keywords`: Tìm kiếm theo tên, SKU, barcode
-  - `is_active`: Lọc theo trạng thái
-- **Response:**
-  - `200 OK`: Danh sách sản phẩm (trả về `GetResponse<IPaginatedResponse<IProduct>>`)
+```mermaid
+flowchart LR
+    A[Organization Client] -->|HTTP GET/POST/PATCH/DELETE| B(Product Controller)
+    B --> C{Product Service}
+    C --> D[Prisma Client]
+    D -->|Query/Mutate| E[(Database)]
+    C -->|Format Data| F[Response Data]
+    C -->|Generate/Parse Excel| G[Excel File]
+    F --> B
+    G --> B
+    B --> A
+```
 
-### 2.3. Lấy chi tiết sản phẩm
-- **Endpoint:** `GET /organizations/:orgId/products/:id`
-- **Mô tả:** Lấy thông tin chi tiết một sản phẩm, bao gồm danh sách đơn vị quy đổi.
-- **Quyền:** `product.read`
-- **Response:**
-  - `200 OK`: Thông tin chi tiết (trả về `GetResponse<IProduct>`)
-  - `404 Not Found`: Không tìm thấy sản phẩm
+## Xác thực & Phân quyền
+- **Xác thực**: Hỗ trợ JWT Token (`Authorization: Bearer <token>`) và API Key (`X-API-Key`) qua `CombinedAuthGuard`.
+- **Phân quyền**: Yêu cầu quyền dựa trên tác vụ (`product.create`, `product.list`, `product.update`, `product.delete`, `product.import`, `product.export`).
+- **Data Isolation**: Dữ liệu sản phẩm bị cô lập nghiêm ngặt theo `orgId`.
 
-### 2.4. Cập nhật sản phẩm
-- **Endpoint:** `PUT /organizations/:orgId/products/:id`
-- **Mô tả:** Cập nhật thông tin sản phẩm. Nếu cập nhật `units`, danh sách cũ sẽ bị thay thế hoàn toàn.
-- **Quyền:** `product.update`
-- **Request Body:** `UpdateProductDto`
-- **Response:**
-  - `200 OK`: Cập nhật thành công (trả về `UpdatedResponse<IProduct>`)
-  - `404 Not Found`: Không tìm thấy sản phẩm hoặc đơn vị tính
-  - `409 Conflict`: Mã SKU trùng lặp
+---
 
-### 2.5. Xóa nhiều sản phẩm
-- **Endpoint:** `DELETE /organizations/:orgId/products/delete/many`
-- **Mô tả:** Xóa nhiều sản phẩm cùng lúc (Soft Delete).
-- **Quyền:** `product.delete`
-- **Request Body:** `DeleteManyDto`
-- **Response:**
-  - `200 OK`: Xóa thành công (trả về `DeletedResponse<null>`)
+## 1. Import/Export Sản phẩm
 
-### 2.6. Xóa sản phẩm
-- **Endpoint:** `DELETE /organizations/:orgId/products/:id`
-- **Mô tả:** Xóa một sản phẩm (Soft Delete).
-- **Quyền:** `product.delete`
-- **Response:**
-  - `200 OK`: Xóa thành công (trả về `DeletedResponse<null>`)
+### Lấy file mẫu import
+**Endpoint:** `GET /organizations/:orgId/products/template`
+**Quyền:** `product.import`
+- **Mô tả:** Tải file Excel mẫu để điền dữ liệu sản phẩm.
+- **Response 200:** Trả về file Excel binary (`product-import-template.xlsx`).
 
-## 3. Data Structures
-
-### IProduct
-```typescript
-interface IProduct {
-    id: string;
-    organization_id: string;
-    name: string;
-    sku: string;
-    description?: string;
-    image_url?: string;
-    barcode?: string;
-    weight?: number;
-    length?: number;
-    width?: number;
-    height?: number;
-    max_weight_capacity?: number;
-    cost_price?: number;
-    base_unit_id: string;
-    base_unit: {
-        id: string;
-        name: string;
-    };
-    units?: Array<{
-        id: string;
-        product_id: string;
-        unit_id: string;
-        conversion_rate: number;
-        barcode?: string;
-        unit: {
-            id: string;
-            name: string;
-        };
-    }>;
-    is_active: boolean;
-    created_at: Date;
-    updated_at?: Date;
+### Import sản phẩm
+**Endpoint:** `POST /organizations/:orgId/products/import`
+**Quyền:** `product.import`
+- **Mô tả:** Upload file Excel chứa thông tin sản phẩm để tạo hàng loạt.
+- **Request:** FormData (`multipart/form-data`), field `file`.
+- **Response 201:**
+```json
+{
+  "code": "product.import_success",
+  "message": "Nhập dữ liệu thành công",
+  "success": true,
+  "data": {
+    "success_count": 120,
+    "failed_count": 2,
+    "errors": [
+      "Dòng 5: Thiếu mã SKU",
+      "Dòng 12: Giá vốn không hợp lệ"
+    ]
+  }
 }
 ```
+
+### Export sản phẩm
+**Endpoint:** `GET /organizations/:orgId/products/export`
+**Quyền:** `product.export`
+- **Mô tả:** Tải toàn bộ danh sách sản phẩm của tổ chức ra file Excel.
+- **Response 200:** Trả về file Excel binary (`products-{orgId}.xlsx`).
+
+---
+
+## 2. Quản lý Sản phẩm (CRUD)
+
+### Lấy danh sách sản phẩm
+**Endpoint:** `GET /organizations/:orgId/products`
+**Quyền:** `product.list`
+- **Mô tả:** Lấy danh sách sản phẩm với hỗ trợ phân trang và tìm kiếm.
+- **Parameters (Query):**
+  - `limit`, `offset`: Phân trang.
+  - `keywords`: Tìm theo tên hoặc SKU.
+  - `category_id`: Lọc theo danh mục.
+  - `status`: Lọc theo trạng thái (`ACTIVE`, `INACTIVE`).
+- **Response 200:**
+```json
+{
+  "code": "product.list_success",
+  "message": "Lấy danh sách sản phẩm thành công",
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440020",
+        "name": "Iphone 15 Pro Max 256GB",
+        "sku": "IP15PM-256",
+        "price": 29000000,
+        "cost_price": 25000000,
+        "status": "ACTIVE",
+        "unit": {
+          "id": "...",
+          "name": "Chiếc"
+        }
+      }
+    ],
+    "total": 50,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+### Tạo sản phẩm mới
+**Endpoint:** `POST /organizations/:orgId/products`
+**Quyền:** `product.create`
+- **Mô tả:** Tạo mới một sản phẩm.
+
+### Lấy chi tiết sản phẩm
+**Endpoint:** `GET /organizations/:orgId/products/:id`
+**Quyền:** `product.read`
+
+### Cập nhật sản phẩm
+**Endpoint:** `PATCH /organizations/:orgId/products/:id`
+**Quyền:** `product.update`
+
+### Xóa sản phẩm
+**Endpoint:** `DELETE /organizations/:orgId/products/:id`
+**Quyền:** `product.delete`
+- **Mô tả:** Xóa mềm sản phẩm (chuyển trạng thái `is_deleted = true`). Trả về lỗi `409 Conflict` nếu sản phẩm đang có tồn kho.
+
+---
+
+## Error Responses chung
+| Status | Code | Message | Description |
+|--------|------|---------|-------------|
+| 400 | `validation_error` | Bad Request | Dữ liệu không hợp lệ (ví dụ: upload sai file, thiếu field) |
+| 401 | `unauthorized` | Unauthorized | Token/API key không hợp lệ |
+| 403 | `forbidden` | Forbidden | Không có quyền tương ứng |
+| 404 | `not_found` | Not Found | Không tìm thấy sản phẩm hoặc tổ chức |
+| 409 | `conflict` | Conflict | Mã SKU đã tồn tại hoặc xóa sản phẩm đang có tồn kho |

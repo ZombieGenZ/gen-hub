@@ -15,6 +15,7 @@ import {
   ApiParam,
   ApiHeader,
   ApiQuery,
+  ApiBody,
   ApiResponse,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
@@ -56,17 +57,125 @@ export class OrgRefundRequestController {
   @ApiOperation({
     summary: 'Tạo yêu cầu hoàn tiền',
     description:
-      'Tạo mới một yêu cầu hoàn tiền cho hợp đồng của tổ chức. Yêu cầu quyền `refund-request.create`.',
+      'Tạo mới một yêu cầu hoàn tiền cho hợp đồng thuê kho của tổ chức. Hệ thống sẽ tính toán số tiền hoàn trả dựa trên thông tin hợp đồng và phí phạt hủy sớm. Yêu cầu quyền `refund-request.create`.',
   })
   @ApiParam({
     name: 'orgId',
-    description: 'ID của tổ chức sở hữu hợp đồng.',
+    description: 'ID của tổ chức sở hữu hợp đồng (UUID format).',
     type: 'string',
     format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiBody({
+    type: CreateRefundRequestDto,
+    description: 'Thông tin yêu cầu hoàn tiền. Số tiền phí và số tiền thực nhận phải nhất quán: `final_refund_amount = original_amount - fee_amount`.',
+    examples: {
+      full_refund: {
+        summary: 'Yêu cầu hoàn tiền đầy đủ thông tin',
+        description: 'Ví dụ tạo yêu cầu hoàn tiền với đầy đủ lý do và các trường bắt buộc',
+        value: {
+          rental_contract_id: '550e8400-e29b-41d4-a716-446655440010',
+          original_amount: 10000000,
+          fee_percent: 10,
+          fee_amount: 1000000,
+          final_refund_amount: 9000000,
+          reason: 'Chuyển văn phòng nên không còn nhu cầu sử dụng kho',
+        },
+      },
+      minimal_refund: {
+        summary: 'Yêu cầu hoàn tiền tối thiểu (không có lý do)',
+        description: 'Ví dụ tạo yêu cầu hoàn tiền chỉ với các trường bắt buộc, không kèm lý do',
+        value: {
+          rental_contract_id: '550e8400-e29b-41d4-a716-446655440011',
+          original_amount: 5000000,
+          fee_percent: 5,
+          fee_amount: 250000,
+          final_refund_amount: 4750000,
+        },
+      },
+      high_value_refund: {
+        summary: 'Yêu cầu hoàn tiền giá trị cao',
+        description: 'Ví dụ yêu cầu hoàn tiền hợp đồng lớn với phí phạt 15%',
+        value: {
+          rental_contract_id: '550e8400-e29b-41d4-a716-446655440012',
+          original_amount: 50000000,
+          fee_percent: 15,
+          fee_amount: 7500000,
+          final_refund_amount: 42500000,
+          reason: 'Công ty giải thể, cần thanh lý toàn bộ hợp đồng thuê kho',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
-    description: 'Tạo yêu cầu hoàn tiền thành công.',
+    description: 'Tạo yêu cầu hoàn tiền thành công. Yêu cầu sẽ ở trạng thái `PENDING` và chờ admin xét duyệt.',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'refund-request.create_success' },
+        message: { type: 'string', example: 'Tạo yêu cầu hoàn tiền thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440099' },
+            code: { type: 'string', example: 'RR-202603-0001', description: 'Mã yêu cầu hoàn tiền tự sinh' },
+            status: { type: 'string', example: 'PENDING', enum: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'] },
+            original_amount: { type: 'number', example: 10000000, description: 'Số tiền gốc hợp đồng (VND)' },
+            fee_percent: { type: 'number', example: 10, description: 'Phần trăm phí hủy hợp đồng' },
+            fee_amount: { type: 'number', example: 1000000, description: 'Số tiền phí (VND)' },
+            final_refund_amount: { type: 'number', example: 9000000, description: 'Số tiền thực nhận sau khi trừ phí (VND)' },
+            reason: { type: 'string', nullable: true, example: 'Chuyển văn phòng nên không còn nhu cầu sử dụng kho' },
+            organization_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+            rental_contract_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440010' },
+            created_at: { type: 'string', format: 'date-time', example: '2026-03-12T08:00:00.000Z' },
+          },
+        },
+      },
+      example: {
+        code: 'refund-request.create_success',
+        message: 'Tạo yêu cầu hoàn tiền thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440099',
+          code: 'RR-202603-0001',
+          status: 'PENDING',
+          original_amount: 10000000,
+          fee_percent: 10,
+          fee_amount: 1000000,
+          final_refund_amount: 9000000,
+          reason: 'Chuyển văn phòng nên không còn nhu cầu sử dụng kho',
+          organization_id: '550e8400-e29b-41d4-a716-446655440001',
+          rental_contract_id: '550e8400-e29b-41d4-a716-446655440010',
+          created_at: '2026-03-12T08:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Yêu cầu hoàn tiền không hợp lệ về nghiệp vụ. Ví dụ: hợp đồng đã có yêu cầu hoàn tiền đang xử lý, số tiền không nhất quán, hoặc hợp đồng không đủ điều kiện hoàn tiền.',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'error.refund_request.contract_not_eligible' },
+        message: { type: 'string', example: 'Hợp đồng không đủ điều kiện yêu cầu hoàn tiền' },
+        success: { type: 'boolean', example: false },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Không tìm thấy hợp đồng thuê hoặc tổ chức.',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'error.refund_request.contract_not_found' },
+        message: { type: 'string', example: 'Không tìm thấy hợp đồng thuê' },
+        success: { type: 'boolean', example: false },
+      },
+    },
   })
   @ApiAuthResponses()
   @ApiValidationErrorResponse()
