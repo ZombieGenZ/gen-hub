@@ -199,7 +199,7 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
         try {
             // Nếu warehouseId rỗng, gọi không filter theo warehouse
             const wId = warehouseId || undefined;
-            const res: any = await inventoryService.listStock(token, wId);
+            const res: any = await inventoryService.listStock(token, { warehouse_id: wId, limit: 10000 });
             console.log('[InventoryTab] warehouseId:', warehouseId, 'raw API response:', res);
             // Hỗ trợ nhiều response format: { data: [...] }, { data: { items: [...] } }, hoặc trực tiếp [...]
             let items: StockItem[] = [];
