@@ -403,7 +403,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                     )}
 
                     {/* Redis Cache Section - only show if has redis.manage permission */}
-                    {hasPermission('redis.manage') && (
+                    {/* {hasPermission('redis.manage') && (
                         <>
                             <div className="mt-4 mb-2 px-4 py-2">
                                 <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
@@ -422,7 +422,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <span className="font-medium">{t('sidebar.redisCache') || 'Redis Cache'}</span>
                             </Link>
                         </>
-                    )}
+                    )} */}
                 </nav>
 
                 {/* User Info & Language Switcher */}
