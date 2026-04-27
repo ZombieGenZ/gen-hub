@@ -419,20 +419,50 @@ export class InventoryRequestController {
   @ApiOperation({
     summary: 'Tổng hợp tồn kho của kho',
     description:
-      'Lấy các chỉ số tổng hợp về tồn kho (thực tế, khả dụng, đã giữ hàng) cho dashboard.',
+      'Lấy các chỉ số tổng hợp về tồn kho (thực tế, khả dụng, đã giữ hàng) cho dashboard tổ chức. Trả về số liệu tổng cộng theo từng chỉ số để hiển thị widget dashboard. Yêu cầu quyền `org.inventory.inbound.list`.',
   })
   @ApiParam({
     name: 'orgId',
     required: true,
     description: 'ID tổ chức',
     example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
   })
   @ApiParam({
     name: 'warehouseId',
     required: true,
-    description: 'ID kho',
+    description: 'ID kho cần lấy tổng hợp tồn kho',
     example: WAREHOUSE_ID,
+    schema: { type: 'string', format: 'uuid' },
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về các chỉ số tổng hợp tồn kho của kho được chỉ định',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.get_total',
+      message: 'Lấy tổng hợp tồn kho thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          warehouse_id: { type: 'string', format: 'uuid', example: WAREHOUSE_ID },
+          warehouse_name: { type: 'string', example: 'Kho lạnh Quận 7' },
+          total_qty: { type: 'number', example: 1250, description: 'Tổng số lượng thực tế trong kho' },
+          available_qty: { type: 'number', example: 970, description: 'Số lượng khả dụng (chưa bị giữ)' },
+          reserved_qty: { type: 'number', example: 280, description: 'Số lượng đang được giữ cho đơn xuất' },
+          total_skus: { type: 'number', example: 42, description: 'Tổng số loại sản phẩm (SKU) trong kho' },
+        },
+      },
+      dataExample: {
+        warehouse_id: WAREHOUSE_ID,
+        warehouse_name: 'Kho lạnh Quận 7',
+        total_qty: 1250,
+        available_qty: 970,
+        reserved_qty: 280,
+        total_skus: 42,
+      },
+    }),
+  })
+  @ApiAuthResponses()
   async getInventoryTotal(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('warehouseId', ParseUUIDPipe) warehouseId: string,
@@ -448,14 +478,89 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.inbound.list')
   @ApiOperation({
     summary: 'Lịch sử giao dịch kho',
-    description: 'Lấy danh sách các biến động kho (Nhập/Xuất/Điều chuyển).',
+    description: 'Lấy danh sách các biến động kho theo thời gian thực (Nhập kho/Xuất kho/Điều chuyển/Điều chỉnh/Trả hàng). Hỗ trợ lọc theo kho, loại giao dịch và từ khóa, có phân trang. Yêu cầu quyền `org.inventory.inbound.list`.',
   })
   @ApiParam({
     name: 'orgId',
     required: true,
     description: 'ID tổ chức',
     example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
   })
+  @ApiQuery({
+    name: 'warehouse_id',
+    required: false,
+    type: String,
+    description: 'ID kho cần lọc. Bỏ trống để xem giao dịch tất cả kho thuộc tổ chức.',
+    example: WAREHOUSE_ID,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm kiếm theo mã phiếu nhập/xuất hoặc tên sản phẩm.',
+    example: 'PN-2026',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['INBOUND', 'OUTBOUND', 'TRANSFER', 'ADJUSTMENT', 'RETURN'],
+    description: 'Lọc theo loại giao dịch kho.',
+    example: 'INBOUND',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi trên mỗi trang (mặc định: 10).',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu để phân trang (mặc định: 0).',
+    example: 0,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về danh sách giao dịch kho và thông tin phân trang',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.list_transactions',
+      message: 'Lấy lịch sử giao dịch kho thành công',
+      dataSchema: buildPaginationDataSchema({
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440080' },
+          type: { type: 'string', example: 'INBOUND', enum: ['INBOUND', 'OUTBOUND', 'TRANSFER', 'ADJUSTMENT', 'RETURN'] },
+          reference_code: { type: 'string', example: 'PN-202603-0001', description: 'Mã phiếu tham chiếu' },
+          product_name: { type: 'string', example: 'Táo Envy New Zealand' },
+          quantity: { type: 'number', example: 100, description: 'Số lượng giao dịch (dương = nhập, âm = xuất)' },
+          warehouse_name: { type: 'string', example: 'Kho lạnh Quận 7' },
+          created_at: { type: 'string', format: 'date-time', example: '2026-03-13T08:00:00.000Z' },
+        },
+      }),
+      dataExample: {
+        items: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440080',
+            type: 'INBOUND',
+            reference_code: 'PN-202603-0001',
+            product_name: 'Táo Envy New Zealand',
+            quantity: 100,
+            warehouse_name: 'Kho lạnh Quận 7',
+            created_at: '2026-03-13T08:00:00.000Z',
+          },
+        ],
+        total: 45,
+        limit: 10,
+        offset: 0,
+        hasMore: true,
+      },
+    }),
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   async listTransactions(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Query() query: QueryTransactionDto,
@@ -472,20 +577,49 @@ export class InventoryRequestController {
   @ApiOperation({
     summary: 'Tái cấu trúc sắp xếp kho (Rebalance)',
     description:
-      'Quét các ô đang bị chứa nhiều thùng hàng (chồng lấp) và tự động phân bổ chúng ra các ô trống đơn lẻ. Nếu thiếu ô, hệ thống sẽ tự động mở rộng kho.',
+      'Quét các ô đang bị chứa nhiều thùng hàng (chồng lấp) và tự động phân bổ chúng ra các ô trống đơn lẻ. Nếu thiếu ô, hệ thống sẽ tự động mở rộng kho. Thao tác này có thể mất vài giây tùy theo kích thước kho. Yêu cầu quyền `org.inventory.inbound.approve`.',
   })
   @ApiParam({
     name: 'orgId',
     required: true,
     description: 'ID tổ chức',
     example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
   })
   @ApiQuery({
     name: 'warehouse_id',
     required: true,
-    description: 'ID kho cần xử lý',
+    type: String,
+    description: 'ID kho cần thực hiện tái cấu trúc sắp xếp (UUID).',
     example: WAREHOUSE_ID,
   })
+  @ApiResponse({
+    status: 201,
+    description: 'Tái cấu trúc kho thành công. Trả về số lượng ô đã được phân bổ lại.',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.rebalance_success',
+      message: 'Tái cấu trúc kho thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          rebalanced_slots: { type: 'number', example: 15, description: 'Số lượng ô được phân bổ lại' },
+          expanded_slots: { type: 'number', example: 3, description: 'Số lượng ô mới được tạo thêm do thiếu' },
+          message: { type: 'string', example: 'Đã tái cấu trúc 15 ô, tạo thêm 3 ô mới' },
+        },
+      },
+      dataExample: {
+        rebalanced_slots: 15,
+        expanded_slots: 3,
+        message: 'Đã tái cấu trúc 15 ô, tạo thêm 3 ô mới',
+      },
+    }),
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Không tìm thấy kho hoặc kho không thuộc tổ chức.',
+    schema: notFoundSchema,
+  })
+  @ApiAuthResponses()
   async rebalance(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Query('warehouse_id', ParseUUIDPipe) warehouseId: string,
@@ -762,7 +896,7 @@ export class InventoryRequestController {
   @ApiOperation({
     summary: 'Xuất Excel danh sách yêu cầu nhập kho',
     description:
-      'Tạo và tải về file Excel danh sách các phiếu nhập kho dựa trên bộ lọc hiện tại. Yêu cầu quyền `org.inventory.inbound.export`.',
+      'Tạo và tải về file Excel danh sách các phiếu nhập kho dựa trên bộ lọc hiện tại. File Excel bao gồm mã phiếu, trạng thái, kho nhận hàng, đối tác và danh sách sản phẩm. Yêu cầu quyền `org.inventory.inbound.export`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -771,6 +905,62 @@ export class InventoryRequestController {
     example: ORG_ID,
     schema: { type: 'string', format: 'uuid' },
   })
+  @ApiQuery({
+    name: 'warehouse_id',
+    required: false,
+    type: String,
+    description: 'Lọc theo ID kho nhận hàng (UUID). Bỏ trống để xuất tất cả kho.',
+    example: WAREHOUSE_ID,
+  })
+  @ApiQuery({
+    name: 'keywords',
+    required: false,
+    type: String,
+    description: 'Từ khóa tìm kiếm theo mã phiếu nhập hoặc mã đơn mua hàng.',
+    example: 'PN-2026',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'APPROVED', 'RECEIVING', 'PROCESSING', 'PUTAWAY', 'COMPLETED', 'CANCELLED'],
+    description: 'Lọc theo trạng thái phiếu nhập kho.',
+    example: 'PENDING',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi tối đa xuất ra (mặc định: 10).',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu (mặc định: 0).',
+    example: 0,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về file Excel danh sách phiếu nhập kho dạng binary.',
+    headers: {
+      'Content-Type': {
+        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        schema: { type: 'string' },
+      },
+      'Content-Disposition': {
+        description: 'attachment; filename="inbound-requests-{orgId}.xlsx"',
+        schema: { type: 'string' },
+      },
+    },
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   async exportInbound(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Query() query: QueryInboundRequestDto,
