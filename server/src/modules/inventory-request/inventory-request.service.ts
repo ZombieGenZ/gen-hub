@@ -106,67 +106,117 @@ export class InventoryRequestService {
   }
 
   /**
-   * Lấy danh sách tồn kho thực tế
+   * Lấy danh sách tồn kho thực tế (có phân trang)
    */
   async listInventoryStock(
     orgId: string,
     warehouseId?: string,
     keywords?: string,
-  ) {
-    const items = await this.prisma.inventory.findMany({
-      where: {
-        organization_id: orgId,
-        is_deleted: false,
-        quantity: { gt: 0 },
-        ...(warehouseId && { warehouse_id: warehouseId }),
-        ...(keywords && {
-          product: {
-            OR: [
-              { name: { contains: keywords, mode: 'insensitive' as const } },
-              { sku: { contains: keywords, mode: 'insensitive' as const } },
-            ],
-          },
-        }),
-      },
-      include: {
+    limit = 20,
+    offset = 0,
+  ): Promise<{ items: ReturnType<typeof this._mapStockItem>[]; total: number }> {
+    const where = {
+      organization_id: orgId,
+      is_deleted: false,
+      quantity: { gt: 0 },
+      ...(warehouseId && { warehouse_id: warehouseId }),
+      ...(keywords && {
         product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            image_url: true,
-            weight: true,
-            length: true,
-            width: true,
-            height: true,
-          },
+          OR: [
+            { name: { contains: keywords, mode: 'insensitive' as const } },
+            { sku: { contains: keywords, mode: 'insensitive' as const } },
+          ],
         },
-        batch: { select: { id: true, code: true, expiry_date: true } },
-        block: {
-          select: {
-            id: true,
-            code: true,
-            shelf: {
-              select: {
-                id: true,
-                code: true,
-                rack: {
-                  select: {
-                    id: true,
-                    code: true,
-                    row: { select: { id: true, code: true, name: true } },
-                  },
+      }),
+    };
+
+    const include = {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          image_url: true,
+          weight: true,
+          length: true,
+          width: true,
+          height: true,
+        },
+      },
+      batch: { select: { id: true, code: true, expiry_date: true } },
+      block: {
+        select: {
+          id: true,
+          code: true,
+          shelf: {
+            select: {
+              id: true,
+              code: true,
+              rack: {
+                select: {
+                  id: true,
+                  code: true,
+                  row: { select: { id: true, code: true, name: true } },
                 },
               },
             },
           },
         },
-        warehouse: { select: { id: true, name: true } },
       },
-      orderBy: [{ product: { name: 'asc' } }, { created_at: 'asc' }],
-    });
+      warehouse: { select: { id: true, name: true } },
+    };
 
-    return items.map((inv) => ({
+    const [rawItems, total] = await Promise.all([
+      this.prisma.inventory.findMany({
+        where,
+        include,
+        orderBy: [{ product: { name: 'asc' } }, { created_at: 'asc' }],
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.inventory.count({ where }),
+    ]);
+
+    return {
+      items: rawItems.map((inv) => this._mapStockItem(inv)),
+      total,
+    };
+  }
+
+  private _mapStockItem(inv: {
+    id: string;
+    quantity: { toNumber: () => number };
+    quantity_on_hand: { toNumber: () => number };
+    quantity_allocated: { toNumber: () => number };
+    quantity_available: { toNumber: () => number };
+    created_at: Date;
+    product: {
+      id: string;
+      name: string;
+      sku: string;
+      image_url?: string | null;
+      weight?: { toNumber: () => number } | null;
+      length?: { toNumber: () => number } | null;
+      width?: { toNumber: () => number } | null;
+      height?: { toNumber: () => number } | null;
+    };
+    batch?: { id: string; code: string; expiry_date?: Date | null } | null;
+    block: {
+      id: string;
+      code: string;
+      shelf?: {
+        id: string;
+        code: string;
+        rack?: {
+          id: string;
+          code: string;
+          row?: { id: string; code: string; name: string } | null;
+        } | null;
+      } | null;
+    };
+    warehouse: { id: string; name: string };
+  }) {
+    return {
       id: inv.id,
       product_id: inv.product.id,
       product_name: inv.product.name,
@@ -200,7 +250,7 @@ export class InventoryRequestService {
           (1000 * 60 * 60 * 24),
       ),
       created_at: inv.created_at.toISOString(),
-    }));
+    };
   }
 
   /**
@@ -1273,7 +1323,7 @@ export class InventoryRequestService {
     warehouseId?: string,
     keywords?: string,
   ): Promise<{ buffer: Buffer; fileName: string }> {
-    const stocks = await this.listInventoryStock(orgId, warehouseId, keywords);
+    const { items: stocks } = await this.listInventoryStock(orgId, warehouseId, keywords, 10000, 0);
 
     const columns = [
       { header: 'Sản phẩm', key: 'product_name', width: 30 },

@@ -362,3 +362,48 @@ export interface InventorySummary {
     total_allocated: number;
 }
 
+// ── Stock (Tồn kho) ──
+
+/**
+ * Một dòng tồn kho trả về từ GET /inventory/stock
+ */
+export interface StockItem {
+    id: string;
+    product_id: string;
+    product_name: string;
+    sku: string;
+    image_url?: string | null;
+    batch_code?: string | null;
+    expiry_date?: string | null;
+    quantity: number;
+    quantity_on_hand: number;
+    quantity_allocated: number;
+    quantity_available: number;
+    warehouse_id: string;
+    warehouse_name: string;
+    block_id: string;
+    location: string;
+    days_in_storage: number;
+    created_at: string;
+}
+
+/**
+ * Tham số query danh sách tồn kho
+ */
+export interface QueryStockParams {
+    warehouse_id?: string;
+    keywords?: string;
+    limit?: number;
+    offset?: number;
+}
+
+/**
+ * Response phân trang cho tồn kho
+ */
+export interface StockPageResponse {
+    items: StockItem[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+

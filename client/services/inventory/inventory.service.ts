@@ -10,6 +10,8 @@ import type {
     InventorySummary,
     InventoryTransaction,
     QueryTransactionParams,
+    QueryStockParams,
+    StockPageResponse,
 } from './inventory.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -439,17 +441,18 @@ export class InventoryService {
     // ==================== STOCK (TỒN KHO) ====================
 
     /**
-     * Lấy danh sách tồn kho
+     * Lấy danh sách tồn kho (có phân trang)
      * @param token Token xác thực
-     * @param warehouseId ID của kho (tùy chọn)
-     * @param keywords Từ khóa tìm kiếm (tùy chọn)
-     * @returns Danh sách tồn kho
+     * @param query Tham số truy vấn (warehouse_id, keywords, limit, offset)
+     * @returns Danh sách tồn kho phân trang
      */
-    async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<Record<string, unknown>[]>> {
+    async listStock(token: string, query?: QueryStockParams): Promise<ApiResponse<StockPageResponse>> {
         const orgId = await this.getOrgId(token);
         const params = new URLSearchParams();
-        if (warehouseId) params.append('warehouse_id', warehouseId);
-        if (keywords) params.append('keywords', keywords);
+        if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
+        if (query?.keywords) params.append('keywords', query.keywords);
+        if (query?.limit != null) params.append('limit', String(query.limit));
+        if (query?.offset != null) params.append('offset', String(query.offset));
         const qs = params.toString();
         const response = await fetch(`${API}/organizations/${orgId}/inventory/stock${qs ? `?${qs}` : ''}`, {
             method: 'GET',

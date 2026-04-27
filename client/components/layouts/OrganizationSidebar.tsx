@@ -45,6 +45,7 @@ const organizationNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/organization/warehouses", icon: BuildingStorefrontIcon, label: "Kho của tôi" },
             { href: "/dashboard/organization/products", icon: CubeIcon, label: "Hàng hóa" },
+            { href: "/dashboard/organization/stock", icon: ClipboardDocumentCheckIcon, label: "Tồn kho" },
             { href: "/dashboard/organization/purchase-order", icon: ArrowDownTrayIcon, label: "Phiếu PO" },
             { href: "/dashboard/organization/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
         ]
