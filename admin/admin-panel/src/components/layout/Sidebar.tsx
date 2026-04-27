@@ -402,6 +402,28 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             </Link>
                         </>
                     )}
+
+                    {/* Redis Cache Section - only show if has redis.manage permission */}
+                    {hasPermission('redis.manage') && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    Redis Cache
+                                </span>
+                            </div>
+                            <Link
+                                href="/redis"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/redis'
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Database className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.redisCache') || 'Redis Cache'}</span>
+                            </Link>
+                        </>
+                    )}
                 </nav>
 
                 {/* User Info & Language Switcher */}

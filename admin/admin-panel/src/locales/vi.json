@@ -147,7 +147,8 @@
         "userManagement": "Quản lý người dùng",
         "users": "Người dùng",
         "roles": "Vai trò",
-        "permissions": "Quyền hạn"
+        "permissions": "Quyền hạn",
+        "redisCache": "Redis Cache"
     },
     "diagram": {
         "title": "Sơ đồ",
@@ -556,5 +557,43 @@
         "filterByModule": "Lọc theo Module",
         "allModules": "Tất cả Module",
         "module": "Module"
+    },
+    "redisAdmin": {
+        "title": "Quản lý Redis Cache",
+        "subtitle": "Quản lý các cache entry trong Redis",
+        "addCache": "Thêm Cache Entry",
+        "editCache": "Sửa Cache Entry",
+        "deleteCache": "Xóa Cache Entry",
+        "bulkOperations": "Thao tác hàng loạt",
+        "bulkAdd": "Thêm hàng loạt",
+        "bulkEdit": "Sửa hàng loạt",
+        "bulkDelete": "Xóa hàng loạt",
+        "flushAll": "Xóa toàn bộ",
+        "key": "Key",
+        "value": "Giá trị",
+        "ttl": "TTL (giây)",
+        "ttlHint": "Để trống nếu không giới hạn thời gian",
+        "keyPlaceholder": "Ví dụ: user:session:abc123",
+        "valuePlaceholder": "Giá trị cache...",
+        "ttlPlaceholder": "Ví dụ: 3600",
+        "keysPlaceholder": "Nhập mỗi key trên một dòng...",
+        "addSuccess": "Thêm cache thành công",
+        "editSuccess": "Cập nhật cache thành công",
+        "deleteSuccess": "Xóa cache thành công",
+        "bulkAddSuccess": "Thêm hàng loạt cache thành công",
+        "bulkEditSuccess": "Cập nhật hàng loạt cache thành công",
+        "bulkDeleteSuccess": "Xóa hàng loạt cache thành công",
+        "flushSuccess": "Đã xóa toàn bộ cache",
+        "error": "Có lỗi xảy ra. Vui lòng thử lại.",
+        "confirmFlush": "⚠️ Xóa toàn bộ Cache",
+        "confirmFlushMessage": "Thao tác này sẽ xóa TOÀN BỘ dữ liệu trong Redis. Không thể hoàn tác. Sessions, OTP, rate limits và tất cả cache sẽ bị mất.",
+        "confirmFlushButton": "Đồng ý, Xóa tất cả",
+        "addRow": "Thêm dòng",
+        "removeRow": "Xóa",
+        "execute": "Thực thi",
+        "processing": "Đang xử lý...",
+        "singleOps": "Thao tác đơn lẻ",
+        "dangerZone": "Vùng nguy hiểm",
+        "dangerZoneDesc": "Các thao tác không thể hoàn tác, ảnh hưởng toàn bộ Redis database."
     }
 }

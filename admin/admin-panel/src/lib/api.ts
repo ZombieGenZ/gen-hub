@@ -1367,5 +1367,62 @@ export const warningCategoriesApi = {
     },
 };
 
+// Redis Admin API types
+export interface CreateCacheDto {
+    key: string;
+    value: string;
+    ttl?: number;
+}
+
+export interface UpdateCacheDto {
+    value: string;
+    ttl?: number;
+}
+
+export interface RedisApiResponse {
+    code: string;
+    message: string;
+    success: boolean;
+    data: Record<string, unknown> | null;
+}
+
+// Redis Admin API functions
+export const redisAdminApi = {
+    addCache: async (dto: CreateCacheDto): Promise<RedisApiResponse> => {
+        const { data } = await api.post('/redis-admin/cache', dto);
+        return data;
+    },
+
+    editCache: async (key: string, dto: UpdateCacheDto): Promise<RedisApiResponse> => {
+        const { data } = await api.patch(`/redis-admin/cache/${encodeURIComponent(key)}`, dto);
+        return data;
+    },
+
+    removeCache: async (key: string): Promise<RedisApiResponse> => {
+        const { data } = await api.delete(`/redis-admin/cache/${encodeURIComponent(key)}`);
+        return data;
+    },
+
+    addBulkCache: async (items: CreateCacheDto[]): Promise<RedisApiResponse> => {
+        const { data } = await api.post('/redis-admin/cache/bulk', { items });
+        return data;
+    },
+
+    editBulkCache: async (items: CreateCacheDto[]): Promise<RedisApiResponse> => {
+        const { data } = await api.patch('/redis-admin/cache/bulk', { items });
+        return data;
+    },
+
+    removeBulkCache: async (keys: string[]): Promise<RedisApiResponse> => {
+        const { data } = await api.delete('/redis-admin/cache/bulk', { data: { keys } });
+        return data;
+    },
+
+    clearAllCache: async (): Promise<RedisApiResponse> => {
+        const { data } = await api.delete('/redis-admin/cache/all');
+        return data;
+    },
+};
+
 export default api;
 

@@ -147,7 +147,8 @@
         "userManagement": "User Management",
         "users": "Users",
         "roles": "Roles",
-        "permissions": "Permissions"
+        "permissions": "Permissions",
+        "redisCache": "Redis Cache"
     },
     "diagram": {
         "title": "Diagram",
@@ -556,5 +557,43 @@
         "filterByModule": "Filter by Module",
         "allModules": "All Modules",
         "module": "Module"
+    },
+    "redisAdmin": {
+        "title": "Redis Cache Manager",
+        "subtitle": "Manage Redis cache entries",
+        "addCache": "Add Cache Entry",
+        "editCache": "Edit Cache Entry",
+        "deleteCache": "Delete Cache Entry",
+        "bulkOperations": "Bulk Operations",
+        "bulkAdd": "Bulk Add",
+        "bulkEdit": "Bulk Edit",
+        "bulkDelete": "Bulk Delete",
+        "flushAll": "Flush All",
+        "key": "Key",
+        "value": "Value",
+        "ttl": "TTL (seconds)",
+        "ttlHint": "Leave empty for no expiration",
+        "keyPlaceholder": "e.g. user:session:abc123",
+        "valuePlaceholder": "Cache value...",
+        "ttlPlaceholder": "e.g. 3600",
+        "keysPlaceholder": "Enter one key per line...",
+        "addSuccess": "Cache entry added successfully",
+        "editSuccess": "Cache entry updated successfully",
+        "deleteSuccess": "Cache entry deleted successfully",
+        "bulkAddSuccess": "Bulk cache entries added successfully",
+        "bulkEditSuccess": "Bulk cache entries updated successfully",
+        "bulkDeleteSuccess": "Bulk cache entries deleted successfully",
+        "flushSuccess": "All cache flushed successfully",
+        "error": "An error occurred. Please try again.",
+        "confirmFlush": "⚠️ Flush All Cache",
+        "confirmFlushMessage": "This will permanently delete ALL data in Redis. This action CANNOT be undone. Sessions, OTP, rate limits, and all cached data will be lost.",
+        "confirmFlushButton": "Yes, Flush All",
+        "addRow": "Add Row",
+        "removeRow": "Remove",
+        "execute": "Execute",
+        "processing": "Processing...",
+        "singleOps": "Single Operations",
+        "dangerZone": "Danger Zone",
+        "dangerZoneDesc": "Irreversible operations that affect the entire Redis database."
     }
 }
