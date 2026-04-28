@@ -128,6 +128,13 @@ export default function InboundDetailPage() {
             }
             const res = await inventoryService.getInboundById(token, id);
             const item = res?.data ?? res;
+            // Normalize Prisma Decimal fields (serialized as string) → number
+            if (item?.details) {
+                item.details.forEach((d: any) => {
+                    d.expected_qty = Number(d.expected_qty);
+                    if (d.actual_qty != null) d.actual_qty = Number(d.actual_qty);
+                });
+            }
             setData(item);
             setOrgId(item?.organization_id ?? null);
 
@@ -135,7 +142,7 @@ export default function InboundDetailPage() {
             if (item?.details) {
                 const qtyMap: Record<string, number> = {};
                 item.details.forEach((d) => {
-                    qtyMap[d.id] = d.actual_qty ?? 0;
+                    qtyMap[d.id] = Number(d.actual_qty ?? 0);
                 });
                 setEditingQty(qtyMap);
             }

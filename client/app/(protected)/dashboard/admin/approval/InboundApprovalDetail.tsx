@@ -151,10 +151,17 @@ export default function InboundApprovalDetail({
             setLoading(true);
             const res = await inventoryService.getInboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
+            // Normalize Prisma Decimal fields (serialized as string) → number
+            if (item?.details) {
+                item.details.forEach((d: any) => {
+                    d.expected_qty = Number(d.expected_qty);
+                    if (d.actual_qty != null) d.actual_qty = Number(d.actual_qty);
+                });
+            }
             setData(item);
             if (item?.details) {
                 const map: Record<string, number> = {};
-                item.details.forEach((d: any) => { map[d.id] = d.actual_qty ?? d.expected_qty ?? 0; });
+                item.details.forEach((d: any) => { map[d.id] = Number(d.actual_qty ?? d.expected_qty ?? 0); });
                 setActualQty(map);
             }
         } catch {
@@ -243,17 +250,17 @@ export default function InboundApprovalDetail({
         if (is_customer_agreed === undefined) {
             const mismatches: MismatchItem[] = data.details
                 .filter(d => {
-                    const actual = actualQty[d.id] ?? d.actual_qty ?? 0;
-                    return actual !== d.expected_qty;
+                    const actual = Number(actualQty[d.id] ?? d.actual_qty ?? 0);
+                    return actual !== Number(d.expected_qty);
                 })
                 .map(d => {
-                    const actual = actualQty[d.id] ?? d.actual_qty ?? 0;
+                    const actual = Number(actualQty[d.id] ?? d.actual_qty ?? 0);
                     return {
                         detail_id: d.id,
                         product_id: d.product_id,
-                        expected_qty: d.expected_qty,
+                        expected_qty: Number(d.expected_qty),
                         actual_qty: actual,
-                        diff: actual - d.expected_qty,
+                        diff: actual - Number(d.expected_qty),
                     };
                 });
             if (mismatches.length > 0) {
