@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { ProductService } from "@/services/product/product.service";
@@ -240,9 +239,9 @@ function CreateItemRow({
                             <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 opacity-50" />
                         </button>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0 w-64" align="start" side="bottom">
+                    <PopoverContent className="p-0 w-64 flex flex-col overflow-hidden" align="start" side="bottom">
                         {/* Search */}
-                        <div className="p-2 border-b">
+                        <div className="p-2 border-b shrink-0">
                             <div className="relative">
                                 <input
                                     className="w-full rounded-lg border border-input bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-muted-foreground focus:border-[#0F766E]/50"
@@ -294,7 +293,7 @@ function CreateItemRow({
                         </div>
 
                         {/* Nút tạo lô mới — cố định dưới */}
-                        <div className="p-2 border-t">
+                        <div className="p-2 border-t shrink-0">
                             <button
                                 type="button"
                                 className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#0F766E] hover:bg-[#0F766E]/8 transition-colors border border-dashed border-[#0F766E]/30 hover:border-[#0F766E]/50"
@@ -714,11 +713,7 @@ export function CreateInboundDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent
-                    className="sm:max-w-4xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0"
-                    onPointerDownOutside={(e) => { if (batchSheetOpen) e.preventDefault(); }}
-                    onInteractOutside={(e) => { if (batchSheetOpen) e.preventDefault(); }}
-                >
+                <DialogContent className="sm:max-w-4xl max-h-[88vh] flex flex-col overflow-hidden rounded-3xl p-0">
                     <DialogHeader className="p-6 border-b shrink-0">
                         <DialogTitle className="text-[20px] leading-[130%]">
                             Tạo phiếu PO
@@ -773,7 +768,7 @@ export function CreateInboundDialog({
                                             </div>
                                         </PopoverTrigger>
                                         <PopoverContent
-                                            className="p-0"
+                                            className="p-0 overflow-hidden"
                                             align="start"
                                             onOpenAutoFocus={(e) => e.preventDefault()}
                                             style={{ width: "var(--radix-popover-trigger-width)" }}
@@ -1011,119 +1006,99 @@ export function CreateInboundDialog({
                 </DialogContent>
             </Dialog>
 
-            {/* Modal tạo lô hàng mới — dùng createPortal để tránh conflict với Radix Dialog */}
-            {batchSheetOpen && createPortal(
-                <div
-                    className="fixed inset-0 z-100 bg-black/50 flex items-center justify-center p-4 animate-in fade-in-0 duration-200"
-                    onClick={() => setBatchSheetOpen(false)}
-                >
-                    {/* Modal content */}
-                    <div
-                        className="bg-white rounded-2xl w-full max-w-120 flex flex-col shadow-2xl max-h-[90vh] animate-in fade-in-0 zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="px-6 py-5 border-b flex items-start justify-between shrink-0">
-                            <div>
-                                <h2 className="text-[20px] font-semibold leading-[130%]">Tạo lô hàng mới</h2>
-                                {batchSheetItemIdx >= 0 && formItems[batchSheetItemIdx] && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        Sản phẩm: <span className="font-semibold text-foreground">{formItems[batchSheetItemIdx].product.name}</span>
-                                    </p>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setBatchSheetOpen(false)}
-                                className="rounded-sm opacity-70 transition-opacity hover:opacity-100 ml-4 mt-0.5"
-                                aria-label="Đóng"
-                            >
-                                <XMarkIcon className="w-5 h-5" />
-                            </button>
-                        </div>
+            {/* Modal tạo lô hàng mới — nested Radix Dialog để focus trap hoạt động đúng */}
+            <Dialog open={batchSheetOpen} onOpenChange={setBatchSheetOpen}>
+                <DialogContent className="sm:max-w-120 max-h-[90vh] flex flex-col overflow-hidden rounded-2xl p-0 gap-0">
+                    {/* Header */}
+                    <DialogHeader className="px-6 py-5 border-b shrink-0">
+                        <DialogTitle className="text-[20px] leading-[130%]">Tạo lô hàng mới</DialogTitle>
+                        {batchSheetItemIdx >= 0 && formItems[batchSheetItemIdx] && (
+                            <DialogDescription>
+                                Sản phẩm: <span className="font-semibold text-foreground">{formItems[batchSheetItemIdx].product.name}</span>
+                            </DialogDescription>
+                        )}
+                    </DialogHeader>
 
-                        {/* Body */}
-                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-                            {/* Mã lô */}
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">
-                                    Mã lô hàng <span className="text-red-500">*</span>
-                                </Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={newBatchCode}
-                                        onChange={(e) => { setNewBatchCode(e.target.value); if (batchCodeError) setBatchCodeError(""); }}
-                                        className={cn("rounded-xl flex-1", batchCodeError && "border-red-400 focus-visible:ring-red-400")}
-                                        placeholder="VD: LOT-2026-001"
-                                        maxLength={50}
-                                    />
-                                    <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" title="Tự sinh mã lô" onClick={generateBatchCode}>
-                                        <SparklesIcon className="w-4 h-4 text-[#0F766E]" />
-                                    </Button>
-                                </div>
-                                {batchCodeError && <p className="text-xs text-red-500 flex items-center gap-1"><XMarkIcon className="w-3.5 h-3.5" />{batchCodeError}</p>}
-                                <p className="text-xs text-muted-foreground">Mã lô phải duy nhất trong toàn bộ sản phẩm này.</p>
-                            </div>
-
-                            {/* NSX + HSD */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium flex items-center gap-1.5">
-                                        <CalendarDaysIcon className="w-4 h-4 text-muted-foreground" />
-                                        Ngày sản xuất
-                                    </Label>
-                                    <Input type="date" value={newMfgDate} onChange={(e) => setNewMfgDate(e.target.value)} className="rounded-xl" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium flex items-center gap-1.5">
-                                        <CalendarDaysIcon className="w-4 h-4 text-amber-500" />
-                                        <span className="text-amber-600">Hạn sử dụng</span>
-                                    </Label>
-                                    <Input type="date" value={newExpDate} onChange={(e) => setNewExpDate(e.target.value)} className="rounded-xl" min={newMfgDate || undefined} />
-                                </div>
-                            </div>
-
-                            {/* Ghi chú lô */}
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium">Ghi chú lô</Label>
-                                <Textarea
-                                    value={newNotes}
-                                    onChange={(e) => setNewNotes(e.target.value)}
-                                    placeholder="Thông tin thêm về lô hàng này..."
-                                    className="rounded-xl resize-none"
-                                    rows={3}
-                                    maxLength={500}
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                        {/* Mã lô */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold">
+                                Mã lô hàng <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={newBatchCode}
+                                    onChange={(e) => { setNewBatchCode(e.target.value); if (batchCodeError) setBatchCodeError(""); }}
+                                    className={cn("rounded-xl flex-1", batchCodeError && "border-red-400 focus-visible:ring-red-400")}
+                                    placeholder="VD: LOT-2026-001"
+                                    maxLength={50}
                                 />
+                                <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" title="Tự sinh mã lô" onClick={generateBatchCode}>
+                                    <SparklesIcon className="w-4 h-4 text-[#0F766E]" />
+                                </Button>
                             </div>
-
-                            {/* Tóm tắt */}
-                            {(newBatchCode || newMfgDate || newExpDate) && (
-                                <div className="rounded-xl bg-muted/50 border p-4 space-y-1.5">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tóm tắt lô</p>
-                                    {newBatchCode && <p className="text-sm font-medium">{newBatchCode.trim()}</p>}
-                                    {newMfgDate && <p className="text-xs text-muted-foreground">NSX: {newMfgDate}</p>}
-                                    {newExpDate && <p className={cn("text-xs", new Date(newExpDate) < new Date() ? "text-red-500" : "text-muted-foreground")}>HSD: {newExpDate}</p>}
-                                </div>
-                            )}
+                            {batchCodeError && <p className="text-xs text-red-500 flex items-center gap-1"><XMarkIcon className="w-3.5 h-3.5" />{batchCodeError}</p>}
+                            <p className="text-xs text-muted-foreground">Mã lô phải duy nhất trong toàn bộ sản phẩm này.</p>
                         </div>
 
-                        {/* Footer */}
-                        <div className="shrink-0 border-t px-6 py-4 flex gap-3">
-                            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setBatchSheetOpen(false)}>
-                                Hủy
-                            </Button>
-                            <Button
-                                className="flex-1 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white gap-2"
-                                onClick={confirmNewBatch}
-                            >
-                                <CheckIcon className="w-4 h-4" />
-                                Xác nhận lô
-                            </Button>
+                        {/* NSX + HSD */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium flex items-center gap-1.5">
+                                    <CalendarDaysIcon className="w-4 h-4 text-muted-foreground" />
+                                    Ngày sản xuất
+                                </Label>
+                                <Input type="date" value={newMfgDate} onChange={(e) => setNewMfgDate(e.target.value)} className="rounded-xl" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium flex items-center gap-1.5">
+                                    <CalendarDaysIcon className="w-4 h-4 text-amber-500" />
+                                    <span className="text-amber-600">Hạn sử dụng</span>
+                                </Label>
+                                <Input type="date" value={newExpDate} onChange={(e) => setNewExpDate(e.target.value)} className="rounded-xl" min={newMfgDate || undefined} />
+                            </div>
                         </div>
+
+                        {/* Ghi chú lô */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Ghi chú lô</Label>
+                            <Textarea
+                                value={newNotes}
+                                onChange={(e) => setNewNotes(e.target.value)}
+                                placeholder="Thông tin thêm về lô hàng này..."
+                                className="rounded-xl resize-none"
+                                rows={3}
+                                maxLength={500}
+                            />
+                        </div>
+
+                        {/* Tóm tắt */}
+                        {(newBatchCode || newMfgDate || newExpDate) && (
+                            <div className="rounded-xl bg-muted/50 border p-4 space-y-1.5">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tóm tắt lô</p>
+                                {newBatchCode && <p className="text-sm font-medium">{newBatchCode.trim()}</p>}
+                                {newMfgDate && <p className="text-xs text-muted-foreground">NSX: {newMfgDate}</p>}
+                                {newExpDate && <p className={cn("text-xs", new Date(newExpDate) < new Date() ? "text-red-500" : "text-muted-foreground")}>HSD: {newExpDate}</p>}
+                            </div>
+                        )}
                     </div>
-                </div>,
-                document.body
-            )}
+
+                    {/* Footer */}
+                    <div className="shrink-0 border-t px-6 py-4 flex gap-3">
+                        <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setBatchSheetOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button
+                            className="flex-1 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white gap-2"
+                            onClick={confirmNewBatch}
+                        >
+                            <CheckIcon className="w-4 h-4" />
+                            Xác nhận lô
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Modal chọn hàng loạt */}
             <ProductBrowseModal
