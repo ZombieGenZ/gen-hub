@@ -58,10 +58,12 @@ export function OrderConfirmation({
     const [qrExpired, setQrExpired] = useState(false);
 
     const contractCode = session.contract_code || orderResponse?.order_code || '—';
-    const depositAmount = session.quotation?.depositAmount
-        || session.deposit_amount
-        || Math.round((session.quotation?.grandTotal || 0) * 0.1)
-        || 0;
+    // Ưu tiên số tiền thực tế từ SePay (lưu sau khi tạo hợp đồng), fallback về ước tính từ quotation
+    const depositAmount =
+        session.deposit_amount
+        ?? session.quotation?.depositAmount
+        ?? Math.round((session.quotation?.grandTotal ?? 0) * 0.1)
+        ?? 0;
     const qrUrl = session.payment_qr_url;
     const paymentCode = session.payment_code;
 

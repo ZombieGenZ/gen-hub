@@ -418,6 +418,7 @@ function CheckoutContent() {
                 payment_code: payment?.paymentCode,
                 payment_qr_url: payment?.qrCode,
                 payment_expired_at: payment?.expiredAt ? new Date(payment.expiredAt).toISOString() : undefined,
+                deposit_amount: payment?.amount,
             }));
 
         } catch (error) {

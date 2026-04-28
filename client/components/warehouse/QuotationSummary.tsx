@@ -44,19 +44,12 @@ export function QuotationSummary({
     className,
     showHeader = true,
 }: QuotationSummaryProps) {
-    // Logic cũ: Server tính phí dịch vụ trên subtotal gốc (trước coupon)
-    // const effectiveServiceFee = breakdown.serviceFee;
-    // const effectiveGrandTotal = breakdown.grandTotal;
-    // const depositAmount = Math.round(effectiveGrandTotal * 0.1);
-
-    // Logic mới: Giảm phí dịch vụ (10%) trên tổng đã trừ coupon
+    // Dùng trực tiếp giá trị từ API thay vì tính lại để đảm bảo nhất quán với backend
     const subtotal = breakdown.subtotal;
     const couponAmount = appliedCoupon?.discount || breakdown.couponDiscount || 0;
-    const taxableAmount = Math.max(0, subtotal - couponAmount);
-    const effectiveServiceFee = Math.round(taxableAmount * 0.1);
-    const effectiveGrandTotal = taxableAmount + effectiveServiceFee;
-    const depositAmount = Math.round(effectiveGrandTotal * 0.1);
-    // breakdown?.depositAmount || 
+    const effectiveServiceFee = breakdown.serviceFee;
+    const effectiveGrandTotal = breakdown.grandTotal;
+    const depositAmount = breakdown.depositAmount ?? Math.max(2_000, Math.round(effectiveGrandTotal * 0.1));
 
     return (
         <div className={cn(
