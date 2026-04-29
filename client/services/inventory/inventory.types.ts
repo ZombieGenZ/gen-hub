@@ -407,3 +407,96 @@ export interface StockPageResponse {
     offset: number;
 }
 
+// ────────────────────────────────────────────────
+// Stock Stats (Thống kê tồn kho)
+// ────────────────────────────────────────────────
+
+export interface StockStats {
+    total_sku_count: number;
+    low_stock_count: number;
+    today_inbound_count: number;
+    today_outbound_count: number;
+    month_inbound_count: number;
+    month_outbound_count: number;
+}
+
+// ────────────────────────────────────────────────
+// Stock Take (Kiểm kê kho)
+// ────────────────────────────────────────────────
+
+export type StockTakeStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'ADJUSTED' | 'CANCELLED';
+
+export interface StockTakeDetailItem {
+    id: string;
+    stock_take_id: string;
+    product_id: string;
+    batch_id?: string | null;
+    block_id: string;
+    system_qty: number;
+    actual_qty: number;
+    difference: number;
+    reason?: string | null;
+    product?: {
+        id: string;
+        name: string;
+        sku: string;
+        image_url?: string | null;
+    };
+    batch?: {
+        id: string;
+        code: string;
+        expiry_date?: string | null;
+    } | null;
+    block?: {
+        id: string;
+        code: string;
+        shelf?: {
+            code: string;
+            rack?: {
+                code: string;
+                row?: { code: string; name: string };
+            };
+        };
+    };
+}
+
+export interface StockTake {
+    id: string;
+    organization_id: string;
+    warehouse_id: string;
+    code: string;
+    status: StockTakeStatus;
+    notes?: string | null;
+    created_at: string;
+    updated_at?: string | null;
+    created_by?: string | null;
+    updated_by?: string | null;
+    warehouse?: { id: string; name: string };
+    details?: StockTakeDetailItem[];
+    _count?: { details: number };
+}
+
+export interface CreateStockTakePayload {
+    warehouse_id: string;
+    notes?: string;
+}
+
+export interface UpdateStockTakeDetailsPayload {
+    details: { detail_id: string; actual_qty: number }[];
+}
+
+export interface QueryStockTakeParams {
+    limit?: number;
+    offset?: number;
+    keywords?: string;
+    status?: StockTakeStatus;
+    warehouse_id?: string;
+}
+
+export interface StockTakePageResponse {
+    items: StockTake[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+

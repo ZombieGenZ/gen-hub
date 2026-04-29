@@ -140,6 +140,7 @@ export function transformLayoutTo3D(
                         const box: BoxItem = {
                             id: inv.id,
                             name: `${inv.sku || inv.product_name}${inv.batch_code ? ` #${inv.batch_code}` : ''}`,
+                            productName: inv.product_name,
                             rackId: rack.id,
                             row: 0,
                             column: blockIdx,

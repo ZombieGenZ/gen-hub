@@ -96,6 +96,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { RoleModule } from './modules/role/role.module';
 import { InventoryRequestModule } from './modules/inventory-request/inventory-request.module';
 import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inventory/warehouse-manager-inventory.module';
+import { StockTakeModule } from './modules/stock-take/stock-take.module';
 import { AppDownloadModule } from './modules/app-download/app-download.module';
 import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
 import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
@@ -210,6 +211,7 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
     // Inventory Management (Organization level)
     InventoryRequestModule,
     WarehouseManagerInventoryModule,
+    StockTakeModule,
 
     // Organization Update Request
     OrganizationUpdateRequestModule,

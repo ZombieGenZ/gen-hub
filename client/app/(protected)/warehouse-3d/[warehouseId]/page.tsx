@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useCallback, useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useWarehouse3D } from '@/hooks/useWarehouse3D';
 import { useInventory } from '@/hooks/useInventory';
 import { useRealtimePresence } from '@/hooks/useRealtimePresence';
@@ -240,15 +240,24 @@ export default function Warehouse3DLivePage() {
       {/* Warehouse name header */}
       {warehouseInfo && (
         <div className="px-4 py-2 bg-card border-b border-border flex items-center justify-between z-20">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/warehouse-3d')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors font-medium border border-transparent hover:border-border"
+              title="Quay về danh sách kho 3D"
+            >
+              <span className="text-sm leading-none">←</span>
+              Bảng điều khiển
+            </button>
+            <div className="w-px h-5 bg-border" />
             <button 
               onClick={() => setControlPanelOpen(!controlPanelOpen)}
-              className="p-1 hover:bg-muted rounded transition-colors"
+              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
               title="Toggle Sidebar"
             >
-              <span className="text-xl">☰</span>
+              <span className="text-base leading-none">☰</span>
             </button>
-            <h1 className="text-lg font-semibold">{warehouseInfo.name}</h1>
+            <h1 className="text-base font-semibold">{warehouseInfo.name}</h1>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
               Live
             </span>

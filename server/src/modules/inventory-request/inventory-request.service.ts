@@ -3595,4 +3595,86 @@ export class InventoryRequestService {
       'Template Xuất Kho',
     );
   }
+
+  /**
+   * Lấy thống kê tổng quan tồn kho cho dashboard
+   */
+  async getInventoryStats(
+    orgId: string,
+    lowStockThreshold = 10,
+  ): Promise<{
+    total_sku_count: number;
+    low_stock_count: number;
+    today_inbound_count: number;
+    today_outbound_count: number;
+    month_inbound_count: number;
+    month_outbound_count: number;
+  }> {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [
+      total_sku_count,
+      low_stock_count,
+      today_inbound_count,
+      today_outbound_count,
+      month_inbound_count,
+      month_outbound_count,
+    ] = await Promise.all([
+      // Tổng số SKU đang có tồn kho
+      this.prisma.inventory.count({
+        where: { organization_id: orgId, is_deleted: false, quantity: { gt: 0 } },
+      }),
+      // Số SKU sắp hết hàng
+      this.prisma.inventory.count({
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          quantity_on_hand: { gt: 0, lte: lowStockThreshold },
+        },
+      }),
+      // Phiếu nhập hôm nay
+      this.prisma.receipt.count({
+        where: {
+          warehouse: { organization_id: orgId },
+          is_deleted: false,
+          created_at: { gte: startOfDay },
+        },
+      }),
+      // Phiếu xuất hôm nay
+      this.prisma.export.count({
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          created_at: { gte: startOfDay },
+        },
+      }),
+      // Phiếu nhập trong tháng
+      this.prisma.receipt.count({
+        where: {
+          warehouse: { organization_id: orgId },
+          is_deleted: false,
+          created_at: { gte: startOfMonth },
+        },
+      }),
+      // Phiếu xuất trong tháng
+      this.prisma.export.count({
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          created_at: { gte: startOfMonth },
+        },
+      }),
+    ]);
+
+    return {
+      total_sku_count,
+      low_stock_count,
+      today_inbound_count,
+      today_outbound_count,
+      month_inbound_count,
+      month_outbound_count,
+    };
+  }
 }

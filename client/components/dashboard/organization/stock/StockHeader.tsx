@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StockStatsCards } from "./StockStatsCards";
+import type { StockStats } from "@/services/inventory/inventory.types";
 import {
     Select,
     SelectContent,
@@ -24,6 +26,8 @@ interface StockHeaderProps {
     warehouses: Warehouse[];
     onExportClick?: () => void;
     isExporting?: boolean;
+    stats?: StockStats | null;
+    statsLoading?: boolean;
 }
 
 export function StockHeader({
@@ -35,9 +39,14 @@ export function StockHeader({
     warehouses,
     onExportClick,
     isExporting = false,
+    stats = null,
+    statsLoading = false,
 }: StockHeaderProps) {
     return (
         <div className="space-y-6">
+            {/* ── Stats Cards ── */}
+            <StockStatsCards stats={stats} loading={statsLoading} />
+
             {/* ── Tiêu đề ── */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

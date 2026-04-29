@@ -2680,4 +2680,59 @@ export class InventoryRequestController {
       lang === 'vi' ? 'Nhập dữ liệu thành công' : 'Import successful',
     );
   }
+
+  @Get('stats')
+  @RequireOrgPermission('org.inventory.inbound.list')
+  @ApiOperation({
+    summary: 'Thống kê tổng quan tồn kho',
+    description:
+      'Lấy các chỉ số thống kê tổng quan: tổng SKU, số SKU sắp hết, phiếu nhập/xuất hôm nay và tháng này.',
+  })
+  @ApiParam({
+    name: 'orgId',
+    required: true,
+    description: 'ID của tổ chức',
+    example: ORG_ID,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiQuery({
+    name: 'low_stock_threshold',
+    required: false,
+    description: 'Ngưỡng cảnh báo sắp hết hàng (mặc định = 10)',
+    example: 10,
+    schema: { type: 'number', default: 10 },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Thống kê tồn kho',
+    schema: buildSuccessResponseSchema({
+      code: 'inventory-request.stats',
+      message: 'Lấy thống kê thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          total_sku_count: { type: 'number', example: 120 },
+          low_stock_count: { type: 'number', example: 8 },
+          today_inbound_count: { type: 'number', example: 3 },
+          today_outbound_count: { type: 'number', example: 5 },
+          month_inbound_count: { type: 'number', example: 47 },
+          month_outbound_count: { type: 'number', example: 52 },
+        },
+      },
+    }),
+  })
+  @ApiAuthResponses()
+  async getInventoryStats(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Query('low_stock_threshold') lowStockThreshold?: string,
+    @I18nLang() lang?: string,
+  ) {
+    const threshold = lowStockThreshold ? parseInt(lowStockThreshold, 10) : 10;
+    const stats = await this.inventoryRequestService.getInventoryStats(orgId, threshold);
+    return new GetResponse(
+      'inventory-request.stats',
+      stats,
+      lang === 'vi' ? 'Lấy thống kê thành công' : 'Stats retrieved',
+    );
+  }
 }

@@ -208,9 +208,16 @@ export function StockTable({
 
                                             {/* Tồn thực tế */}
                                             <td className="py-4 px-4 text-right">
-                                                <span className="text-sm font-semibold">
-                                                    {formatQty(item.quantity_on_hand)}
-                                                </span>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className="text-sm font-semibold">
+                                                        {formatQty(item.quantity_on_hand)}
+                                                    </span>
+                                                    {item.quantity_on_hand <= 10 && (
+                                                        <span className="text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                                                            ⚠ Sắp hết
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
 
                                             {/* Đang giữ */}

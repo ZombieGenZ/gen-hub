@@ -45,6 +45,8 @@ export interface RackConfig {
 export interface BoxItem {
   id: string;
   name: string;
+  /** Tên sản phẩm thực (hiển thị cho người dùng) */
+  productName?: string;
   rackId: string;
   row: number;
   column: number;

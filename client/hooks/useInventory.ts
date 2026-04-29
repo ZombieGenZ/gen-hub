@@ -71,25 +71,29 @@ export const useInventory = ({ boxes, racks, warehouseId }: UseInventoryProps) =
         if (!token) return;
 
         // Fetch paginated transactions (last 50 for live feed)
-        const transRes = await inventoryService.listTransactions(token, {
-          warehouse_id: warehouseId,
-          limit: 50,
-        });
-        
-        if (transRes?.data?.items) {
-          const adapted = transRes.data.items.map(t => ({
-            id: t.id,
-            type: t.type === 'INBOUND' ? 'in' : 'out',
-            boxId: t.product_id,
-            boxName: t.product?.name || 'N/A',
-            rackId: t.to_block_id || t.from_block_id || '',
-            rackName: t.to_block?.code || t.from_block?.code || 'Kho',
-            category: 'default',
-            quantity: t.quantity,
-            timestamp: new Date(t.created_at),
-            operator: 'System'
-          }));
-          setTransactions(adapted as any);
+        try {
+          const transRes = await inventoryService.listTransactions(token, {
+            warehouse_id: warehouseId,
+            limit: 50,
+          });
+          
+          if (transRes?.data?.items) {
+            const adapted = transRes.data.items.map(t => ({
+              id: t.id,
+              type: t.type === 'INBOUND' ? 'in' : 'out',
+              boxId: t.product_id,
+              boxName: t.product?.name || 'N/A',
+              rackId: t.to_block_id || t.from_block_id || '',
+              rackName: t.to_block?.code || t.from_block?.code || 'Kho',
+              category: 'default',
+              quantity: t.quantity,
+              timestamp: new Date(t.created_at),
+              operator: 'System'
+            }));
+            setTransactions(adapted as any);
+          }
+        } catch {
+          // Transactions not critical for 3D visualization — silently skip
         }
 
         // Fetch day summary

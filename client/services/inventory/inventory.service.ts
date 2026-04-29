@@ -12,6 +12,12 @@ import type {
     QueryTransactionParams,
     QueryStockParams,
     StockPageResponse,
+    StockStats,
+    StockTake,
+    StockTakePageResponse,
+    CreateStockTakePayload,
+    UpdateStockTakeDetailsPayload,
+    QueryStockTakeParams,
 } from './inventory.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -784,6 +790,126 @@ export class InventoryService {
                 data: { items: [], total: 0, limit: 10, offset: 0, hasMore: false },
             };
         }
+    }
+
+    // ==================== STATS (THỐNG KÊ TỒN KHO) ====================
+
+    async getInventoryStats(token: string, lowStockThreshold = 10): Promise<ApiResponse<StockStats>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(
+            `${API}/organizations/${orgId}/inventory/stats?low_stock_threshold=${lowStockThreshold}`,
+            { headers: { 'Authorization': `Bearer ${token}` } },
+        );
+        if (!response.ok) throw new Error('Không thể lấy thống kê tồn kho');
+        return response.json();
+    }
+
+    // ==================== STOCK TAKE (KIỂM KÊ KHO) ====================
+
+    async listStockTakes(token: string, query?: QueryStockTakeParams): Promise<ApiResponse<StockTakePageResponse>> {
+        const orgId = await this.getOrgId(token);
+        const params = new URLSearchParams();
+        if (query?.limit != null) params.append('limit', String(query.limit));
+        if (query?.offset != null) params.append('offset', String(query.offset));
+        if (query?.keywords) params.append('keywords', query.keywords);
+        if (query?.status) params.append('status', query.status);
+        if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
+        const qs = params.toString();
+        const response = await fetch(
+            `${API}/organizations/${orgId}/inventory/stock-take${qs ? `?${qs}` : ''}`,
+            { headers: { 'Authorization': `Bearer ${token}` } },
+        );
+        if (!response.ok) throw new Error('Không thể lấy danh sách phiếu kiểm kê');
+        return response.json();
+    }
+
+    async createStockTake(token: string, data: CreateStockTakePayload): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể tạo phiếu kiểm kê');
+        }
+        return response.json();
+    }
+
+    async getStockTakeById(token: string, id: string): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Không thể lấy chi tiết phiếu kiểm kê');
+        return response.json();
+    }
+
+    async startStockTake(token: string, id: string): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}/start`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể bắt đầu kiểm kê');
+        }
+        return response.json();
+    }
+
+    async updateStockTakeDetails(token: string, id: string, data: UpdateStockTakeDetailsPayload): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}/details`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể cập nhật số đếm');
+        }
+        return response.json();
+    }
+
+    async completeStockTake(token: string, id: string): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}/complete`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể hoàn tất kiểm kê');
+        }
+        return response.json();
+    }
+
+    async adjustStockTake(token: string, id: string): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}/adjust`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể điều chỉnh tồn kho');
+        }
+        return response.json();
+    }
+
+    async cancelStockTake(token: string, id: string): Promise<ApiResponse<StockTake>> {
+        const orgId = await this.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock-take/${id}/cancel`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Không thể hủy phiếu kiểm kê');
+        }
+        return response.json();
     }
 
 }

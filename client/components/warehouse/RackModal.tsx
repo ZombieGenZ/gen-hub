@@ -166,7 +166,7 @@ const RackModal = ({
           {/* Box List */}
           <div className="px-4 pb-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold">Danh sách thùng hàng ({rackBoxes.length})</h4>
+              <h4 className="text-sm font-semibold">Danh sách sản phẩm ở kệ ({rackBoxes.length})</h4>
               {rackBoxes.length > 0 && (
                 <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={onRemoveAllBoxes}>
                   <Trash2 className="w-3 h-3 mr-1" />
@@ -174,11 +174,11 @@ const RackModal = ({
                 </Button>
               )}
             </div>
-            <ScrollArea className="h-[180px] rounded-md border border-border p-2 bg-muted/10">
+            <ScrollArea className="h-50 rounded-md border border-border p-2 bg-muted/10">
               {rackBoxes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-1">
                   <Package className="w-6 h-6 opacity-20" />
-                  <span className="text-xs">Kệ trống - chưa có thùng hàng</span>
+                  <span className="text-xs">Kệ trống - chưa có sản phẩm</span>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -187,17 +187,30 @@ const RackModal = ({
                       key={box.id}
                       className="flex items-center justify-between p-2 rounded bg-card border border-border/50 hover:border-border transition-colors shadow-sm"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div
-                          className="w-3 h-3 rounded-full shadow-sm"
+                          className="w-3 h-3 shrink-0 rounded-full shadow-sm"
                           style={{ backgroundColor: categoryColors[box.category] }}
                         />
-                        <span className="text-xs font-mono font-medium">{box.name}</span>
-                        <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground hover:bg-muted">
+                        <div className="min-w-0 flex-1">
+                          {box.productName ? (
+                            <>
+                              <p className="text-xs font-semibold truncate text-foreground leading-tight">
+                                {box.productName}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground font-mono truncate leading-tight mt-0.5">
+                                {box.name}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="text-xs font-mono font-medium">{box.name}</span>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground hover:bg-muted shrink-0">
                           L{box.level + 1} R{box.row + 1} C{box.column + 1}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0 ml-1">
                         <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-background" onClick={() => onDuplicateBox(box.id)}>
                           <Copy className="w-3 h-3" />
                         </Button>
