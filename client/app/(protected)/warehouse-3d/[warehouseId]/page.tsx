@@ -46,6 +46,7 @@ const WarehouseScene = dynamic(() => import('@/components/warehouse/WarehouseSce
  */
 export default function Warehouse3DLivePage() {
   const params = useParams();
+  const router = useRouter();
   const warehouseId = params.warehouseId as string;
 
   const {
@@ -240,24 +241,24 @@ export default function Warehouse3DLivePage() {
       {/* Warehouse name header */}
       {warehouseInfo && (
         <div className="px-4 py-2 bg-card border-b border-border flex items-center justify-between z-20">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/warehouse-3d')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors font-medium border border-transparent hover:border-border"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Quay về danh sách kho 3D"
             >
-              <span className="text-sm leading-none">←</span>
-              Bảng điều khiển
+              <span>←</span>
+              <span>Bảng điều khiển</span>
             </button>
-            <div className="w-px h-5 bg-border" />
+            <span className="text-muted-foreground/30">/</span>
             <button 
               onClick={() => setControlPanelOpen(!controlPanelOpen)}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+              className="p-1 hover:bg-muted rounded transition-colors"
               title="Toggle Sidebar"
             >
-              <span className="text-base leading-none">☰</span>
+              <span className="text-xl">☰</span>
             </button>
-            <h1 className="text-base font-semibold">{warehouseInfo.name}</h1>
+            <h1 className="text-lg font-semibold">{warehouseInfo.name}</h1>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
               Live
             </span>
