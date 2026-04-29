@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,11 +12,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    BuildingStorefrontIcon,
+    TruckIcon,
+    UserIcon,
+    CubeIcon,
+} from "@heroicons/react/24/outline";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useDebounce } from "@/hooks/use-debounce";
-import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
+import type { InboundRequest, OutboundRequest, InboundDetail, OutboundDetail } from "@/services/inventory/inventory.types";
 
 const inventoryService = new InventoryService();
 const ITEMS_PER_PAGE = 15;
@@ -48,6 +55,94 @@ function formatDate(dateStr?: string | null) {
     );
 }
 
+function formatQty(n: number) {
+    return new Intl.NumberFormat("vi-VN").format(n);
+}
+
+/** Sub-table hiển thị danh sách sản phẩm khi expand */
+function ProductExpandRow({
+    isInbound,
+    details,
+    loading,
+}: {
+    isInbound: boolean;
+    details: (InboundDetail | OutboundDetail)[] | undefined;
+    loading: boolean;
+}) {
+    if (loading) {
+        return (
+            <tr>
+                <td colSpan={7} className="px-4 py-3 bg-muted/20 border-b">
+                    <div className="flex gap-3">
+                        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-4 w-28" />)}
+                    </div>
+                </td>
+            </tr>
+        );
+    }
+    if (!details || details.length === 0) {
+        return (
+            <tr>
+                <td colSpan={7} className="px-4 py-3 bg-muted/20 border-b text-sm text-muted-foreground text-center italic">
+                    Không có danh sách sản phẩm
+                </td>
+            </tr>
+        );
+    }
+    return (
+        <tr>
+            <td colSpan={7} className="px-0 py-0 bg-muted/10 border-b">
+                <div className="px-12 py-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                        <CubeIcon className="w-3.5 h-3.5" />
+                        Danh sách sản phẩm ({details.length})
+                    </p>
+                    <div className="rounded-xl overflow-hidden border border-muted/60">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/40">
+                                <tr>
+                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Sản phẩm</th>
+                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SKU</th>
+                                    {isInbound ? (
+                                        <>
+                                            <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL dự kiến</th>
+                                            <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL thực nhận</th>
+                                        </>
+                                    ) : (
+                                        <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL yêu cầu</th>
+                                    )}
+                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Đơn vị</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-muted/40">
+                                {details.map((d) => {
+                                    const inD = d as InboundDetail;
+                                    const outD = d as OutboundDetail;
+                                    return (
+                                        <tr key={d.id} className="bg-background/60 hover:bg-muted/20 transition-colors">
+                                            <td className="py-2 px-3 font-medium">{d.product?.name ?? "—"}</td>
+                                            <td className="py-2 px-3 text-muted-foreground font-mono text-xs">{d.product?.sku ?? "—"}</td>
+                                            {isInbound ? (
+                                                <>
+                                                    <td className="py-2 px-3 text-right text-muted-foreground">{formatQty(inD.expected_qty)}</td>
+                                                    <td className="py-2 px-3 text-right font-semibold text-[#0F766E]">{formatQty(inD.actual_qty)}</td>
+                                                </>
+                                            ) : (
+                                                <td className="py-2 px-3 text-right font-semibold">{formatQty(outD.quantity)}</td>
+                                            )}
+                                            <td className="py-2 px-3 text-muted-foreground text-xs">{d.unit?.name ?? "—"}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    );
+}
+
 interface InboundOutboundTabProps {
     warehouses: { id: string; name: string }[];
     initialWarehouseId?: string;
@@ -65,6 +160,9 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
     const [outboundItems, setOutboundItems] = useState<OutboundRequest[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    // Expand state: id -> { open, loading, details }
+    const [expandedRows, setExpandedRows] = useState<Record<string, { open: boolean; loading: boolean; details?: any[] }>>({});
 
     const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -110,6 +208,7 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
 
     useEffect(() => {
         setCurrentPage(1);
+        setExpandedRows({});
     }, [activeSubTab, warehouseId, status, debouncedKeywords]);
 
     useEffect(() => {
@@ -120,12 +219,39 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
         }
     }, [activeSubTab, fetchInbound, fetchOutbound]);
 
-    const statusOptions =
-        activeSubTab === "inbound"
-            ? Object.entries(RECEIPT_STATUS_LABEL)
-            : Object.entries(EXPORT_STATUS_LABEL);
+    const toggleExpand = async (id: string) => {
+        const current = expandedRows[id];
+        if (current?.open) {
+            setExpandedRows((prev) => ({ ...prev, [id]: { ...prev[id], open: false } }));
+            return;
+        }
+        if (current?.details) {
+            setExpandedRows((prev) => ({ ...prev, [id]: { ...prev[id], open: true } }));
+            return;
+        }
+        setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: true } }));
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            if (activeSubTab === "inbound") {
+                const res = await inventoryService.getInboundById(token, id);
+                const detail = (res?.data ?? res) as InboundRequest;
+                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [] } }));
+            } else {
+                const res = await inventoryService.getOutboundById(token, id);
+                const detail = (res?.data ?? res) as OutboundRequest;
+                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [] } }));
+            }
+        } catch {
+            setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: [] } }));
+        }
+    };
 
+    const statusOptions = activeSubTab === "inbound"
+        ? Object.entries(RECEIPT_STATUS_LABEL)
+        : Object.entries(EXPORT_STATUS_LABEL);
     const statusMap = activeSubTab === "inbound" ? RECEIPT_STATUS_LABEL : EXPORT_STATUS_LABEL;
+    const currentItems = activeSubTab === "inbound" ? inboundItems : outboundItems;
 
     return (
         <div className="space-y-4">
@@ -141,10 +267,24 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
-                        {tab === "inbound" ? "Phiếu nhập" : "Phiếu xuất"}
+                        {tab === "inbound" ? (
+                            <span className="flex items-center gap-1.5">
+                                <BuildingStorefrontIcon className="w-4 h-4" />Phiếu nhập
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1.5">
+                                <TruckIcon className="w-4 h-4" />Phiếu xuất
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>
+
+            <p className="text-xs text-muted-foreground -mt-1">
+                {activeSubTab === "inbound"
+                    ? "Hàng nhập từ nhà cung cấp/đối tác vào kho. Nhấn vào một hàng để xem danh sách sản phẩm."
+                    : "Hàng xuất từ kho đến khách hàng/đối tác. Nhấn vào một hàng để xem danh sách sản phẩm."}
+            </p>
 
             {/* Filters */}
             <Card className="border-0 shadow-sm rounded-2xl">
@@ -195,79 +335,101 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
                         <table className="w-full">
                             <thead className="bg-muted/30 border-b">
                                 <tr>
-                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Mã phiếu</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Kho</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                    <th className="w-8 py-3 px-3" />
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">Mã phiếu</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">Kho</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">
+                                        {activeSubTab === "inbound" ? "Nhập từ" : "Xuất cho"}
+                                    </th>
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">
                                         {activeSubTab === "inbound" ? "Mã PO" : "Mã SO"}
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Trạng thái</th>
-                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">Trạng thái</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase whitespace-nowrap">
                                         {activeSubTab === "inbound" ? "Ngày dự kiến" : "Ngày yêu cầu"}
                                     </th>
-                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Ngày tạo</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody>
                                 {loading ? (
                                     Array.from({ length: 6 }).map((_, i) => (
-                                        <tr key={i}>
+                                        <tr key={i} className="border-b">
+                                            <td className="py-4 px-3" />
                                             {Array.from({ length: 6 }).map((_, ci) => (
                                                 <td key={ci} className="py-4 px-4"><Skeleton className="h-5 w-24" /></td>
                                             ))}
                                         </tr>
                                     ))
-                                ) : (activeSubTab === "inbound" ? inboundItems : outboundItems).length === 0 ? (
+                                ) : currentItems.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-14 text-center text-muted-foreground">
+                                        <td colSpan={7} className="py-14 text-center text-muted-foreground">
                                             Không có dữ liệu
                                         </td>
                                     </tr>
-                                ) : activeSubTab === "inbound" ? (
-                                    inboundItems.map((item) => {
-                                        const statusInfo = statusMap[item.status] ?? { label: item.status, color: "" };
-                                        return (
-                                            <tr key={item.id} className="hover:bg-muted/40 transition-colors">
-                                                <td className="py-4 px-4">
-                                                    <span className="font-mono text-sm font-medium text-[#0F766E]">{item.code}</span>
-                                                </td>
-                                                <td className="py-4 px-4 text-sm">{item.warehouse?.name ?? "—"}</td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">{item.purchase_order_code ?? "—"}</td>
-                                                <td className="py-4 px-4">
-                                                    <Badge variant="outline" className={`rounded-full text-xs font-normal border ${statusInfo.color}`}>
-                                                        {statusInfo.label}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-4 px-4 text-right text-sm text-muted-foreground">
-                                                    {formatDate(item.expected_arrival)}
-                                                </td>
-                                                <td className="py-4 px-4 text-right text-sm text-muted-foreground">
-                                                    {formatDate(item.created_at)}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
                                 ) : (
-                                    outboundItems.map((item) => {
+                                    currentItems.map((item) => {
+                                        const isExpanded = expandedRows[item.id]?.open === true;
+                                        const expandState = expandedRows[item.id];
                                         const statusInfo = statusMap[item.status] ?? { label: item.status, color: "" };
+                                        const inItem = item as InboundRequest;
+                                        const outItem = item as OutboundRequest;
+                                        const partnerName = inItem.partner?.name ?? outItem.partner?.name;
+                                        const detailCount = (item as any)._count?.details;
+
                                         return (
-                                            <tr key={item.id} className="hover:bg-muted/40 transition-colors">
-                                                <td className="py-4 px-4">
-                                                    <span className="font-mono text-sm font-medium text-[#7C3AED]">{item.code}</span>
-                                                </td>
-                                                <td className="py-4 px-4 text-sm">{item.warehouse?.name ?? "—"}</td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">{item.sales_order_code ?? "—"}</td>
-                                                <td className="py-4 px-4">
-                                                    <Badge variant="outline" className={`rounded-full text-xs font-normal border ${statusInfo.color}`}>
-                                                        {statusInfo.label}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-4 px-4 text-right text-sm text-muted-foreground">
-                                                    {formatDate(item.required_date)}
-                                                </td>
-                                                <td className="py-4 px-4 text-right text-sm text-muted-foreground">
-                                                    {formatDate(item.created_at)}
-                                                </td>
-                                            </tr>
+                                            <React.Fragment key={item.id}>
+                                                <tr
+                                                    className={`border-b transition-colors cursor-pointer hover:bg-muted/40 ${isExpanded ? "bg-muted/20" : ""}`}
+                                                    onClick={() => toggleExpand(item.id)}
+                                                >
+                                                    <td className="py-3.5 px-3 text-center w-8">
+                                                        {isExpanded
+                                                            ? <ChevronDownIcon className="w-4 h-4 text-muted-foreground mx-auto" />
+                                                            : <ChevronRightIcon className="w-4 h-4 text-muted-foreground mx-auto" />}
+                                                    </td>
+                                                    <td className="py-3.5 px-4">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className={`font-mono text-sm font-semibold ${activeSubTab === "inbound" ? "text-[#0F766E]" : "text-[#7C3AED]"}`}>
+                                                                {item.code}
+                                                            </span>
+                                                            {detailCount != null && (
+                                                                <span className="text-[10px] text-muted-foreground">{detailCount} sản phẩm</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-sm whitespace-nowrap">{item.warehouse?.name ?? "—"}</td>
+                                                    <td className="py-3.5 px-4">
+                                                        {partnerName ? (
+                                                            <span className="inline-flex items-center gap-1.5 text-sm">
+                                                                <UserIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                                                <span className="font-medium whitespace-nowrap">{partnerName}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-sm text-muted-foreground">
+                                                        {inItem.purchase_order_code ?? outItem.sales_order_code ?? "—"}
+                                                    </td>
+                                                    <td className="py-3.5 px-4">
+                                                        <Badge variant="outline" className={`rounded-full text-xs font-normal border ${statusInfo.color}`}>
+                                                            {statusInfo.label}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-right text-sm text-muted-foreground whitespace-nowrap">
+                                                        {activeSubTab === "inbound"
+                                                            ? formatDate(inItem.expected_arrival)
+                                                            : formatDate(outItem.required_date)}
+                                                    </td>
+                                                </tr>
+                                                {isExpanded && (
+                                                    <ProductExpandRow
+                                                        isInbound={activeSubTab === "inbound"}
+                                                        details={expandState?.details}
+                                                        loading={expandState?.loading === true}
+                                                    />
+                                                )}
+                                            </React.Fragment>
                                         );
                                     })
                                 )}

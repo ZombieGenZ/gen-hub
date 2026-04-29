@@ -53,3 +53,4 @@ export class QueryStockDto {
   @Min(0)
   offset?: number = 0;
 }
+

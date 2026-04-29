@@ -400,6 +400,7 @@ export class InventoryRequestController {
       query.keywords,
       query.limit ?? 20,
       query.offset ?? 0,
+      true, // always grouped by product+warehouse
     );
     return new GetResponse(
       'inventory-request.list_stock',

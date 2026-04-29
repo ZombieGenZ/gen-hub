@@ -383,6 +383,7 @@ export interface StockItem {
     warehouse_name: string;
     block_id: string;
     location: string;
+    location_count?: number;
     days_in_storage: number;
     created_at: string;
 }
@@ -395,6 +396,7 @@ export interface QueryStockParams {
     keywords?: string;
     limit?: number;
     offset?: number;
+    grouped?: boolean;
 }
 
 /**

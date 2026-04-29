@@ -114,7 +114,13 @@ export class InventoryRequestService {
     keywords?: string,
     limit = 20,
     offset = 0,
-  ): Promise<{ items: ReturnType<typeof this._mapStockItem>[]; total: number }> {
+    grouped = true,
+  ): Promise<{ items: ReturnType<typeof this._mapStockItem>[] | any[]; total: number }> {
+    // Nếu grouped=true: gộp theo product+warehouse và tổng hợp số lượng
+    if (grouped) {
+      return this._listInventoryStockGrouped(orgId, warehouseId, keywords, limit, offset);
+    }
+
     const where = {
       organization_id: orgId,
       is_deleted: false,
@@ -181,6 +187,113 @@ export class InventoryRequestService {
       items: rawItems.map((inv) => this._mapStockItem(inv)),
       total,
     };
+  }
+
+  /**
+   * Lấy tồn kho gộp theo sản phẩm + kho, tổng hợp số lượng từ tất cả vị trí.
+   */
+  private async _listInventoryStockGrouped(
+    orgId: string,
+    warehouseId?: string,
+    keywords?: string,
+    limit = 20,
+    offset = 0,
+  ): Promise<{ items: any[]; total: number }> {
+    // Bước 1: Nếu có keywords, tìm product_id phù hợp trước (tránh Prisma groupBy không hỗ trợ relation filter)
+    let productIdFilter: string[] | undefined;
+    if (keywords) {
+      const matched = await this.prisma.product.findMany({
+        where: {
+          OR: [
+            { name: { contains: keywords, mode: 'insensitive' } },
+            { sku: { contains: keywords, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+      productIdFilter = matched.map((p) => p.id);
+      if (productIdFilter.length === 0) return { items: [], total: 0 };
+    }
+
+    const groupWhere = {
+      organization_id: orgId,
+      is_deleted: false,
+      quantity: { gt: 0 },
+      ...(warehouseId && { warehouse_id: warehouseId }),
+      ...(productIdFilter && { product_id: { in: productIdFilter } }),
+    };
+
+    // Bước 2: GroupBy product_id + warehouse_id, tổng hợp số lượng
+    const allGroups = await this.prisma.inventory.groupBy({
+      by: ['product_id', 'warehouse_id'],
+      where: groupWhere,
+      _sum: {
+        quantity: true,
+        quantity_on_hand: true,
+        quantity_allocated: true,
+        quantity_available: true,
+      },
+      _count: { id: true },
+      _min: { created_at: true },
+      orderBy: [{ product_id: 'asc' }],
+    });
+
+    const total = allGroups.length;
+    const pageGroups = allGroups.slice(offset, offset + limit);
+
+    if (pageGroups.length === 0) return { items: [], total };
+
+    // Bước 3: Lấy thông tin product và warehouse cho trang hiện tại
+    const productIds = [...new Set(pageGroups.map((g) => g.product_id))];
+    const warehouseIds = [...new Set(pageGroups.map((g) => g.warehouse_id))];
+
+    const [products, warehouses] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true, sku: true, image_url: true },
+      }),
+      this.prisma.warehouse.findMany({
+        where: { id: { in: warehouseIds } },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w]));
+
+    // Bước 4: Build response items
+    const items = pageGroups.map((g) => {
+      const product = productMap.get(g.product_id);
+      const warehouse = warehouseMap.get(g.warehouse_id);
+      const locationCount = g._count.id;
+      const createdAt = g._min.created_at;
+      const daysInStorage = createdAt
+        ? Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      return {
+        id: `${g.product_id}-${g.warehouse_id}`,
+        product_id: g.product_id,
+        product_name: product?.name ?? '',
+        sku: product?.sku ?? '',
+        image_url: product?.image_url ?? null,
+        batch_code: null,
+        expiry_date: null,
+        quantity: Number(g._sum.quantity) || 0,
+        quantity_on_hand: Number(g._sum.quantity_on_hand) || 0,
+        quantity_allocated: Number(g._sum.quantity_allocated) || 0,
+        quantity_available: Number(g._sum.quantity_available) || 0,
+        warehouse_id: g.warehouse_id,
+        warehouse_name: warehouse?.name ?? '',
+        block_id: '',
+        location: locationCount > 1 ? `${locationCount} vị trí` : '1 vị trí',
+        location_count: locationCount,
+        days_in_storage: daysInStorage,
+        created_at: createdAt ? createdAt.toISOString() : new Date().toISOString(),
+      };
+    });
+
+    return { items, total };
   }
 
   private _mapStockItem(inv: {
