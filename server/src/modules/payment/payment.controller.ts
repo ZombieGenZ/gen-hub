@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiHeader,
   ApiOperation,
@@ -33,7 +34,8 @@ export class PaymentController {
   constructor(
     private readonly sepayService: SepayService,
     private readonly paymentScheduler: PaymentSchedulerService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) { }
 
   @Post('webhook')
   @Public()
@@ -163,6 +165,7 @@ export class PaymentController {
           paymentCode: 'GENHUB1702612345678',
           amount: 5000000,
           vatAmount: 500000,
+          vat: 10,
           status: 'PENDING',
           qrCode: 'https://qr.sepay.vn/img?...',
           expiredAt: '2026-03-13T09:00:00.000Z',
@@ -200,6 +203,7 @@ export class PaymentController {
         paymentCode: payment.payment_code,
         amount: payment.amount,
         vatAmount: payment.vat_amount,
+        vat: Number(this.configService.get<number>('RENTAL_VAT_RATE')) || 10,
         status: payment.status,
         qrCode: payment.qr_code,
         expiredAt: payment.expired_at,
@@ -268,11 +272,11 @@ export class PaymentController {
         message: 'Thanh toán thành công',
         data: payment
           ? {
-              paymentCode: payment.payment_code,
-              amount: payment.amount,
-              status: payment.status,
-              contractId: payment.rental_contract_id,
-            }
+            paymentCode: payment.payment_code,
+            amount: payment.amount,
+            status: payment.status,
+            contractId: payment.rental_contract_id,
+          }
           : null,
       };
     }

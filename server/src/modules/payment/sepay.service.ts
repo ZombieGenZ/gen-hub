@@ -141,7 +141,8 @@ export class SepayService {
     expiredAt.setSeconds(expiredAt.getSeconds() + this.lockDurationSeconds);
 
     // Tạo QR URL
-    const qrCode = this.generateQRUrl(paymentCode, options.amount);
+    const totalAmount = options.amount + (options.vat_amount || 10);
+    const qrCode = this.generateQRUrl(paymentCode, totalAmount);
 
     // Lưu payment vào database
     const payment = await this.prisma.payment.create({
