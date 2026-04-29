@@ -209,7 +209,7 @@ export function StockTakeDetailModal({
                                                     <div className="text-xs text-muted-foreground">{detail.product?.sku}</div>
                                                 </td>
                                                 <td className="py-3 px-3 text-muted-foreground text-xs">
-                                                    {detail.batch_id ? (detail.batch?.batch_number ?? detail.batch_id) : "—"}
+                                                    {detail.batch_id ? (detail.batch?.code ?? detail.batch_id) : "—"}
                                                 </td>
                                                 <td className="py-3 px-3 text-right font-mono">
                                                     {new Intl.NumberFormat("vi-VN").format(detail.system_qty)}
