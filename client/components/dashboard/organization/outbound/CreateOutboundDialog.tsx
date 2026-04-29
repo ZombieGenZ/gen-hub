@@ -617,8 +617,12 @@ export function CreateOutboundDialog({
                                     </Label>
                                     <Textarea
                                         value={formVehicleInfo}
-                                        onChange={(e) => setFormVehicleInfo(e.target.value)}
-                                        placeholder="Biển số, loại xe, tài xế..."
+                                        onChange={(e) => {
+                                            // Chỉ cho phép chữ cái, số, khoảng trắng, dấu gạch ngang, dấu chấm, dấu phẩy, dấu gạch chéo và ngoặc
+                                            const filtered = e.target.value.replace(/[@#$%^&*!+=|<>?~{}[\];:'"\\`]/g, "");
+                                            setFormVehicleInfo(filtered);
+                                        }}
+                                        placeholder="Biển số, loại xe, tài xế... (VD: 51A-39403)"
                                         className="rounded-xl resize-none min-h-18"
                                         rows={2}
                                     />

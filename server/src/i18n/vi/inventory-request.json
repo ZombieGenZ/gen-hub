@@ -73,6 +73,7 @@
         "checker_id_uuid": "ID nhân viên kiểm đếm phải là UUID hợp lệ",
         "worker_id_uuid": "ID nhân viên cất hàng phải là UUID hợp lệ",
         "quantity_min_zero": "Số lượng không được nhỏ hơn 0",
+        "quantity_min_one": "Số lượng phải lớn hơn 0",
         "notes_max_length": "Ghi chú không được quá 1000 ký tự",
         "tracking_number_string": "Số tracking phải là chuỗi",
         "tracking_number_max_length": "Số tracking không được quá 100 ký tự",

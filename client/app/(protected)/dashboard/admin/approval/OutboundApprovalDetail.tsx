@@ -264,6 +264,12 @@ export default function OutboundApprovalDetail({
     // ── PICKING: Confirm picking ──
     const handleConfirmPicking = async () => {
         const token = getToken(); if (!token) return;
+        // Kiểm tra tất cả số lượng nhặt phải lớn hơn 0
+        const allPickedPositive = Object.values(pickedQty).every(qty => qty > 0);
+        if (!allPickedPositive) {
+            showToast("Số lượng nhặt phải lớn hơn 0 cho tất cả sản phẩm", "error");
+            return;
+        }
         setSubmitting(true);
         try {
             const details = Object.entries(pickedQty).map(([pick_list_detail_id, qty]) => ({
@@ -287,6 +293,12 @@ export default function OutboundApprovalDetail({
     // ── CHECKING: Confirm checking ──
     const handleConfirmChecking = async () => {
         const token = getToken(); if (!token) return;
+        // Kiểm tra tất cả số lượng kiểm tra phải lớn hơn 0
+        const allCheckedPositive = Object.values(checkingData).every(d => d.checked_qty > 0);
+        if (!allCheckedPositive) {
+            showToast("Số lượng kiểm tra phải lớn hơn 0 cho tất cả sản phẩm", "error");
+            return;
+        }
         setSubmitting(true);
         try {
             const details = Object.entries(checkingData).map(([export_detail_id, d]) => ({

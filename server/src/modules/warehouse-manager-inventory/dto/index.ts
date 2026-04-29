@@ -389,7 +389,7 @@ export class ConfirmPickingDetailDto {
   })
   pick_list_detail_id: string;
 
-  @ApiProperty({ description: 'Số lượng đã nhặt', minimum: 0 })
+  @ApiProperty({ description: 'Số lượng đã nhặt', minimum: 1 })
   @IsNumber(
     {},
     {
@@ -398,9 +398,9 @@ export class ConfirmPickingDetailDto {
       ),
     },
   )
-  @Min(0, {
+  @Min(1, {
     message: i18nValidationMessage(
-      'inventory-request.validation.quantity_min_zero',
+      'inventory-request.validation.quantity_min_one',
     ),
   })
   picked_qty: number;
@@ -437,7 +437,7 @@ export class ConfirmCheckingDetailDto {
   })
   export_detail_id: string;
 
-  @ApiProperty({ description: 'Số lượng đã kiểm tra', minimum: 0 })
+  @ApiProperty({ description: 'Số lượng đã kiểm tra', minimum: 1 })
   @IsNumber(
     {},
     {
@@ -446,9 +446,9 @@ export class ConfirmCheckingDetailDto {
       ),
     },
   )
-  @Min(0, {
+  @Min(1, {
     message: i18nValidationMessage(
-      'inventory-request.validation.quantity_min_zero',
+      'inventory-request.validation.quantity_min_one',
     ),
   })
   checked_qty: number;

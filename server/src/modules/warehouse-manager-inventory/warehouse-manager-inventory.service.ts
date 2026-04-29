@@ -1507,7 +1507,7 @@ export class WarehouseManagerInventoryService {
       for (const pickList of exportRecord.pick_lists) {
         for (const plDetail of pickList.details) {
           const pickedQty =
-            plDetail.picked_qty.toNumber() || plDetail.required_qty.toNumber();
+            plDetail.picked_qty.toNumber();
 
           if (pickedQty > 0) {
             // Tìm inventory record đã reserve
