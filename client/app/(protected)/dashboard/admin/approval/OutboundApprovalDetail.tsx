@@ -152,6 +152,7 @@ export default function OutboundApprovalDetail({
 
     // CHECKING: per export_detail { checked_qty, passed }
     const [checkingData, setCheckingData] = useState<Record<string, { checked_qty: number; passed: boolean }>>({});
+    const [checkingMismatchAcknowledged, setCheckingMismatchAcknowledged] = useState(false);
     const [splitResult, setSplitResult] = useState<SplitResultInfo | null>(null);
 
     const [rejectOpen, setRejectOpen] = useState(false);
@@ -298,6 +299,16 @@ export default function OutboundApprovalDetail({
         const allCheckedPositive = Object.values(checkingData).every(d => d.checked_qty > 0);
         if (!allCheckedPositive) {
             showToast("Số lượng kiểm tra phải lớn hơn 0 cho tất cả sản phẩm", "error");
+            return;
+        }
+        // Kiểm tra chênh lệch giữa số lượng kiểm thực tế và số lượng yêu cầu
+        const hasMismatch = data?.details?.some(d => {
+            const cd = checkingData[d.id];
+            return cd && cd.checked_qty !== (d.quantity || 0);
+        });
+        if (hasMismatch && !checkingMismatchAcknowledged) {
+            setCheckingMismatchAcknowledged(true);
+            showToast("Số lượng kiểm thực tế không khớp với yêu cầu. Vui lòng xem cảnh báo bên dưới và xác nhận tiếp tục.", "error");
             return;
         }
         setSubmitting(true);
@@ -625,15 +636,26 @@ export default function OutboundApprovalDetail({
                                 <tbody className="divide-y">
                                     {data.details?.length ? data.details.map(d => {
                                         const cd = checkingData[d.id] ?? { checked_qty: d.quantity || 0, passed: true };
+                                        const isMismatch = cd.checked_qty !== (d.quantity || 0);
                                         return (
-                                            <tr key={d.id} className={`transition-colors ${!cd.passed ? "approval-reconciliation__row--shortage" : ""}`}>
+                                            <tr key={d.id} className={`transition-colors ${!cd.passed ? "approval-reconciliation__row--shortage" : isMismatch ? "bg-amber-50" : ""}`}>
                                                 <td className="py-2 px-3 text-sm font-medium">{d.product?.name || "—"}</td>
                                                 <td className="py-2 px-3 text-center text-sm font-semibold">{d.quantity}</td>
                                                 <td className="py-2 px-3 text-center">
-                                                    <Input type="number" min={0}
-                                                        value={cd.checked_qty}
-                                                        onChange={e => setCheckingData(p => ({ ...p, [d.id]: { ...cd, checked_qty: parseInt(e.target.value) || 0 } }))}
-                                                        className="w-20 h-8 rounded-xl text-center text-sm mx-auto" />
+                                                    <div className="flex flex-col items-center gap-0.5">
+                                                        <Input type="number" min={0}
+                                                            value={cd.checked_qty}
+                                                            onChange={e => {
+                                                                setCheckingMismatchAcknowledged(false);
+                                                                setCheckingData(p => ({ ...p, [d.id]: { ...cd, checked_qty: parseInt(e.target.value) || 0 } }));
+                                                            }}
+                                                            className={`w-20 h-8 rounded-xl text-center text-sm mx-auto ${isMismatch ? "border-amber-400 focus-visible:ring-amber-400" : ""}`} />
+                                                        {isMismatch && (
+                                                            <span className="text-[10px] text-amber-600 font-medium">
+                                                                {cd.checked_qty > (d.quantity || 0) ? `+${cd.checked_qty - (d.quantity || 0)}` : `${cd.checked_qty - (d.quantity || 0)}`}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-2 px-3 text-center">
                                                     <Checkbox
@@ -649,6 +671,37 @@ export default function OutboundApprovalDetail({
                                 </tbody>
                             </table>
                         </div>
+                        {checkingMismatchAcknowledged && (
+                            <Card className="border border-amber-200 bg-amber-50/60 rounded-2xl mt-4">
+                                <CardContent className="p-4 flex items-start gap-3">
+                                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <div className="space-y-1.5">
+                                        <p className="text-sm font-semibold text-amber-800">Cảnh báo: Số lượng không khớp</p>
+                                        <p className="text-xs text-amber-700">
+                                            Số lượng kiểm thực tế khác với số lượng yêu cầu trong phiếu xuất. Tồn kho sẽ được trừ theo số lượng thực tế kiểm đếm.
+                                        </p>
+                                        <div className="mt-2 space-y-1">
+                                            {data.details?.filter(d => {
+                                                const cd = checkingData[d.id];
+                                                return cd && cd.checked_qty !== (d.quantity || 0);
+                                            }).map(d => {
+                                                const cd = checkingData[d.id];
+                                                const diff = cd.checked_qty - (d.quantity || 0);
+                                                return (
+                                                    <p key={d.id} className="text-xs text-amber-700">
+                                                        • <strong>{d.product?.name || "—"}</strong>: đặt {d.quantity}, kiểm {cd.checked_qty}{" "}
+                                                        <span className={diff > 0 ? "text-blue-600 font-semibold" : "text-red-600 font-semibold"}>
+                                                            ({diff > 0 ? "+" : ""}{diff})
+                                                        </span>
+                                                    </p>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-xs text-amber-700 font-medium pt-1">Nhấn &quot;Xác nhận kiểm tra&quot; lần nữa để tiếp tục.</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 )}
 

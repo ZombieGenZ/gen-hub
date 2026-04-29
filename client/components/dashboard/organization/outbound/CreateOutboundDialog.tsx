@@ -377,6 +377,10 @@ export function CreateOutboundDialog({
             showToast("Vui lòng nhập địa chỉ giao hàng", "error");
             return;
         }
+        if (!formVehicleInfo.trim()) {
+            showToast("Biển số xe không được bỏ trống", "error");
+            return;
+        }
         if (!formRequiredDate) {
             showToast("Vui lòng chọn ngày xuất dự kiến", "error");
             return;
