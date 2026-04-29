@@ -222,7 +222,7 @@ export function RentalInfoStep() {
                             <div>
                                 <p className="text-teal-100 text-sm mb-1">Tổng giá trị hợp đồng</p>
                                 <p className="text-3xl font-black">
-                                    {formatCurrencyFull(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) + Math.round(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) * 0.1))}
+                                    {formatCurrencyFull(session.quotation.grandTotal)}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -268,15 +268,9 @@ export function RentalInfoStep() {
                                 </div>
                             )}
 
-                            {/*
                             <div className="flex justify-between text-teal-50/90">
                                 <span>VAT (10%)</span>
                                 <span>+{formatCurrencyFull(session.quotation.serviceFee)}</span>
-                            </div>
-                            */}
-                            <div className="flex justify-between text-teal-50/90">
-                                <span>VAT (10% trên tổng đã giảm)</span>
-                                <span>+{formatCurrencyFull(Math.round(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) * 0.1))}</span>
                             </div>
 
                             <Separator className="bg-teal-700/50 my-3" />
@@ -284,14 +278,14 @@ export function RentalInfoStep() {
                             <div className="flex justify-between items-center text-teal-50">
                                 <span className="font-medium">Tổng cộng</span>
                                 <span className="font-bold text-lg text-white">
-                                    {formatCurrencyFull(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) + Math.round(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) * 0.1))}
+                                    {formatCurrencyFull(session.quotation.grandTotal)}
                                 </span>
                             </div>
 
                             <div className="flex justify-between items-center text-teal-50">
                                 <span className="font-medium">Cọc giữ chỗ (10%)</span>
                                 <span className="font-bold text-lg text-white">
-                                    {formatCurrencyFull(Math.round((Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) + Math.round(Math.max(0, session.quotation.subtotal - session.quotation.couponDiscount) * 0.1)) * 0.1))}
+                                    {formatCurrencyFull(session.quotation.depositAmount ?? Math.round(session.quotation.grandTotal * 0.1))}
                                 </span>
                             </div>
                         </div>

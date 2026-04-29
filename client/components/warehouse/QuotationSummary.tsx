@@ -49,7 +49,7 @@ export function QuotationSummary({
     const couponAmount = appliedCoupon?.discount || breakdown.couponDiscount || 0;
     const effectiveServiceFee = breakdown.serviceFee;
     const effectiveGrandTotal = breakdown.grandTotal;
-    const depositAmount = breakdown.depositAmount ?? Math.max(2_000, Math.round(effectiveGrandTotal * 0.1));
+    const depositAmount = breakdown.depositAmount ?? Math.round(effectiveGrandTotal * 0.1);
 
     return (
         <div className={cn(

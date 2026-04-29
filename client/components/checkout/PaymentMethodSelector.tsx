@@ -37,7 +37,10 @@ export function PaymentMethodSelector({
     }, [value, setCanProceed]);
 
     const grandTotal = session.quotation?.grandTotal || 0;
-    const depositAmount = session.deposit_amount || Math.max(2_000, grandTotal * 0.1);
+    const depositAmount =
+        session.deposit_amount
+        ?? session.quotation?.depositAmount
+        ?? Math.round(grandTotal * 0.1);
     const durationLabel = session.duration_tier_name || (session.duration_months ? `${session.duration_months} tháng` : '—');
 
     // Render icon theo loại
