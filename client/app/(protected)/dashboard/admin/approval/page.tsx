@@ -29,6 +29,7 @@ import {
     CubeIcon,
     TruckIcon,
     ExclamationTriangleIcon,
+    XCircleIcon,
 } from "@heroicons/react/24/outline";
 
 // ── Sub-components ──
@@ -106,6 +107,36 @@ const SLA_LABELS = {
     warning: "Sắp hết hạn",
     breach: "Quá hạn SLA",
 };
+
+// Badge hiển thị trạng thái trong card (chỉ dùng cho non-PENDING)
+const STATUS_DISPLAY: Record<string, { label: string; className: string; icon: "success" | "error" | "progress" }> = {
+    // Inbound
+    APPROVED:   { label: "Đã duyệt",       className: "bg-blue-50 text-blue-700 border-blue-200",     icon: "success" },
+    RECEIVING:  { label: "Đang kiểm đếm",  className: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "progress" },
+    PROCESSING: { label: "Chờ cất hàng",   className: "bg-purple-50 text-purple-700 border-purple-200", icon: "progress" },
+    PUTAWAY:    { label: "Đang cất hàng",  className: "bg-orange-50 text-orange-700 border-orange-200", icon: "progress" },
+    COMPLETED:  { label: "Hoàn tất",       className: "bg-green-50 text-green-700 border-green-200",    icon: "success" },
+    // Outbound
+    PICKING:    { label: "Đang nhặt hàng", className: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "progress" },
+    CHECKING:   { label: "Đang kiểm tra",  className: "bg-purple-50 text-purple-700 border-purple-200", icon: "progress" },
+    PACKED:     { label: "Đã đóng gói",    className: "bg-orange-50 text-orange-700 border-orange-200", icon: "progress" },
+    SHIPPED:    { label: "Đã xuất kho",    className: "bg-green-50 text-green-700 border-green-200",    icon: "success" },
+    // Both
+    CANCELLED:  { label: "Đã hủy",         className: "bg-red-50 text-red-700 border-red-200",          icon: "error" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+    const cfg = STATUS_DISPLAY[status];
+    if (!cfg) return null;
+    return (
+        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.className}`}>
+            {cfg.icon === "success" && <CheckCircleIcon className="w-3 h-3" />}
+            {cfg.icon === "error"   && <XCircleIcon className="w-3 h-3" />}
+            {cfg.icon === "progress" && <BoltIcon className="w-3 h-3" />}
+            {cfg.label}
+        </span>
+    );
+}
 
 // ────────────────────────────────────────────────
 // View mode & filter types
@@ -569,7 +600,7 @@ export default function ApprovalQueuePage() {
                                                     {formatTimeAgo(ticket.createdAt)}
                                                 </span>
                                             </div>
-                                            {ticket.status === "PENDING" && (
+                                            {ticket.status === "PENDING" ? (
                                                 <span
                                                     className={`approval-sla approval-sla--${slaStatus}`}
                                                 >
@@ -578,6 +609,8 @@ export default function ApprovalQueuePage() {
                                                     )}
                                                     {SLA_LABELS[slaStatus]}
                                                 </span>
+                                            ) : (
+                                                <StatusBadge status={ticket.status} />
                                             )}
                                         </div>
                                     </div>
@@ -700,13 +733,15 @@ export default function ApprovalQueuePage() {
                                                             <CubeIcon className="w-3 h-3" />
                                                             {ticket.skuCount} SKU
                                                         </span>
-                                                        {ticket.status === "PENDING" && (
+                                                        {ticket.status === "PENDING" ? (
                                                             <span
                                                                 className={`approval-sla approval-sla--${slaStatus}`}
                                                                 style={{ fontSize: "9px" }}
                                                             >
                                                                 {SLA_LABELS[slaStatus]}
                                                             </span>
+                                                        ) : (
+                                                            <StatusBadge status={ticket.status} />
                                                         )}
                                                     </div>
                                                 </div>

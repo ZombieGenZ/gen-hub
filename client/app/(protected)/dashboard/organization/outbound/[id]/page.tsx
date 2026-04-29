@@ -88,20 +88,6 @@ function formatDate(dateStr: string) {
     } catch { return "—"; }
 }
 
-// ────────────────────────────────────────────────
-// Mock pick list data (to be replaced with real API)
-// ────────────────────────────────────────────────
-interface PickListItem {
-    id: string;
-    block_id: string;
-    block_name: string;
-    product_name: string;
-    product_sku: string;
-    batch_code: string;
-    required_qty: number;
-    picked_qty: number;
-}
-
 interface PackageItem {
     id: string;
     tracking_number: string;
@@ -126,8 +112,6 @@ export default function OutboundDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [orgId, setOrgId] = useState<string | null>(null);
 
-    // Mock pick list (in real app, this comes from ExportPickListDetail API)
-    const [pickList] = useState<PickListItem[]>([]);
     const [packages, setPackages] = useState<PackageItem[]>([]);
 
     // ── New package form ──
@@ -188,17 +172,6 @@ export default function OutboundDetailPage() {
             }
         },
     });
-
-    // Group pick list by block
-    const pickListByBlock = React.useMemo(() => {
-        const groups: Record<string, PickListItem[]> = {};
-        pickList.forEach((item) => {
-            const key = item.block_id || "unknown";
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(item);
-        });
-        return groups;
-    }, [pickList]);
 
     const addPackage = () => {
         if (!newPkgTracking.trim()) {
@@ -401,6 +374,27 @@ export default function OutboundDetailPage() {
                                     <InfoRow label="Thông tin xe" value={data.vehicle_info || "—"} />
                                     <InfoRow label="Ngày tạo" value={formatDate(data.created_at)} />
                                     <InfoRow label="Cập nhật" value={formatDate(data.updated_at)} />
+                                    {data.approved_at && (
+                                        <InfoRow label="Duyệt lúc" value={formatDate(data.approved_at)} />
+                                    )}
+                                    {data.picking_started_at && (
+                                        <InfoRow label="Bắt đầu nhặt" value={formatDate(data.picking_started_at)} />
+                                    )}
+                                    {data.picking_completed_at && (
+                                        <InfoRow label="Hoàn tất nhặt" value={formatDate(data.picking_completed_at)} />
+                                    )}
+                                    {data.checking_started_at && (
+                                        <InfoRow label="Bắt đầu kiểm" value={formatDate(data.checking_started_at)} />
+                                    )}
+                                    {data.checking_completed_at && (
+                                        <InfoRow label="Hoàn tất kiểm" value={formatDate(data.checking_completed_at)} />
+                                    )}
+                                    {data.shipped_at && (
+                                        <InfoRow label="Xuất kho lúc" value={formatDate(data.shipped_at)} />
+                                    )}
+                                    {data.tracking_number && (
+                                        <InfoRow label="Mã vận đơn" value={data.tracking_number} />
+                                    )}
                                     {data.notes && (
                                         <div className="pt-2 mt-2 border-t border-dashed">
                                             <p className="text-xs text-muted-foreground mb-1">Ghi chú</p>
@@ -422,6 +416,8 @@ export default function OutboundDetailPage() {
                                                 <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Sản phẩm</th>
                                                 <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">SKU</th>
                                                 <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Lô hàng</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">HSD</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Đơn vị</th>
                                                 <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Số lượng</th>
                                             </tr>
                                         </thead>
@@ -429,18 +425,49 @@ export default function OutboundDetailPage() {
                                             {data.details && data.details.length > 0 ? (
                                                 data.details.map((detail) => (
                                                     <tr key={detail.id} className="hover:bg-muted/30 transition-colors">
-                                                        <td className="py-3 px-4 text-sm font-medium">{detail.product?.name || "—"}</td>
+                                                        <td className="py-3 px-4">
+                                                            <div className="flex items-center gap-2">
+                                                                {detail.product?.image_url && (
+                                                                    <img
+                                                                        src={detail.product.image_url}
+                                                                        alt={detail.product.name}
+                                                                        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-muted"
+                                                                    />
+                                                                )}
+                                                                <span className="text-sm font-medium">{detail.product?.name || "—"}</span>
+                                                            </div>
+                                                        </td>
                                                         <td className="py-3 px-4 text-sm text-muted-foreground">{detail.product?.sku || "—"}</td>
                                                         <td className="py-3 px-4 text-sm">{detail.batch?.code || "—"}</td>
+                                                        <td className="py-3 px-4 text-sm">
+                                                            {detail.batch?.expiry_date ? (
+                                                                <span className={new Date(detail.batch.expiry_date) < new Date() ? "text-red-500 font-medium" : ""}>
+                                                                    {formatDate(detail.batch.expiry_date).split(",")[0]}
+                                                                </span>
+                                                            ) : "—"}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-sm text-muted-foreground">{detail.unit?.name || "—"}</td>
                                                         <td className="py-3 px-4 text-center font-semibold text-sm">{detail.quantity}</td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                                                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
                                                         Chưa có chi tiết hàng hóa
                                                     </td>
                                                 </tr>
+                                            )}
+                                            {data.details && data.details.length > 0 && (
+                                                <tfoot className="border-t-2 bg-muted/20">
+                                                    <tr>
+                                                        <td colSpan={5} className="py-3 px-4 text-sm font-semibold text-muted-foreground">
+                                                            Tổng cộng: {data.details.length} mặt hàng
+                                                        </td>
+                                                        <td className="py-3 px-4 text-center font-bold text-sm">
+                                                            {data.details.reduce((s, d) => s + d.quantity, 0)}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
                                             )}
                                         </tbody>
                                     </table>
@@ -454,56 +481,69 @@ export default function OutboundDetailPage() {
                 <TabsContent value="picklist">
                     <Card className="border-0 shadow-premium rounded-3xl">
                         <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-[20px] font-semibold leading-[130%]">Lệnh nhặt hàng</h2>
-                                <Button className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl" size="sm">
-                                    <CheckCircleIcon className="w-4 h-4" />
-                                    Hoàn tất nhặt hàng
-                                </Button>
-                            </div>
+                            <h2 className="text-[20px] font-semibold leading-[130%] mb-6">Lệnh nhặt hàng</h2>
 
-                            {Object.keys(pickListByBlock).length > 0 ? (
-                                Object.entries(pickListByBlock).map(([blockId, items]) => (
-                                    <div key={blockId} className="outbound-picklist__group">
-                                        <div className="outbound-picklist__group-header">
-                                            <MapPinIcon className="w-4 h-4" />
-                                            <span>Vị trí: {items[0]?.block_name || blockId}</span>
-                                            <Badge variant="secondary" className="rounded-full text-xs ml-auto shadow-none">
-                                                {items.length} mặt hàng
-                                            </Badge>
-                                        </div>
-                                        <table className="w-full">
-                                            <thead className="bg-muted/20">
-                                                <tr>
-                                                    <th className="text-left py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Sản phẩm</th>
-                                                    <th className="text-left py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Lô</th>
-                                                    <th className="text-center py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Cần lấy</th>
-                                                    <th className="text-center py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Đã lấy</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {items.map((item) => (
-                                                    <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                                                        <td className="py-2 px-4">
-                                                            <p className="text-sm font-medium">{item.product_name}</p>
-                                                            <p className="text-xs text-muted-foreground">{item.product_sku}</p>
-                                                        </td>
-                                                        <td className="py-2 px-4 text-sm">{item.batch_code}</td>
-                                                        <td className="py-2 px-4 text-center font-semibold text-sm">{item.required_qty}</td>
-                                                        <td className="py-2 px-4 text-center">
-                                                            <Input
-                                                                type="number"
-                                                                min={0}
-                                                                defaultValue={item.picked_qty}
-                                                                className="w-16 h-7 rounded-lg text-center text-sm mx-auto"
-                                                            />
-                                                        </td>
+                            {data.pick_lists && data.pick_lists.length > 0 ? (
+                                <div className="space-y-6">
+                                    {data.pick_lists.map((pickList) => (
+                                        <div key={pickList.id} className="border border-muted rounded-2xl overflow-hidden">
+                                            <div className="flex items-center gap-3 px-4 py-3 bg-muted/30 border-b">
+                                                <ClipboardDocumentListIcon className="w-4 h-4 text-muted-foreground" />
+                                                <span className="text-sm font-semibold">{pickList.code}</span>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="rounded-full text-xs shadow-none ml-auto"
+                                                >
+                                                    {pickList.status}
+                                                </Badge>
+                                            </div>
+                                            <table className="w-full">
+                                                <thead className="bg-muted/10">
+                                                    <tr>
+                                                        <th className="text-left py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Vị trí</th>
+                                                        <th className="text-left py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Sản phẩm</th>
+                                                        <th className="text-center py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Cần lấy</th>
+                                                        <th className="text-center py-2 px-4 font-semibold text-xs text-muted-foreground uppercase">Đã lấy</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ))
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {pickList.details.map((item) => {
+                                                        const isComplete = item.picked_qty >= item.required_qty;
+                                                        return (
+                                                            <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                                                                <td className="py-2 px-4">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <MapPinIcon className="w-3.5 h-3.5 text-[#0F766E] shrink-0" />
+                                                                        <span className="text-sm font-medium">
+                                                                            {item.block?.code || "—"}
+                                                                        </span>
+                                                                        {item.block?.name && (
+                                                                            <span className="text-xs text-muted-foreground">({item.block.name})</span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-2 px-4">
+                                                                    <p className="text-sm font-medium">
+                                                                        {item.export_detail?.product?.name || "—"}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {item.export_detail?.product?.sku || ""}
+                                                                    </p>
+                                                                </td>
+                                                                <td className="py-2 px-4 text-center font-semibold text-sm">{item.required_qty}</td>
+                                                                <td className="py-2 px-4 text-center">
+                                                                    <span className={`text-sm font-semibold ${isComplete ? "text-green-600" : item.picked_qty > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                                                                        {item.picked_qty}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
                                 <div className="text-center py-16 text-muted-foreground">
                                     <MapPinIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />

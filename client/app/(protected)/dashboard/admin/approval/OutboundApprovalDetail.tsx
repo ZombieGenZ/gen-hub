@@ -21,6 +21,7 @@ import {
     ScissorsIcon,
     XCircleIcon,
     ArrowRightIcon,
+    ArrowLeftIcon,
     TruckIcon,
 } from "@heroicons/react/24/outline";
 
@@ -360,6 +361,32 @@ export default function OutboundApprovalDetail({
         }
     };
 
+    // ── PICKING → PENDING (undo approval) ──
+    const handleRevertToPending = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await wmInventoryService.revertOutboundToPending(token, ticketId);
+            showToast("Đã quay lại bước Chờ duyệt", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể hoàn tác bước duyệt", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    // ── CHECKING → PICKING (undo picking confirmation) ──
+    const handleRevertToPicking = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await wmInventoryService.revertOutboundToPicking(token, ticketId);
+            showToast("Đã quay lại bước Nhặt hàng", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể hoàn tác bước nhặt hàng", "error");
+        } finally { setSubmitting(false); }
+    };
+
     // ── Loading ──
     if (loading) {
         return (
@@ -662,14 +689,68 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── SHIPPED ─── */}
                 {data.status === "SHIPPED" && (
-                    <div className="p-4 flex flex-col items-center gap-3 text-center min-h-40 justify-center">
-                        <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-                            <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                    <div className="p-4 space-y-4">
+                        <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-green-800">Xuất kho hoàn tất!</p>
+                                <p className="text-sm text-green-600 mt-0.5">
+                                    Hàng đã xuất kho và bàn giao cho vận chuyển
+                                    {(data as any).shipped_at && ` • ${formatDate((data as any).shipped_at)}`}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold text-[16px] text-green-700">Xuất kho hoàn tất!</p>
-                            <p className="text-sm text-muted-foreground mt-1">Hàng đã xuất kho và bàn giao cho vận chuyển.</p>
+
+                        {/* Shipped goods summary */}
+                        <h3 className="text-[15px] font-semibold">Danh sách hàng đã xuất</h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[300px]">
+                                <thead className="bg-muted/30 border-b">
+                                    <tr>
+                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
+                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Lô hàng</th>
+                                        <th className="text-center py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">SL xuất</th>
+                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Đơn vị</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {data.details?.length ? data.details.map(d => (
+                                        <tr key={d.id}>
+                                            <td className="py-2 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
+                                            <td className="py-2 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
+                                            <td className="py-2 px-4 text-sm text-muted-foreground">{d.batch?.code || "—"}</td>
+                                            <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.quantity}</td>
+                                            <td className="py-2 px-4 text-sm text-muted-foreground">{(d as any).unit?.name || "—"}</td>
+                                        </tr>
+                                    )) : (
+                                        <tr><td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết</td></tr>
+                                    )}
+                                </tbody>
+                                {data.details && data.details.length > 0 && (
+                                    <tfoot className="border-t bg-muted/20">
+                                        <tr>
+                                            <td colSpan={3} className="py-2 px-4 text-xs font-semibold text-muted-foreground">
+                                                Tổng: {data.details.length} mặt hàng
+                                            </td>
+                                            <td className="py-2 px-4 text-center text-xs font-semibold text-slate-700">
+                                                {data.details.reduce((s, d) => s + Number(d.quantity), 0)}
+                                            </td>
+                                            <td />
+                                        </tr>
+                                    </tfoot>
+                                )}
+                            </table>
                         </div>
+
+                        {(data as any).tracking_number && (
+                            <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                                <TruckIcon className="w-4 h-4 shrink-0" />
+                                <span>Mã vận đơn: <strong>{(data as any).tracking_number}</strong></span>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -710,20 +791,36 @@ export default function OutboundApprovalDetail({
                         </>
                     )}
                     {data.status === "PICKING" && (
-                        <Button disabled={submitting}
-                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={handleConfirmPicking}>
-                            <ArrowRightIcon className="w-4 h-4" />
-                            {submitting ? "Đang xử lý..." : "Xác nhận nhặt hàng"}
-                        </Button>
+                        <div className="flex gap-2 ml-auto">
+                            <Button type="button" variant="outline" disabled={submitting}
+                                className="gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                                onClick={handleRevertToPending}>
+                                <ArrowLeftIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Quay lại bước trước"}
+                            </Button>
+                            <Button disabled={submitting}
+                                className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                                onClick={handleConfirmPicking}>
+                                <ArrowRightIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Xác nhận nhặt hàng"}
+                            </Button>
+                        </div>
                     )}
                     {data.status === "CHECKING" && (
-                        <Button disabled={submitting}
-                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={handleConfirmChecking}>
-                            <CheckCircleIcon className="w-4 h-4" />
-                            {submitting ? "Đang xử lý..." : "Xác nhận kiểm tra"}
-                        </Button>
+                        <div className="flex gap-2 ml-auto">
+                            <Button type="button" variant="outline" disabled={submitting}
+                                className="gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                                onClick={handleRevertToPicking}>
+                                <ArrowLeftIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Quay lại bước trước"}
+                            </Button>
+                            <Button disabled={submitting}
+                                className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                                onClick={handleConfirmChecking}>
+                                <CheckCircleIcon className="w-4 h-4" />
+                                {submitting ? "Đang xử lý..." : "Xác nhận kiểm tra"}
+                            </Button>
+                        </div>
                     )}
                     {data.status === "PACKED" && (
                         <Button disabled={submitting}

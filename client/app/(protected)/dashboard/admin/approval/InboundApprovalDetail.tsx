@@ -564,18 +564,60 @@ export default function InboundApprovalDetail({
 
                 {/* ─── APPROVED ─── */}
                 {data.status === "APPROVED" && (
-                    <div className="p-6 flex flex-col items-center justify-center gap-4 text-center min-h-50">
-                        <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
-                            <CheckCircleIcon className="w-7 h-7 text-blue-600" />
+                    <div className="p-6 space-y-4">
+                        {/* Approval confirmation banner */}
+                        <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                <CheckCircleIcon className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-blue-800">Phiếu đã được duyệt</p>
+                                <p className="text-sm text-blue-600 mt-0.5">
+                                    Duyệt lúc: {formatDate((data as any).approved_at)} • Nhấn bên dưới để bắt đầu kiểm đếm hàng hoá
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold text-[15px]">Phiếu đã được duyệt</p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                Duyệt lúc: {formatDate((data as any).approved_at)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                Nhấn bên dưới để bắt đầu quá trình kiểm đếm hàng hoá.
-                            </p>
+
+                        {/* Full goods table */}
+                        <h3 className="text-[15px] font-semibold">Danh sách hàng hoá yêu cầu nhập</h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-muted/30 border-b">
+                                    <tr>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Lô hàng</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL dự kiến</th>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Đơn vị</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {data.details?.length ? data.details.map(d => (
+                                        <tr key={d.id}>
+                                            <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
+                                            <td className="py-3 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
+                                            <td className="py-3 px-4 text-sm">{d.batch?.code || "—"}</td>
+                                            <td className="py-3 px-4 text-center font-semibold text-sm">{d.expected_qty}</td>
+                                            <td className="py-3 px-4 text-sm text-muted-foreground">{(d as any).unit?.name || "—"}</td>
+                                        </tr>
+                                    )) : (
+                                        <tr><td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết hàng hoá</td></tr>
+                                    )}
+                                </tbody>
+                                {data.details && data.details.length > 0 && (
+                                    <tfoot className="border-t bg-muted/20">
+                                        <tr>
+                                            <td colSpan={3} className="py-2 px-4 text-xs font-semibold text-muted-foreground">
+                                                Tổng: {data.details.length} mặt hàng
+                                            </td>
+                                            <td className="py-2 px-4 text-center text-xs font-semibold text-slate-700">
+                                                {data.details.reduce((s, d) => s + Number(d.expected_qty), 0)}
+                                            </td>
+                                            <td />
+                                        </tr>
+                                    </tfoot>
+                                )}
+                            </table>
                         </div>
                     </div>
                 )}

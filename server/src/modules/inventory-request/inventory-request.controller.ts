@@ -2407,6 +2407,70 @@ export class InventoryRequestController {
     );
   }
 
+  @Patch('outbound/:id/revert-to-pending')
+  @RequireOrgPermission('org.inventory.outbound.approve')
+  @ApiOperation({
+    summary: 'Hoàn tác duyệt xuất kho: PICKING → PENDING',
+    description:
+      'Quay phiếu xuất từ trạng thái `PICKING` về `PENDING`, xoá pick list và giải phóng tồn kho đã giữ chỗ. Yêu cầu quyền `org.inventory.outbound.approve`.',
+  })
+  @ApiParam({
+    name: 'orgId', required: true, description: 'ID tổ chức',
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiParam({
+    name: 'id', required: true, description: 'ID phiếu xuất',
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiAuthResponses()
+  async revertOutboundToPending(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentActor() actorId: string,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.inventoryRequestService.revertOutboundToPending(
+      orgId, id, actorId, lang,
+    );
+    return new UpdatedResponse(
+      'inventory-request.revert_outbound_to_pending',
+      result,
+      lang === 'vi' ? 'Đã quay lại bước Chờ duyệt' : 'Reverted to Pending',
+    );
+  }
+
+  @Patch('outbound/:id/revert-to-picking')
+  @RequireOrgPermission('org.inventory.outbound.approve')
+  @ApiOperation({
+    summary: 'Hoàn tác xác nhận nhặt hàng: CHECKING → PICKING',
+    description:
+      'Quay phiếu xuất từ trạng thái `CHECKING` về `PICKING` để thực hiện lại bước nhặt hàng. Yêu cầu quyền `org.inventory.outbound.approve`.',
+  })
+  @ApiParam({
+    name: 'orgId', required: true, description: 'ID tổ chức',
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiParam({
+    name: 'id', required: true, description: 'ID phiếu xuất',
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiAuthResponses()
+  async revertOutboundToPicking(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentActor() actorId: string,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.inventoryRequestService.revertOutboundToPicking(
+      orgId, id, actorId, lang,
+    );
+    return new UpdatedResponse(
+      'inventory-request.revert_outbound_to_picking',
+      result,
+      lang === 'vi' ? 'Đã quay lại bước Nhặt hàng' : 'Reverted to Picking',
+    );
+  }
+
   @Get('stock/export')
   @RequireOrgPermission('org.inventory.inbound.list')
   @ApiOperation({

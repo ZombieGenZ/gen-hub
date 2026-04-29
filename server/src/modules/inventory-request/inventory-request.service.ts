@@ -3677,4 +3677,193 @@ export class InventoryRequestService {
       month_outbound_count,
     };
   }
+
+  /**
+   * Hoàn tác duyệt xuất kho: PICKING → PENDING
+   * Xoá pick list, giải phóng tồn kho đã giữ chỗ, reset status.
+   */
+  async revertOutboundToPending(
+    orgId: string,
+    id: string,
+    actorId: string,
+    lang: string,
+  ): Promise<IOutboundRequest> {
+    const exportRecord = await this.prisma.export.findFirst({
+      where: { id, organization_id: orgId, is_deleted: false },
+      include: {
+        pick_lists: {
+          where: { is_deleted: false },
+          include: { details: { where: { is_deleted: false } } },
+        },
+      },
+    });
+    if (!exportRecord) {
+      throw new NotFoundException(
+        await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+      );
+    }
+    if (exportRecord.status !== ExportStatus.PICKING) {
+      throw new BadRequestException(
+        await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // 1. Release reserved inventory from pick list details
+      const reservedByInventoryId = new Map<string, number>();
+      for (const pickList of exportRecord.pick_lists) {
+        for (const detail of pickList.details) {
+          const inv = await tx.inventory.findFirst({
+            where: {
+              organization_id: orgId,
+              warehouse_id: exportRecord.warehouse_id,
+              product_id: detail.product_id,
+              block_id: detail.block_id,
+              batch_id: detail.batch_id,
+              is_deleted: false,
+            },
+          });
+          if (inv) {
+            const qty = detail.required_qty.toNumber();
+            reservedByInventoryId.set(inv.id, (reservedByInventoryId.get(inv.id) ?? 0) + qty);
+          }
+        }
+      }
+      for (const [inventoryId, qty] of reservedByInventoryId.entries()) {
+        await tx.inventory.update({
+          where: { id: inventoryId },
+          data: {
+            quantity_allocated: { decrement: qty },
+            quantity_available: { increment: qty },
+            updated_by: actorId,
+          },
+        });
+      }
+
+      // 2. Soft-delete all ExportPickList + details
+      for (const pickList of exportRecord.pick_lists) {
+        await tx.exportPickListDetail.updateMany({
+          where: { pick_list_id: pickList.id, is_deleted: false },
+          data: { is_deleted: true, updated_by: actorId },
+        });
+        await tx.exportPickList.update({
+          where: { id: pickList.id },
+          data: { is_deleted: true, updated_by: actorId },
+        });
+      }
+
+      // 3. Reset export status → PENDING
+      return tx.export.update({
+        where: { id },
+        data: {
+          status: ExportStatus.PENDING,
+          approved_by: null,
+          approved_at: null,
+          updated_by: actorId,
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          partner: { select: { id: true, name: true, code: true } },
+          details: {
+            where: { is_deleted: false },
+            include: {
+              product: { select: { id: true, name: true, sku: true, image_url: true } },
+              batch: { select: { id: true, code: true, expiry_date: true } },
+              unit: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
+    });
+
+    await Promise.all([
+      this.redisService.del(this.getOutboundDetailCacheKey(id)),
+      this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+    ]);
+
+    this.websocketGateway.emitToOrganization(orgId, 'outbound:rejected', {
+      exportId: id,
+      code: updated.code,
+      revertedBy: actorId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return updated as unknown as IOutboundRequest;
+  }
+
+  /**
+   * Hoàn tác xác nhận nhặt hàng: CHECKING → PICKING
+   * Reset pick list về PENDING để nhặt lại.
+   */
+  async revertOutboundToPicking(
+    orgId: string,
+    id: string,
+    actorId: string,
+    lang: string,
+  ): Promise<IOutboundRequest> {
+    const exportRecord = await this.prisma.export.findFirst({
+      where: { id, organization_id: orgId, is_deleted: false },
+      include: {
+        pick_lists: { where: { is_deleted: false } },
+      },
+    });
+    if (!exportRecord) {
+      throw new NotFoundException(
+        await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+      );
+    }
+    if (exportRecord.status !== ExportStatus.CHECKING) {
+      throw new BadRequestException(
+        await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Reset pick lists back to PENDING so picker can redo
+      for (const pickList of exportRecord.pick_lists) {
+        await tx.exportPickList.update({
+          where: { id: pickList.id },
+          data: {
+            status: 'PENDING',
+            completed_at: null,
+            updated_by: actorId,
+          },
+        });
+      }
+      return tx.export.update({
+        where: { id },
+        data: {
+          status: ExportStatus.PICKING,
+          picking_completed_at: null,
+          updated_by: actorId,
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          partner: { select: { id: true, name: true, code: true } },
+          details: {
+            where: { is_deleted: false },
+            include: {
+              product: { select: { id: true, name: true, sku: true, image_url: true } },
+              batch: { select: { id: true, code: true, expiry_date: true } },
+              unit: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
+    });
+
+    await Promise.all([
+      this.redisService.del(this.getOutboundDetailCacheKey(id)),
+      this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+    ]);
+
+    this.websocketGateway.emitToOrganization(orgId, 'outbound:picking-confirmed', {
+      exportId: id,
+      code: updated.code,
+      revertedBy: actorId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return updated as unknown as IOutboundRequest;
+  }
 }

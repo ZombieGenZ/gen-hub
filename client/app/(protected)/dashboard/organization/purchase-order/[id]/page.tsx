@@ -60,12 +60,15 @@ const STATUS_CONFIG: Record<ReceiptStatus, { label: string; className: string }>
 // Timeline steps
 // ────────────────────────────────────────────────
 const TIMELINE_STEPS = [
-    { key: "PENDING", label: "Khởi tạo" },
-    { key: "PROCESSING", label: "Đang kiểm đếm" },
-    { key: "COMPLETED", label: "Đã lưu kho" },
+    { key: "PENDING",    label: "Khởi tạo" },
+    { key: "APPROVED",   label: "Đã duyệt" },
+    { key: "RECEIVING",  label: "Đang kiểm đếm" },
+    { key: "PROCESSING", label: "Đang nhập kho" },
+    { key: "PUTAWAY",    label: "Đang cất hàng" },
+    { key: "COMPLETED",  label: "Hoàn thành" },
 ];
 
-const STATUS_ORDER: ReceiptStatus[] = ["PENDING", "PROCESSING", "COMPLETED"];
+const STATUS_ORDER: ReceiptStatus[] = ["PENDING", "APPROVED", "RECEIVING", "PROCESSING", "PUTAWAY", "COMPLETED"];
 
 function getStepState(
     stepKey: string,
@@ -361,6 +364,15 @@ export default function InboundDetailPage() {
                                         : "—"
                                 }
                             />
+                            {data.expected_arrival && (
+                                <InfoRow
+                                    label="Ngày dự kiến đến"
+                                    value={formatDate(data.expected_arrival)}
+                                />
+                            )}
+                            {data.vehicle_info && (
+                                <InfoRow label="Thông tin xe" value={data.vehicle_info} />
+                            )}
                             <InfoRow
                                 label="Ngày tạo"
                                 value={formatDate(data.created_at)}
@@ -369,6 +381,12 @@ export default function InboundDetailPage() {
                                 label="Cập nhật"
                                 value={formatDate(data.updated_at)}
                             />
+                            {data.approved_at && (
+                                <InfoRow
+                                    label="Duyệt lúc"
+                                    value={formatDate(data.approved_at)}
+                                />
+                            )}
                             {data.notes && (
                                 <InfoRow label="Ghi chú" value={data.notes} />
                             )}
@@ -405,6 +423,12 @@ export default function InboundDetailPage() {
                                         <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
                                             Lô hàng
                                         </th>
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                            HSD
+                                        </th>
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                            Đơn vị
+                                        </th>
                                         <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
                                             SL dự kiến
                                         </th>
@@ -430,7 +454,14 @@ export default function InboundDetailPage() {
                                                     className={`transition-colors ${rowClass}`}
                                                 >
                                                     <td className="py-3 px-4">
-                                                        <div>
+                                                        <div className="flex items-center gap-2">
+                                                            {detail.product?.image_url && (
+                                                                <img
+                                                                    src={detail.product.image_url}
+                                                                    alt={detail.product.name}
+                                                                    className="w-8 h-8 rounded-lg object-cover shrink-0 border border-muted"
+                                                                />
+                                                            )}
                                                             <p className="font-medium text-sm">
                                                                 {detail.product?.name || "—"}
                                                             </p>
@@ -441,6 +472,16 @@ export default function InboundDetailPage() {
                                                     </td>
                                                     <td className="py-3 px-4 text-sm">
                                                         {detail.batch?.code || "—"}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm">
+                                                        {detail.batch?.expiry_date ? (
+                                                            <span className={new Date(detail.batch.expiry_date) < new Date() ? "text-red-500 font-medium" : ""}>
+                                                                {formatDate(detail.batch.expiry_date).split(",")[0]}
+                                                            </span>
+                                                        ) : "—"}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-muted-foreground">
+                                                        {detail.unit?.name || "—"}
                                                     </td>
                                                     <td className="py-3 px-4 text-center font-semibold text-sm">
                                                         {detail.expected_qty}
@@ -499,7 +540,7 @@ export default function InboundDetailPage() {
                                     ) : (
                                         <tr>
                                             <td
-                                                colSpan={6}
+                                                colSpan={8}
                                                 className="py-12 text-center text-muted-foreground"
                                             >
                                                 Chưa có chi tiết hàng hóa
@@ -507,6 +548,22 @@ export default function InboundDetailPage() {
                                         </tr>
                                     )}
                                 </tbody>
+                                {data.details && data.details.length > 0 && (
+                                    <tfoot className="border-t-2 bg-muted/20">
+                                        <tr>
+                                            <td colSpan={5} className="py-3 px-4 text-sm font-semibold text-muted-foreground">
+                                                Tổng cộng: {data.details.length} mặt hàng
+                                            </td>
+                                            <td className="py-3 px-4 text-center font-bold text-sm">
+                                                {data.details.reduce((s, d) => s + d.expected_qty, 0)}
+                                            </td>
+                                            <td className="py-3 px-4 text-center font-bold text-sm">
+                                                {data.details.reduce((s, d) => s + (editingQty[d.id] ?? d.actual_qty ?? 0), 0)}
+                                            </td>
+                                            <td />
+                                        </tr>
+                                    </tfoot>
+                                )}
                             </table>
                         </div>
                     </CardContent>

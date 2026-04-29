@@ -541,6 +541,42 @@ export class WarehouseManagerInventoryService {
     }
 
     /**
+     * Hoàn tác duyệt xuất kho: PICKING → PENDING
+     */
+    async revertOutboundToPending(token: string, id: string): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/outbound/${id}/revert-to-pending`,
+            {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể hoàn tác bước duyệt');
+        }
+        return response.json();
+    }
+
+    /**
+     * Hoàn tác xác nhận nhặt hàng: CHECKING → PICKING
+     */
+    async revertOutboundToPicking(token: string, id: string): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/outbound/${id}/revert-to-picking`,
+            {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể hoàn tác bước nhặt hàng');
+        }
+        return response.json();
+    }
+
+    /**
      * Bổ sung tồn kho sau khi nhập
      */
     async refillInventory(token: string, id: string): Promise<ApiResponse<any>> {
