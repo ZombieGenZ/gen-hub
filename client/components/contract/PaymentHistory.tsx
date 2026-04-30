@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -185,7 +186,7 @@ function PaymentCard({
                     {showQrCode && payment.status === "PENDING" && payment.method === "TRANSFER" && qrSource && (
                         <div className="mt-3 pt-3 border-t flex flex-col items-center gap-2">
                             <p className="text-xs text-muted-foreground">Quét mã QR để thanh toán</p>
-                            <img src={qrSource} alt="QR Code thanh toán" className="w-40 h-40 rounded-md border" />
+                            <Image src={qrSource} alt="QR Code thanh toán" width={160} height={160} className="w-40 h-40 rounded-md border" unoptimized />
                         </div>
                     )}
 

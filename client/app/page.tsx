@@ -35,67 +35,78 @@ export default function Home() {
     const router = useRouter();
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserInfo | undefined>(undefined);
-    const { showToast } = useToast()
+    const { showToast } = useToast();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const hasShownNotificationRef = useRef(false);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
         let isMounted = true;
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
 
-        const fetchUserData = async () => {
-            if (isFetchingRef.current) return;
-            isFetchingRef.current = true;
+        const fetchAll = async () => {
             try {
                 // Nếu không có refresh token thì coi như chưa đăng nhập
                 const refreshToken = authStorage.getRefreshToken();
                 if (!refreshToken) {
-                    if (!isMounted) return;
-                    setIsLogin(false);
-                    setUser(undefined);
-                    setNotifications([]);
-                    return;
-                }
-
-                // Nếu thiếu access token nhưng còn refresh token thì refresh ngay
-                let accessToken = authStorage.getAccessToken();
-                if (!accessToken) {
-                    try {
-                        await authService.getNewToken(refreshToken);
-                        // Token đã được cập nhật
-                        accessToken = authStorage.getAccessToken();
-                    } catch {
-                        accessToken = null;
+                    if (isMounted) {
+                        setIsLogin(false);
+                        setUser(undefined);
+                        setNotifications([]);
                     }
-                }
-
-                // Nếu access token hết hạn thì lấy token hợp lệ
-                if (accessToken && !authStorage.isAuthenticated()) {
-                    accessToken = await authService.getValidAccessToken();
-                }
-
-                if (!accessToken) {
-                    if (!isMounted) return;
-                    setIsLogin(false);
-                    setUser(undefined);
-                    setNotifications([]);
-                    router.push("/login");
                     return;
                 }
 
-                if (!isMounted) return;
-                setIsLogin(true);
+                // getValidAccessToken tự xử lý cả 2 trường hợp: token hết hạn và không có token
+                const accessToken = await authService.getValidAccessToken();
+                if (!accessToken) {
+                    if (isMounted) {
+                        setIsLogin(false);
+                        setUser(undefined);
+                        setNotifications([]);
+                        router.push("/login");
+                    }
+                    return;
+                }
 
-                // Sau refresh token rotation, refresh token trong cookie có thể đã đổi
-                const latestRefreshToken = authStorage.getRefreshToken() || refreshToken;
+                if (isMounted) setIsLogin(true);
 
-                const userData = await userService.getUser(accessToken, latestRefreshToken);
+                const latestRefreshToken = authStorage.getRefreshToken()!;
+
+                // Fetch user data + notifications song song, không chờ lần lượt
+                const [userData] = await Promise.all([
+                    userService.getUser(accessToken, latestRefreshToken),
+                    (async () => {
+                        try {
+                            const [userNotifsRes, globalNotifsRes] = await Promise.all([
+                                notificationService.getNotifications(accessToken),
+                                notificationService.getGlobalNotifications(accessToken),
+                            ]);
+                            if (!isMounted) return;
+                            const userNotifs = userNotifsRes?.items || [];
+                            const globalNotifs = globalNotifsRes?.items || [];
+                            setNotifications([...(globalNotifs as any[]), ...userNotifs]);
+                            const total = userNotifs.length + globalNotifs.length;
+                            if (total > 0 && !hasShownNotificationRef.current) {
+                                hasShownNotificationRef.current = true;
+                                showToast(
+                                    `Bạn có ${total} thông báo mới (${userNotifs.length} cá nhân, ${globalNotifs.length} toàn hệ thống).`,
+                                    "info"
+                                );
+                            }
+                        } catch {
+                            // notifications không ảnh hưởng đến hiển thị trang chính
+                        }
+                    })(),
+                ]);
+
                 if (!isMounted) return;
                 setUser({
                     name: userData.user.name,
                     email: userData.user.email,
                     avatar: userData.user.avatar,
-                    roles: userData.roles.map((r: any) => typeof r === 'string' ? r : r.name),
+                    roles: userData.roles.map((r: any) => typeof r === "string" ? r : r.name),
                 });
             } catch (error) {
                 console.error("Failed to fetch user data:", error);
@@ -104,48 +115,9 @@ export default function Home() {
             }
         };
 
-        fetchUserData();
-
-        return () => {
-            isMounted = false;
-        };
+        fetchAll();
+        return () => { isMounted = false; };
     }, [router, showToast]);
-
-    useEffect(() => {
-        const isMounted = true;
-
-        const fetchNotifications = async () => {
-            try {
-                const accessToken = authStorage.getAccessToken();
-                if (!accessToken || !isLogin) return;
-
-                const [userNotifsResponse, globalNotifsResponse] = await Promise.all([
-                    notificationService.getNotifications(accessToken),
-                    notificationService.getGlobalNotifications(accessToken),
-                ]);
-
-                if (!isMounted) return;
-                const userNotifs = userNotifsResponse?.items || [];
-                const globalNotifs = globalNotifsResponse?.items || [];
-                setNotifications([...(globalNotifs as any[]), ...userNotifs]);
-
-                const total = (userNotifs?.length || 0) + (globalNotifs?.length || 0);
-                if (total > 0 && !hasShownNotificationRef.current) {
-                    hasShownNotificationRef.current = true;
-                    showToast(
-                        `Bạn có ${total} thông báo mới (${userNotifs.length} cá nhân, ${globalNotifs.length} toàn hệ thống).`,
-                        "info"
-                    );
-                }
-            } catch (error) {
-                console.error("Failed to fetch notifications:", error);
-            }
-        };
-
-        if (isLogin) {
-            fetchNotifications();
-        }
-    }, [isLogin, showToast]);
 
     const handleLogout = () => {
         setIsLogin(false);

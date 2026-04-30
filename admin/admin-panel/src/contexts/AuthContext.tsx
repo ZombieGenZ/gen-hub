@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 
 interface User {
     id: string;
@@ -42,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [permissions, setPermissions] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+
+    useTokenRefresh(!!user);
 
     const fetchProfile = async () => {
         try {

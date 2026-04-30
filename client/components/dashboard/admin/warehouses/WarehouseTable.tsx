@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -214,16 +215,18 @@ export function WarehouseTable({
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                                                    <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                                                         {w.images?.[0] ? (
-                                                            <img
+                                                            <Image
                                                                 src={
                                                                     w.images[0].url?.startsWith("http")
                                                                         ? w.images[0].url
                                                                         : `${IMG_API || ""}${w.images[0].url}`
                                                                 }
                                                                 alt={w.name}
-                                                                className="h-full w-full object-cover"
+                                                                fill
+                                                                className="object-cover"
+                                                                unoptimized
                                                             />
                                                         ) : (
                                                             <div className="h-full w-full flex items-center justify-center text-lg">

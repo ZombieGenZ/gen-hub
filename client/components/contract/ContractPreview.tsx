@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckoutSession } from '@/types/checkout/checkout.type';
 import { cn } from '@/lib/utils';
@@ -236,17 +237,21 @@ export function ContractPreview({
                             <h4 className="font-bold uppercase text-sm">ĐẠI DIỆN BÊN A</h4>
                             {/* GenHub Stamp & Signature Placeholder */}
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-90">
-                                <img
+                                <Image
                                     src="/assets/genhub-stamp.png"
                                     alt="GenHub Stamp"
+                                    width={128}
+                                    height={128}
                                     className="w-32 h-32 object-contain"
-                                    onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                 />
-                                <img
+                                <Image
                                     src="/assets/genhub-signature.png"
                                     alt="GenHub Signature"
+                                    width={96}
+                                    height={64}
                                     className="w-24 h-16 object-contain -mt-16 ml-4"
-                                    onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                 />
                             </div>
                             <div className="pt-2">
@@ -264,6 +269,7 @@ export function ContractPreview({
                                             src={signatureData}
                                             alt="Customer Signature"
                                             className="max-h-24 w-auto object-contain"
+                                            // eslint-disable-next-line @next/next/no-img-element
                                         />
                                         <div className="absolute -top-4 -right-4 bg-white rounded-full p-1 shadow-md border border-green-100">
                                             <CheckBadgeIcon className="w-6 h-6 text-green-600" />

@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { ProfileModalProvider } from "@/contexts/ProfileModalContext";
 import { ProfileModalWrapper } from "@/components/profile/profile-modal-wrapper";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 const authService = new AuthService();
 
@@ -14,6 +15,8 @@ export default function ProtectedLayout({ children, modal }: { children: React.R
     const router = useRouter();
     const pathname = usePathname();
     const [isAuthorized, setIsAuthorized] = useState(false);
+
+    useTokenRefresh();
 
     useEffect(() => {
         const checkAuth = async () => {

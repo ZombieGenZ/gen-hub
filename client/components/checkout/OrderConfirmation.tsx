@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCheckout } from './CheckoutWizard';
 import { Button } from '@/components/ui/button';
@@ -224,17 +225,19 @@ export function OrderConfirmation({
                         <h4 className="font-medium text-slate-700 mb-4">Quét mã QR để thanh toán</h4>
 
                         {/* QR Code */}
-                        <div className="w-52 h-52 rounded-xl mx-auto flex items-center justify-center mb-4 overflow-hidden border border-slate-200">
+                        <div className="relative w-52 h-52 rounded-xl mx-auto flex items-center justify-center mb-4 overflow-hidden border border-slate-200">
                             {qrExpired ? (
                                 <div className="flex flex-col items-center gap-2 text-slate-400 p-4">
                                     <ExclamationTriangleIcon className="w-10 h-10 text-amber-400" />
                                     <p className="text-sm font-medium text-amber-600">Mã QR đã hết hạn</p>
                                 </div>
                             ) : qrUrl ? (
-                                <img
+                                <Image
                                     src={qrUrl}
                                     alt="SePay QR Code"
-                                    className="w-full h-full object-contain"
+                                    fill
+                                    className="object-contain"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="flex flex-col items-center gap-2 text-slate-300">
