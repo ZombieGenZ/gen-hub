@@ -338,6 +338,9 @@ $RECYCLE.BIN/
 temp_*.md
 docs/INBOUND_MISMATCH_WORKFLOW.md
 
-.qwen
-.claude
-.gemini
+.qwen/
+.claude/
+.gemini/
+.cursor/
+
+*.diff
