@@ -170,7 +170,10 @@ export function StatusHistory({ type, title, range }: StatusHistoryProps) {
               )}
             >
               {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-neutral-900 dark:bg-neutral-800 text-white text-[10px] rounded-lg shadow-xl ring-1 ring-white/10 opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-150">
+              <div className={clsx(
+                "absolute bottom-full mb-2 w-44 p-2.5 bg-neutral-900 dark:bg-neutral-800 text-white text-[10px] rounded-lg shadow-xl ring-1 ring-white/10 opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-150",
+                i < 4 ? "left-0" : i > data.timeline.length - 5 ? "right-0" : "left-1/2 -translate-x-1/2"
+              )}>
                 <div className="font-bold border-b border-neutral-700 dark:border-neutral-600 pb-1 mb-1.5 text-[11px]">
                   {point.day} @ {point.hour}:00
                 </div>

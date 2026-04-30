@@ -155,9 +155,9 @@ export default function Home() {
         </section>
 
         {/* Service History Section (Status Tracker) */}
-        <section className="relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 shadow-md">
+        <section className="relative rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 shadow-md">
           {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/80">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/80 rounded-t-2xl">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/15 to-indigo-500/10 text-blue-500 dark:from-blue-400/20 dark:to-indigo-400/15 dark:text-blue-400 ring-1 ring-blue-500/10 dark:ring-blue-400/10">
                 <Activity className="w-5 h-5" />
