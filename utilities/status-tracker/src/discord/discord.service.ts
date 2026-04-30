@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Client, GatewayIntentBits, User } from 'discord.js';
+import { Client, GatewayIntentBits, User, EmbedBuilder, MessageCreateOptions } from 'discord.js';
 
 @Injectable()
 export class DiscordService implements OnModuleInit {
@@ -58,7 +58,7 @@ export class DiscordService implements OnModuleInit {
   /**
    * Gửi tin nhắn DM cho các user được chỉ định
    */
-  async sendDirectMessage(message: string) {
+  async sendDirectMessage(message: string | MessageCreateOptions) {
     if (!this.enabled || !this.client) return;
 
     for (const userId of this.notifyUserIds) {
@@ -78,15 +78,35 @@ export class DiscordService implements OnModuleInit {
    * Gửi thông báo khi service bị down
    */
   async notifyDown(type: string, url: string, error?: string) {
-    const message = `🚨 **SERVICE DOWN** 🚨\n**Type:** ${type}\n**URL:** ${url}\n**Time:** ${new Date().toLocaleString()}\n${error ? `**Error:** ${error}` : ''}`;
-    await this.sendDirectMessage(message);
+    const embed = new EmbedBuilder()
+      .setColor(0xff0000)
+      .setTitle('🚨 DỊCH VỤ GIÁN ĐOẠN 🚨')
+      .addFields(
+        { name: 'Loại', value: type, inline: true },
+        { name: 'URL', value: url, inline: true },
+        { name: 'Thời gian', value: new Date().toLocaleString(), inline: false },
+      );
+
+    if (error) {
+      embed.addFields({ name: 'Chi tiết lỗi', value: error, inline: false });
+    }
+
+    await this.sendDirectMessage({ embeds: [embed] });
   }
 
   /**
    * Gửi thông báo khi service phục hồi
    */
   async notifyRecovery(type: string, url: string) {
-    const message = `✅ **SERVICE RECOVERY** ✅\n**Type:** ${type}\n**URL:** ${url}\n**Time:** ${new Date().toLocaleString()}`;
-    await this.sendDirectMessage(message);
+    const embed = new EmbedBuilder()
+      .setColor(0x00ff00)
+      .setTitle('✅ DỊCH VỤ KHÔI PHỤC ✅')
+      .addFields(
+        { name: 'Loại', value: type, inline: true },
+        { name: 'URL', value: url, inline: true },
+        { name: 'Thời gian', value: new Date().toLocaleString(), inline: false },
+      );
+
+    await this.sendDirectMessage({ embeds: [embed] });
   }
 }
