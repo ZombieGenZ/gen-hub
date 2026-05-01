@@ -81,22 +81,23 @@ export function StockTakeCreateModal({
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-            <DialogContent className="sm:max-w-md rounded-2xl">
-                <DialogHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#0F766E]/10 flex items-center justify-center shrink-0">
-                            <ClipboardDocumentListIcon className="w-5 h-5 text-[#0F766E]" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-base">Tạo phiếu kiểm kê</DialogTitle>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Chọn kho và thêm ghi chú để bắt đầu kiểm đếm
-                            </p>
-                        </div>
+            <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center gap-4 px-6 pt-6 pb-4 border-b">
+                    <div className="w-11 h-11 rounded-xl bg-[#0F766E]/10 flex items-center justify-center shrink-0">
+                        <ClipboardDocumentListIcon className="w-6 h-6 text-[#0F766E]" />
                     </div>
-                </DialogHeader>
+                    <div>
+                        <DialogHeader>
+                            <DialogTitle className="text-base font-semibold">Tạo phiếu kiểm kê</DialogTitle>
+                        </DialogHeader>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Chọn kho và thêm ghi chú để bắt đầu kiểm đếm
+                        </p>
+                    </div>
+                </div>
 
-                <div className="space-y-4 py-2">
+                <div className="space-y-5 px-6 py-5">
                     {/* Warehouse selector */}
                     <div className="space-y-2">
                         <Label className="text-sm font-medium flex items-center gap-1">
@@ -104,7 +105,7 @@ export function StockTakeCreateModal({
                             <span className="text-red-500 ml-0.5">*</span>
                         </Label>
                         <Select value={warehouseId} onValueChange={setWarehouseId}>
-                            <SelectTrigger className="rounded-xl h-10">
+                            <SelectTrigger className="rounded-xl h-11">
                                 <SelectValue placeholder="Chọn kho..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -135,14 +136,14 @@ export function StockTakeCreateModal({
                         <Textarea
                             placeholder="Ghi chú thêm về đợt kiểm kê này..."
                             className="rounded-xl resize-none text-sm"
-                            rows={3}
+                            rows={4}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="gap-2 px-6 pb-6">
                     <Button
                         variant="outline"
                         onClick={handleClose}
