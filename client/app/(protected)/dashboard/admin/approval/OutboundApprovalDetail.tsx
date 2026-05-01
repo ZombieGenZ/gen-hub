@@ -764,7 +764,6 @@ export default function OutboundApprovalDetail({
                                     <tr>
                                         <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
                                         <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
-                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Lô hàng</th>
                                         <th className="text-center py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">SL xuất</th>
                                         <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Đơn vị</th>
                                     </tr>
@@ -774,18 +773,17 @@ export default function OutboundApprovalDetail({
                                         <tr key={d.id}>
                                             <td className="py-2 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
                                             <td className="py-2 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
-                                            <td className="py-2 px-4 text-sm text-muted-foreground">{d.batch?.code || "—"}</td>
                                             <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.quantity}</td>
                                             <td className="py-2 px-4 text-sm text-muted-foreground">{(d as any).unit?.name || "—"}</td>
                                         </tr>
                                     )) : (
-                                        <tr><td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết</td></tr>
+                                        <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết</td></tr>
                                     )}
                                 </tbody>
                                 {data.details && data.details.length > 0 && (
                                     <tfoot className="border-t bg-muted/20">
                                         <tr>
-                                            <td colSpan={3} className="py-2 px-4 text-xs font-semibold text-muted-foreground">
+                                            <td colSpan={2} className="py-2 px-4 text-xs font-semibold text-muted-foreground">
                                                 Tổng: {data.details.length} mặt hàng
                                             </td>
                                             <td className="py-2 px-4 text-center text-xs font-semibold text-slate-700">

@@ -549,7 +549,7 @@ export default function InboundApprovalDetail({
                                         <tr key={d.id}>
                                             <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
-                                            <td className="py-3 px-4 text-sm">{d.batch?.code || "—"}</td>
+                                            <td className="py-3 px-4 text-sm font-mono">{d.batch?.code ?? (d.batch_id ? <span className="text-muted-foreground text-xs">{d.batch_id}</span> : "—")}</td>
                                             <td className="py-3 px-4 text-center font-semibold text-sm">{d.expected_qty}</td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{(d as any).unit?.name || "—"}</td>
                                         </tr>
@@ -596,7 +596,7 @@ export default function InboundApprovalDetail({
                                         <tr key={d.id}>
                                             <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
-                                            <td className="py-3 px-4 text-sm">{d.batch?.code || "—"}</td>
+                                            <td className="py-3 px-4 text-sm font-mono">{d.batch?.code ?? (d.batch_id ? <span className="text-muted-foreground text-xs">{d.batch_id}</span> : "—")}</td>
                                             <td className="py-3 px-4 text-center font-semibold text-sm">{d.expected_qty}</td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{(d as any).unit?.name || "—"}</td>
                                         </tr>
@@ -652,7 +652,7 @@ export default function InboundApprovalDetail({
                                             <tr key={d.id} className={`transition-colors ${rowClass}`}>
                                                 <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
                                                 <td className="py-3 px-4 text-sm text-muted-foreground">{d.product?.sku || "—"}</td>
-                                                <td className="py-3 px-4 text-sm">{d.batch?.code || "—"}</td>
+                                                <td className="py-3 px-4 text-sm font-mono">{d.batch?.code ?? (d.batch_id ? <span className="text-muted-foreground text-xs">{d.batch_id}</span> : "—")}</td>
                                                 <td className="py-3 px-4 text-center font-semibold text-sm">{d.expected_qty}</td>
                                                 <td className="py-3 px-4 text-center">
                                                     <Input
@@ -714,7 +714,7 @@ export default function InboundApprovalDetail({
                                         return (
                                             <tr key={d.id}>
                                                 <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
-                                                <td className="py-3 px-4 text-sm">{d.batch?.code || "—"}</td>
+                                                <td className="py-3 px-4 text-sm font-mono">{d.batch?.code ?? (d.batch_id ? <span className="text-muted-foreground text-xs">{d.batch_id}</span> : "—")}</td>
                                                 <td className="py-3 px-4 text-center text-sm">{d.expected_qty}</td>
                                                 <td className="py-3 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.actual_qty ?? d.expected_qty}</td>
                                                 <td className="py-3 px-4">
@@ -764,7 +764,7 @@ export default function InboundApprovalDetail({
                                         <tr key={d.id}>
                                             <td className="py-2 px-4 text-left text-sm">{d.product?.name || "—"}</td>
                                             <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.actual_qty ?? d.expected_qty}</td>
-                                            <td className="py-2 px-4 text-left text-sm text-muted-foreground">{d.batch?.code || "—"}</td>
+                                            <td className="py-2 px-4 text-left text-sm font-mono">{d.batch?.code ?? (d.batch_id ? <span className="text-muted-foreground text-xs">{d.batch_id}</span> : "—")}</td>
                                         </tr>
                                     ))}
                                 </tbody>
