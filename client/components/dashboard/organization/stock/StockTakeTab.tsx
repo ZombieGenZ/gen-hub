@@ -26,6 +26,9 @@ import {
     BuildingStorefrontIcon,
     CalendarDaysIcon,
     ChevronRightIcon,
+    ArrowPathIcon,
+    CheckCircleIcon,
+    CubeIcon,
 } from "@heroicons/react/24/outline";
 import type { StockTake, StockTakeStatus } from "@/services/inventory/inventory.types";
 
@@ -104,17 +107,22 @@ export function StockTakeTab({ warehouses }: StockTakeTabProps) {
     return (
         <div className="space-y-5">
             {/* Header actions */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-[15px] font-semibold">Phiếu kiểm kê</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        Quản lý kiểm đếm và điều chỉnh tồn kho thực tế
-                    </p>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#0F766E]/10 flex items-center justify-center shrink-0">
+                        <ClipboardDocumentListIcon className="w-5 h-5 text-[#0F766E]" />
+                    </div>
+                    <div>
+                        <h3 className="text-[15px] font-semibold">Phiếu kiểm kê</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Quản lý kiểm đếm và điều chỉnh tồn kho thực tế
+                        </p>
+                    </div>
                 </div>
                 <Button
                     onClick={() => setCreateOpen(true)}
                     size="sm"
-                    className="rounded-xl gap-1.5 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                    className="rounded-xl gap-1.5 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white shrink-0"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Tạo phiếu kiểm kê
@@ -122,36 +130,34 @@ export function StockTakeTab({ warehouses }: StockTakeTabProps) {
             </div>
 
             {/* Status quick-filter chips */}
-            {total > 0 && (
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setStatusFilter("")}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                            statusFilter === "" ? "bg-foreground text-background border-foreground" : "bg-background text-muted-foreground border-muted-foreground/30 hover:border-foreground/50"
-                        }`}
-                    >
-                        Tất cả
-                        <span className="font-mono">{total}</span>
-                    </button>
-                    {(Object.entries(STATUS_CONFIG) as [StockTakeStatus, typeof STATUS_CONFIG[StockTakeStatus]][]).map(([key, cfg]) => {
-                        const count = statusCounts[key];
-                        if (!count) return null;
-                        return (
-                            <button
-                                key={key}
-                                onClick={() => setStatusFilter(key === statusFilter ? "" : key)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                                    statusFilter === key ? cfg.color + " border-current" : "bg-background text-muted-foreground border-muted-foreground/30 hover:border-foreground/50"
-                                }`}
-                            >
-                                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                                {cfg.label}
-                                <span className="font-mono">{count}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+                <button
+                    onClick={() => setStatusFilter("")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                        statusFilter === "" ? "bg-foreground text-background border-foreground" : "bg-background text-muted-foreground border-muted-foreground/30 hover:border-foreground/50"
+                    }`}
+                >
+                    Tất cả
+                    {total > 0 && <span className="font-mono tabular-nums">{total}</span>}
+                </button>
+                {(Object.entries(STATUS_CONFIG) as [StockTakeStatus, typeof STATUS_CONFIG[StockTakeStatus]][]).map(([key, cfg]) => {
+                    const count = statusCounts[key];
+                    if (!count) return null;
+                    return (
+                        <button
+                            key={key}
+                            onClick={() => setStatusFilter(key === statusFilter ? "" : key)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                statusFilter === key ? cfg.color + " border-current" : "bg-background text-muted-foreground border-muted-foreground/30 hover:border-foreground/50"
+                            }`}
+                        >
+                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                            {cfg.label}
+                            <span className="font-mono tabular-nums">{count}</span>
+                        </button>
+                    );
+                })}
+            </div>
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
@@ -217,8 +223,8 @@ export function StockTakeTab({ warehouses }: StockTakeTabProps) {
             ) : items.length === 0 ? (
                 <Card className="border-0 shadow-sm rounded-2xl">
                     <CardContent className="py-16 flex flex-col items-center gap-4 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center">
-                            <ClipboardDocumentListIcon className="w-7 h-7 text-muted-foreground/40" />
+                        <div className="w-14 h-14 rounded-2xl bg-[#0F766E]/10 flex items-center justify-center">
+                            <ClipboardDocumentListIcon className="w-7 h-7 text-[#0F766E]/50" />
                         </div>
                         <div>
                             <p className="font-semibold text-muted-foreground">Chưa có phiếu kiểm kê nào</p>
@@ -245,17 +251,25 @@ export function StockTakeTab({ warehouses }: StockTakeTabProps) {
                     {items.map((item) => {
                         const statusInfo = STATUS_CONFIG[item.status];
                         const detailCount = item._count?.details ?? 0;
+                        const isActive = item.status === "IN_PROGRESS";
                         return (
                             <Card
                                 key={item.id}
-                                className="border-0 shadow-sm rounded-2xl hover:shadow-md transition-shadow cursor-pointer group"
+                                className={`border-0 shadow-sm rounded-2xl hover:shadow-md transition-all cursor-pointer group ${isActive ? "ring-1 ring-blue-200" : ""}`}
                                 onClick={() => setSelectedId(item.id)}
                             >
                                 <CardContent className="p-4">
                                     <div className="flex items-center gap-4">
                                         {/* Icon */}
-                                        <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 group-hover:bg-muted transition-colors">
-                                            <ClipboardDocumentListIcon className="w-5 h-5 text-muted-foreground" />
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                            isActive ? "bg-blue-50 group-hover:bg-blue-100" : "bg-muted/50 group-hover:bg-muted"
+                                        }`}>
+                                            {isActive
+                                                ? <ArrowPathIcon className="w-5 h-5 text-blue-600 animate-spin" style={{ animationDuration: "3s" }} />
+                                                : item.status === "ADJUSTED"
+                                                ? <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                                                : <ClipboardDocumentListIcon className="w-5 h-5 text-muted-foreground" />
+                                            }
                                         </div>
 
                                         {/* Main info */}
@@ -272,13 +286,14 @@ export function StockTakeTab({ warehouses }: StockTakeTabProps) {
                                                     {statusInfo.label}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                                                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                                                     <BuildingStorefrontIcon className="w-3 h-3" />
                                                     {item.warehouse?.name ?? "—"}
                                                 </span>
                                                 {detailCount > 0 && (
-                                                    <span className="text-xs text-muted-foreground">
+                                                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                                        <CubeIcon className="w-3 h-3" />
                                                         {detailCount} mặt hàng
                                                     </span>
                                                 )}

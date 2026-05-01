@@ -28,38 +28,38 @@ function formatQty(value: number) {
 function StockLevelCell({ qty }: { qty: number }) {
     if (qty <= 0) {
         return (
-            <div className="flex flex-col items-end gap-1">
-                <span className="text-sm font-bold text-red-600">{formatQty(qty)}</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-100 border border-red-200 rounded-full px-2 py-0.5 leading-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+            <div className="flex items-center justify-end gap-2">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block shrink-0" />
                     Hết hàng
                 </span>
+                <span className="text-sm font-bold text-red-600 tabular-nums">{formatQty(qty)}</span>
             </div>
         );
     }
     if (qty <= 5) {
         return (
-            <div className="flex flex-col items-end gap-1">
-                <span className="text-sm font-bold text-red-600">{formatQty(qty)}</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 leading-none">
-                    <ExclamationTriangleIcon className="w-2.5 h-2.5" />
+            <div className="flex items-center justify-end gap-2">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+                    <ExclamationTriangleIcon className="w-3 h-3 shrink-0" />
                     Sắp hết
                 </span>
+                <span className="text-sm font-bold text-orange-600 tabular-nums">{formatQty(qty)}</span>
             </div>
         );
     }
     if (qty <= 20) {
         return (
-            <div className="flex flex-col items-end gap-1">
-                <span className="text-sm font-semibold text-amber-600">{formatQty(qty)}</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 leading-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+            <div className="flex items-center justify-end gap-2">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
                     Tồn thấp
                 </span>
+                <span className="text-sm font-semibold text-amber-700 tabular-nums">{formatQty(qty)}</span>
             </div>
         );
     }
-    return <span className="text-sm font-semibold">{formatQty(qty)}</span>;
+    return <span className="text-sm font-semibold tabular-nums">{formatQty(qty)}</span>;
 }
 
 interface StockTableProps {
@@ -163,16 +163,21 @@ export function StockTable({
                                             </td>
 
                                             {/* Kho */}
-                                            <td className="py-3.5 px-4 text-sm whitespace-nowrap max-w-[200px]">
-                                                <span className="truncate block">{item.warehouse_name}</span>
+                                            <td className="py-3.5 px-4 max-w-45">
+                                                <span className="text-sm truncate block" title={item.warehouse_name}>{item.warehouse_name}</span>
                                             </td>
 
                                             {/* Vị trí */}
-                                            <td className="py-3.5 px-4">
-                                                {item.location ? (
-                                                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                            <td className="py-3.5 px-4 max-w-40">
+                                                {item.location_count != null && item.location_count > 1 ? (
+                                                    <span className="inline-flex items-center gap-1 text-xs text-[#0F766E] font-medium">
                                                         <MapPinIcon className="w-3 h-3 shrink-0" />
-                                                        <span className="font-mono">{item.location}</span>
+                                                        {item.location_count} vị trí
+                                                    </span>
+                                                ) : item.location ? (
+                                                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground overflow-hidden max-w-full">
+                                                        <MapPinIcon className="w-3 h-3 shrink-0" />
+                                                        <span className="font-mono truncate block" title={item.location}>{item.location}</span>
                                                     </span>
                                                 ) : (
                                                     <span className="text-muted-foreground text-xs">—</span>

@@ -59,16 +59,21 @@ function formatQty(n: number) {
     return new Intl.NumberFormat("vi-VN").format(n);
 }
 
-/** Sub-table hiển thị danh sách sản phẩm khi expand */
+/** Sub-table hiển thị chi tiết khi expand */
 function ProductExpandRow({
     isInbound,
     details,
     loading,
+    meta,
 }: {
     isInbound: boolean;
     details: (InboundDetail | OutboundDetail)[] | undefined;
     loading: boolean;
+    meta?: InboundRequest | OutboundRequest | null;
 }) {
+    const inMeta = meta as InboundRequest | undefined;
+    const outMeta = meta as OutboundRequest | undefined;
+
     if (loading) {
         return (
             <tr>
@@ -80,63 +85,87 @@ function ProductExpandRow({
             </tr>
         );
     }
-    if (!details || details.length === 0) {
-        return (
-            <tr>
-                <td colSpan={7} className="px-4 py-3 bg-muted/20 border-b text-sm text-muted-foreground text-center italic">
-                    Không có danh sách sản phẩm
-                </td>
-            </tr>
-        );
+
+    const contextItems: { icon: React.ReactNode; label: string; value: string }[] = [];
+    if (isInbound) {
+        if (inMeta?.partner?.name) contextItems.push({ icon: <UserIcon className="w-3.5 h-3.5" />, label: "Nhập từ", value: inMeta.partner.name });
+        if (inMeta?.vehicle_info) contextItems.push({ icon: <TruckIcon className="w-3.5 h-3.5" />, label: "Phương tiện", value: inMeta.vehicle_info });
+        if (inMeta?.notes) contextItems.push({ icon: <CubeIcon className="w-3.5 h-3.5" />, label: "Ghi chú", value: inMeta.notes });
+    } else {
+        if (outMeta?.partner?.name) contextItems.push({ icon: <UserIcon className="w-3.5 h-3.5" />, label: "Xuất cho", value: outMeta.partner.name });
+        if (outMeta?.delivery_address) contextItems.push({ icon: <BuildingStorefrontIcon className="w-3.5 h-3.5" />, label: "Giao đến", value: outMeta.delivery_address });
+        if (outMeta?.tracking_number) contextItems.push({ icon: <TruckIcon className="w-3.5 h-3.5" />, label: "Mã vận đơn", value: outMeta.tracking_number });
+        if (outMeta?.notes) contextItems.push({ icon: <CubeIcon className="w-3.5 h-3.5" />, label: "Ghi chú", value: outMeta.notes });
     }
+
     return (
         <tr>
             <td colSpan={7} className="px-0 py-0 bg-muted/10 border-b">
-                <div className="px-12 py-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-                        <CubeIcon className="w-3.5 h-3.5" />
-                        Danh sách sản phẩm ({details.length})
-                    </p>
-                    <div className="rounded-xl overflow-hidden border border-muted/60">
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/40">
-                                <tr>
-                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Sản phẩm</th>
-                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SKU</th>
-                                    {isInbound ? (
-                                        <>
-                                            <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL dự kiến</th>
-                                            <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL thực nhận</th>
-                                        </>
-                                    ) : (
-                                        <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL yêu cầu</th>
-                                    )}
-                                    <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Đơn vị</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-muted/40">
-                                {details.map((d) => {
-                                    const inD = d as InboundDetail;
-                                    const outD = d as OutboundDetail;
-                                    return (
-                                        <tr key={d.id} className="bg-background/60 hover:bg-muted/20 transition-colors">
-                                            <td className="py-2 px-3 font-medium">{d.product?.name ?? "—"}</td>
-                                            <td className="py-2 px-3 text-muted-foreground font-mono text-xs">{d.product?.sku ?? "—"}</td>
+                <div className="px-12 py-4 space-y-3">
+                    {/* Context info */}
+                    {contextItems.length > 0 && (
+                        <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+                            {contextItems.map((item, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground/60">{item.icon}</span>
+                                    <span className="font-medium text-foreground/70">{item.label}:</span>
+                                    <span>{item.value}</span>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Product list */}
+                    {!details || details.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">Không có danh sách sản phẩm</p>
+                    ) : (
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                                <CubeIcon className="w-3.5 h-3.5" />
+                                Danh sách sản phẩm ({details.length})
+                            </p>
+                            <div className="rounded-xl overflow-hidden border border-muted/60">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-muted/40">
+                                        <tr>
+                                            <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Sản phẩm</th>
+                                            <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SKU</th>
                                             {isInbound ? (
                                                 <>
-                                                    <td className="py-2 px-3 text-right text-muted-foreground">{formatQty(inD.expected_qty)}</td>
-                                                    <td className="py-2 px-3 text-right font-semibold text-[#0F766E]">{formatQty(inD.actual_qty)}</td>
+                                                    <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL dự kiến</th>
+                                                    <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL thực nhận</th>
                                                 </>
                                             ) : (
-                                                <td className="py-2 px-3 text-right font-semibold">{formatQty(outD.quantity)}</td>
+                                                <th className="text-right py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">SL yêu cầu</th>
                                             )}
-                                            <td className="py-2 px-3 text-muted-foreground text-xs">{d.unit?.name ?? "—"}</td>
+                                            <th className="text-left py-1.5 px-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Đơn vị</th>
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-muted/40">
+                                        {details.map((d) => {
+                                            const inD = d as InboundDetail;
+                                            const outD = d as OutboundDetail;
+                                            return (
+                                                <tr key={d.id} className="bg-background/60 hover:bg-muted/20 transition-colors">
+                                                    <td className="py-2 px-3 font-medium">{d.product?.name ?? "—"}</td>
+                                                    <td className="py-2 px-3 text-muted-foreground font-mono text-xs">{d.product?.sku ?? "—"}</td>
+                                                    {isInbound ? (
+                                                        <>
+                                                            <td className="py-2 px-3 text-right text-muted-foreground tabular-nums">{formatQty(inD.expected_qty)}</td>
+                                                            <td className="py-2 px-3 text-right font-semibold text-[#0F766E] tabular-nums">{formatQty(inD.actual_qty)}</td>
+                                                        </>
+                                                    ) : (
+                                                        <td className="py-2 px-3 text-right font-semibold tabular-nums">{formatQty(outD.quantity)}</td>
+                                                    )}
+                                                    <td className="py-2 px-3 text-muted-foreground text-xs">{d.unit?.name ?? "—"}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </td>
         </tr>
@@ -161,8 +190,8 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    // Expand state: id -> { open, loading, details }
-    const [expandedRows, setExpandedRows] = useState<Record<string, { open: boolean; loading: boolean; details?: any[] }>>({});
+    // Expand state: id -> { open, loading, details, meta }
+    const [expandedRows, setExpandedRows] = useState<Record<string, { open: boolean; loading: boolean; details?: any[]; meta?: InboundRequest | OutboundRequest }>>({});;
 
     const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -219,7 +248,7 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
         }
     }, [activeSubTab, fetchInbound, fetchOutbound]);
 
-    const toggleExpand = async (id: string) => {
+    const toggleExpand = async (id: string, listItem?: InboundRequest | OutboundRequest) => {
         const current = expandedRows[id];
         if (current?.open) {
             setExpandedRows((prev) => ({ ...prev, [id]: { ...prev[id], open: false } }));
@@ -229,21 +258,21 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
             setExpandedRows((prev) => ({ ...prev, [id]: { ...prev[id], open: true } }));
             return;
         }
-        setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: true } }));
+        setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: true, meta: listItem } }));
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
             if (activeSubTab === "inbound") {
                 const res = await inventoryService.getInboundById(token, id);
                 const detail = (res?.data ?? res) as InboundRequest;
-                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [] } }));
+                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [], meta: detail ?? listItem } }));
             } else {
                 const res = await inventoryService.getOutboundById(token, id);
                 const detail = (res?.data ?? res) as OutboundRequest;
-                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [] } }));
+                setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: detail?.details ?? [], meta: detail ?? listItem } }));
             }
         } catch {
-            setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: [] } }));
+            setExpandedRows((prev) => ({ ...prev, [id]: { open: true, loading: false, details: [], meta: listItem } }));
         }
     };
 
@@ -380,7 +409,7 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
                                             <React.Fragment key={item.id}>
                                                 <tr
                                                     className={`border-b transition-colors cursor-pointer hover:bg-muted/40 ${isExpanded ? "bg-muted/20" : ""}`}
-                                                    onClick={() => toggleExpand(item.id)}
+                                                    onClick={() => toggleExpand(item.id, item)}
                                                 >
                                                     <td className="py-3.5 px-3 text-center w-8">
                                                         {isExpanded
@@ -427,6 +456,7 @@ export function InboundOutboundTab({ warehouses, initialWarehouseId = "" }: Inbo
                                                         isInbound={activeSubTab === "inbound"}
                                                         details={expandState?.details}
                                                         loading={expandState?.loading === true}
+                                                        meta={expandState?.meta}
                                                     />
                                                 )}
                                             </React.Fragment>
