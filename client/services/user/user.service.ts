@@ -47,7 +47,7 @@ export class UserService {
 
     async searchUsers(token: string, search: string): Promise<User[]> {
         const query = new URLSearchParams();
-        if (search) query.append('search', search);
+        if (search) query.append('keywords', search);
 
         const response = await fetch(`${API}/admin/users?${query.toString()}`, {
             method: 'GET',

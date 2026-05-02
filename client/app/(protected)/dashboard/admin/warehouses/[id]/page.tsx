@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
 import { toast } from "sonner";
 import { ArrowLeftIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 
@@ -30,6 +31,7 @@ export default function WarehouseEditPage() {
     const id = params?.id as string;
 
     const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
+    useBreadcrumbLabel(warehouse?.name);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");

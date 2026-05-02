@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { RentalContractService } from "@/services/rental-contract/rental-contract.service";
+import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 
 import {
@@ -208,6 +209,7 @@ export default function WarehouseDetailPage() {
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    useBreadcrumbLabel(contract?.warehouses?.[0]?.name ?? contract?.name);
 
     const fetchContract = useCallback(async () => {
         const token = authStorage.getAccessToken();

@@ -4,6 +4,7 @@ import React from "react";
 import { AdminSidebar } from "@/components/layouts/AdminSidebar";
 import { AdminHeader } from "@/components/layouts/AdminHeader";
 import { SidebarProvider, useSidebar } from "@/components/providers/sidebar-provider";
+import { BreadcrumbProvider } from "@/components/providers/breadcrumb-provider";
 import { cn } from "@/lib/utils";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -34,7 +35,9 @@ export default function DashboardLayout({
 }) {
     return (
         <SidebarProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <BreadcrumbProvider>
+                <LayoutContent>{children}</LayoutContent>
+            </BreadcrumbProvider>
         </SidebarProvider>
     );
 }

@@ -5,7 +5,8 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export interface User {
     id: string;
     email: string;
-    full_name: string;
+    name?: string;
+    full_name?: string;
     phone?: string;
     is_banned: boolean;
     is_verified: boolean;

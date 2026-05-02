@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
+import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
 
 interface StaffHeaderProps {
     children?: React.ReactNode;
@@ -20,9 +21,14 @@ export function StaffHeader({ children }: StaffHeaderProps) {
     const segments = pathname.split("/").filter(Boolean);
     const relevantSegments = segments.filter((s) => !["dashboard", "staff"].includes(s));
 
+    const { label } = useBreadcrumb();
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     const breadcrumbs = relevantSegments.map((segment, index) => {
         const href = `/${segments.slice(0, index + 3).join("/")}`;
-        const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+        const title = UUID_REGEX.test(segment)
+            ? (label ?? "Chi tiết")
+            : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
         return { title, href };
     });
 

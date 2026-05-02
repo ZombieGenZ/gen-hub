@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
+import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
 
 interface AdminHeaderProps {
     children?: React.ReactNode;
@@ -18,15 +19,20 @@ interface AdminHeaderProps {
 export function AdminHeader({ children }: AdminHeaderProps) {
     const pathname = usePathname();
     const { toggle } = useSidebar();
+    const { label } = useBreadcrumb();
     const segments = pathname.split('/').filter(Boolean);
 
     const relevantSegments = segments.filter(s => !['dashboard', 'admin'].includes(s));
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     const breadcrumbs = relevantSegments.map((segment, index) => {
         const originalIndex = segments.indexOf(segment);
         const href = `/${segments.slice(0, originalIndex + 1).join('/')}`;
 
-        const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+        const title = UUID_REGEX.test(segment)
+            ? (label ?? 'Chi tiết')
+            : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
         return { title, href };
     });
 

@@ -3,6 +3,7 @@
 import { StaffSidebar } from "@/components/layouts/StaffSidebar";
 import { StaffHeader } from "@/components/layouts/StaffHeader";
 import { SidebarProvider, useSidebar } from "@/components/providers/sidebar-provider";
+import { BreadcrumbProvider } from "@/components/providers/breadcrumb-provider";
 import { cn } from "@/lib/utils";
 
 interface StaffLayoutProps {
@@ -33,7 +34,9 @@ function LayoutContent({ children }: StaffLayoutProps) {
 export default function StaffDashboardLayout({ children }: StaffLayoutProps) {
     return (
         <SidebarProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <BreadcrumbProvider>
+                <LayoutContent>{children}</LayoutContent>
+            </BreadcrumbProvider>
         </SidebarProvider>
     );
 }

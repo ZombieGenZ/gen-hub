@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
+import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
 import UserDropdown from "@/components/ui/UserDropdown";
 
 interface OrganizationHeaderProps {
@@ -18,18 +19,23 @@ interface OrganizationHeaderProps {
 export function OrganizationHeader({ children }: OrganizationHeaderProps) {
     const pathname = usePathname();
     const { toggle } = useSidebar();
+    const { label } = useBreadcrumb();
     const segments = pathname.split('/').filter(Boolean);
 
     // Filter out 'dashboard' and 'organization' from breadcrumbs to keep it clean like "Orders > All"
     // Assuming /dashboard/organization/orders/all maps to Orders > All
     const relevantSegments = segments.filter(s => !['dashboard', 'organization'].includes(s));
 
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     const breadcrumbs = relevantSegments.map((segment, index) => {
         // We need to reconstruct the full path for href
         const originalIndex = segments.indexOf(segment);
         const href = `/${segments.slice(0, originalIndex + 1).join('/')}`;
 
-        const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+        const title = UUID_REGEX.test(segment)
+            ? (label ?? 'Chi tiết')
+            : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
         return { title, href };
     });
 

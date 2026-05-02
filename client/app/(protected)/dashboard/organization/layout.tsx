@@ -3,6 +3,7 @@
 import { OrganizationSidebar } from "@/components/layouts/OrganizationSidebar";
 import { OrganizationHeader } from "@/components/layouts/OrganizationHeader";
 import { SidebarProvider, useSidebar } from "@/components/providers/sidebar-provider";
+import { BreadcrumbProvider } from "@/components/providers/breadcrumb-provider";
 import { cn } from "@/lib/utils";
 
 interface CustomerLayoutProps {
@@ -34,7 +35,9 @@ function LayoutContent({ children }: CustomerLayoutProps) {
 export default function CustomerDashboardLayout({ children }: CustomerLayoutProps) {
     return (
         <SidebarProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <BreadcrumbProvider>
+                <LayoutContent>{children}</LayoutContent>
+            </BreadcrumbProvider>
         </SidebarProvider>
     );
 }
