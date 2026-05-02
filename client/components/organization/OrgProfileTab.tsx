@@ -53,7 +53,6 @@ function formatDateTime(value?: string) {
 }
 
 export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow = false }: OrgProfileTabProps) {
-    const [copied, setCopied] = useState(false);
     const [copiedMetadata, setCopiedMetadata] = useState(false);
     const [name, setName] = useState(organization.name);
     const [internationalName, setInternationalName] = useState(organization.international_name || "");
@@ -212,12 +211,6 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
         return !legalChanged;
     }, [legalChanged, enableLegalApprovalFlow]);
 
-    const handleCopyId = async () => {
-        await navigator.clipboard.writeText(organization.id);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
     const handleCopyMetadata = async () => {
         try {
             const payload = {
@@ -335,34 +328,6 @@ export function OrgProfileTab({ organization, onUpdate, enableLegalApprovalFlow 
                             <p className="text-sm text-muted-foreground mt-0.5">Quản lý hồ sơ tổ chức</p>
                         </div>
                         <div className="p-6 space-y-6">
-                            {/* Organization ID */}
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-foreground">ID Tổ chức</Label>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
-                                        <code className="text-sm text-muted-foreground font-mono truncate">
-                                            {organization.id}
-                                        </code>
-                                        <button
-                                            onClick={handleCopyId}
-                                            className="ml-2 text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 shrink-0 cursor-pointer"
-                                        >
-                                            {copied ? (
-                                                <>
-                                                    <Check className="w-3.5 h-3.5" />
-                                                    Đã sao chép
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                    Sao chép
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Slug */}
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium text-foreground">Slug</Label>

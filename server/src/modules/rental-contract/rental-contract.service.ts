@@ -40,6 +40,7 @@ import { OrganizationRepository } from '../organization/organization.repository'
 import { SepayService } from '../payment/sepay.service';
 import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { RentalContractMapper } from '../rental-contract-shared/helpers/rental-contract-mapper.helper';
+import { QUOTATION_CONSTANTS } from '../public-quotation/constants';
 
 const Decimal = Prisma.Decimal;
 
@@ -405,12 +406,24 @@ export class RentalContractService {
       // Handle Payment Creation if TRANSFER, or Mock if CASH
       let paymentResult;
       if (dto.type === AdminPaymentType.TRANSFER) {
+        const finalPriceNum = Math.round(
+          parseFloat(contract.final_price.toString()),
+        );
+        const vatAmountNum = Math.round(
+          parseFloat(contract.vat_amount?.toString() || '0'),
+        );
+        const depositAmount = Math.max(
+          QUOTATION_CONSTANTS.MIN_DEPOSIT_AMOUNT,
+          Math.round(finalPriceNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT),
+        );
+        const depositVatAmount = Math.round(
+          vatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT,
+        );
+
         paymentResult = await this.sepayService.createContractPayment({
           rentalContractId: contract.id,
-          amount: Math.round(parseFloat(contract.final_price.toString())),
-          vat_amount: Math.round(
-            parseFloat(contract.vat_amount?.toString() || '0'),
-          ),
+          amount: depositAmount,
+          vat_amount: depositVatAmount,
           description: `${code}`,
           type: 'NEW_CONTRACT',
           userId,
@@ -447,7 +460,9 @@ export class RentalContractService {
       }
 
       // Re-fetch full contract to include additions
-      const fullContract = await this.repository.findByIdWithFullDetails(contract.id);
+      const fullContract = await this.repository.findByIdWithFullDetails(
+        contract.id,
+      );
 
       return {
         contract: RentalContractMapper.mapToFrontend(fullContract),
@@ -511,7 +526,7 @@ export class RentalContractService {
         this.i18n.t('rental-contract.errors.not_found', { lang }),
       );
     }
-    
+
     return RentalContractMapper.mapToFrontend(contract);
   }
 

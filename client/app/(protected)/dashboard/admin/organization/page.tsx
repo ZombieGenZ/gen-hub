@@ -1,95 +1,70 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { OrganizationService } from "@/services/organization/organization.service";
-import { Organization } from "@/types/organization/organization.type";
+import { Organization, OrganizationResponse } from "@/types/organization/organization.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { CreateOrganizationDialog, CreateOrgFormData } from "@/components/organization/CreateOrganizationDialog";
 import {
-    Plus,
-    Search,
-    Building2,
-    ArrowUpDown,
-    ChevronRight,
-    Loader2,
+    Plus, Search, Building2, ChevronRight, Loader2,
+    Users, CheckCircle2, XCircle,
 } from "lucide-react";
 
 const organizationService = new OrganizationService();
+const PAGE_SIZE = 15;
 
 export default function OrganizationPage() {
     const router = useRouter();
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [data, setData] = useState<OrganizationResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const debouncedSearch = useDebounce(search, 300);
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
     const [page, setPage] = useState(1);
-    const [sortField, setSortField] = useState<"name" | "members" | "created">("created");
-    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-    const fetchOrganizations = async () => {
+    const fetchOrganizations = useCallback(async () => {
         setLoading(true);
         try {
             const token = authStorage.getAccessToken();
-            if (!token) {
-                router.push("/login");
-                return;
-            }
-            const response = await organizationService.getOrganizations(token, {
-                limit: 50,
+            if (!token) { router.push("/login"); return; }
+            const params: Record<string, any> = {
+                limit: PAGE_SIZE,
+                offset: (page - 1) * PAGE_SIZE,
                 keywords: debouncedSearch || undefined,
-            });
-            if (!Array.isArray(response.items)) {
-                throw new Error("Expected an array of organizations");
-            }
-            setOrganizations(response.items);
-        } catch (err: any) {
-            setError(err.message);
+            };
+            if (statusFilter === "active") params.is_active = true;
+            if (statusFilter === "inactive") params.is_active = false;
+            const response = await organizationService.getOrganizations(token, params);
+            setData(response);
+        } catch {
+            setData(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [debouncedSearch, statusFilter, page, router]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, statusFilter]);
 
     useEffect(() => {
         fetchOrganizations();
-    }, [debouncedSearch]);
+    }, [fetchOrganizations]);
 
-    const sortedOrganizations = useMemo(() => {
-        const sorted = [...organizations];
-        sorted.sort((a, b) => {
-            let diff = 0;
-            if (sortField === "name") {
-                diff = a.name.localeCompare(b.name);
-            } else if (sortField === "members") {
-                diff = (a._count?.members || 0) - (b._count?.members || 0);
-            } else {
-                diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-            }
-            return sortDir === "asc" ? diff : -diff;
-        });
-        return sorted;
-    }, [organizations, sortField, sortDir]);
-
-    const pageSize = 10;
-    const totalPages = Math.max(1, Math.ceil(sortedOrganizations.length / pageSize));
-    const paginatedOrgs = sortedOrganizations.slice((page - 1) * pageSize, page * pageSize);
-
-    const handleCreateOrg = async (data: CreateOrgFormData) => {
+    const handleCreateOrg = async (formData: CreateOrgFormData) => {
         const token = authStorage.getAccessToken();
         if (!token) return;
         await organizationService.createOrganization(token, {
-            name: data.name,
+            name: formData.name,
             tax_code: "",
             representative_name: "",
             representative_title: "",
@@ -99,192 +74,181 @@ export default function OrganizationPage() {
         await fetchOrganizations();
     };
 
-    const handleRowClick = (orgId: string) => {
-        router.push(`/dashboard/admin/organization/${orgId}/settings`);
-    };
+    const items = data?.items ?? [];
+    const total = data?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const startItem = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+    const endItem = Math.min(page * PAGE_SIZE, total);
+
+    const TABS = [
+        { key: "all", label: "Tất cả" },
+        { key: "active", label: "Hoạt động" },
+        { key: "inactive", label: "Ngừng hoạt động" },
+    ] as const;
 
     return (
         <div className="flex-1 bg-slate-50/50">
             <main className="p-4 md:p-8 space-y-6">
-                {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <span className="text-foreground font-medium">Tổ chức</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    <span>Tổng quan</span>
-                </nav>
-
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Tổ chức</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Tạo và quản lý tổ chức, cài đặt và thành viên
+                        <h1 className="text-2xl font-bold text-slate-900">Tổ chức</h1>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Quản lý tổ chức, thành viên và vai trò trên hệ thống
                         </p>
                     </div>
-                    <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                    <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
                         <Plus className="w-4 h-4" />
                         Tạo tổ chức
                     </Button>
                 </div>
 
-                {/* Manage Organizations Card */}
-                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                {/* Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {/* Toolbar */}
-                    <div className="p-4 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
-                                placeholder="Tìm kiếm..."
+                                placeholder="Tìm theo tên tổ chức..."
                                 value={search}
-                                onChange={(e) => {
-                                    setSearch(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="pl-10"
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9 rounded-xl h-9 text-sm border-slate-200"
                             />
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <ArrowUpDown className="w-3.5 h-3.5" />
-                                    Sắp xếp
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                    onClick={() => { setSortField("created"); setSortDir("desc"); }}
-                                    className="cursor-pointer"
+                        {/* Status tabs */}
+                        <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setStatusFilter(tab.key)}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                                        statusFilter === tab.key
+                                            ? "bg-white text-slate-900 shadow-sm"
+                                            : "text-slate-500 hover:text-slate-700"
+                                    }`}
                                 >
-                                    Ngày tạo ↓
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => { setSortField("created"); setSortDir("asc"); }}
-                                    className="cursor-pointer"
-                                >
-                                    Ngày tạo ↑
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => { setSortField("name"); setSortDir("asc"); }}
-                                    className="cursor-pointer"
-                                >
-                                    Tên A-Z
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => { setSortField("members"); setSortDir("desc"); }}
-                                    className="cursor-pointer"
-                                >
-                                    Thành viên ↓
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-muted/30 border-b border-border/30">
-                                <tr>
-                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        Tên
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        Thành viên
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        <button
-                                            onClick={() => {
-                                                setSortField("created");
-                                                setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-                                            }}
-                                            className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
-                                        >
-                                            Ngày tạo
-                                            <ArrowUpDown className="w-3 h-3" />
-                                        </button>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/30">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-6 py-16 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                                                <p className="text-sm font-medium">Đang tải dữ liệu...</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : paginatedOrgs.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-6 py-16 text-center text-muted-foreground">
-                                            <Building2 className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-                                            <p className="font-medium">Không tìm thấy tổ chức nào.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    paginatedOrgs.map((org) => (
-                                        <tr
-                                            key={org.id}
-                                            onClick={() => handleRowClick(org.id)}
-                                            className="hover:bg-muted/20 transition-colors cursor-pointer group"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                                        {org.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <span className="font-medium text-foreground">
-                                                        {org.name}
-                                                    </span>
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="font-semibold text-slate-700">Tổ chức</TableHead>
+                                <TableHead className="font-semibold text-slate-700">Chủ sở hữu</TableHead>
+                                <TableHead className="font-semibold text-slate-700">Thành viên</TableHead>
+                                <TableHead className="font-semibold text-slate-700">Trạng thái</TableHead>
+                                <TableHead className="font-semibold text-slate-700">Ngày tạo</TableHead>
+                                <TableHead />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3 text-slate-400">
+                                            <Loader2 className="w-7 h-7 animate-spin" />
+                                            <span className="text-sm">Đang tải...</span>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : items.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="py-16 text-center">
+                                        <Building2 className="w-10 h-10 mx-auto text-slate-200 mb-3" />
+                                        <p className="text-sm text-slate-400 font-medium">Không tìm thấy tổ chức nào</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                items.map((org) => (
+                                    <TableRow
+                                        key={org.id}
+                                        onClick={() => router.push(`/dashboard/admin/organization/${org.id}/settings`)}
+                                        className="cursor-pointer hover:bg-slate-50/60 transition-colors"
+                                    >
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                                                    {org.name.charAt(0).toUpperCase()}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <code className="text-xs text-muted-foreground font-mono">
-                                                    {org.id.length > 24 ? `${org.id.substring(0, 24)}...` : org.id}
-                                                </code>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                                                {org._count?.members || 0}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                                                {new Date(org.created_at).toLocaleDateString("vi-VN", {
-                                                    year: "numeric",
-                                                    month: "short",
-                                                    day: "numeric",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                <div>
+                                                    <p className="font-medium text-slate-900 text-sm">{org.name}</p>
+                                                    {org.international_name && (
+                                                        <p className="text-xs text-slate-400 mt-0.5">{org.international_name}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div>
+                                                <p className="text-sm text-slate-700">{org.owner?.name || "—"}</p>
+                                                <p className="text-xs text-slate-400 mt-0.5">{org.owner?.email || ""}</p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                                                <Users className="w-3.5 h-3.5 text-slate-400" />
+                                                {org._count?.members ?? 0}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {org.is_active ? (
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs gap-1">
+                                                    <CheckCircle2 className="w-3 h-3" />Hoạt động
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 text-xs gap-1">
+                                                    <XCircle className="w-3 h-3" />Ngừng
+                                                </Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-slate-500">
+                                            {new Date(org.created_at).toLocaleDateString("vi-VN", {
+                                                year: "numeric", month: "short", day: "numeric",
+                                            })}
+                                        </TableCell>
+                                        <TableCell>
+                                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 ml-auto" />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
 
                     {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-border/30 flex items-center justify-end gap-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <button
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={page <= 1}
-                                className="hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                Trước
-                            </button>
-                            <span className="font-medium text-foreground">{page}</span>
-                            <button
-                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={page >= totalPages}
-                                className="hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                Sau
-                            </button>
+                    {!loading && total > 0 && (
+                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                            <p className="text-sm text-slate-500">
+                                Hiển thị <span className="font-medium text-slate-700">{startItem}–{endItem}</span> / <span className="font-medium text-slate-700">{total}</span> tổ chức
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page <= 1}
+                                    className="rounded-xl h-8 px-3 text-xs"
+                                >
+                                    Trước
+                                </Button>
+                                <span className="text-sm text-slate-600 px-2 font-medium">{page} / {totalPages}</span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page >= totalPages}
+                                    className="rounded-xl h-8 px-3 text-xs"
+                                >
+                                    Sau
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </main>
 

@@ -149,6 +149,7 @@ export class UserManagementService {
       offset: query.offset ? Number(query.offset) : 0,
       keywords: query.keywords,
       status: query.status,
+      role: query.role,
     });
 
     await this.redisService.set(

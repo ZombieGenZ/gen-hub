@@ -12,7 +12,7 @@ export class OrganizationService {
         keywords?: string;
         is_active?: boolean;
         member_only?: boolean;
-        page?: number;
+        offset?: number;
         limit?: number;
     } = {}) {
         const query = new URLSearchParams();
@@ -20,7 +20,7 @@ export class OrganizationService {
         if (params.keywords) query.append('keywords', params.keywords);
         if (params.is_active !== undefined) query.append('is_active', String(params.is_active));
         if (params.member_only !== undefined) query.append('member_only', String(params.member_only));
-        if (params.page) query.append('page', String(params.page));
+        if (params.offset != null) query.append('offset', String(params.offset));
         if (params.limit) query.append('limit', String(params.limit));
 
         const response = await fetch(`${API}/organizations?${query.toString()}`, {

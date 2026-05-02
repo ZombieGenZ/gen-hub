@@ -51,6 +51,14 @@ export class QueryUsersDto {
   })
   @IsOptional()
   status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Lọc theo tên vai trò (role)',
+    example: 'User',
+  })
+  @IsOptional()
+  @IsString()
+  role?: string;
 }
 
 /**

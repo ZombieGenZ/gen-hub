@@ -47,6 +47,7 @@ export interface QueryUsersParams {
     offset?: number;
     keywords?: string;
     status?: 'active' | 'banned' | 'verified' | 'unverified';
+    role?: string;
 }
 
 export interface BanUserDto {
@@ -116,6 +117,7 @@ export class UserManagementService {
         if (query?.offset != null) params.append('offset', String(query.offset));
         if (query?.keywords) params.append('keywords', query.keywords);
         if (query?.status) params.append('status', query.status);
+        if (query?.role) params.append('role', query.role);
 
         const response = await fetch(`${API}/admin/users?${params.toString()}`, {
             headers: this.getHeaders(token),

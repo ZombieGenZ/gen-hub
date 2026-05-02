@@ -27,8 +27,9 @@ export class UserManagementRepository {
     offset?: number;
     keywords?: string;
     status?: string;
+    role?: string;
   }): Promise<IUserListResult> {
-    const { limit = 10, offset = 0, keywords, status } = params;
+    const { limit = 10, offset = 0, keywords, status, role } = params;
 
     const where: Prisma.UserWhereInput = {};
 
@@ -47,6 +48,20 @@ export class UserManagementRepository {
       where.is_verified = true;
     } else if (status === 'unverified') {
       where.is_verified = false;
+    }
+
+    if (role) {
+      where.system_roles = {
+        some: {
+          is_active: true,
+          is_deleted: false,
+          role: {
+            name: { equals: role, mode: 'insensitive' },
+            is_active: true,
+            is_deleted: false,
+          },
+        },
+      };
     }
 
     const [users, total] = await Promise.all([
