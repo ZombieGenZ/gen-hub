@@ -26,11 +26,14 @@ export class OrganizationUpdateRequestRepository {
 
   async findById(id: string) {
     return this.prisma.organizationUpdateRequest.findUnique({
-      where: { id },
+      where: { id, is_deleted: false },
       include: {
-        organization: true,
+        organization: {
+          where: { is_deleted: false },
+        },
         requester: {
           select: { id: true, name: true, email: true },
+          where: { is_deleted: false },
         },
       },
     });
