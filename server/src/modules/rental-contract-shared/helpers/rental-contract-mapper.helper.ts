@@ -9,6 +9,20 @@ export class RentalContractMapper {
    * - Flatten addons, insurances.
    * - Map payments, history (logs).
    */
+  private static mapLogActionToType(action: string): string {
+    const map: Record<string, string> = {
+      CREATED: 'created',
+      RENEWED: 'renewed',
+      CANCELLED: 'cancelled',
+      COMPLETED: 'completed',
+      STATUS_CHANGED: 'updated',
+      ADDON_ADDED: 'updated',
+      ADDON_CANCELLED: 'updated',
+      COUPON_APPLIED: 'updated',
+    };
+    return map[action] ?? 'updated';
+  }
+
   static mapToFrontend(contract: any): any {
     if (!contract) return null;
 
@@ -47,14 +61,14 @@ export class RentalContractMapper {
 
     const mappedHistory = safeContract.logs?.map((log: any) => ({
       id: log.id,
-      type: log.type?.toLowerCase() || 'updated',
+      type: RentalContractMapper.mapLogActionToType(log.action),
       description: log.description,
       metadata: log.metadata,
       created_at: log.created_at,
       actor: log.created_by_user ? {
-        name: log.created_by_user.full_name || log.created_by_user.email,
-        role: log.created_by_user.role?.name
-      } : undefined
+        name: log.created_by_user.name || log.created_by_user.email,
+        role: log.created_by_user.role?.name,
+      } : undefined,
     })) ?? [];
 
     // 5. Map payments: Đảm bảo đầy đủ thông tin

@@ -800,9 +800,35 @@ export class RentalContractRepository {
    * Lấy thông tin hợp đồng đầy đủ với tất cả các quan hệ
    */
   async findByIdWithFullDetails(id: string) {
-    return this.prisma.rentalContract.findFirst({
+    const contract = await this.prisma.rentalContract.findFirst({
       where: { id, is_deleted: false },
       include: this.fullInclude,
     });
+
+    if (!contract || !(contract as any).logs?.length) return contract;
+
+    const creatorIds = [
+      ...new Set(
+        (contract as any).logs
+          .map((l: any) => l.created_by)
+          .filter(Boolean) as string[],
+      ),
+    ];
+
+    if (creatorIds.length === 0) return contract;
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: creatorIds } },
+      select: { id: true, name: true, email: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return {
+      ...contract,
+      logs: (contract as any).logs.map((log: any) => ({
+        ...log,
+        created_by_user: log.created_by ? (userMap.get(log.created_by) ?? null) : null,
+      })),
+    };
   }
 }
