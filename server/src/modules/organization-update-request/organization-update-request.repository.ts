@@ -25,15 +25,12 @@ export class OrganizationUpdateRequestRepository {
   }
 
   async findById(id: string) {
-    return this.prisma.organizationUpdateRequest.findUnique({
+    return this.prisma.organizationUpdateRequest.findFirst({
       where: { id, is_deleted: false },
       include: {
-        organization: {
-          where: { is_deleted: false },
-        },
+        organization: true,
         requester: {
           select: { id: true, name: true, email: true },
-          where: { is_deleted: false },
         },
       },
     });
