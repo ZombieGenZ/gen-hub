@@ -141,7 +141,7 @@ export class SepayService {
     expiredAt.setSeconds(expiredAt.getSeconds() + this.lockDurationSeconds);
 
     // Tạo QR URL
-    const totalAmount = options.amount + (options.vat_amount || 10);
+    const totalAmount = options.amount + (options.vat_amount || 0);
     const qrCode = this.generateQRUrl(paymentCode, totalAmount);
 
     // Lưu payment vào database
