@@ -73,6 +73,7 @@ export class AuthService {
                 data.authorization.access_token,
                 data.authorization.refresh_token
             );
+            authStorage.setEmailVerified(data.data?.is_verified ? 'true' : 'false');
             await this.verify_password(data.authorization.access_token, input.password);
             return data;
         } else {
@@ -113,6 +114,7 @@ export class AuthService {
                 data.authorization.access_token,
                 data.authorization.refresh_token
             );
+            authStorage.setEmailVerified(data.data?.is_verified ? 'true' : 'false');
             await this.verify_password(data.authorization.access_token, "", auth_code, backup_code);
             return data;
         } catch (error) {

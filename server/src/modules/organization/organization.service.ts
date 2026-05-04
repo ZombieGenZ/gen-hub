@@ -109,13 +109,20 @@ export class OrganizationService {
       );
     }
 
-    // Lookup tax code
     const taxInfo = await this.lookupTaxCode(dto.tax_code);
     if (!taxInfo) {
-      throw new BadRequestException(
-        await this.i18n.translate('organization.validation.tax_code_invalid', {
-          lang,
-        }),
+      if (!dto.name || !dto.headquarters_address) {
+        throw new BadRequestException(
+          await this.i18n.translate('organization.validation.tax_code_invalid', {
+            lang,
+          }),
+        );
+      }
+      this.systemLogService.warn(
+        'organization',
+        'create',
+        `VietQR API unavailable for tax_code ${dto.tax_code}, using user-provided data`,
+        {},
       );
     }
 
@@ -172,12 +179,12 @@ export class OrganizationService {
         dto.gmail_webhook_secret,
       );
 
-    // Tạo organization
+    // Tạo organization — ưu tiên dữ liệu từ VietQR API, fallback về dữ liệu user nhập
     const org = await this.repository.create({
-      name: taxInfo.name,
-      international_name: taxInfo.internationalName,
+      name: taxInfo?.name ?? dto.name!,
+      international_name: taxInfo?.internationalName ?? dto.international_name,
       tax_code: dto.tax_code,
-      headquarters_address: taxInfo.address,
+      headquarters_address: taxInfo?.address ?? dto.headquarters_address!,
       representative_name: dto.representative_name,
       representative_title: dto.representative_title,
       representative_phone: dto.representative_phone,

@@ -858,14 +858,6 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
           return;
         }
 
-        // Kiểm tra xác minh email
-        const isVerified = authStorage.getEmailVerified();
-        if (isVerified !== 'true' && isVerified !== '1') {
-          showToast("Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.", "error");
-          setSubmitting(false);
-          return;
-        }
-
         const payload = {
           ...companyData,
           ...repData
