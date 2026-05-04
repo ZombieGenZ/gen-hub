@@ -107,6 +107,16 @@ export class SignatureService {
   }
 
   /**
+   * Generate signed URL từ raw ImageKit URL (dùng để hiển thị cho admin/viewer)
+   * Không check expiration — chỉ sinh URL có thời hạn ngắn để xem
+   * @param imagekitUrl - Full URL của file trên ImageKit
+   * @param expireSeconds - Thời gian hết hạn URL (giây), mặc định 8 giờ
+   */
+  getSignedUrlByRawUrl(imagekitUrl: string, expireSeconds = 3600 * 8): string {
+    return this.imageUploadService.getSignedUrlFromSrc(imagekitUrl, expireSeconds);
+  }
+
+  /**
    * Lấy signed URL cho chữ ký
    * @param signatureId - ID chữ ký
    */

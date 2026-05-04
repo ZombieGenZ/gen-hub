@@ -311,12 +311,26 @@ export class ImageUploadService {
 
   /**
    * Generate signed URL cho file private (có thời hạn)
-   * @param filePath - Path của file trong ImageKit
+   * @param filePath - Path của file trong ImageKit (relative path)
    * @param expireSeconds - Thời gian hết hạn (giây)
    */
   getSignedUrl(filePath: string, expireSeconds: number = 3600): string {
     return this.imagekit.url({
       path: filePath,
+      signed: true,
+      expireSeconds: expireSeconds,
+    });
+  }
+
+  /**
+   * Generate signed URL từ full URL của file private (có thời hạn)
+   * Dùng khi có sẵn full URL thay vì relative path
+   * @param fileUrl - Full URL của file trên ImageKit
+   * @param expireSeconds - Thời gian hết hạn (giây)
+   */
+  getSignedUrlFromSrc(fileUrl: string, expireSeconds: number = 3600): string {
+    return this.imagekit.url({
+      src: fileUrl,
       signed: true,
       expireSeconds: expireSeconds,
     });

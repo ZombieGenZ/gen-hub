@@ -527,7 +527,20 @@ export class RentalContractService {
       );
     }
 
-    return RentalContractMapper.mapToFrontend(contract);
+    const mapped = RentalContractMapper.mapToFrontend(contract);
+
+    // Sinh signed URL cho từng chữ ký (private file trên ImageKit cần auth)
+    if (mapped.signers?.length) {
+      for (const signer of mapped.signers) {
+        if (signer.avatar) {
+          const signedUrl = this.signatureService.getSignedUrlByRawUrl(signer.avatar);
+          signer.avatar = signedUrl;
+          signer.url = signedUrl;
+        }
+      }
+    }
+
+    return mapped;
   }
 
   /**

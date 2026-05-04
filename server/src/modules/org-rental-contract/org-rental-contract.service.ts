@@ -663,7 +663,10 @@ export class OrgRentalContractService {
       'rental-contract.read',
       lang,
     );
-    return RentalContractMapper.mapToFrontend(contract);
+
+    const mapped = RentalContractMapper.mapToFrontend(contract);
+    this.resolveSignerSignedUrls(mapped);
+    return mapped;
   }
 
   async findByIdWithFullDetails(
@@ -692,7 +695,21 @@ export class OrgRentalContractService {
       lang,
     );
 
-    return RentalContractMapper.mapToFrontend(contract);
+    const mapped = RentalContractMapper.mapToFrontend(contract);
+    this.resolveSignerSignedUrls(mapped);
+    return mapped;
+  }
+
+  private resolveSignerSignedUrls(mapped: any): void {
+    if (mapped.signers?.length) {
+      for (const signer of mapped.signers) {
+        if (signer.avatar) {
+          const signedUrl = this.signatureService.getSignedUrlByRawUrl(signer.avatar);
+          signer.avatar = signedUrl;
+          signer.url = signedUrl;
+        }
+      }
+    }
   }
 
   async renew(
