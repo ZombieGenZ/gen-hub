@@ -38,7 +38,6 @@
 
 ---
 
-
 ## 2. BẢO — Customer Marketplace & Booking
 
 **Thời gian:** 7–8 phút
@@ -53,7 +52,6 @@
 > Tránh demo đăng ký mới, reset password hoặc verify email.
 
 ---
-
 
 ## 3. NAM — Organization Onboarding & Warehouse Setup
 
