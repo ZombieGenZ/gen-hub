@@ -1,21 +1,22 @@
-# 🎬 KỊCH BẢN DEMO CHO 5 ANH EM — GEN-HUB
+# 🎬 KỊCH BẢN DEMO CHO 6 ANH EM — GEN-HUB
 
-> **Tổng thời gian dự kiến:** 35–45 phút  
-> **Mục tiêu:** Demo rõ 5 domain chính để bảo vệ dự án, mỗi người cầm 1 phần code/luồng nghiệp vụ.
+> **Tổng thời gian dự kiến:** 40–50 phút  
+> **Mục tiêu:** Demo rõ 6 domain chính để bảo vệ dự án, mỗi người cầm 1 phần code/luồng nghiệp vụ.
 
 ---
 
-## 🚩 5 PHẦN DEMO CHÍNH
+## 🚩 6 PHẦN DEMO CHÍNH
 
-| Phần | Người trình bày | Nội dung chính                            |
-| ---- | --------------- | ----------------------------------------- |
-| 1    | **THÁI**        | Admin Platform + Dashboard quản trị       |
-| 2    | **NAM**         | Customer Marketplace + Booking            |
-| 3    | **BẢO**         | Organization Onboarding + Warehouse Setup |
-| 4    | **KHOA**        | Inventory Management + Purchase Order     |
-| 5    | **ĐỨC ANH**     | Staff Floor Operations: Inbound/Outbound  |
+| Phần | Người trình bày | Nội dung chính                                     |
+| ---- | --------------- | -------------------------------------------------- |
+| 1    | **THÁI**        | Admin Platform + Dashboard quản trị                |
+| 2    | **NAM**         | Customer Marketplace + Booking                     |
+| 3    | **BẢO**         | Organization Onboarding + Warehouse Setup          |
+| 4    | **KHOA**        | Inventory Management + Purchase Order + Server/API |
+| 5    | **ĐỨC ANH**     | Staff Floor Operations: Inbound/Outbound           |
+| 6    | **HƯNG**        | CRUD, hỗ trợ vận hành, test run, tổng kết closing  |
 
-> **HỮNG** là người hỗ trợ QA, test run, giám sát bug và tổng kết closing nếu cần.
+> **HƯNG**: Phụ trách các thao tác CRUD (tạo, sửa, xóa, xem), hỗ trợ vận hành, test run, bug tracker, tổng kết closing và hỗ trợ mọi người khi gặp sự cố demo.
 
 ---
 
