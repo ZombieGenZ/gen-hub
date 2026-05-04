@@ -10,8 +10,8 @@
 | Phần | Người trình bày | Nội dung chính                                     |
 | ---- | --------------- | -------------------------------------------------- |
 | 1    | **THÁI**        | Admin Platform + Dashboard quản trị                |
-| 2    | **NAM**         | Customer Marketplace + Booking                     |
-| 3    | **BẢO**         | Organization Onboarding + Warehouse Setup          |
+| 2    | **BẢO**         | Customer Marketplace + Booking                     |
+| 3    | **NAM**         | Organization Onboarding + Warehouse Setup          |
 | 4    | **KHOA**        | Inventory Management + Purchase Order + Server/API |
 | 5    | **ĐỨC ANH**     | Staff Floor Operations: Inbound/Outbound           |
 | 6    | **HƯNG**        | CRUD, hỗ trợ vận hành, test run, tổng kết closing  |
@@ -38,7 +38,8 @@
 
 ---
 
-## 2. NAM — Customer Marketplace & Booking
+
+## 2. BẢO — Customer Marketplace & Booking
 
 **Thời gian:** 7–8 phút
 
@@ -53,7 +54,8 @@
 
 ---
 
-## 3. BẢO — Organization Onboarding & Warehouse Setup
+
+## 3. NAM — Organization Onboarding & Warehouse Setup
 
 **Thời gian:** 7–8 phút
 
@@ -119,8 +121,8 @@
 | Người   | Vai trò demo                             | Chuẩn bị dữ liệu                            |
 | ------- | ---------------------------------------- | ------------------------------------------- |
 | Thái    | Admin dashboard + organization approvals | Admin account, organization pending         |
-| Nam     | Customer marketplace & booking           | Customer account, kho demo, booking pending |
-| Bảo     | Org onboarding + warehouse setup         | Org account, kho active, role staff         |
+| Bảo     | Customer marketplace & booking           | Customer account, kho demo, booking pending |
+| Nam     | Org onboarding + warehouse setup         | Org account, kho active, role staff         |
 | Khoa    | Inventory + PO + stock                   | Product data, unit data, PO pending         |
 | Đức Anh | Staff inbound/outbound + warehouse floor | Staff account, inbound/outbound tasks       |
 | Hưng    | QA/test run + tổng kết                   | Giám sát bug, kịch bản dự phòng             |
