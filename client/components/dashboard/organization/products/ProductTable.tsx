@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Table,
@@ -44,6 +44,7 @@ interface ProductTableProps {
     toggleSelection: (id: string) => void;
     toggleSelectAll: () => void;
     handleViewDetail: (id: string) => void;
+    handleEditClick: (product: Product) => void;
     handleShowBarcode: (barcode: string, name: string) => void;
     setDeleteTarget: (product: Product) => void;
     setDeleteDialogOpen: (open: boolean) => void;
@@ -64,6 +65,7 @@ export function ProductTable({
     toggleSelection,
     toggleSelectAll,
     handleViewDetail,
+    handleEditClick,
     handleShowBarcode,
     setDeleteTarget,
     setDeleteDialogOpen,
@@ -74,7 +76,6 @@ export function ProductTable({
     totalItems,
     setCurrentPage,
 }: ProductTableProps) {
-    const router = useRouter();
 
     return (
         <Card className="shadow-premium rounded-3xl border-0">
@@ -161,14 +162,12 @@ export function ProductTable({
                                             {!searchTerm && (
                                                 <Button
                                                     className="mt-2 bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl"
-                                                    onClick={() =>
-                                                        router.push(
-                                                            "/dashboard/organization/products/create"
-                                                        )
-                                                    }
+                                                    asChild
                                                 >
-                                                    <PlusIcon className="w-4 h-4 mr-2" />
-                                                    Thêm sản phẩm
+                                                    <Link href="/dashboard/organization/products/create">
+                                                        <PlusIcon className="w-4 h-4 mr-2" />
+                                                        Thêm sản phẩm
+                                                    </Link>
                                                 </Button>
                                             )}
                                         </div>
@@ -303,9 +302,7 @@ export function ProductTable({
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() =>
-                                                            router.push(
-                                                                `/dashboard/organization/products/${product.id}`
-                                                            )
+                                                            handleEditClick(product)
                                                         }
                                                     >
                                                         <PencilSquareIcon className="w-4 h-4 mr-2" />

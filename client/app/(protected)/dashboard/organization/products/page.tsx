@@ -20,6 +20,7 @@ import { ProductBulkActionBar } from "@/components/dashboard/organization/produc
 import { ProductDeleteDialogs } from "@/components/dashboard/organization/products/ProductDeleteDialogs";
 import { BarcodeDialog } from "@/components/dashboard/organization/products/BarcodeDialog";
 import { ProductImportDialog } from "@/components/dashboard/organization/products/ProductImportDialog";
+import { ProductEditDialog } from "@/components/dashboard/organization/products/ProductEditDialog";
 
 const productService = new ProductService();
 const inventoryService = new InventoryService();
@@ -53,6 +54,10 @@ export default function ProductMasterListPage() {
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+
+    // ── Edit dialog ──
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editTarget, setEditTarget] = useState<Product | null>(null);
 
     // ── Barcode dialog ──
     const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
@@ -234,6 +239,11 @@ export default function ProductMasterListPage() {
 
     const handleViewDetail = (id: string) => router.push(`/dashboard/organization/products/${id}`);
 
+    const handleEditClick = (product: Product) => {
+        setEditTarget(product);
+        setEditDialogOpen(true);
+    };
+
     const handleShowBarcode = (barcode: string, name: string) => {
         setSelectedBarcode({ code: barcode, name });
         setBarcodeDialogOpen(true);
@@ -295,6 +305,7 @@ export default function ProductMasterListPage() {
                     toggleSelection={toggleSelection}
                     toggleSelectAll={toggleSelectAll}
                     handleViewDetail={handleViewDetail}
+                    handleEditClick={handleEditClick}
                     handleShowBarcode={handleShowBarcode}
                     setDeleteTarget={setDeleteTarget}
                     setDeleteDialogOpen={setDeleteDialogOpen}
@@ -341,6 +352,16 @@ export default function ProductMasterListPage() {
                 <ProductImportDialog
                     open={importOpen}
                     onOpenChange={setImportOpen}
+                    onSuccess={fetchProducts}
+                />
+
+                <ProductEditDialog
+                    open={editDialogOpen}
+                    product={editTarget}
+                    onClose={() => {
+                        setEditDialogOpen(false);
+                        setEditTarget(null);
+                    }}
                     onSuccess={fetchProducts}
                 />
             </main>
