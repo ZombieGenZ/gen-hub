@@ -37,7 +37,6 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/dashboard/organization/bookings", icon: ClockIcon, label: "Yêu cầu thuê" },
             { href: "/dashboard/organization/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/organization/addons", icon: SparklesIcon, label: "Dịch vụ & Tiện ích" },
-            { href: "/dashboard/organization/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch tham quan" },
         ]
     },
     {
