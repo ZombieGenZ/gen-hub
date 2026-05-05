@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import ImageKit = require('imagekit');
 
 /**
