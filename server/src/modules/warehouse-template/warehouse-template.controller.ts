@@ -69,7 +69,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 // Cấu hình upload ảnh từ environment variables
 const MAX_FILE_SIZE = parseInt(
-  process.env.UPLOAD_WAREHOUSE_MAX_SIZE || '5242880',
+  process.env.UPLOAD_WAREHOUSE_MAX_SIZE || '104857600',
   10,
 ); // Default: 5MB
 const MAX_FILES = parseInt(process.env.UPLOAD_WAREHOUSE_MAX_FILES || '50', 10); // Default: 50 files
@@ -150,7 +150,7 @@ export class WarehouseTemplateController {
     private readonly service: WarehouseTemplateService,
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
-  ) {}
+  ) { }
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -893,7 +893,7 @@ export class WarehouseTemplateController {
               req.i18n?.t('warehouse-template.errors.file_type_invalid', {
                 args: { allowedTypes: ALLOWED_MIME_TYPES.join(', ') },
               }) ||
-                `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
+              `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
             ),
             false,
           );
