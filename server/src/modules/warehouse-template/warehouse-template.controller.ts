@@ -1,4 +1,5 @@
 import {
+  ArgumentsHost,
   Controller,
   Get,
   Post,
@@ -12,6 +13,10 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+  UseFilters,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +30,8 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { I18nLang, I18nService } from 'nestjs-i18n';
+import { Request, Response } from 'express';
+import { MulterError } from 'multer';
 
 import { WarehouseTemplateService } from './warehouse-template.service';
 import {
@@ -70,6 +77,71 @@ const ALLOWED_MIME_TYPES = (
   process.env.UPLOAD_WAREHOUSE_ALLOWED_TYPES ||
   'image/jpeg,image/png,image/webp,image/gif'
 ).split(',');
+
+interface WarehouseTemplateImageUploadRequest extends Request {
+  i18n?: {
+    t?: (
+      key: string,
+      options?: { lang?: string; args?: Record<string, unknown> },
+    ) => string;
+  };
+  i18nLang?: string;
+}
+
+function formatUploadFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${Math.round((bytes / (1024 * 1024)) * 100) / 100}MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${Math.round((bytes / 1024) * 100) / 100}KB`;
+  }
+
+  return `${bytes}B`;
+}
+
+function isVietnameseLanguage(lang: string): boolean {
+  return lang.toLowerCase().startsWith('vi');
+}
+
+@Catch(MulterError)
+class WarehouseTemplateImagesUploadExceptionFilter implements ExceptionFilter {
+  catch(exception: MulterError, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<WarehouseTemplateImageUploadRequest>();
+    const lang =
+      request.i18nLang ||
+      request.headers['accept-language']?.toString().split(',')[0] ||
+      'vi';
+
+    let message = isVietnameseLanguage(lang)
+      ? 'Upload anh that bai'
+      : 'Failed to upload images';
+
+    switch (exception.code) {
+      case 'LIMIT_FILE_SIZE':
+        message = isVietnameseLanguage(lang)
+          ? `Moi anh khong duoc vuot qua ${formatUploadFileSize(MAX_FILE_SIZE)}`
+          : `Each image must not exceed ${formatUploadFileSize(MAX_FILE_SIZE)}`;
+        break;
+      case 'LIMIT_FILE_COUNT':
+      case 'LIMIT_UNEXPECTED_FILE':
+        message = isVietnameseLanguage(lang)
+          ? `Ban chi co the upload toi da ${MAX_FILES} anh moi lan`
+          : `You can upload up to ${MAX_FILES} images at a time`;
+        break;
+      default:
+        break;
+    }
+
+    response.status(HttpStatus.BAD_REQUEST).json({
+      code: ResponseCode.ERROR_BAD_REQUEST,
+      message,
+      success: false,
+    });
+  }
+}
 
 @ApiTags('Warehouse Templates')
 @Controller('warehouse-templates')
@@ -808,9 +880,10 @@ export class WarehouseTemplateController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('warehouse-template.update')
   @ApiBearerAuth('JWT-auth')
+  @UseFilters(WarehouseTemplateImagesUploadExceptionFilter)
   @UseInterceptors(
     FilesInterceptor('images', MAX_FILES, {
-      limits: { fileSize: MAX_FILE_SIZE },
+      limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
       fileFilter: (req, file, cb) => {
         if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
           cb(null, true);

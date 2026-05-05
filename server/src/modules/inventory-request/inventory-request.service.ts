@@ -3292,6 +3292,10 @@ export class InventoryRequestService {
       const transactionRows: Prisma.InventoryTransactionCreateManyInput[] = [];
       const occupiedBinIds: string[] = [];
 
+      // Group bins by block so that all units destined for the same block
+      // are consolidated into one Inventory record instead of one-per-unit.
+      // Each block uses exactly one bin (the first available in that block).
+      const usedBlockIdSet = new Set<string>();
       let filled = 0;
       for (const bin of sortedBins) {
         if (filled >= qtyToFill) break;
@@ -3301,6 +3305,13 @@ export class InventoryRequestService {
         const blockId = blockByCode.get(blockCode);
         if (!blockId) continue;
 
+        // Skip additional bins from a block already assigned in this pass
+        if (usedBlockIdSet.has(blockId)) continue;
+        usedBlockIdSet.add(blockId);
+
+        // How many units can this block take? As many as still needed (no hard cap per bin).
+        const assignQty = qtyToFill - filled;
+
         inventoryRows.push({
           organization_id: orgId,
           warehouse_id: warehouseId,
@@ -3308,10 +3319,10 @@ export class InventoryRequestService {
           bin_id: bin.id,
           product_id: productId,
           batch_id: batchId,
-          quantity: 1,
-          quantity_on_hand: 1,
+          quantity: assignQty,
+          quantity_on_hand: assignQty,
           quantity_allocated: 0,
-          quantity_available: 1,
+          quantity_available: assignQty,
           created_by: actorId,
         });
 
@@ -3322,14 +3333,14 @@ export class InventoryRequestService {
           batch_id: batchId,
           to_block_id: blockId,
           type: TransactionType.INBOUND,
-          quantity: 1,
+          quantity: assignQty,
           reference_code: referenceCode,
           created_by: actorId,
         });
 
         occupiedBinIds.push(bin.id);
         usedBlockIds.push(blockId);
-        filled++;
+        filled += assignQty;
       }
 
       if (inventoryRows.length > 0) {
