@@ -10,6 +10,7 @@ import { WarningCategoryModule } from '../warning-category/warning-category.modu
 import { BanSchedulerModule } from '../ban-scheduler/ban-scheduler.module';
 import { WarnSchedulerModule } from '../warn-scheduler/warn-scheduler.module';
 import { RoleModule } from '../role/role.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RoleModule } from '../role/role.module';
     BanSchedulerModule,
     forwardRef(() => WarnSchedulerModule),
     RoleModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [UserManagementController],
   providers: [UserManagementService, UserManagementRepository],

@@ -295,6 +295,8 @@ export default function UserDetailPage() {
     const [banDialogOpen, setBanDialogOpen] = useState(false);
     const [warnDialogOpen, setWarnDialogOpen] = useState(false);
     const [assignRolesOpen, setAssignRolesOpen] = useState(false);
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+    const [resendVerifyOpen, setResendVerifyOpen] = useState(false);
 
     useBreadcrumbLabel(user?.name || user?.full_name || user?.email);
 
@@ -433,17 +435,29 @@ export default function UserDetailPage() {
                     </div>
                     <StatusBadge user={user} />
                 </div>
-                {user.is_banned ? (
-                    <Button variant="outline" size="sm" className="gap-1.5 text-green-600 border-green-300 hover:bg-green-50 rounded-xl"
-                        onClick={handleUnban}>
-                        <ShieldCheck className="w-3.5 h-3.5" />Mở khóa
+                <div className="flex items-center gap-2 flex-wrap">
+                    {user.is_banned ? (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-green-600 border-green-300 hover:bg-green-50 rounded-xl h-9 px-4"
+                            onClick={handleUnban}>
+                            <ShieldCheck className="w-4 h-4" />Mở khóa
+                        </Button>
+                    ) : (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-300 hover:bg-red-50 rounded-xl h-9 px-4"
+                            onClick={() => setBanDialogOpen(true)}>
+                            <ShieldOff className="w-4 h-4" />Khóa tài khoản
+                        </Button>
+                    )}
+                    {(!user.is_verified || !user.email_confirmed) && (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-blue-600 border-blue-300 hover:bg-blue-50 rounded-xl h-9 px-4"
+                            onClick={() => setResendVerifyOpen(true)}>
+                            <CheckCircle2 className="w-4 h-4" />Gửi xác thực
+                        </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="gap-1.5 text-brand border-brand/30 hover:bg-brand/5 rounded-xl h-9 px-4"
+                        onClick={() => setPasswordDialogOpen(true)}>
+                        <KeyRound className="w-4 h-4" />Đổi mật khẩu
                     </Button>
-                ) : (
-                    <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-300 hover:bg-red-50 rounded-xl"
-                        onClick={() => setBanDialogOpen(true)}>
-                        <ShieldOff className="w-3.5 h-3.5" />Khóa tài khoản
-                    </Button>
-                )}
+                </div>
             </div>
 
             {/* Tabs */}
@@ -661,6 +675,18 @@ export default function UserDetailPage() {
                 onClose={() => setAssignRolesOpen(false)}
                 onSuccess={() => { fetchRoles(); fetchUser(); }}
             />
+            <ChangePasswordDialog
+                userId={userId}
+                open={passwordDialogOpen}
+                onClose={() => setPasswordDialogOpen(false)}
+                onSuccess={fetchUser}
+            />
+            <ResendVerificationDialog
+                user={user}
+                open={resendVerifyOpen}
+                onClose={() => setResendVerifyOpen(false)}
+                onSuccess={fetchUser}
+            />
         </div>
     );
 }
@@ -673,6 +699,135 @@ function parseBrowser(ua?: string): string {
     if (ua.includes("Chrome/")) return "Chrome";
     if (ua.includes("Safari/")) return "Safari";
     return "Trình duyệt không rõ";
+}
+
+// ── Change Password Dialog ──────────────────────────────────────────────────
+function ChangePasswordDialog({ userId, open, onClose, onSuccess }: {
+    userId: string; open: boolean; onClose: () => void; onSuccess: () => void;
+}) {
+    const [newPassword, setNewPassword] = useState("");
+    const [adminPassword, setAdminPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const reset = () => { setNewPassword(""); setAdminPassword(""); };
+
+    const handleSave = async () => {
+        if (!newPassword || !adminPassword) return;
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setLoading(true);
+        try {
+            await svc.changePassword(token, userId, {
+                new_password: newPassword,
+                admin_password: adminPassword,
+            });
+            toast.success("Đã đổi mật khẩu thành công");
+            onSuccess();
+            onClose();
+            reset();
+        } catch (err: any) {
+            toast.error(err.message || "Không thể đổi mật khẩu");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); reset(); } }}>
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Đổi mật khẩu người dùng</DialogTitle>
+                    <DialogDescription className="text-slate-500">Nhập mật khẩu mới cho người dùng và mật khẩu của bạn để xác nhận.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">Mật khẩu mới</Label>
+                        <Input
+                            id="new-password"
+                            type="password"
+                            placeholder="Nhập mật khẩu mới..."
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="rounded-xl h-11"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="admin-password">Mật khẩu Admin (Của bạn)</Label>
+                        <Input
+                            id="admin-password"
+                            type="password"
+                            placeholder="Xác nhận bằng mật khẩu của bạn..."
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            className="rounded-xl h-11"
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={() => { onClose(); reset(); }} disabled={loading} className="rounded-xl">Hủy</Button>
+                    <Button
+                        className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl"
+                        onClick={handleSave}
+                        disabled={!newPassword || !adminPassword || loading}
+                        loading={loading}
+                    >
+                        Xác nhận đổi
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// ── Resend Verification Dialog ───────────────────────────────────────────────
+function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
+    user: User | null; open: boolean; onClose: () => void; onSuccess: () => void;
+}) {
+    const [loading, setLoading] = useState(false);
+
+    const handleConfirm = async () => {
+        if (!user) return;
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setLoading(true);
+        try {
+            await svc.resendVerification(token, user.id);
+            toast.success(`Đã gửi email xác thực đến ${user.email}`);
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            toast.error(err.message || "Không thể gửi email xác thực");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Gửi lại email xác thực</DialogTitle>
+                    <div className="text-slate-500 text-base">
+                        Hệ thống sẽ gửi một email xác thực mới đến địa chỉ:
+                        <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-100 font-medium text-slate-900 text-center">
+                            {user?.email}
+                        </div>
+                    </div>
+                </DialogHeader>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-xl h-11 px-6">Hủy</Button>
+                    <Button
+                        className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl h-11 px-8"
+                        onClick={handleConfirm}
+                        disabled={loading}
+                        loading={loading}
+                    >
+                        Xác nhận gửi email
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function parseOs(os?: string): string {

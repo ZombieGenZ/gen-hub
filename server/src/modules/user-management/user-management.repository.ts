@@ -716,4 +716,62 @@ export class UserManagementRepository {
       orderBy: { created_at: 'desc' },
     });
   }
+
+  /**
+   * Cập nhật mật khẩu user
+   */
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  }
+
+  /**
+   * Lấy mật khẩu đã hash của user (dùng để verify admin password)
+   */
+  async getPasswordHash(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
+    return user?.password ?? null;
+  }
+
+  /**
+   * Xác thực thủ công user (Admin force verify)
+   */
+  async verifyUser(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_verified: true,
+        email_confirmed: true,
+        email_verify_token: null,
+        email_verify_expired: null,
+      },
+    });
+  }
+
+  /**
+   * Lấy email và trạng thái xác thực của user
+   */
+  async getUserEmailInfo(userId: string): Promise<{
+    email: string | null;
+    email_confirmed: boolean;
+    is_verified: boolean | null;
+    name: string;
+    language: string;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        email_confirmed: true,
+        is_verified: true,
+        name: true,
+        language: true,
+      },
+    });
+  }
 }

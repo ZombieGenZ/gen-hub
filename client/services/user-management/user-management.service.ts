@@ -115,6 +115,11 @@ export interface BulkActionDto {
     reason?: string;
 }
 
+export interface ChangePasswordByAdminDto {
+    new_password: string;
+    admin_password: string;
+}
+
 export interface DownloadUsersParams {
     keywords?: string;
     status?: 'active' | 'banned' | 'verified' | 'unverified' | 'deleted';
@@ -449,6 +454,37 @@ export class UserManagementService {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Không thể xóa cảnh cáo nhiều users');
+        }
+
+        return response.json();
+    }
+
+    /** Gửi lại email xác thực cho user */
+    async resendVerification(token: string, userId: string): Promise<ApiResponse<{ success: boolean }>> {
+        const response = await fetch(`${API}/admin/users/${userId}/resend-verification`, {
+            method: 'POST',
+            headers: this.getHeaders(token),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể gửi email xác thực');
+        }
+
+        return response.json();
+    }
+
+    /** Admin đổi mật khẩu user */
+    async changePassword(token: string, userId: string, dto: ChangePasswordByAdminDto): Promise<ApiResponse<{ success: boolean; sessions_revoked: number }>> {
+        const response = await fetch(`${API}/admin/users/${userId}/change-password`, {
+            method: 'POST',
+            headers: this.getHeaders(token),
+            body: JSON.stringify(dto),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể đổi mật khẩu');
         }
 
         return response.json();

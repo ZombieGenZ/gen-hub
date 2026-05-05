@@ -612,4 +612,53 @@ export class DownloadAllUsersDto {
   status?: string;
 }
 
+/**
+ * DTO admin đổi mật khẩu user
+ */
+export class ChangePasswordByAdminDto {
+  @ApiProperty({
+    description: 'Mật khẩu mới cho user',
+    example: 'NewSecure@123',
+    minLength: 8,
+    maxLength: 128,
+  })
+  @IsString({
+    message: i18nValidationMessage(
+      'user-management.validation.password_string',
+    ),
+  })
+  @IsNotEmpty({
+    message: i18nValidationMessage(
+      'user-management.validation.password_required',
+    ),
+  })
+  @MinLength(8, {
+    message: i18nValidationMessage(
+      'user-management.validation.password_min_length',
+    ),
+  })
+  @MaxLength(128, {
+    message: i18nValidationMessage(
+      'user-management.validation.password_max_length',
+    ),
+  })
+  new_password: string;
+
+  @ApiProperty({
+    description: 'Mật khẩu của admin (xác thực danh tính người thao tác)',
+    example: 'AdminPass@123',
+  })
+  @IsString({
+    message: i18nValidationMessage(
+      'user-management.validation.admin_password_string',
+    ),
+  })
+  @IsNotEmpty({
+    message: i18nValidationMessage(
+      'user-management.validation.admin_password_required',
+    ),
+  })
+  admin_password: string;
+}
+
 export * from './assign-user-roles-permissions.dto';

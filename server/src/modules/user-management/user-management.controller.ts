@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -41,6 +41,7 @@ import {
   QueryUserWarningsDto,
   QuerySessionsDto,
   AssignUserRolesPermissionsDto,
+  ChangePasswordByAdminDto,
   BulkBanUsersDto,
   BulkUnbanUsersDto,
   BulkWarnUsersDto,
@@ -622,6 +623,158 @@ export class UserManagementController {
   async getStats() {
     const stats = await this.service.getStats();
     return new GetResponse('user-management.stats', stats);
+  }
+
+  @Post(':id/resend-verification')
+  @RequirePermission('user-management.update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Gửi lại email xác thực cho user',
+    description:
+      'Admin kích hoạt gửi lại email xác thực đến địa chỉ email đăng ký của user. User sẽ cần bấm link trong email để hoàn tất xác thực. Endpoint yêu cầu quyền `user-management.update`.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của user cần gửi lại email xác thực',
+    example: USER_ID,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Gửi lại email xác thực thành công',
+    schema: buildSuccessResponseSchema({
+      code: 'user-management.resend_verification',
+      message: 'Gửi lại email xác thực thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+        },
+      },
+      dataExample: { success: true },
+    }),
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Không thể gửi do user đã xác thực, không có email, thao tác lên chính mình hoặc user được bảo vệ',
+    schema: buildErrorResponseSchema({
+      code: 'user-management.resend_verification_invalid',
+      message: 'Không thể gửi email xác thực cho user',
+    }),
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Không tìm thấy user',
+    schema: userNotFoundSchema,
+  })
+  @ApiAuthResponses()
+  async resendVerification(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') adminId: string,
+    @I18nLang() lang: string,
+    @Req() req: Request,
+  ) {
+    const result = await this.service.resendVerificationEmail(
+      id,
+      adminId,
+      lang,
+      {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
+    return new UpdatedResponse('user-management.resend_verification', result);
+  }
+
+  @Post(':id/change-password')
+  @RequirePermission('user-management.update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đổi mật khẩu user (Admin)',
+    description:
+      'Admin đổi mật khẩu cho user. Yêu cầu nhập mật khẩu admin để xác thực danh tính. Sau khi đổi, tất cả phiên đăng nhập của user sẽ bị thu hồi. Endpoint yêu cầu quyền `user-management.update`.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của user cần đổi mật khẩu',
+    example: USER_ID,
+  })
+  @ApiBody({
+    type: ChangePasswordByAdminDto,
+    description: 'Mật khẩu mới cho user và mật khẩu admin để xác thực',
+    examples: {
+      change_password: {
+        summary: 'Đổi mật khẩu user',
+        description: 'Admin đổi mật khẩu cho user với xác thực admin',
+        value: {
+          new_password: 'NewSecure@123',
+          admin_password: 'AdminPass@123',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Đổi mật khẩu thành công',
+    schema: buildSuccessResponseSchema({
+      code: 'user-management.change_password',
+      message: 'Đổi mật khẩu user thành công',
+      dataSchema: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          sessions_revoked: {
+            type: 'number',
+            example: 3,
+            description: 'Số phiên đăng nhập đã bị thu hồi',
+          },
+        },
+      },
+      dataExample: { success: true, sessions_revoked: 3 },
+    }),
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Không thể đổi mật khẩu do thao tác lên chính mình hoặc user được bảo vệ',
+    schema: buildErrorResponseSchema({
+      code: 'user-management.change_password_invalid',
+      message: 'Không thể đổi mật khẩu user',
+    }),
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Mật khẩu admin không chính xác',
+    schema: buildErrorResponseSchema({
+      code: 'user-management.admin_password_invalid',
+      message: 'Mật khẩu admin không chính xác',
+    }),
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Không tìm thấy user',
+    schema: userNotFoundSchema,
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
+  async changePassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangePasswordByAdminDto,
+    @CurrentUser('userId') adminId: string,
+    @I18nLang() lang: string,
+    @Req() req: Request,
+  ) {
+    const result = await this.service.changePasswordByAdmin(
+      id,
+      dto,
+      adminId,
+      lang,
+      {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
+    return new UpdatedResponse('user-management.change_password', result);
   }
 
   @Get('download/all')

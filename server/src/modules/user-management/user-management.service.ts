@@ -2,8 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as argon2 from '@node-rs/argon2';
 import { I18nService } from 'nestjs-i18n';
 import { UserManagementRepository } from './user-management.repository';
 import { WarningCategoryRepository } from '../warning-category/warning-category.repository';
@@ -13,6 +15,7 @@ import { RedisService } from '../redis/redis.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RoleRepository } from '../role/role.repository';
+import { AuthService } from '../auth/auth.service';
 import {
   QueryUsersDto,
   BanUserDto,
@@ -22,6 +25,7 @@ import {
   QueryUserWarningsDto,
   QuerySessionsDto,
   AssignUserRolesPermissionsDto,
+  ChangePasswordByAdminDto,
   DurationType,
 } from './dto';
 import {
@@ -45,6 +49,7 @@ export class UserManagementService {
     private readonly websocketGateway: WebsocketGateway,
     private readonly configService: ConfigService,
     private readonly i18n: I18nService,
+    private readonly authService: AuthService,
   ) {}
 
   /**
@@ -1336,5 +1341,156 @@ export class UserManagementService {
       count: users.length,
       filename: `all-users-export-${new Date().toISOString().split('T')[0]}.json`,
     };
+  }
+
+  /**
+   * Admin gửi lại email xác thực cho user
+   */
+  async resendVerificationEmail(
+    userId: string,
+    adminId: string,
+    lang: string,
+    requestInfo?: { ip?: string; userAgent?: string },
+  ) {
+    await this.validateUserAction(userId, adminId, lang);
+
+    const userInfo = await this.repository.getUserEmailInfo(userId);
+    if (!userInfo) {
+      throw new NotFoundException(
+        this.i18n.t('user-management.error.user_not_found', { lang }),
+      );
+    }
+
+    if (!userInfo.email) {
+      throw new BadRequestException(
+        this.i18n.t('user-management.error.no_email', { lang }) ||
+          'User không có email',
+      );
+    }
+
+    if (userInfo.email_confirmed && userInfo.is_verified) {
+      throw new BadRequestException(
+        this.i18n.t('user-management.error.already_verified', { lang }) ||
+          'Tài khoản đã được xác thực',
+      );
+    }
+
+    // Gọi AuthService.resendVerificationEmail để gửi email xác thực
+    await this.authService.resendVerificationEmail(userId, lang);
+
+    // Invalidate caches
+    await this.invalidateUserCache(userId);
+    await this.invalidateListCache();
+
+    // Log
+    this.systemLogService.logAsync({
+      level: 'INFO',
+      module: 'user-management',
+      action: 'resend_verification',
+      message: `Admin gửi lại email xác thực cho user: ${userInfo.email}`,
+      userId: adminId,
+      ipAddress: requestInfo?.ip,
+      userAgent: requestInfo?.userAgent,
+      metaData: {
+        targetUserId: userId,
+        targetEmail: userInfo.email,
+      },
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Admin đổi mật khẩu user (yêu cầu nhập mật khẩu admin)
+   */
+  async changePasswordByAdmin(
+    userId: string,
+    dto: ChangePasswordByAdminDto,
+    adminId: string,
+    lang: string,
+    requestInfo?: { ip?: string; userAgent?: string },
+  ) {
+    await this.validateUserAction(userId, adminId, lang);
+
+    const user = await this.repository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(
+        this.i18n.t('user-management.error.user_not_found', { lang }),
+      );
+    }
+
+    // Xác thực mật khẩu admin
+    const adminPasswordHash =
+      await this.repository.getPasswordHash(adminId);
+    if (!adminPasswordHash) {
+      throw new UnauthorizedException(
+        this.i18n.t('user-management.error.admin_password_invalid', { lang }) ||
+          'Không thể xác thực danh tính admin',
+      );
+    }
+
+    let isAdminPasswordValid = false;
+    try {
+      isAdminPasswordValid = await argon2.verify(
+        adminPasswordHash,
+        dto.admin_password,
+      );
+    } catch {
+      throw new UnauthorizedException(
+        this.i18n.t('user-management.error.admin_password_invalid', { lang }) ||
+          'Mật khẩu admin không chính xác',
+      );
+    }
+
+    if (!isAdminPasswordValid) {
+      throw new UnauthorizedException(
+        this.i18n.t('user-management.error.admin_password_invalid', { lang }) ||
+          'Mật khẩu admin không chính xác',
+      );
+    }
+
+    // Hash mật khẩu mới cho user
+    const memoryCost =
+      Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+    const timeCost =
+      Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
+    const parallelism =
+      Number(this.configService.get<number>('ARGON2_PARALLELISM')) || 1;
+
+    const hashedPassword = await argon2.hash(dto.new_password, {
+      memoryCost,
+      timeCost,
+      parallelism,
+    });
+
+    await this.repository.updatePassword(userId, hashedPassword);
+
+    // Thu hồi tất cả sessions của user
+    const sessionCount = await this.repository.deleteAllSessions(userId);
+
+    // Invalidate caches
+    await this.invalidateUserCache(userId);
+    await this.invalidateUserSessionsCache(userId);
+    await this.redisService.invalidateUserCache(userId);
+
+    // Log
+    this.systemLogService.logAsync({
+      level: 'WARN',
+      module: 'user-management',
+      action: 'admin_change_password',
+      message: `Admin đổi mật khẩu user: ${user.email || user.name}`,
+      userId: adminId,
+      ipAddress: requestInfo?.ip,
+      userAgent: requestInfo?.userAgent,
+      metaData: {
+        targetUserId: userId,
+        sessionsRevoked: sessionCount,
+      },
+    });
+
+    // Emit to user để force logout
+    this.websocketGateway.emitAllUserSessionsRevoked(userId, adminId);
+
+    return { success: true, sessions_revoked: sessionCount };
   }
 }
