@@ -506,7 +506,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
               <Button
                 onClick={handleEnable2FA}
                 disabled={enabling2FA}
-                className="bg-brand dark:hover:bg-green-900/20 hover:bg-brand/90 border-green-200 dark:border-green-900/50 text-green-600 dark:text-green-400"
+                className="bg-brand dark:hover:bg-green-900/20 hover:bg-brand/90 border-green-200 dark:border-green-900/50 text-black dark:text-black"
               >
                 {enabling2FA ? 'Đang bật...' : 'Bật xác thực 2 yếu tố'}
               </Button>
