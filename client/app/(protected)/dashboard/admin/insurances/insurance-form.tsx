@@ -16,6 +16,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Insurance, CreateInsuranceRequest } from "@/types/insurance/Insurance.types";
+import { toast } from "sonner";
 
 const insuranceService = new IsuranceService();
 
@@ -46,12 +47,15 @@ export function InsuranceForm({ initialData, onSuccess, onCancel, isEdit = false
 
             if (isEdit && initialData?.id) {
                 await insuranceService.updateInsurance(token, initialData.id, formData);
+                toast.success(`Đã cập nhật gói bảo hiểm "${formData.name}" ✅`);
             } else {
                 await insuranceService.createInsurance(token, formData);
+                toast.success(`Đã tạo gói bảo hiểm "${formData.name}" thành công ✨`);
             }
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save insurance", error);
+            toast.error(error.message || "Không thể lưu gói bảo hiểm, vui lòng thử lại");
         } finally {
             setLoading(false);
         }

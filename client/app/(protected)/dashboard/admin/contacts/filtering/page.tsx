@@ -46,7 +46,7 @@ import {
     ComputerDesktopIcon,
     EnvelopeIcon,
 } from "@heroicons/react/24/outline";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -68,8 +68,6 @@ export default function ContactFilteringPage() {
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<ContactListEntry | null>(null);
-
-    const { showToast } = useToast();
 
     const fetchEntries = async () => {
         try {
@@ -95,7 +93,7 @@ export default function ContactFilteringPage() {
             }
         } catch (error) {
             console.error("Failed to fetch contact list", error);
-            showToast("Không thể tải danh sách lọc", "error");
+            toast.error("Không thể tải danh sách lọc");
         } finally {
             setLoading(false);
         }
@@ -113,11 +111,11 @@ export default function ContactFilteringPage() {
             if (!token) return;
 
             await contactListService.delete(token, id);
-            showToast("Đã xóa quy tắc thành công", "success");
+            toast.success("Đã xóa quy tắc thành công");
             fetchEntries();
         } catch (error) {
             console.error("Failed to delete entry", error);
-            showToast("Không thể xóa quy tắc", "error");
+            toast.error("Không thể xóa quy tắc");
         }
     };
 
@@ -129,11 +127,11 @@ export default function ContactFilteringPage() {
             await contactListService.update(token, entry.id, {
                 is_active: !entry.is_active,
             });
-            showToast(`Đã ${!entry.is_active ? "bật" : "tắt"} quy tắc`, "success");
+            toast.success(`Đã ${!entry.is_active ? "bật" : "tắt"} quy tắc`);
             fetchEntries();
         } catch (error) {
             console.error("Failed to update entry", error);
-            showToast("Không thể cập nhật quy tắc", "error");
+            toast.error("Không thể cập nhật quy tắc");
         }
     };
 

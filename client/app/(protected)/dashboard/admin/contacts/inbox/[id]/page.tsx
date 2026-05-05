@@ -21,7 +21,7 @@ import { TicketComposer } from "@/components/contacts/TicketComposer";
 import { TicketStatusBadge } from "@/components/contacts/TicketStatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { useCloseContact, useDeleteContact, useReopenContact, useReplyContact, useUpdateContact } from "@/hooks/contacts/use-contact-mutations";
 import { useContactSocket } from "@/hooks/contacts/use-contact-socket";
 import { useContactDetail, useContactMessages, useContacts } from "@/hooks/contacts/use-contacts";
@@ -60,7 +60,6 @@ function getSidebarStatusDotClass(status: string): string {
 export default function TicketDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const { showToast } = useToast();
     const ticketId = params.id as string;
     const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,10 +113,9 @@ export default function TicketDetailPage() {
     const saveUpdate = async (payload: Parameters<typeof updateMutation.mutateAsync>[0], success: string, error: string) => {
         try {
             await updateMutation.mutateAsync(payload);
-            showToast(success, "success");
         } catch (err) {
             console.error(error, err);
-            showToast(error, "error");
+            throw err;
         }
     };
 
@@ -175,9 +173,9 @@ export default function TicketDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         {ticket.status === "CLOSED" ? (
-                            <button onClick={() => reopenMutation.mutateAsync().then(() => showToast("Đã mở lại ticket", "success"))} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">Mở lại</button>
+                            <button onClick={() => reopenMutation.mutateAsync()} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">Mở lại</button>
                         ) : (
-                            <button onClick={() => closeMutation.mutateAsync().then(() => showToast("Đã đóng ticket", "success"))} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">Đóng</button>
+                            <button onClick={() => closeMutation.mutateAsync()} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">Đóng</button>
                         )}
                     </div>
                 </div>
@@ -204,10 +202,8 @@ export default function TicketDetailPage() {
                         onSendReply={async (content, isInternal) => {
                             try {
                                 await replyMutation.mutateAsync({ content, is_internal: isInternal });
-                                showToast(isInternal ? "Đã lưu ghi chú nội bộ" : "Đã gửi trả lời", "success");
                             } catch (err) {
                                 console.error("Failed to send reply", err);
-                                showToast("Không thể gửi trả lời", "error");
                             }
                         }}
                         isLoading={replyMutation.isPending}
@@ -256,15 +252,15 @@ export default function TicketDetailPage() {
                                 if (isBlocked) {
                                     if (!window.confirm("Bỏ chặn người gửi này?")) return;
                                     await deleteBlacklist.mutateAsync(blacklistEntry.id);
-                                    showToast("Đã bỏ chặn người gửi", "success");
+                                    toast.success("Đã bỏ chặn người gửi");
                                 } else {
                                     if (!window.confirm("Chặn người gửi này?")) return;
                                     await createBlacklist.mutateAsync({ list_type: ContactListType.BLACKLIST, match_type: ContactListMatchType.EMAIL, value: ticket.customer_email, reason: `Blocked from ticket #${ticket.code}`, is_active: true });
-                                    showToast("Đã chặn người gửi", "success");
+                                    toast.success("Đã chặn người gửi");
                                 }
                             } catch (err) {
                                 console.error("Failed to toggle blacklist", err);
-                                showToast("Không thể cập nhật trạng thái chặn", "error");
+                                toast.error("Không thể cập nhật trạng thái chặn");
                             }
                         }}
                         className={cn("w-full rounded-xl border px-4 py-2.5 text-sm font-medium", isBlocked ? "border-slate-200 bg-slate-100 text-slate-700" : "border-red-200 bg-red-50 text-red-600")}
@@ -276,11 +272,9 @@ export default function TicketDetailPage() {
                             if (!window.confirm(`Xóa ticket #${ticket.code}?`)) return;
                             try {
                                 await deleteMutation.mutateAsync(ticket.id);
-                                showToast("Đã xóa ticket", "success");
                                 router.replace(INBOX_BASE_PATH);
                             } catch (err) {
                                 console.error("Failed to delete ticket", err);
-                                showToast("Không thể xóa ticket", "error");
                             }
                         }}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"

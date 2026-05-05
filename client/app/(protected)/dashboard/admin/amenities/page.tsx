@@ -30,14 +30,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { AmenityRequest, AmenityResponse } from "@/types/amenities/amenities.type";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { AmenityDialog, AmenityGridView, getIconComponent } from "@/components/amenities";
 import { TablePagination } from "@/components/ui/table-pagination";
 
 const amenitiesService = new AmenitiesService();
 
 export default function AmenitiesPage() {
-    const { showToast } = useToast();
 
     // --- Data States ---
     const [amenities, setAmenities] = useState<AmenityResponse[]>([]);
@@ -120,11 +119,11 @@ export default function AmenitiesPage() {
             setTotalItems(total);
         } catch (error: any) {
             console.error("Failed to fetch amenities", error);
-            showToast(error.message || "Không thể tải danh sách tiện ích", "error");
+            toast.error(error.message || "Không thể tải danh sách tiện ích");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     useEffect(() => {
         fetchStats();
@@ -150,19 +149,19 @@ export default function AmenitiesPage() {
 
             if (formMode === "create") {
                 await amenitiesService.createAmenity(token, data);
-                showToast("Đã thêm tiện ích mới thành công!", "success");
+                toast.success("Đã thêm tiện ích mới thành công!");
             } else if (selectedAmenity) {
                 await amenitiesService.updateAmenity(token, selectedAmenity.id, data);
-                showToast("Cập nhật tiện ích thành công!", "success");
+                toast.success("Cập nhật tiện ích thành công!");
             }
 
             setIsFormDialogOpen(false);
             setSelectedAmenity(null);
             fetchAmenities();
             fetchStats();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save amenity", error);
-            showToast(formMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại", "error");
+            toast.error(error.message || (formMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại"));
             throw error; // Re-throw for dialog to handle state
         } finally {
             setIsFormLoading(false);
@@ -178,12 +177,12 @@ export default function AmenitiesPage() {
             await amenitiesService.deleteAmenity(token, selectedAmenity.id);
             setIsDeleteDialogOpen(false);
             setSelectedAmenity(null);
-            showToast(`Đã xóa tiện ích "${selectedAmenity.name}" 🗑️`, "success");
+            toast.success(`Đã xóa tiện ích "${selectedAmenity.name}"`);
             fetchAmenities();
             fetchStats();
         } catch (error: any) {
             console.error("Failed to delete amenity", error);
-            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -196,14 +195,14 @@ export default function AmenitiesPage() {
             if (!token) return;
 
             await amenitiesService.deleteMultipleAmenities(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} tiện ích thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} tiện ích thành công!`);
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchAmenities();
             fetchStats();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều thất bại", "error");
+            toast.error(error.message || "Xóa nhiều thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -603,11 +602,11 @@ export default function AmenitiesPage() {
             <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa tiện ích <strong className="text-foreground">&ldquo;{selectedAmenity?.name}&rdquo;</strong> không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -648,11 +647,11 @@ export default function AmenitiesPage() {
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} tiện ích</strong> đã chọn không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

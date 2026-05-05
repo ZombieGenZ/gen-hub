@@ -17,6 +17,7 @@ import {
     type User,
 } from "@/services/user-management/user-management.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { toast } from "sonner";
 
 const svc = new UserManagementService();
 const LIMIT = 20;
@@ -48,6 +49,7 @@ export default function CustomersPage() {
     const [total, setTotal] = useState(0);
     const [offset, setOffset] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     const fetchUsers = async (kw = searchTerm, status = statusFilter, off = offset) => {
         setIsLoading(true);
@@ -59,7 +61,8 @@ export default function CustomersPage() {
             const res = await svc.findMany(token, query);
             setUsers(res?.data?.items ?? []);
             setTotal(res?.data?.total ?? 0);
-        } catch {
+        } catch (err: any) {
+            toast.error(err.message || "Không thể tải danh sách khách hàng");
             setUsers([]);
             setTotal(0);
         } finally {

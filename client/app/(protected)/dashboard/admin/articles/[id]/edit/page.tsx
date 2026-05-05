@@ -7,14 +7,13 @@ import { ArticleService } from "@/services/article/article.service";
 import { ArticleForm } from "../../article-form";
 import { ArticleResponse } from "@/types/article/article.type";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 const articleService = new ArticleService();
 
 export default function EditArticlePage() {
     const params = useParams();
     const router = useRouter();
-    const { showToast } = useToast();
     const id = params.id as string;
 
     const [article, setArticle] = useState<ArticleResponse | null>(null);
@@ -32,7 +31,7 @@ export default function EditArticlePage() {
                 setArticle(data);
             } catch (error: any) {
                 console.error("Failed to load article", error);
-                showToast("Không tìm thấy bài viết hoặc có lỗi kết nối", "error");
+                toast.error("Không tìm thấy bài viết hoặc có lỗi kết nối");
                 router.push("/dashboard/admin/articles");
             } finally {
                 setLoading(false);
@@ -42,7 +41,7 @@ export default function EditArticlePage() {
         if (id) {
             fetchArticle();
         }
-    }, [id, router, showToast]);
+    }, [id, router]);
 
     if (loading) {
         return (

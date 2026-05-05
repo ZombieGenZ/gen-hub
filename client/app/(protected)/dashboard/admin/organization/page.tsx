@@ -17,6 +17,7 @@ import {
     Plus, Search, Building2, ChevronRight, Loader2,
     Users, CheckCircle2, XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const organizationService = new OrganizationService();
 const PAGE_SIZE = 15;
@@ -45,7 +46,9 @@ export default function OrganizationPage() {
             if (statusFilter === "inactive") params.is_active = false;
             const response = await organizationService.getOrganizations(token, params);
             setData(response);
-        } catch {
+        } catch (error: any) {
+            console.error("Fetch organizations error", error);
+            toast.error(error.message || "Không thể tải danh sách tổ chức");
             setData(null);
         } finally {
             setLoading(false);
@@ -61,17 +64,23 @@ export default function OrganizationPage() {
     }, [fetchOrganizations]);
 
     const handleCreateOrg = async (formData: CreateOrgFormData) => {
-        const token = authStorage.getAccessToken();
-        if (!token) return;
-        await organizationService.createOrganization(token, {
-            name: formData.name,
-            tax_code: "",
-            representative_name: "",
-            representative_title: "",
-            representative_phone: "",
-            representative_email: "",
-        });
-        await fetchOrganizations();
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            await organizationService.createOrganization(token, {
+                name: formData.name,
+                tax_code: "",
+                representative_name: "",
+                representative_title: "",
+                representative_phone: "",
+                representative_email: "",
+            });
+            toast.success(`Đã tạo tổ chức "${formData.name}" thành công`);
+            await fetchOrganizations();
+        } catch (error: any) {
+            console.error("Create organization error", error);
+            toast.error(error.message || "Không thể tạo tổ chức mới");
+        }
     };
 
     const items = data?.items ?? [];

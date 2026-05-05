@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactTagsService } from "@/services/contact-tags/contact-tags.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 const contactTagsService = new ContactTagsService();
 
@@ -49,7 +49,6 @@ const PRESET_COLORS = [
 ];
 
 export function CreateTagDialog({ open, onOpenChange, onSuccess }: CreateTagDialogProps) {
-    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -69,13 +68,13 @@ export function CreateTagDialog({ open, onOpenChange, onSuccess }: CreateTagDial
             if (!token) return;
 
             await contactTagsService.create(token, values);
-            showToast("Đã tạo nhãn mới", "success");
+            toast.success("Tạo nhãn mới thành công");
             onOpenChange(false);
             form.reset();
             onSuccess();
         } catch (error: any) {
             console.error("Failed to create tag", error);
-            showToast(error.message || "Không thể tạo nhãn", "error");
+            toast.error(error.message || "Không thể tạo nhãn mới");
         } finally {
             setLoading(false);
         }

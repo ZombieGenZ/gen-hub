@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { Organization } from "@/types/organization/organization.type";
@@ -34,7 +34,6 @@ interface GeneralSettingsForm {
 
 export default function SettingsPage() {
     const router = useRouter();
-    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [organization, setOrganization] = useState<Organization | null>(null);
@@ -67,7 +66,7 @@ export default function SettingsPage() {
             const org = response?.items?.[0] ?? null;
 
             if (!org) {
-                showToast("Không tìm thấy tổ chức để cấu hình", "error");
+                toast.error("Không tìm thấy tổ chức để cấu hình");
                 return;
             }
 
@@ -83,11 +82,11 @@ export default function SettingsPage() {
             });
         } catch (error) {
             console.error(error);
-            showToast("Không thể tải dữ liệu cài đặt", "error");
+            toast.error("Không thể tải dữ liệu cài đặt");
         } finally {
             setLoading(false);
         }
-    }, [getToken, showToast]);
+    }, [getToken]);
 
     useEffect(() => {
         fetchOrganization();
@@ -111,11 +110,11 @@ export default function SettingsPage() {
                 auto_delete_org_audit_logs: form.auto_delete_org_audit_logs,
             });
 
-            showToast("Đã gửi yêu cầu cập nhật cài đặt", "success");
+            toast.success("Cập nhật cài đặt hệ thống thành công");
             await fetchOrganization();
         } catch (error) {
             console.error(error);
-            showToast("Lưu cài đặt thất bại", "error");
+            toast.error("Lưu cài đặt thất bại, vui lòng thử lại sau");
         } finally {
             setSaving(false);
         }

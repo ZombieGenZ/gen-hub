@@ -353,7 +353,9 @@ export default function UserDetailPage() {
         try {
             const res = await svc.findUserWarnings(token, userId, { limit: 50 });
             setWarnings(res?.data?.items ?? []);
-        } catch { /* silent */ }
+        } catch (err: any) {
+            toast.error("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"));
+        }
     }, [userId]);
 
     const fetchSessions = useCallback(async () => {
@@ -362,7 +364,9 @@ export default function UserDetailPage() {
         try {
             const res = await svc.findUserSessions(token, userId, { limit: 20 });
             setSessions(res?.data?.items ?? []);
-        } catch { /* silent */ }
+        } catch (err: any) {
+            toast.error("Lỗi khi tải phiên đăng nhập: " + (err.message || "Không xác định"));
+        }
     }, [userId]);
 
     const fetchRoles = useCallback(async () => {
@@ -371,7 +375,9 @@ export default function UserDetailPage() {
         try {
             const res = await svc.getUserRolesAndPermissions(token, userId);
             setRoles(res.data?.roles ?? []);
-        } catch { /* silent */ }
+        } catch (err: any) {
+            toast.error("Lỗi khi tải vai trò hiện tại: " + (err.message || "Không xác định"));
+        }
     }, [userId]);
 
     useEffect(() => { fetchUser(); }, [fetchUser]);
@@ -385,8 +391,12 @@ export default function UserDetailPage() {
     useEffect(() => {
         const token = authStorage.getAccessToken();
         if (!token) return;
-        roleSvc.findMany(token, { limit: 100 }).then((res) => setAllRoles(res?.data?.items ?? [])).catch(() => {});
-        warnCatSvc.findAllActive(token).then((res) => setWarnCategories(res?.data ?? [])).catch(() => {});
+        roleSvc.findMany(token, { limit: 100 }).then((res) => setAllRoles(res?.data?.items ?? [])).catch((err: any) => {
+            toast.error("Lỗi khi tải danh sách vai trò: " + (err.message || "Không xác định"));
+        });
+        warnCatSvc.findAllActive(token).then((res) => setWarnCategories(res?.data ?? [])).catch((err: any) => {
+            toast.error("Lỗi khi tải danh mục vi phạm: " + (err.message || "Không xác định"));
+        });
     }, []);
 
     const handleUnban = async () => {
@@ -491,7 +501,7 @@ export default function UserDetailPage() {
                             <ShieldOff className="w-4 h-4" />Khóa tài khoản
                         </Button>
                     )}
-                    {(!user.is_verified || !user.email_confirmed) && (
+                    {!user.is_verified && (
                         <Button variant="outline" size="sm" className="gap-1.5 text-blue-600 border-blue-300 hover:bg-blue-50 rounded-xl h-9 px-4"
                             onClick={() => setResendVerifyOpen(true)} disabled={!!processingId}>
                             <CheckCircle2 className="w-4 h-4" />Gửi xác thực

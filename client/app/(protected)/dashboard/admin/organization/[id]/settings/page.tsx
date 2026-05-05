@@ -20,7 +20,7 @@ import {
     ChevronRight, Loader2, Users, KeyRound, Shield,
     CheckCircle2, XCircle, Mail, Phone, User,
 } from "lucide-react";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 const organizationService = new OrganizationService();
@@ -46,7 +46,6 @@ export default function AdminOrganizationSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const orgId = params.id as string;
-    const { showToast } = useToast();
 
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -122,12 +121,12 @@ export default function AdminOrganizationSettingsPage() {
         onEvent: (eventName) => {
             if (eventName.startsWith("orgRole:")) {
                 void fetchRoles();
-                showToast("Vai trò đã được cập nhật realtime", "success");
+                toast.success("Vai trò đã được cập nhật realtime");
                 return;
             }
             if (eventName.startsWith("organization:member")) {
                 void fetchMembers();
-                showToast("Danh sách thành viên đã được cập nhật", "success");
+                toast.success("Danh sách thành viên đã được cập nhật");
                 return;
             }
             if (eventName === "organization:updated") {
@@ -139,8 +138,13 @@ export default function AdminOrganizationSettingsPage() {
     const handleUpdateOrg = async (data: Partial<Organization>) => {
         const token = getToken();
         if (!token) return;
-        await organizationService.updateOrganization(token, orgId, data as any);
-        await fetchOrganization();
+        try {
+            await organizationService.updateOrganization(token, orgId, data as any);
+            toast.success("Cập nhật thông tin tổ chức thành công");
+            await fetchOrganization();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể cập nhật tổ chức");
+        }
     };
 
     const handleDeleteOrg = async () => {
@@ -150,50 +154,85 @@ export default function AdminOrganizationSettingsPage() {
     const handleInviteMembers = async (emails: string[]) => {
         const token = getToken();
         if (!token) return;
-        await memberService.inviteMembers(token, orgId, emails);
-        await fetchMembers();
+        try {
+            await memberService.inviteMembers(token, orgId, emails);
+            toast.success(`Đã gửi lời mời tới ${emails.length} email`);
+            await fetchMembers();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể gửi lời mời");
+        }
     };
 
     const handleRemoveMember = async (memberId: string) => {
         const token = getToken();
         if (!token) return;
-        await memberService.removeMember(token, orgId, memberId);
-        await fetchMembers();
+        try {
+            await memberService.removeMember(token, orgId, memberId);
+            toast.success("Đã xóa thành viên khỏi tổ chức");
+            await fetchMembers();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể xóa thành viên");
+        }
     };
 
     const handleAssignRoles = async (memberId: string, roleIds: string[]) => {
         const token = getToken();
         if (!token) return;
-        await memberService.assignRoles(token, orgId, memberId, roleIds);
-        await fetchMembers();
+        try {
+            await memberService.assignRoles(token, orgId, memberId, roleIds);
+            toast.success("Đã cập nhật vai trò thành viên");
+            await fetchMembers();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể cập nhật vai trò");
+        }
     };
 
     const handleCancelInvite = async (memberId: string) => {
         const token = getToken();
         if (!token) return;
-        await memberService.cancelInvite(token, orgId, memberId);
-        await fetchMembers();
+        try {
+            await memberService.cancelInvite(token, orgId, memberId);
+            toast.success("Đã hủy lời mời");
+            await fetchMembers();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể hủy lời mời");
+        }
     };
 
     const handleCreateRole = async (data: { name: string; description: string; permission_ids: string[] }) => {
         const token = getToken();
         if (!token) return;
-        await roleService.createRole(token, orgId, data);
-        await fetchRoles();
+        try {
+            await roleService.createRole(token, orgId, data);
+            toast.success(`Đã tạo vai trò "${data.name}" thành công`);
+            await fetchRoles();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể tạo vai trò");
+        }
     };
 
     const handleUpdateRole = async (roleId: string, data: { name?: string; description?: string; permission_ids?: string[] }) => {
         const token = getToken();
         if (!token) return;
-        await roleService.updateRole(token, orgId, roleId, data);
-        await fetchRoles();
+        try {
+            await roleService.updateRole(token, orgId, roleId, data);
+            toast.success("Cập nhật vai trò thành công");
+            await fetchRoles();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể cập nhật vai trò");
+        }
     };
 
     const handleDeleteRole = async (roleId: string) => {
         const token = getToken();
         if (!token) return;
-        await roleService.deleteRole(token, orgId, roleId);
-        await fetchRoles();
+        try {
+            await roleService.deleteRole(token, orgId, roleId);
+            toast.success("Đã xóa vai trò");
+            await fetchRoles();
+        } catch (error: any) {
+            toast.error(error.message || "Không thể xóa vai trò");
+        }
     };
 
     if (loading) {

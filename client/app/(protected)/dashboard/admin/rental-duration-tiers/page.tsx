@@ -36,7 +36,7 @@ import {
     RentalDurationTier,
     RentalDurationTierRequest,
 } from "@/types/rental-duration-tier/rental-duration-tier.type";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { TierForm } from "./tier-form";
 
 const tierService = new RentalDurationTierService();
@@ -220,7 +220,6 @@ function TierCard({
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function RentalDurationTiersPage() {
-    const { showToast } = useToast();
 
     // ─── Data ────────────────────────────────────────────────────────────────────
     const [tiers, setTiers] = useState<RentalDurationTier[]>([]);
@@ -285,11 +284,11 @@ export default function RentalDurationTiersPage() {
             });
         } catch (error: any) {
             console.error("Failed to fetch tiers", error);
-            showToast(error.message || "Không thể tải danh sách gói thuê", "error");
+            toast.error(error.message || "Không thể tải danh sách gói thuê");
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, []);
 
     useEffect(() => {
         fetchTiers();
@@ -319,7 +318,7 @@ export default function RentalDurationTiersPage() {
             setSelectedTier(tier);
             setFormKey((k) => k + 1);
             console.error("Failed to fetch tier detail", error);
-            showToast(error.message || "Không thể tải chi tiết gói thuê", "error");
+            toast.error(error.message || "Không thể tải chi tiết gói thuê");
         }
     };
 
@@ -334,7 +333,7 @@ export default function RentalDurationTiersPage() {
                 const maxOrder = tiers.length > 0 ? Math.max(...tiers.map((t) => t.order)) : -1;
                 payload.order = maxOrder + 1;
                 const created: any = await tierService.createRentalDurationTier(token, payload);
-                showToast("Đã tạo gói thuê mới thành công! 🎉", "success");
+                toast.success("Đã tạo gói thuê mới thành công!");
                 setIsFormDialogOpen(false);
                 setSelectedTier(null);
                 // Server returns full tier (with gifts) in create response — use it directly
@@ -345,7 +344,7 @@ export default function RentalDurationTiersPage() {
                 fetchTiers();
             } else if (selectedTier) {
                 const updated: any = await tierService.updateRentalDurationTier(token, selectedTier.id, payload);
-                showToast("Đã cập nhật gói thuê thành công! ✅", "success");
+                toast.success("Đã cập nhật gói thuê thành công!");
                 setIsFormDialogOpen(false);
                 // Server returns full tier (with gifts) in update response — use it directly
                 const updatedData = updated?.data || updated;
@@ -357,7 +356,7 @@ export default function RentalDurationTiersPage() {
             }
         } catch (error: any) {
             console.error("Failed to save tier", error);
-            showToast(error?.message || "Lưu gói thuê thất bại", "error");
+            toast.error(error?.message || "Lưu gói thuê thất bại");
         } finally {
             setIsFormLoading(false);
         }
@@ -371,13 +370,13 @@ export default function RentalDurationTiersPage() {
             if (!token || !deleteTier) return;
 
             await tierService.deleteRentalDurationTier(token, deleteTier.id);
-            showToast(`Đã xóa gói thuê "${deleteTier.name}" 🗑️`, "success");
+            toast.success(`Đã xóa gói thuê "${deleteTier.name}"`);
             setIsDeleteOpen(false);
             setDeleteTier(null);
             fetchTiers();
         } catch (error: any) {
             console.error("Failed to delete tier", error);
-            showToast(error.message || "Xóa gói thuê thất bại", "error");
+            toast.error(error.message || "Xóa gói thuê thất bại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -390,13 +389,13 @@ export default function RentalDurationTiersPage() {
             if (!token) return;
 
             await tierService.deleteMultipleRentalDurationTier(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} gói thuê thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} gói thuê thành công!`);
             setIsBulkDeleteOpen(false);
             setSelectedIds([]);
             fetchTiers();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều gói thuê thất bại", "error");
+            toast.error(error.message || "Xóa nhiều gói thuê thất bại");
         } finally {
             setIsBulkLoading(false);
         }
@@ -418,10 +417,10 @@ export default function RentalDurationTiersPage() {
                 active: active ? prev.active + 1 : prev.active - 1,
                 inactive: active ? prev.inactive - 1 : prev.inactive + 1,
             }));
-            showToast(active ? "Đã kích hoạt gói ✅" : "Đã tắt gói ⛔", "success");
+            toast.success(active ? "Đã kích hoạt gói" : "Đã tắt gói");
         } catch (error: any) {
             console.error("Failed to toggle tier", error);
-            showToast(error.message || "Cập nhật trạng thái thất bại", "error");
+            toast.error(error.message || "Cập nhật trạng thái thất bại");
         }
     };
 
@@ -457,7 +456,7 @@ export default function RentalDurationTiersPage() {
             setTiers(updated.map((t, idx) => ({ ...t, order: idx })));
         } catch (error: any) {
             console.error("Failed to reorder", error);
-            showToast(error.message || "Sắp xếp thứ tự thất bại", "error");
+            toast.error(error.message || "Sắp xếp thứ tự thất bại");
             fetchTiers(); // Revert
         }
     };
@@ -721,7 +720,7 @@ export default function RentalDurationTiersPage() {
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa gói <strong className="text-foreground">&ldquo;{deleteTier?.name}&rdquo;</strong> không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -744,11 +743,11 @@ export default function RentalDurationTiersPage() {
             <Dialog open={isBulkDeleteOpen} onOpenChange={(open) => { if (!isBulkLoading) setIsBulkDeleteOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} gói thuê</strong> đã chọn không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

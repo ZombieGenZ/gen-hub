@@ -15,7 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -66,7 +66,6 @@ export default function CategoriesPage() {
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
-    const { showToast } = useToast();
 
     // --- Fetch Stats ---
     const fetchStats = useCallback(async () => {
@@ -121,11 +120,11 @@ export default function CategoriesPage() {
 
         } catch (error: any) {
             console.error("Failed to fetch categories", error);
-            showToast(error.message || "Không thể tải danh sách danh mục", "error");
+            toast.error(error.message || "Không thể tải danh sách danh mục");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     useEffect(() => { fetchStats(); }, [fetchStats]);
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
@@ -155,16 +154,16 @@ export default function CategoriesPage() {
 
             if (targetCategory) {
                 if(targetCategory.children && targetCategory.children.length > 0) {
-                     showToast(`Không thể xóa danh mục đang có danh mục con.`, "error");
+                     toast.error(`Không thể xóa danh mục đang có danh mục con.`);
                      return;
                 }
                 await categoryService.deleteCategory(token, targetCategory.id);
-                showToast(`Đã xóa danh mục "${targetCategory.name}" 🗑️`, "success");
+                toast.success(`Đã xóa danh mục "${targetCategory.name}"`);
             }
             handleRefresh();
         } catch (error: any) {
             console.error("Delete failed", error);
-            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -177,13 +176,13 @@ export default function CategoriesPage() {
             if (!token) return;
 
             await categoryService.deleteManyCategories(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} danh mục thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} danh mục thành công!`);
             
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều thất bại", "error");
+            toast.error(error.message || "Xóa nhiều thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -472,11 +471,11 @@ export default function CategoriesPage() {
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa danh mục <strong className="text-foreground">&ldquo;{targetCategory?.name}&rdquo;</strong> không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -499,11 +498,11 @@ export default function CategoriesPage() {
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
                             Bạn sắp xóa <strong className="text-foreground">{selectedIds.length}</strong> danh mục. Bạn có chắc chắn không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

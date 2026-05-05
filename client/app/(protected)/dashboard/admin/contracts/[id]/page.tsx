@@ -42,7 +42,7 @@ import { ContractFullDocument } from "@/components/contract/ContractFullDocument
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import type { RentalContractDetail, ContractCancelType } from "@/types/rental-contracts/rental-contracts.type";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 const rentalDurationTierService = new RentalDurationTierService();
 
@@ -50,7 +50,6 @@ export default function AdminContractDetailPage() {
     const params = useParams();
     const router = useRouter();
     const contractId = params.id as string;
-    const { showToast } = useToast();
 
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -97,8 +96,8 @@ export default function AdminContractDetailPage() {
             const items: { id: string; name: string; duration_months: number }[] =
                 res?.data?.items ?? res?.data ?? res?.items ?? [];
             setTiers(items);
-        } catch {
-            showToast("Không thể tải danh sách gói gia hạn", "error");
+        } catch (error: any) {
+            toast.error(error.message || "Không thể tải danh sách gói gia hạn");
         } finally {
             setTiersLoading(false);
         }
@@ -117,10 +116,10 @@ export default function AdminContractDetailPage() {
             });
             setRenewOpen(false);
             setRenewTierId("");
-            showToast("Gia hạn hợp đồng thành công", "success");
+            toast.success("Gia hạn hợp đồng thành công ✅");
             fetchContract();
-        } catch (err) {
-            showToast(err instanceof Error ? err.message : "Không thể gia hạn hợp đồng", "error");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể gia hạn hợp đồng");
         } finally {
             setRenewing(false);
         }
@@ -298,11 +297,11 @@ ${notesHtml}${cancelHtml}
             });
             setCancelOpen(false);
             setCancelReason("");
-            showToast("Đã hủy hợp đồng thành công", "success");
+            toast.success("Đã hủy hợp đồng thành công ✅");
             fetchContract();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Cancel error", err);
-            showToast(err instanceof Error ? err.message : "Không thể hủy hợp đồng", "error");
+            toast.error(err.message || "Không thể hủy hợp đồng");
         } finally {
             setCancelling(false);
         }

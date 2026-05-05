@@ -3,6 +3,7 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { ContactService } from "@/services/contact/contact.service";
 import { UpdateContactDto } from "@/types/contact/contact.type";
 import { contactKeys } from "./use-contacts";
+import { toast } from "sonner";
 
 const contactService = new ContactService();
 
@@ -22,6 +23,10 @@ export function useReplyContact(ticketId: string) {
             queryClient.invalidateQueries({ queryKey: contactKeys.messages(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Đã gửi phản hồi thành công! ✉️");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Gửi phản hồi thất bại");
         },
     });
 }
@@ -37,6 +42,10 @@ export function useUpdateContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Cập nhật ticket thành công ✅");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Cập nhật thất bại");
         },
     });
 }
@@ -52,6 +61,10 @@ export function useCloseContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Đã đóng ticket 🔒");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Không thể đóng ticket");
         },
     });
 }
@@ -67,6 +80,10 @@ export function useReopenContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Đã mở lại ticket 🔓");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Không thể mở lại ticket");
         },
     });
 }
@@ -81,6 +98,10 @@ export function useDeleteContact() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Đã xóa ticket thành công 🗑️");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Xóa ticket thất bại");
         },
     });
 }
@@ -95,6 +116,10 @@ export function useDeleteManyContacts() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
+            toast.success("Đã xóa các ticket đã chọn 🗑️");
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Xóa nhiều ticket thất bại");
         },
     });
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { NotificationService } from "@/services/notification/notification.service";
 import { UserNotification, NotificationType } from "@/types/notification/notification.type";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 // Icons
 import {
@@ -68,7 +68,6 @@ export default function AdminNotificationsPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
-    const { showToast } = useToast();
 
     // Refresh trigger
     const [refreshKey, setRefreshKey] = useState(0);
@@ -104,6 +103,7 @@ export default function AdminNotificationsPage() {
                 setTotalPages(Math.ceil((response.total || 0) / limit));
             } catch (error) {
                 console.error("Failed to fetch notifications", error);
+                toast.error("Không thể tải danh sách thông báo");
                 setNotifications([]);
             } finally {
                 setIsLoading(false);
@@ -140,13 +140,13 @@ export default function AdminNotificationsPage() {
             if (!token) return;
 
             await notificationService.deleteMultipleGlobalNotifications(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} thông báo thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} thông báo thành công!`);
             setSelectedIds([]);
             setIsBulkDeleteDialogOpen(false);
             setRefreshKey(prev => prev + 1);
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa thông báo thất bại", "error");
+            toast.error(error.message || "Xóa thông báo thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }

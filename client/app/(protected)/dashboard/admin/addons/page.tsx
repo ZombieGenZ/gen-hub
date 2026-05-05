@@ -17,7 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -77,7 +77,6 @@ export default function AddonsPage() {
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
-    const { showToast } = useToast();
 
     // --- Fetch Stats ---
     const fetchAddonStats = useCallback(async () => {
@@ -133,11 +132,11 @@ export default function AddonsPage() {
 
         } catch (error: any) {
             console.error("Failed to fetch addons", error);
-            showToast(error.message || "Không thể tải danh sách dịch vụ", "error");
+            toast.error(error.message || "Không thể tải danh sách dịch vụ");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     const fetchTypes = useCallback(async () => {
         try {
@@ -209,19 +208,19 @@ export default function AddonsPage() {
 
             if (activeTab === "services" && targetAddon) {
                 await addonsService.deleteAddon(token, targetAddon.id);
-                showToast(`Đã xóa dịch vụ "${targetAddon.name}" 🗑️`, "success");
+                toast.success(`Đã xóa dịch vụ "${targetAddon.name}" 🗑️`);
             } else if (activeTab === "types" && targetType) {
                 if (targetType.addons && targetType.addons.length > 0) {
-                    showToast(`Không thể xóa nhóm đang chứa ${targetType.addons.length} dịch vụ`, "error");
+                    toast.error(`Không thể xóa nhóm đang chứa ${targetType.addons.length} dịch vụ`);
                     return;
                 }
                 await addonsTypeService.deleteAddonType(token, targetType.id);
-                showToast(`Đã xóa nhóm dịch vụ "${targetType.name}" 🗑️`, "success");
+                toast.success(`Đã xóa nhóm dịch vụ "${targetType.name}" 🗑️`);
             }
             handleRefresh();
         } catch (error: any) {
             console.error("Delete failed", error);
-            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -235,16 +234,16 @@ export default function AddonsPage() {
 
             if (activeTab === "services") {
                 await addonsService.deleteManyAddons(token, selectedAddonIds);
-                showToast(`Đã xóa ${selectedAddonIds.length} dịch vụ thành công! 🗑️`, "success");
+                toast.success(`Đã xóa ${selectedAddonIds.length} dịch vụ thành công! 🗑️`);
             } else {
                 await addonsTypeService.deleteManyAddonTypes(token, selectedTypeIds);
-                showToast(`Đã xóa ${selectedTypeIds.length} nhóm dịch vụ thành công! 🗑️`, "success");
+                toast.success(`Đã xóa ${selectedTypeIds.length} nhóm dịch vụ thành công! 🗑️`);
             }
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều thất bại", "error");
+            toast.error(error.message || "Xóa nhiều thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }

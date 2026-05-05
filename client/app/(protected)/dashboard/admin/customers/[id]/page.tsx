@@ -28,6 +28,7 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { NotificationService } from "@/services/notification/notification.service";
 import {
@@ -36,7 +37,7 @@ import {
     type Warning,
 } from "@/services/user-management/user-management.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -77,7 +78,6 @@ export default function CustomerDetailPage() {
     const router = useRouter();
     const params = useParams();
     const userId = params?.id as string;
-    const { showToast } = useToast();
 
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
@@ -104,13 +104,13 @@ export default function CustomerDetailPage() {
         try {
             const res = await svc.findById(token, userId);
             setUser(res.data);
-        } catch {
-            showToast("Không thể tải thông tin khách hàng", "error");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể tải thông tin khách hàng");
             router.push("/dashboard/admin/customers");
         } finally {
             setLoading(false);
         }
-    }, [userId, router, showToast]);
+    }, [userId, router]);
 
     // ── Fetch warnings ──
     const fetchWarnings = useCallback(async () => {
@@ -119,7 +119,9 @@ export default function CustomerDetailPage() {
         try {
             const res = await svc.findUserWarnings(token, userId, { limit: 50 });
             setWarnings(res?.data?.items ?? (res as any)?.items ?? []);
-        } catch { /* silent */ }
+        } catch (err: any) {
+            toast.error("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"));
+        }
     }, [userId]);
 
     // ── Fetch notifications ──
@@ -139,7 +141,9 @@ export default function CustomerDetailPage() {
                     sender: "Hệ thống",
                 }))
             );
-        } catch { /* silent */ }
+        } catch (err: any) {
+            toast.error("Lỗi khi tải lịch sử thông báo: " + (err.message || "Không xác định"));
+        }
     }, [userId]);
 
     useEffect(() => { fetchUser(); }, [fetchUser]);
@@ -153,12 +157,12 @@ export default function CustomerDetailPage() {
         setIsBanning(true);
         try {
             await svc.banUser(token, user.id, { reason: banReason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            showToast(`Đã khóa tài khoản ${displayName || user.email}`, "success");
+            toast.success(`Đã khóa tài khoản ${displayName || user.email} thành công`);
             setBanDialogOpen(false);
             setBanReason("");
             fetchUser();
-        } catch {
-            showToast("Không thể khóa tài khoản", "error");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể khóa tài khoản");
         } finally {
             setIsBanning(false);
         }
@@ -169,10 +173,10 @@ export default function CustomerDetailPage() {
         if (!token || !user) return;
         try {
             await svc.unbanUser(token, user.id);
-            showToast(`Đã mở khóa tài khoản ${displayName || user.email}`, "success");
+            toast.success(`Đã mở khóa tài khoản ${displayName || user.email} thành công`);
             fetchUser();
-        } catch {
-            showToast("Không thể mở khóa tài khoản", "error");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể mở khóa tài khoản");
         }
     };
 
@@ -200,9 +204,9 @@ export default function CustomerDetailPage() {
             setSendFormData({ title: "", content: "", type: "WARNING" });
             setShowSendForm(false);
             setConfirmOpen(false);
-            showToast("Đã gửi thông báo", "success");
-        } catch {
-            showToast("Gửi thông báo thất bại", "error");
+            toast.success("Đã gửi thông báo thành công");
+        } catch (err: any) {
+            toast.error(err.message || "Gửi thông báo thất bại");
         } finally {
             setIsSending(false);
         }
@@ -458,23 +462,36 @@ export default function CustomerDetailPage() {
 
             {/* Ban Dialog */}
             <Dialog open={banDialogOpen} onOpenChange={(o) => { if (!isBanning) setBanDialogOpen(o); }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Khóa tài khoản</DialogTitle>
-                        <DialogDescription>
-                            Khóa tài khoản <strong>{displayName}</strong> trong 7 ngày.
+                <DialogContent className="sm:max-w-md p-6">
+                    <DialogHeader className="mb-4">
+                        <DialogTitle className="text-xl">Khóa tài khoản</DialogTitle>
+                        <DialogDescription className="text-slate-500">
+                            Bạn đang thực hiện khóa tài khoản <strong>{displayName}</strong> trong 7 ngày.
                         </DialogDescription>
                     </DialogHeader>
-                    <Textarea
-                        placeholder="Lý do khóa tài khoản..."
-                        value={banReason}
-                        onChange={(e) => setBanReason(e.target.value)}
-                        rows={3}
-                    />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setBanDialogOpen(false)} disabled={isBanning} className="rounded-xl">Hủy</Button>
-                        <Button variant="destructive" onClick={handleBan} disabled={!banReason.trim() || isBanning} className="rounded-xl">
-                            {isBanning ? "Đang xử lý..." : "Xác nhận khóa"}
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="ban-reason">Lý do khóa <span className="text-red-500">*</span></Label>
+                            <Textarea
+                                id="ban-reason"
+                                placeholder="Nhập lý do chi tiết..."
+                                value={banReason}
+                                onChange={(e) => setBanReason(e.target.value)}
+                                rows={4}
+                                className="rounded-xl border-slate-200 focus:border-red-300 focus:ring-red-50"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="mt-6 gap-2">
+                        <Button variant="outline" onClick={() => setBanDialogOpen(false)} disabled={isBanning} className="rounded-xl h-11 px-6">Hủy</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleBan}
+                            disabled={!banReason.trim() || isBanning}
+                            loading={isBanning}
+                            className="rounded-xl h-11 px-8"
+                        >
+                            Xác nhận khóa
                         </Button>
                     </DialogFooter>
                 </DialogContent>

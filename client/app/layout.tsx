@@ -8,6 +8,7 @@ import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { ProfileModalProviderWrapper } from "@/components/providers/ProfileModalProviderWrapper";
 import { LenisProvider } from "@/components/providers/LenisProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 
 const rem = REM({
   variable: "--font-rem",
@@ -69,6 +70,7 @@ export default function RootLayout({
                   <ProfileModalProviderWrapper>
                     {children}
                   </ProfileModalProviderWrapper>
+                  <Toaster position="top-center" richColors />
                 </LoadingProvider>
               </ToastProvider>
             </TooltipProvider>

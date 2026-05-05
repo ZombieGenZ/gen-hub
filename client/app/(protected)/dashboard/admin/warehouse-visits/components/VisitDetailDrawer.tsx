@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { warehouseVisitService } from '@/services/warehouse-visit/warehouse-visit.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
-import { useToast } from '@/contexts/ToastContext';
+import { toast } from 'sonner';
 import {
   XMarkIcon as XIcon,
   PhoneIcon,
@@ -27,7 +27,6 @@ interface VisitDetailDrawerProps {
 
 export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: VisitDetailDrawerProps) {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
 
   const token = authStorage.getAccessToken() || '';
 
@@ -64,10 +63,10 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
         ...payload
       });
 
-      showToast('Cập nhật trạng thái lịch hẹn thành công', 'success');
+      toast.success('Cập nhật trạng thái lịch hẹn thành công');
       onSuccess(); // Close drawer & refresh list
     } catch (error: any) {
-      showToast(error.message || 'Lỗi khi cập nhật trạng thái', 'error');
+      toast.error(error.message || 'Lỗi khi cập nhật trạng thái');
     } finally {
       setIsSubmitting(false);
     }
@@ -296,10 +295,10 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
                           setIsSubmitting(true);
                           warehouseVisitService.deleteBooking(token, visit.id)
                             .then(() => {
-                              showToast('Đã xóa dữ liệu', 'success');
+                              toast.success('Đã xóa dữ liệu');
                               onSuccess();
                             })
-                            .catch(err => showToast(err.message || 'Lỗi xóa', 'error'))
+                            .catch(err => toast.error(err.message || 'Lỗi xóa'))
                             .finally(() => setIsSubmitting(false));
                         }
                       }}

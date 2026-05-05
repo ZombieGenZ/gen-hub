@@ -25,6 +25,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePicker } from "@/components/ui/date-picker";
+import { toast } from "sonner";
 
 const couponService = new CouponService();
 
@@ -129,7 +130,7 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save coupon", error);
-            alert(error.message || "Failed to save coupon");
+            toast.error(error.message || "Failed to save coupon");
         } finally {
             setLoading(false);
         }

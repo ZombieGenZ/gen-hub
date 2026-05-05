@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
 import { io, Socket } from "socket.io-client";
 
@@ -175,7 +175,6 @@ function getKanbanColumn(status: string): string {
 // ════════════════════════════════════════════════
 export default function ApprovalQueuePage() {
     const router = useRouter();
-    const { showToast } = useToast();
 
     // ── Data state ──
     const [inboundItems, setInboundItems] = useState<InboundRequest[]>([]);
@@ -229,6 +228,7 @@ export default function ApprovalQueuePage() {
             }
             if (showLoadingSpinner) {
                 setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
+                toast.error("Lỗi kết nối: Không thể tải danh sách phiếu phê duyệt");
             }
         } finally {
             if (showLoadingSpinner) setLoading(false);
@@ -384,11 +384,10 @@ export default function ApprovalQueuePage() {
         setSelectedIds(new Set());
 
         if (failCount === 0) {
-            showToast(`Đã duyệt thành công ${successCount} phiếu`, "success");
+            toast.success(`Đã duyệt thành công ${successCount} phiếu`);
         } else {
-            showToast(
-                `Duyệt ${successCount} thành công, ${failCount} thất bại`,
-                failCount === selectedTickets.length ? "error" : "success"
+            toast.error(
+                `Duyệt ${successCount} thành công, ${failCount} thất bại`
             );
         }
 
@@ -409,10 +408,9 @@ export default function ApprovalQueuePage() {
         if (draggedId) {
             const ticket = allTickets.find((t) => t.id === draggedId);
             if (ticket) {
-                showToast(
-                    `Đã chuyển "${ticket.code}" sang "${KANBAN_COLUMNS.find((c) => c.key === column)?.title}"`,
-                    "success"
-                );
+                 toast.success(
+                     `Đã chuyển "${ticket.code}" sang "${KANBAN_COLUMNS.find((c) => c.key === column)?.title}"`
+                 );
             }
         }
         setDraggedId(null);

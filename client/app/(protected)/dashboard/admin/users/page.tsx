@@ -129,7 +129,7 @@ function BanDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.banUser(token, user.id, { reason: reason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email}`);
+            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`);
             onSuccess();
             onClose();
         } catch (err: any) {
@@ -142,17 +142,38 @@ function BanDialog({ user, open, onClose, onSuccess }: {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Khóa tài khoản</DialogTitle>
-                    <DialogDescription>
-                        Khóa tài khoản <strong>{user?.name || user?.full_name || user?.email}</strong> trong 7 ngày.
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Khóa tài khoản</DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                        Bạn đang thực hiện khóa tài khoản <strong>{user?.name || user?.full_name || user?.email}</strong>.
+                        Hệ thống sẽ tạm dừng quyền truy cập của người dùng này.
                     </DialogDescription>
                 </DialogHeader>
-                <Textarea placeholder="Lý do khóa tài khoản..." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={loading}>Hủy</Button>
-                    <Button variant="destructive" onClick={handleBan} disabled={!reason.trim() || loading} loading={loading}>Xác nhận khóa</Button>
+                <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <Label>Lý do khóa <span className="text-red-500">*</span></Label>
+                        <Textarea
+                            placeholder="Nhập lý do chi tiết..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={4}
+                            className="rounded-xl border-slate-200 focus:border-red-300 focus:ring-red-50"
+                        />
+                        <p className="text-xs text-slate-400 italic">* Mặc định khóa trong 7 ngày. Bạn có thể thay đổi thời hạn trong trang chi tiết.</p>
+                    </div>
+                </div>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-xl h-11 px-6">Hủy</Button>
+                    <Button
+                        variant="destructive"
+                        onClick={handleBan}
+                        disabled={!reason.trim() || loading}
+                        loading={loading}
+                        className="rounded-xl h-11 px-8"
+                    >
+                        Xác nhận khóa
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -169,7 +190,9 @@ export default function StaffPage() {
     const [offset, setOffset] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [banTarget, setBanTarget] = useState<ManagedUser | null>(null);
+    const [resendTarget, setResendTarget] = useState<ManagedUser | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     const fetchStaff = async (kw = searchTerm, status = statusFilter, off = offset) => {
         setIsLoading(true);
@@ -181,7 +204,8 @@ export default function StaffPage() {
             const res = await svc.findMany(token, query);
             setStaffList(res?.data?.items ?? []);
             setTotal(res?.data?.total ?? 0);
-        } catch {
+        } catch (err: any) {
+            toast.error(err.message || "Không thể tải danh sách người dùng");
             setStaffList([]);
             setTotal(0);
         } finally {
@@ -202,12 +226,15 @@ export default function StaffPage() {
     const handleUnban = async (user: ManagedUser) => {
         const token = authStorage.getAccessToken();
         if (!token) return;
+        setProcessingId(`unban-${user.id}`);
         try {
             await svc.unbanUser(token, user.id);
-            toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email}`);
+            toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`);
             fetchStaff();
         } catch (err: any) {
             toast.error(err.message || "Không thể mở khóa tài khoản");
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -344,6 +371,11 @@ export default function StaffPage() {
                                                             <ShieldOff className="w-4 h-4" />Khóa tài khoản
                                                         </DropdownMenuItem>
                                                     )}
+                                                    {(!staff.is_verified) && !staff.is_banned && (
+                                                        <DropdownMenuItem className="gap-2 cursor-pointer text-blue-600 focus:text-blue-700" onClick={() => setResendTarget(staff)}>
+                                                            <CheckCircle2 className="w-4 h-4" />Gửi xác thực
+                                                        </DropdownMenuItem>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -389,6 +421,58 @@ export default function StaffPage() {
 
             <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => fetchStaff()} />
             <BanDialog user={banTarget} open={!!banTarget} onClose={() => setBanTarget(null)} onSuccess={() => fetchStaff()} />
+            <ResendVerificationDialog user={resendTarget} open={!!resendTarget} onClose={() => setResendTarget(null)} onSuccess={() => fetchStaff()} />
         </div>
+    );
+}
+
+// ── Resend Verification Dialog ───────────────────────────────────────────────
+function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
+    user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
+}) {
+    const [loading, setLoading] = useState(false);
+
+    const handleConfirm = async () => {
+        if (!user) return;
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setLoading(true);
+        try {
+            await svc.resendVerification(token, user.id);
+            toast.success(`Đã gửi email xác thực đến ${user.email} thành công`);
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            toast.error(err.message || "Không thể gửi email xác thực");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Gửi lại email xác thực</DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                        Hệ thống sẽ gửi một email xác thực mới đến địa chỉ:
+                        <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-100 font-medium text-slate-900 text-center">
+                            {user?.email}
+                        </div>
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-xl h-11 px-6">Hủy</Button>
+                    <Button
+                        className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl h-11 px-8"
+                        onClick={handleConfirm}
+                        disabled={loading}
+                        loading={loading}
+                    >
+                        Xác nhận gửi email
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
 import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
 
@@ -117,7 +117,6 @@ interface InboundApprovalDetailProps {
 export default function InboundApprovalDetail({
     ticketId,
 }: InboundApprovalDetailProps) {
-    const { showToast } = useToast();
 
     const [data, setData] = useState<InboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
@@ -163,12 +162,10 @@ export default function InboundApprovalDetail({
                 item.details.forEach((d: any) => { map[d.id] = Number(d.actual_qty ?? d.expected_qty ?? 0); });
                 setActualQty(map);
             }
-        } catch {
-            showToast("Không thể tải chi tiết phiếu PO", "error");
         } finally {
             setLoading(false);
         }
-    }, [ticketId, showToast]);
+    }, [ticketId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -189,7 +186,7 @@ export default function InboundApprovalDetail({
 
             const message = INBOUND_REALTIME_TOAST_MESSAGES[eventName];
             if (message) {
-                showToast(message, "success");
+                toast.success(message);
                 lastRealtimeToastRef.current = { eventName, at: now };
             }
         },
@@ -197,7 +194,7 @@ export default function InboundApprovalDetail({
 
     const getToken = () => {
         const t = authStorage.getAccessToken();
-        if (!t) { showToast("Phiên đăng nhập hết hạn", "error"); return null; }
+        if (!t) { toast.error("Phiên đăng nhập hết hạn"); return null; }
         return t;
     };
 
@@ -206,10 +203,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.approveInbound(token, ticketId);
-            showToast("Duyệt phiếu PO thành công — chuyển sang Đã duyệt", "success");
+            toast.success("Duyệt phiếu PO thành công");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể duyệt phiếu", "error");
+            toast.error(err.message || "Không thể duyệt phiếu");
         } finally { setSubmitting(false); }
     };
 
@@ -218,11 +215,11 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.rejectInbound(token, ticketId, reason);
-            showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
+            toast.success(`Đã từ chối phiếu — Lý do: ${reason}`);
             setRejectOpen(false);
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể từ chối phiếu", "error");
+            toast.error(err.message || "Không thể từ chối phiếu");
             setRejectOpen(false);
             fetchData();
         } finally { setSubmitting(false); }
@@ -233,10 +230,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.startReceiving(token, ticketId, {});
-            showToast("Đã bắt đầu kiểm đếm — chuyển sang Đang kiểm đếm", "success");
+            toast.success("Đã bắt đầu kiểm đếm hàng hóa");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể bắt đầu kiểm đếm", "error");
+            toast.error(err.message || "Không thể bắt đầu kiểm đếm");
             fetchData();
         } finally { setSubmitting(false); }
     };
@@ -288,9 +285,9 @@ export default function InboundApprovalDetail({
             await inventoryService.confirmReceiving(token, ticketId, payload);
             setMismatchModal({ open: false, mismatches: [], pendingDetails: [] });
             if (is_customer_agreed === false) {
-                showToast("Đã thông báo cho khách hàng — Phiếu nhập bị hủy do lệch số lượng", "error");
+                toast.error("Đã thông báo cho khách hàng — Phiếu nhập bị hủy do lệch số lượng");
             } else {
-                showToast("Đã xác nhận kiểm đếm — chuyển sang Chờ cất hàng", "success");
+                toast.success("Đã xác nhận kiểm đếm thành công");
             }
             fetchData();
         } catch (err: any) {
@@ -302,7 +299,7 @@ export default function InboundApprovalDetail({
                 }));
                 setMismatchModal({ open: true, mismatches: err.mismatches, pendingDetails: details });
             } else {
-                showToast(err.message || "Không thể xác nhận kiểm đếm", "error");
+                toast.error(err.message || "Không thể xác nhận kiểm đếm");
             }
             fetchData();
         } finally { setSubmitting(false); }
@@ -313,10 +310,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.confirmPutaway(token, ticketId);
-            showToast("Đã xác nhận cất hàng — phiếu PO Hoàn tất!", "success");
+            toast.success("Đã xác nhận cất hàng — phiếu PO Hoàn tất!");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể xác nhận cất hàng", "error");
+            toast.error(err.message || "Không thể xác nhận cất hàng");
             fetchData();
         } finally { setSubmitting(false); }
     };
@@ -326,10 +323,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.refillInventory(token, ticketId);
-            showToast("Đã bổ sung tồn kho thành công!", "success");
+            toast.success("Đã bổ sung tồn kho thành công!");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể bổ sung tồn kho", "error");
+            toast.error(err.message || "Không thể bổ sung tồn kho");
             if (err.status === 403) {
                 authStorage.clearTokens();
                 window.location.href = '/auth/login';
@@ -344,10 +341,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.revertInboundToApproved(token, ticketId);
-            showToast('Đã quay lại bước Đã duyệt', "success");
+            toast.success('Đã quay lại bước Đã duyệt');
             fetchData();
         } catch (err: any) {
-            showToast(err.message || 'Không thể hoàn tác bước kiểm đếm', "error");
+            toast.error(err.message || 'Không thể hoàn tác bước kiểm đếm');
         } finally { setSubmitting(false); }
     };
 
@@ -356,10 +353,10 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await inventoryService.revertInboundToReceiving(token, ticketId);
-            showToast('Đã quay lại bước Kiểm đếm', "success");
+            toast.success('Đã quay lại bước Kiểm đếm');
             fetchData();
         } catch (err: any) {
-            showToast(err.message || 'Không thể hoàn tác bước cất hàng', "error");
+            toast.error(err.message || 'Không thể hoàn tác bước cất hàng');
         } finally { setSubmitting(false); }
     };
 

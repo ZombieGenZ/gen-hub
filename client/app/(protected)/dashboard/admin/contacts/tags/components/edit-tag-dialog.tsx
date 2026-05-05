@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactTagsService } from "@/services/contact-tags/contact-tags.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { ContactTag } from "@/types/contact/contact-tag.type";
 
 const contactTagsService = new ContactTagsService();
@@ -51,7 +51,6 @@ const PRESET_COLORS = [
 ];
 
 export function EditTagDialog({ open, onOpenChange, tag, onSuccess }: EditTagDialogProps) {
-    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -83,12 +82,12 @@ export function EditTagDialog({ open, onOpenChange, tag, onSuccess }: EditTagDia
             if (!token) return;
 
             await contactTagsService.update(token, tag.id, values);
-            showToast("Đã cập nhật nhãn", "success");
+            toast.success("Cập nhật nhãn thành công");
             onOpenChange(false);
             onSuccess();
         } catch (error: any) {
             console.error("Failed to update tag", error);
-            showToast(error.message || "Không thể cập nhật nhãn", "error");
+            toast.error(error.message || "Không thể cập nhật nhãn");
         } finally {
             setLoading(false);
         }

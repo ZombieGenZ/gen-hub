@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowPathIcon, DocumentTextIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { format, differenceInHours } from "date-fns";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { ReconciliationDrawer } from "@/components/contract/ReconciliationDrawer";
 import type { RefundRequest, RefundStatus } from "@/types/refund/refund.type";
 import React from "react";
@@ -32,7 +32,6 @@ const STATUS_TABS: { value: string; label: string }[] = [
 
 export default function AdminRefundRequestsPage() {
     const router = useRouter();
-    const { showToast } = useToast();
     const [requests, setRequests] = useState<RefundRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -92,11 +91,11 @@ export default function AdminRefundRequestsPage() {
             }
         } catch (error) {
             console.error("Failed to fetch refund requests", error);
-            showToast("Không thể tải danh sách hoàn tiền", "error");
+            toast.error("Không thể tải danh sách hoàn tiền");
         } finally {
             setLoading(false);
         }
-    }, [page, limit, activeTab, router, showToast]);
+    }, [page, limit, activeTab, router]);
 
     useEffect(() => {
         fetchRequests();

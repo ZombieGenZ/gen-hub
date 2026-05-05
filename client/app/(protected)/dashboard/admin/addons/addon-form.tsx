@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { AddonsService } from "@/services/addons/addons.service";
 import { Button } from "@/components/ui/button";
@@ -38,13 +39,15 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
 
             if (isEdit && initialData?.id) {
                 await addonsService.updateAddon(token, initialData.id, formData);
+                toast.success(`Đã cập nhật dịch vụ "${formData.name}" ✅`);
             } else {
                 await addonsService.createAddon(token, formData);
+                toast.success(`Đã tạo dịch vụ "${formData.name}" thành công ✅`);
             }
             onSuccess();
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error("Failed to save addon", error);
-            // In a real app, use toast here. For now, simple alert or let parent handle
+            toast.error(error.message || "Không thể lưu thông tin dịch vụ");
         } finally {
             setLoading(false);
         }

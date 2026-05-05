@@ -15,7 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -67,7 +67,6 @@ export default function ArticlesPage() {
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
-    const { showToast } = useToast();
 
     // --- Fetch Categories ---
     const fetchCategories = useCallback(async () => {
@@ -81,7 +80,10 @@ export default function ArticlesPage() {
             else if (Array.isArray(res)) items = res;
             else if (Array.isArray(res?.data)) items = res.data;
             setCategories(items);
-        } catch(e) { console.error(e) }
+        } catch(e) { 
+            console.error(e);
+            toast.error("Không thể tải danh sách danh mục");
+        }
     }, []);
 
     // --- Fetch Data ---
@@ -124,11 +126,11 @@ export default function ArticlesPage() {
 
         } catch (error: any) {
             console.error("Failed to fetch articles", error);
-            showToast(error.message || "Không thể tải danh sách bài viết", "error");
+            toast.error(error.message || "Không thể tải danh sách bài viết");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, typeFilter, statusFilter, categoryFilter, showToast]);
+    }, [currentPage, itemsPerPage, searchTerm, typeFilter, statusFilter, categoryFilter]);
 
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
     useEffect(() => { fetchArticles(); }, [fetchArticles]);
@@ -155,12 +157,12 @@ export default function ArticlesPage() {
 
             if (targetArticle) {
                 await articleService.deleteArticle(token, targetArticle.id);
-                showToast(`Đã xóa bài viết "${targetArticle.title}" 🗑️`, "success");
+                toast.success(`Đã xóa bài viết "${targetArticle.title}"`);
             }
             handleRefresh();
         } catch (error: any) {
             console.error("Delete failed", error);
-            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -173,13 +175,13 @@ export default function ArticlesPage() {
             if (!token) return;
 
             await articleService.deleteManyArticles(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} bài viết thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} bài viết thành công!`);
             
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều thất bại", "error");
+            toast.error(error.message || "Xóa nhiều thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -483,11 +485,11 @@ export default function ArticlesPage() {
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
                         <DialogDescription>
                             Bạn có chắc chắn muốn xóa bài viết <strong className="text-foreground">&ldquo;{targetArticle?.title}&rdquo;</strong> không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -510,11 +512,11 @@ export default function ArticlesPage() {
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
                             Bạn sắp xóa <strong className="text-foreground">{selectedIds.length}</strong> bài viết. Bạn có chắc chắn không?
                             <br />
-                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
+                            <span className="text-red-500 text-xs mt-1 inline-block">Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

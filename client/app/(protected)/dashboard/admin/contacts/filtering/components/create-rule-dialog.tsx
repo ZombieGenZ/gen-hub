@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactListService } from "@/services/contact-list/contact-list.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 import { ContactListType, ContactListMatchType } from "@/types/contact/contact-list.type";
 
 const contactListService = new ContactListService();
@@ -54,7 +54,6 @@ interface CreateRuleDialogProps {
 }
 
 export function CreateRuleDialog({ open, onOpenChange, onSuccess }: CreateRuleDialogProps) {
-    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -76,13 +75,13 @@ export function CreateRuleDialog({ open, onOpenChange, onSuccess }: CreateRuleDi
             if (!token) return;
 
             await contactListService.create(token, values);
-            showToast("Đã thêm quy tắc mới", "success");
+            toast.success("Đã thêm quy tắc mới");
             onOpenChange(false);
             form.reset();
             onSuccess();
         } catch (error: any) {
             console.error("Failed to create rule", error);
-            showToast(error.message || "Không thể tạo quy tắc", "error");
+            toast.error(error.message || "Không thể tạo quy tắc");
         } finally {
             setLoading(false);
         }

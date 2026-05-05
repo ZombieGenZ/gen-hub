@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { IsuranceService } from "@/services/Insurance/Insurance.service";
 import { Insurance } from "@/types/insurance/Insurance.types";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 // Components
 import { InsuranceHeader } from "@/components/dashboard/admin/insurances/InsuranceHeader";
@@ -16,7 +16,6 @@ import { InsuranceActionDialogs } from "@/components/dashboard/admin/insurances/
 const insuranceService = new IsuranceService();
 
 export default function InsurancesPage() {
-    const { showToast } = useToast();
 
     // --- Data States ---
     const [insurances, setInsurances] = useState<Insurance[]>([]);
@@ -102,11 +101,11 @@ export default function InsurancesPage() {
             setTotalItems(total);
         } catch (error: any) {
             console.error("Failed to fetch insurances", error);
-            showToast(error.message || "Không thể tải danh sách bảo hiểm", "error");
+            toast.error(error.message || "Không thể tải danh sách bảo hiểm");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     useEffect(() => { fetchStats(); }, [fetchStats]);
     useEffect(() => { fetchInsurances(); }, [fetchInsurances]);
@@ -137,11 +136,11 @@ export default function InsurancesPage() {
             if (!token || !targetInsurance) return;
 
             await insuranceService.deleteInsurance(token, targetInsurance.id);
-            showToast(`Đã xóa gói bảo hiểm "${targetInsurance.name}" 🗑️`, "success");
+            toast.success(`Đã xóa gói bảo hiểm "${targetInsurance.name}"`);
             handleRefresh();
         } catch (error: any) {
             console.error("Failed to delete insurance", error);
-            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -154,12 +153,12 @@ export default function InsurancesPage() {
             if (!token) return;
 
             await insuranceService.deleteManyInsurances(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} gói bảo hiểm thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} gói bảo hiểm thành công!`);
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast(error.message || "Xóa nhiều thất bại", "error");
+            toast.error(error.message || "Xóa nhiều thất bại");
         } finally {
             setIsBulkActionLoading(false);
         }

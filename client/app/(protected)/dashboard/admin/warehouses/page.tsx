@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
 import { Province } from "@/types/location/provinces.type";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 // Components
 import { WarehouseHeader } from "@/components/dashboard/admin/warehouses/WarehouseHeader";
@@ -43,7 +43,6 @@ export default function WarehouseTemplatePage() {
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
-    const { showToast } = useToast();
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -99,17 +98,19 @@ export default function WarehouseTemplatePage() {
             const error = err instanceof Error ? err : new Error(String(err));
             if (error.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
-            showToast("Lỗi khi tải dữ liệu kho.", "error");
+            toast.error("Lỗi khi tải dữ liệu kho.");
         } finally {
             setLoading(false);
         }
-    }, [debouncedKeywords, provinceFilter, statusFilter, currentPage, router, showToast]);
+    }, [debouncedKeywords, provinceFilter, statusFilter, currentPage, router]);
 
     const fetchProvinces = useCallback(async () => {
         try {
             const data = await locationService.getProvinces();
             if (Array.isArray(data)) setProvinces(data);
-        } catch { /* silent */ }
+        } catch {
+            toast.error("Không thể tải danh sách tỉnh thành");
+        }
     }, []);
 
     useEffect(() => { fetchWarehouses(); }, [fetchWarehouses]);
@@ -147,13 +148,13 @@ export default function WarehouseTemplatePage() {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteWarehouseTemplate(token, deleteTarget.id);
-            showToast(`Đã xóa "${deleteTarget.name}" 🗑️`, "success");
+            toast.success(`Đã xóa "${deleteTarget.name}"`);
             setDeleteDialogOpen(false);
             setDeleteTarget(null);
             setSelectedIds([]);
             fetchWarehouses();
         } catch (err: any) {
-            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(err.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -165,12 +166,12 @@ export default function WarehouseTemplatePage() {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteManyWarehouseTemplates(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} template thành công! 🗑️`, "success");
+            toast.success(`Đã xóa ${selectedIds.length} kho thành công!`);
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchWarehouses();
         } catch (err: any) {
-            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
+            toast.error(err.message || "Xóa thất bại, vui lòng thử lại");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -178,7 +179,7 @@ export default function WarehouseTemplatePage() {
 
     const handleCreate = async () => {
         if (!createForm.name.trim()) {
-            showToast("Vui lòng nhập tên kho.", "error");
+            toast.error("Vui lòng nhập tên kho.");
             return;
         }
         const token = authStorage.getAccessToken();
@@ -192,7 +193,7 @@ export default function WarehouseTemplatePage() {
                 block_width: 1,
                 is_active: false,
             });
-            showToast(`Đã tạo kho "${createForm.name}" thành công! 🎉`, "success");
+            toast.success(`Đã tạo kho "${createForm.name}" thành công!`);
             setCreateDialogOpen(false);
             setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
             const newId = result?.data?.id || result?.id;
@@ -202,7 +203,7 @@ export default function WarehouseTemplatePage() {
                 fetchWarehouses();
             }
         } catch (err: any) {
-            showToast(err.message || "Tạo kho thất bại, vui lòng thử lại", "error");
+            toast.error(err.message || "Tạo kho thất bại, vui lòng thử lại");
         } finally {
             setIsCreating(false);
         }
