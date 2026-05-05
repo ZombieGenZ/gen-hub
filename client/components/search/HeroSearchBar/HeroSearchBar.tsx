@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     MapPinIcon,
@@ -8,28 +8,18 @@ import {
     BuildingStorefrontIcon,
     MagnifyingGlassIcon,
     AdjustmentsHorizontalIcon,
-    XMarkIcon,
     ChevronDownIcon,
     BuildingOffice2Icon,
     UserGroupIcon,
-    ArchiveBoxIcon,
+    CheckIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { LocationService } from '@/services/location/location.service';
+import { Province } from '@/types/location/provinces.type';
 import './HeroSearchBar.css';
 
-// Sample data for dropdowns
-const LOCATIONS = [
-    { id: 'ho-chi-minh', name: 'TP. Hồ Chí Minh', province: 'TP. Hồ Chí Minh', type: 'province' },
-    { id: 'bien-hoa', name: 'Biên Hòa', province: 'Đồng Nai', type: 'district' },
-    { id: 'thu-duc', name: 'Thủ Đức', province: 'TP. Hồ Chí Minh', type: 'district' },
-    { id: 'quan-9', name: 'Quận 9', province: 'TP. Hồ Chí Minh', type: 'district' },
-    { id: 'di-an', name: 'Dĩ An', province: 'Bình Dương', type: 'district' },
-    { id: 'binh-duong', name: 'Bình Dương', province: 'Bình Dương', type: 'province' },
-    { id: 'dong-nai', name: 'Đồng Nai', province: 'Đồng Nai', type: 'province' },
-    { id: 'kcn-vsip', name: 'KCN VSIP', province: 'Bình Dương', type: 'industrial' },
-    { id: 'kcn-amta', name: 'KCN Amata', province: 'Đồng Nai', type: 'industrial' },
-    { id: 'kcn-high-tech', name: 'Khu Công Nghệ Cao', province: 'TP. Hồ Chí Minh', type: 'industrial' },
-];
+const locationService = new LocationService();
+
 
 const AREA_RANGES = [
     { id: 'all', label: 'Tất cả diện tích', min: 0, max: 999999 },
@@ -54,14 +44,7 @@ const RENTAL_TYPES = [
         Icon: UserGroupIcon,
         description: 'Chia sẻ không gian với đơn vị khác',
         iconBg: 'rental-icon-bg--blue',
-    },
-    {
-        id: 'fulfillment',
-        label: 'Fulfillment',
-        Icon: ArchiveBoxIcon,
-        description: 'Dịch vụ lưu kho & hoàn thiện đơn hàng',
-        iconBg: 'rental-icon-bg--violet',
-    },
+    }
 ];
 
 interface HeroSearchBarProps {
@@ -69,12 +52,17 @@ interface HeroSearchBarProps {
     onOpenFilter?: () => void;
     className?: string;
     variant?: 'hero' | 'compact';
+    initialValues?: Partial<SearchFilters>;
 }
 
 export interface SearchFilters {
     location: string | null;
+    province_id: string | null;
+    province_name: string | null;  // tên hiển thị
     areaRange: { min: number; max: number } | null;
     rentalType: string | null;
+    /** Text user gõ tự do để tìm kiếm (gửi lên API như keywords) */
+    keywords?: string | null;
 }
 
 type ActiveSection = 'location' | 'area' | 'rental' | null;
@@ -84,12 +72,47 @@ export default function HeroSearchBar({
     onOpenFilter,
     className,
     variant = 'hero',
-    minified = false
+    minified = false,
+    initialValues,
 }: HeroSearchBarProps & { minified?: boolean }) {
     const [activeSection, setActiveSection] = useState<ActiveSection>(null);
-    const [selectedLocation, setSelectedLocation] = useState<typeof LOCATIONS[0] | null>(null);
-    const [selectedArea, setSelectedArea] = useState<typeof AREA_RANGES[0] | null>(null);
-    const [selectedRental, setSelectedRental] = useState<typeof RENTAL_TYPES[0] | null>(null);
+
+    // ── Province state (API) ──
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [provincesLoading, setProvincesLoading] = useState(false);
+
+    // Fetch provinces khi mount — API không hỗ trợ limit, sẽ trả về tất cả
+    useEffect(() => {
+        setProvincesLoading(true);
+        locationService
+            .getProvinces()
+            .then(setProvinces)
+            .catch(() => setProvinces([]))
+            .finally(() => setProvincesLoading(false));
+    }, []);
+
+    const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
+
+    useEffect(() => {
+        if (!initialValues?.province_id || provinces.length === 0) return;
+        const match = provinces.find(p => p.id === initialValues.province_id);
+        if (match) setSelectedProvince(match);
+    }, [initialValues?.province_id, provinces]);
+
+    // Restore selected area từ initialValues
+    const [selectedArea, setSelectedArea] = useState<typeof AREA_RANGES[0] | null>(() => {
+        if (!initialValues?.areaRange) return null;
+        return AREA_RANGES.find(
+            a => a.min === initialValues.areaRange!.min && a.max === initialValues.areaRange!.max
+        ) ?? null;
+    });
+
+    // Restore rental type từ initialValues
+    const [selectedRental, setSelectedRental] = useState<typeof RENTAL_TYPES[0] | null>(() => {
+        if (!initialValues?.rentalType) return null;
+        return RENTAL_TYPES.find(r => r.id === initialValues.rentalType) ?? null;
+    });
+
     const [locationSearch, setLocationSearch] = useState('');
 
     const searchBarRef = useRef<HTMLDivElement>(null);
@@ -111,16 +134,29 @@ export default function HeroSearchBar({
         setActiveSection('location');
     };
 
-    const filteredLocations = LOCATIONS.filter(loc =>
-        loc.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
-        loc.province.toLowerCase().includes(locationSearch.toLowerCase())
+    const filteredProvinces = useMemo(() =>
+        provinces.filter(p =>
+            p.name.toLowerCase().includes(locationSearch.toLowerCase())
+        ),
+        [provinces, locationSearch]
     );
+
+    const getProvinceTypeLabel = (type: string) => {
+        if (type?.toLowerCase().includes('thành phố') || type === 'tp') return 'Thành phố';
+        if (type?.toLowerCase().includes('tỉnh') || type === 'province') return 'Tỉnh';
+        return type || 'Khu vực';
+    };
 
     const handleSearch = () => {
         onSearch?.({
-            location: selectedLocation?.id || null,
+            location: selectedProvince?.slug || null,
+            province_id: selectedProvince?.id || null,
+            province_name: selectedProvince?.name || null,
             areaRange: selectedArea ? { min: selectedArea.min, max: selectedArea.max } : null,
             rentalType: selectedRental?.id || null,
+            // Nếu user chọn tỉnh từ dropdown: không cần keywords
+            // Nếu user gõ text không chọn: dùng locationSearch làm keywords
+            keywords: selectedProvince ? null : (locationSearch.trim() || null),
         });
         setActiveSection(null);
     };
@@ -148,7 +184,7 @@ export default function HeroSearchBar({
                 <div className="hero-search-bar__container hero-search-bar__container--minified">
                     <div className="flex items-center gap-4 pl-4 flex-1 overflow-hidden">
                         <span className="text-sm font-semibold truncate text-foreground border-r border-border pr-4">
-                            {selectedLocation ? selectedLocation.name : "Khu vực bất kỳ"}
+                            {selectedProvince ? selectedProvince.name : "Khu vực bất kỳ"}
                         </span>
                         <span className="text-sm font-medium truncate text-foreground border-r border-border pr-4 hidden sm:block">
                             {selectedArea ? selectedArea.label : "Diện tích bất kỳ"}
@@ -210,7 +246,7 @@ export default function HeroSearchBar({
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Tìm kiếm khu vực..."
+                                placeholder="Tìm tỉnh / thành phố..."
                                 className="hero-search-bar__input-inline"
                                 value={locationSearch}
                                 onChange={(e) => setLocationSearch(e.target.value)}
@@ -218,7 +254,7 @@ export default function HeroSearchBar({
                             />
                         ) : (
                             <span className="hero-search-bar__section-value">
-                                {selectedLocation ? selectedLocation.name : "Tìm kiếm kho"}
+                                {selectedProvince ? selectedProvince.name : "Tìm kiếm kho"}
                             </span>
                         )}
                     </div>
@@ -310,32 +346,62 @@ export default function HeroSearchBar({
                         className="hero-search-bar__dropdown hero-search-bar__dropdown--location"
                     >
                         <div className="hero-search-bar__dropdown-list">
-                            {filteredLocations.map((loc) => (
-                                <div
-                                    key={loc.id}
-                                    className={cn(
-                                        "hero-search-bar__dropdown-item",
-                                        selectedLocation?.id === loc.id && "hero-search-bar__dropdown-item--selected"
-                                    )}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedLocation(loc);
-                                        setActiveSection(null);
-                                        setLocationSearch(''); // Reset search on select
-                                    }}
-                                >
-                                    <div className="hero-search-bar__dropdown-item-icon">
-                                        <MapPinIcon className="w-4 h-4" />
-                                    </div>
-                                    <div className="hero-search-bar__dropdown-item-content">
-                                        <span className="hero-search-bar__dropdown-item-name">{loc.name}</span>
-                                        <span className="hero-search-bar__dropdown-item-meta">
-                                            {loc.province} • {getLocationTypeLabel(loc.type)}
-                                        </span>
+                            {provincesLoading ? (
+                                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        Đang tải khu vực...
                                     </div>
                                 </div>
-                            ))}
+                            ) : filteredProvinces.length === 0 ? (
+                                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                                    Không tìm thấy khu vực nào
+                                </div>
+                            ) : (
+                                filteredProvinces.map((province) => (
+                                    <div
+                                        key={province.id}
+                                        className={cn(
+                                            "hero-search-bar__dropdown-item",
+                                            selectedProvince?.id === province.id && "hero-search-bar__dropdown-item--selected"
+                                        )}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Toggle: click lại để bỏ chọn
+                                            if (selectedProvince?.id === province.id) {
+                                                setSelectedProvince(null);
+                                            } else {
+                                                setSelectedProvince(province);
+                                            }
+                                            setActiveSection(null);
+                                            setLocationSearch('');
+                                        }}
+                                    >
+                                        <div className="hero-search-bar__dropdown-item-icon">
+                                            <MapPinIcon className="w-4 h-4" />
+                                        </div>
+                                        <div className="hero-search-bar__dropdown-item-content">
+                                            <span className="hero-search-bar__dropdown-item-name">{province.name}</span>
+                                            <span className="hero-search-bar__dropdown-item-meta">
+                                                {getProvinceTypeLabel(province.type)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
+                        {/* Xóa chọn */}
+                        {selectedProvince && (
+                            <button
+                                className="hero-search-bar__dropdown-clear"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedProvince(null);
+                                }}
+                            >
+                                Xóa lựa chọn
+                            </button>
+                        )}
                     </motion.div>
                 )}
 
@@ -358,7 +424,12 @@ export default function HeroSearchBar({
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setSelectedArea(area);
+                                        // Toggle: click lại để bỏ chọn
+                                        if (selectedArea?.id === area.id) {
+                                            setSelectedArea(null);
+                                        } else {
+                                            setSelectedArea(area);
+                                        }
                                         setActiveSection(null);
                                     }}
                                 >
@@ -399,7 +470,12 @@ export default function HeroSearchBar({
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setSelectedRental(rental);
+                                        // Toggle: click lại để bỏ chọn
+                                        if (selectedRental?.id === rental.id) {
+                                            setSelectedRental(null);
+                                        } else {
+                                            setSelectedRental(rental);
+                                        }
                                         setActiveSection(null);
                                     }}
                                 >
@@ -412,7 +488,7 @@ export default function HeroSearchBar({
                                     </div>
                                     {selectedRental?.id === rental.id && (
                                         <span className="hero-search-bar__rental-check">
-                                            <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>
+                                            <CheckIcon className="w-4 h-4" strokeWidth={2.5} />
                                         </span>
                                     )}
                                 </button>

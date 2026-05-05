@@ -10,6 +10,7 @@ import { X } from 'lucide-react';
 import { cn, calculateDistance } from '@/lib/utils';
 import { ArrowsPointingOutIcon, PaperAirplaneIcon, CubeIcon } from '@heroicons/react/24/solid';
 import Supercluster from 'supercluster';
+import { getProvinceCoords } from '@/data/provinceCoordinates';
 
 // Constants
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -46,9 +47,10 @@ interface MapComponentProps {
     onMarkerClick: (propertyId: number | string) => void;
     variant?: 'search' | 'detail';
     searchTrigger?: number;
+    targetProvince?: string | null;
 }
 
-export default function MapComponent({ properties, onBoundsChange, highlightedPropertyId, onMarkerClick, variant = 'search', searchTrigger }: MapComponentProps) {
+export default function MapComponent({ properties, onBoundsChange, highlightedPropertyId, onMarkerClick, variant = 'search', searchTrigger, targetProvince }: MapComponentProps) {
     const router = useRouter();
     const mapRef = useRef<MapRef>(null);
 
@@ -126,9 +128,26 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
     }, [viewState, isMapLoaded]);
     // ---------------------------
 
+    const processedSearchTriggerRef = useRef(-1);
+
     // Auto-Fit Bounds on Search Trigger
     useEffect(() => {
-        if (!searchTrigger || !isMapLoaded || properties.length === 0 || !mapRef.current) return;
+        if (!searchTrigger || !isMapLoaded || !mapRef.current) return;
+        
+        // Only fit bounds once per searchTrigger
+        if (processedSearchTriggerRef.current === searchTrigger) return;
+        processedSearchTriggerRef.current = searchTrigger;
+
+        // Ưu tiên zoom vào trung tâm tỉnh nếu có filter tỉnh
+        if (targetProvince) {
+            const coords = getProvinceCoords(targetProvince);
+            if (coords) {
+                mapRef.current.easeTo({ center: [coords.lng, coords.lat], zoom: coords.zoom, duration: 1000 });
+                return;
+            }
+        }
+
+        if (properties.length === 0) return;
 
         const lats = properties.map(p => p.lat);
         const lngs = properties.map(p => p.lng);
@@ -137,12 +156,18 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
         const minLng = Math.min(...lngs);
         const maxLng = Math.max(...lngs);
 
+        if (minLat === maxLat && minLng === maxLng) {
+            // Only 1 point, so we can't really fit bounds with 0 area safely without zooming too close sometimes
+            mapRef.current.easeTo({ center: [minLng, minLat], zoom: 14, duration: 1000 });
+            return;
+        }
+
         // Fit bounds with some padding
         mapRef.current.fitBounds(
             [[minLng, minLat], [maxLng, maxLat]],
-            { padding: 80, duration: 1000 }
+            { padding: 80, duration: 1000, maxZoom: 14 }
         );
-    }, [searchTrigger, isMapLoaded]); // Only trigger when explicit search happens (searchTrigger changes) or map loads
+    }, [searchTrigger, isMapLoaded, properties, targetProvince]); // Trigger when properties change if searchTrigger allows it
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

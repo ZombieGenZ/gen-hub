@@ -230,6 +230,13 @@ export class WarehouseTemplateRepository {
         OR: [
           { name: { contains: keywords, mode: 'insensitive' } },
           { description: { contains: keywords, mode: 'insensitive' } },
+          { address_detail: { contains: keywords, mode: 'insensitive' } },
+          { ward: { name: { contains: keywords, mode: 'insensitive' } } },
+          {
+            ward: {
+              province: { name: { contains: keywords, mode: 'insensitive' } },
+            },
+          },
         ],
       }),
       ...(hidePrivateRented && {

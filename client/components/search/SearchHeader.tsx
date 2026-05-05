@@ -14,6 +14,8 @@ interface SearchHeaderProps {
     onOpenFilter?: () => void;
     className?: string;
     isScrolled?: boolean;
+    /** Giá trị khởi tạo của search bar để restore từ URL */
+    initialSearchValues?: Partial<SearchFilters>;
 }
 
 import { UserService } from "@/services/user/user.service";
@@ -23,7 +25,8 @@ export default function SearchHeader({
     onSearch,
     onOpenFilter,
     className,
-    isScrolled
+    isScrolled,
+    initialSearchValues,
 }: SearchHeaderProps) {
     const router = useRouter();
     const [isLogin, setIsLogin] = useState(false);
@@ -82,6 +85,7 @@ export default function SearchHeader({
                         onOpenFilter={onOpenFilter}
                         variant="compact"
                         minified={effectiveScrolled}
+                        initialValues={initialSearchValues}
                     />
                 </div>
 

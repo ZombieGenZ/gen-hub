@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PropertyList from '@/app/(public)/homepage/MapSearch/PropertyList';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { Property, mapWarehouseToProperty } from '@/data/mockProperties';
 import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { MapIcon, ListBulletIcon } from '@heroicons/react/20/solid';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { HeroSearchBar, SearchFilters } from '@/components/search/HeroSearchBar';
 import { FilterModal, FilterState } from '@/components/search/FilterModal';
@@ -55,16 +56,25 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [user, setUser] = useState<UserData | null>(null);
     const [active, setActive] = useState<string | null>(null);
 
-    // Fetch warehouses from API
-    const fetchWarehouses = useCallback(async () => {
+    // Fetch warehouses from API với filter
+        const fetchWarehouses = useCallback(async (params?: {
+        keywords?: string;
+        province_id?: string;
+        rental_status?: string;
+        page?: number;
+    }) => {
         try {
             setIsLoading(true);
             const result = await publicWarehouseService.getPublicWarehouses({
-                limit: 24,
+                limit: 200, // Fetch more to allow map bound filtering
+                ...params,
+                province_id: undefined, // Bỏ filter cứng API để có thể zoom ra thấy pin khác
             });
             const items = result?.items || result || [];
             const mapped = Array.isArray(items) ? items.map(mapWarehouseToProperty) : [];
             setProperties(mapped);
+            // Trigger map re-center after properties load
+            setSearchTrigger(prev => prev + 1);
         } catch (error) {
             console.error('Failed to fetch warehouses:', error);
             setProperties([]);
@@ -103,51 +113,94 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
     const searchParams = useSearchParams();
 
+    // ─────────────────────────────────────────────
+    // Helpers: parse & serialize advanced filters to URL
+    // ─────────────────────────────────────────────
+    const parseAdvancedFromParams = useCallback((params: URLSearchParams): FilterState => {
+        const priceMin = Number(params.get('priceMin') ?? 0);
+        const priceMax = Number(params.get('priceMax') ?? 500);
+        const amenities = params.get('amenities') ? params.get('amenities')!.split(',').filter(Boolean) : [];
+        const ceilingHeight = params.get('ceilH') ? Number(params.get('ceilH')) : null;
+        const floorLoad = Number(params.get('floorLoad') ?? 3);
+        const locationType = params.get('locType') ? params.get('locType')!.split(',').filter(Boolean) : [];
+        const pcccLevel = params.get('pccc') ? params.get('pccc')!.split(',').filter(Boolean) : [];
+        return {
+            priceRange: [priceMin, priceMax],
+            amenities,
+            ceilingHeight,
+            floorLoadCapacity: floorLoad,
+            locationType,
+            pcccLevel,
+        };
+    }, []);
+
+    const serializeAdvancedToParams = useCallback((filters: FilterState, params: URLSearchParams) => {
+        if (filters.priceRange[0] > 0) params.set('priceMin', String(filters.priceRange[0]));
+        else params.delete('priceMin');
+
+        if (filters.priceRange[1] < 500) params.set('priceMax', String(filters.priceRange[1]));
+        else params.delete('priceMax');
+
+        if (filters.amenities.length > 0) params.set('amenities', filters.amenities.join(','));
+        else params.delete('amenities');
+
+        if (filters.ceilingHeight !== null) params.set('ceilH', String(filters.ceilingHeight));
+        else params.delete('ceilH');
+
+        if (filters.floorLoadCapacity !== 3) params.set('floorLoad', String(filters.floorLoadCapacity));
+        else params.delete('floorLoad');
+
+        if (filters.locationType.length > 0) params.set('locType', filters.locationType.join(','));
+        else params.delete('locType');
+
+        if (filters.pcccLevel.length > 0) params.set('pccc', filters.pcccLevel.join(','));
+        else params.delete('pccc');
+    }, []);
+
+    // ─────────────────────────────────────────────
     // Filter Modal State
+    // ─────────────────────────────────────────────
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     // Hero Search Bar Filters
     const [heroFilters, setHeroFilters] = useState<SearchFilters>({
         location: initialLocationSlug || null,
+        province_id: null,
+        province_name: null,
         areaRange: null,
         rentalType: null,
     });
 
-    // Advanced Filter State (from FilterModal)
-    const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
-        priceRange: [0, 500],
-        amenities: [],
-        ceilingHeight: null,
-        floorLoadCapacity: 3,
-        locationType: [],
-        pcccLevel: [],
-    });
+    // Advanced Filter State (from FilterModal) - initialized from URL
+    const [advancedFilters, setAdvancedFilters] = useState<FilterState>(() =>
+        parseAdvancedFromParams(new URLSearchParams(
+            typeof window !== 'undefined' ? window.location.search : ''
+        ))
+    );
 
-    // Legacy filter state (for URL sync)
+    // Legacy filter state (synced from URL)
     const [searchText, setSearchText] = useState("");
-    const [priceRange, setPriceRange] = useState([0, 500]); // 0 - 500 Million
-    const [areaRange, setAreaRange] = useState([0, 5000]); // 0 - 5000 m2
+    const [priceRange, setPriceRange] = useState<[number, number]>(
+        () => advancedFilters.priceRange
+    );
+    const [areaRange, setAreaRange] = useState([0, 5000]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedCities, setSelectedCities] = useState<string[]>([]);
 
-    // State to track if search has been performed (or we have initial URL params)
+    // Track if search has been performed
     const [hasSearched, setHasSearched] = useState(false);
-    // Trigger to signal Map to auto-fit bounds (increment to trigger)
     const [searchTrigger, setSearchTrigger] = useState(0);
 
-    // Hero Search Handler
+    // ─────────────────────────────────────────────
+    // Hero Search Handler — writes to URL + re-fetches API
+    // ─────────────────────────────────────────────
     const handleHeroSearch = (filters: SearchFilters) => {
         setHasSearched(true);
         setHeroFilters(filters);
-        // Reset bounds to allow global search (e.g. if user searches specific location)
         setBounds(null);
-        // Trigger map fit
-        setSearchTrigger(prev => prev + 1);
+        // We will trigger map fitBounds after fetch completes
 
-        // Construct new URLSearchParams
         const params = new URLSearchParams(searchParams.toString());
-
-        // Remove location from query if we are going to use path, OR if we are clearing it
         params.delete('location');
 
         if (filters.areaRange) {
@@ -161,18 +214,36 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         if (filters.rentalType) params.set('type', filters.rentalType);
         else params.delete('type');
 
-        // ROUTING LOGIC: Path vs Query
-        if (filters.location) {
-            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
-            setSelectedCities([filters.location]);
+        // Advanced filters carried over when navigating
+        serializeAdvancedToParams(advancedFilters, params);
+
+        // keywords từ text user gõ tự do (không chọn từ dropdown)
+        const keywords = filters.keywords ?? undefined;
+        const rentalStatus = filters.rentalType === 'full' ? 'AVAILABLE' : undefined;
+        const locationId = filters.location;      // slug cho URL path
+        const provinceId = filters.province_id ?? undefined; // UUID cho API
+
+        // Persist keywords vào URL
+        if (keywords) params.set('q', keywords);
+        else params.delete('q');
+
+        // Persist province_id vào URL
+        if (provinceId) params.set('pid', provinceId);
+        else params.delete('pid');
+
+        if (locationId) {
+            router.push(`/kho-bai/${locationId}?${params.toString()}`);
+            setSelectedCities([locationId]);
+        } else if (provinceId) {
+            // Nếu chọn province từ dropdown nhưng không có slug thì dùng query
+            router.push(`/kho-bai?${params.toString()}`);
+            setSelectedCities([]);
         } else {
             router.push(`/kho-bai?${params.toString()}`);
             setSelectedCities([]);
         }
 
-        if (filters.areaRange) {
-            setAreaRange([filters.areaRange.min, filters.areaRange.max]);
-        }
+        if (filters.areaRange) setAreaRange([filters.areaRange.min, filters.areaRange.max]);
         if (filters.rentalType) {
             switch (filters.rentalType) {
                 case 'shared': setSelectedTypes(['shared']); break;
@@ -181,6 +252,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             }
         }
 
+        // Re-fetch từ API với filter mới (province_id ưu tiên, sau đó keywords)
+        fetchWarehouses({ province_id: provinceId, keywords, rental_status: rentalStatus });
+
         document.getElementById('search-list-container')?.scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -188,49 +262,177 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
-        };
+        const handleScroll = () => setIsScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Filter Modal Handler
+    // ─────────────────────────────────────────────
+    // Advanced Filter Handler — writes to URL
+    // ─────────────────────────────────────────────
     const handleApplyFilters = (filters: FilterState) => {
         setAdvancedFilters(filters);
         setPriceRange(filters.priceRange);
-        // Reset bounds to show all matching results
         setBounds(null);
-        // Trigger map fit
+        // Map will not fit bounds on pure frontend filter unless we increment searchTrigger
+        // We can increment it here because properties list is already available
         setSearchTrigger(prev => prev + 1);
+
+        // Persist to URL
+        const params = new URLSearchParams(searchParams.toString());
+        serializeAdvancedToParams(filters, params);
+        router.replace(`?${params.toString()}`, { scroll: false });
     };
+
+    // ─────────────────────────────────────────────
+    // Clear All Filters
+    // ─────────────────────────────────────────────
+    const DEFAULT_ADVANCED: FilterState = {
+        priceRange: [0, 500],
+        amenities: [],
+        ceilingHeight: null,
+        floorLoadCapacity: 3,
+        locationType: [],
+        pcccLevel: [],
+    };
+
+    const handleClearAllFilters = useCallback(() => {
+        // Reset hero filters
+        setHeroFilters({ location: null, province_id: null, province_name: null, areaRange: null, rentalType: null });
+        // Reset advanced filters
+        setAdvancedFilters(DEFAULT_ADVANCED);
+        setPriceRange([0, 500]);
+        setAreaRange([0, 5000]);
+        setSelectedTypes([]);
+        setSelectedCities([]);
+        setBounds(null);
+        setCurrentPage(1);
+        // Clear URL
+        router.push('/kho-bai', { scroll: false });
+        // Re-fetch tất cả
+        fetchWarehouses();
+    }, [router, fetchWarehouses]);
+
+    const handleRemoveFilter = useCallback((key: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        switch (key) {
+            case 'province':
+                setHeroFilters(prev => ({ ...prev, location: null, province_id: null, province_name: null }));
+                setSelectedCities([]);
+                params.delete('pid');
+                params.delete('q');
+                router.push(`/kho-bai?${params.toString()}`, { scroll: false });
+                fetchWarehouses({ keywords: undefined, province_id: undefined });
+                break;
+            case 'area':
+                setHeroFilters(prev => ({ ...prev, areaRange: null }));
+                setAreaRange([0, 5000]);
+                params.delete('areaMin');
+                params.delete('areaMax');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'rental':
+                setHeroFilters(prev => ({ ...prev, rentalType: null }));
+                setSelectedTypes([]);
+                params.delete('type');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'price':
+                setAdvancedFilters(prev => ({ ...prev, priceRange: [0, 500] }));
+                setPriceRange([0, 500]);
+                params.delete('priceMin');
+                params.delete('priceMax');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'amenities':
+                setAdvancedFilters(prev => ({ ...prev, amenities: [] }));
+                params.delete('amenities');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'ceilH':
+                setAdvancedFilters(prev => ({ ...prev, ceilingHeight: null }));
+                params.delete('ceilH');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'floorLoad':
+                setAdvancedFilters(prev => ({ ...prev, floorLoadCapacity: 3 }));
+                params.delete('floorLoad');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'locType':
+                setAdvancedFilters(prev => ({ ...prev, locationType: [] }));
+                params.delete('locType');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'pccc':
+                setAdvancedFilters(prev => ({ ...prev, pcccLevel: [] }));
+                params.delete('pccc');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+        }
+    }, [searchParams, router, fetchWarehouses]);
+
+    // ─────────────────────────────────────────────
+    // Compute active filter tags
+    // ─────────────────────────────────────────────
+    const activeFilterTags = useMemo(() => {
+        const tags: { key: string; label: string }[] = [];
+
+        if (heroFilters.province_name || heroFilters.location)
+            tags.push({ key: 'province', label: `📍 ${heroFilters.province_name || heroFilters.location}` });
+
+        if (heroFilters.areaRange)
+            tags.push({ key: 'area', label: `📐 ${heroFilters.areaRange.min}–${heroFilters.areaRange.max} m²` });
+
+        if (heroFilters.rentalType)
+            tags.push({ key: 'rental', label: heroFilters.rentalType === 'full' ? '🏭 Thuê nguyên kho' : '🤝 Thuê chung' });
+
+        if (advancedFilters.priceRange[0] > 0 || advancedFilters.priceRange[1] < 500)
+            tags.push({ key: 'price', label: `💰 ${advancedFilters.priceRange[0]}–${advancedFilters.priceRange[1]} Tr` });
+
+        if (advancedFilters.amenities.length > 0)
+            tags.push({ key: 'amenities', label: `✨ ${advancedFilters.amenities.length} tiện nghi` });
+
+        if (advancedFilters.ceilingHeight !== null)
+            tags.push({ key: 'ceilH', label: `🏗️ Trần > ${advancedFilters.ceilingHeight}m` });
+
+        if (advancedFilters.floorLoadCapacity !== 3)
+            tags.push({ key: 'floorLoad', label: `⚖️ Tải trọng ${advancedFilters.floorLoadCapacity} tấn` });
+
+        if (advancedFilters.locationType.length > 0)
+            tags.push({ key: 'locType', label: `🗺️ ${advancedFilters.locationType.length} vị trí` });
+
+        if (advancedFilters.pcccLevel.length > 0)
+            tags.push({ key: 'pccc', label: `🔥 ${advancedFilters.pcccLevel.length} PCCC` });
+
+        return tags;
+    }, [heroFilters, advancedFilters]);
 
     // Scroll to top when page changes
     useEffect(() => {
-        if (currentPage > 1) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        if (currentPage > 1) window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [currentPage]);
 
-    // Sync from URL AND Props
+    // ─────────────────────────────────────────────
+    // Restore full state from URL on mount / navigation
+    // ─────────────────────────────────────────────
+    const isFirstSync = useRef(true);
+
     useEffect(() => {
         const typeParam = searchParams.get('type');
         const locationParam = searchParams.get('location');
         const areaMinParam = searchParams.get('areaMin');
         const areaMaxParam = searchParams.get('areaMax');
 
-        // Check if ANY search param is present to enable "Has Searched" mode
-        // Also check if initialLocationSlug is present (Path-based search)
+        // Hero search params
         if (typeParam || locationParam || areaMinParam || areaMaxParam || initialLocationSlug) {
             setHasSearched(true);
             setSearchTrigger(prev => prev + 1);
-            setBounds(null); // Reset bounds to ensure list shows results while map flies
+            setBounds(null);
         }
 
-        // Restore Filters
         if (typeParam) {
             switch (typeParam) {
-
                 case 'kho-thuong': case 'standard': setSelectedTypes(['standard']); break;
                 case 'kho-ngoai-quan': case 'bonded': setSelectedTypes(['bonded']); break;
                 case 'kho-chung': case 'shared': setSelectedTypes(['shared']); break;
@@ -245,17 +447,52 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             setAreaRange([Number(areaMinParam), Number(areaMaxParam)]);
         }
 
-        // Prefer Prop (Path) over Query Param for Location
         if (initialLocationSlug) {
             setSelectedCities([initialLocationSlug]);
-            // Also sync heroFilters
             setHeroFilters(prev => ({ ...prev, location: initialLocationSlug }));
         } else if (locationParam) {
             setSelectedCities([locationParam]);
             setHeroFilters(prev => ({ ...prev, location: locationParam }));
         }
 
-    }, [searchParams, initialLocationSlug]);
+        // Restore hero bar area/rental
+        if (areaMinParam && areaMaxParam) {
+            setHeroFilters(prev => ({
+                ...prev,
+                areaRange: { min: Number(areaMinParam), max: Number(areaMaxParam) }
+            }));
+        }
+        if (typeParam) {
+            setHeroFilters(prev => ({ ...prev, rentalType: typeParam }));
+        }
+
+        // Restore advanced filters from URL (only on first sync to avoid override)
+        if (isFirstSync.current) {
+            isFirstSync.current = false;
+            const restored = parseAdvancedFromParams(new URLSearchParams(searchParams.toString()));
+            setAdvancedFilters(restored);
+            setPriceRange(restored.priceRange);
+
+            // Restore province_id và re-fetch với province filter
+            const pidParam = searchParams.get('pid');
+            const qParam = searchParams.get('q');
+
+            if (pidParam || qParam) {
+                setHasSearched(true);
+                if (pidParam) {
+                    setHeroFilters(prev => ({ ...prev, province_id: pidParam }));
+                }
+                if (qParam) {
+                    setHeroFilters(prev => ({ ...prev, keywords: qParam }));
+                }
+                fetchWarehouses({
+                    province_id: pidParam ?? undefined,
+                    keywords: qParam ?? undefined,
+                });
+            }
+        }
+
+    }, [searchParams, initialLocationSlug, parseAdvancedFromParams, fetchWarehouses]);
 
     // Filter properties
     const filteredProperties = useMemo(() => {
@@ -285,6 +522,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 return isShared || isStandard || isBonded;
             });
         }
+        /*
+        // Bỏ filter cứng này để khi zoom map ra ngoài tỉnh đã chọn, 
+        // người dùng vẫn thấy được kho ở tỉnh khác thông qua bounds filter
         if (selectedCities.length > 0) {
             result = result.filter(p => selectedCities.some(city => {
                 if (!p.province_name) return false;
@@ -299,6 +539,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 return normalizedProvince.includes(city.toLowerCase());
             }));
         }
+        */
 
         // Apply Map Bounds Filter if available
         if (bounds) {
@@ -358,6 +599,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                     onSearch={handleHeroSearch}
                     onOpenFilter={() => setIsFilterModalOpen(true)}
                     isScrolled={isScrolled}
+                    initialSearchValues={heroFilters}
                 />
 
                 {/* FILTER MODAL */}
@@ -367,6 +609,33 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                     onApply={handleApplyFilters}
                     initialFilters={advancedFilters}
                 />
+
+                {/* ACTIVE FILTER TAGS */}
+                {activeFilterTags.length > 0 && (
+                    <div className="search-page__filter-tags">
+                        <div className="search-page__filter-tags-inner">
+                            {activeFilterTags.map(tag => (
+                                <button
+                                    key={tag.key}
+                                    className="search-page__filter-tag"
+                                    onClick={() => handleRemoveFilter(tag.key)}
+                                    title={`Xóa lọc: ${tag.label}`}
+                                >
+                                    <span>{tag.label}</span>
+                                    <XMarkIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                                </button>
+                            ))}
+                            {activeFilterTags.length > 1 && (
+                                <button
+                                    className="search-page__filter-tag search-page__filter-tag--clear-all"
+                                    onClick={handleClearAllFilters}
+                                >
+                                    Xóa tất cả
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Container - Chứa cả List và Map */}
                 <div className="search-page__main-container">
@@ -493,6 +762,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                                         }
                                     }}
                                     searchTrigger={searchTrigger}
+                                    targetProvince={heroFilters.province_name || heroFilters.location || null}
                                 />
                             </div>
 

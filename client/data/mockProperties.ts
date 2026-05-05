@@ -22,13 +22,22 @@ export interface Property {
     ward?: {
         id: string;
         name: string;
+        code?: string;
+        type?: string;
         district?: {
             id: string;
             name: string;
+            code?: string;
             province?: {
                 id: string;
                 name: string;
+                code?: string;
             };
+        };
+        province?: {
+            id: string;
+            name: string;
+            code?: string;
         };
     };
     
@@ -89,10 +98,11 @@ export interface Property {
  * Map raw API warehouse template response → Property interface
  */
 export function mapWarehouseToProperty(w: any): Property {
-    const provinceName = w.ward?.district?.province?.name || '';
-    const districtName = w.ward?.district?.name || '';
+    // API trả về: ward → province trực tiếp (không qua district)
+    const provinceName = w.ward?.province?.name || w.ward?.district?.province?.name || '';
     const wardName = w.ward?.name || '';
-    const fullAddress = [wardName, districtName, provinceName].filter(Boolean).join(', ');
+    // Tạo full address: địa chỉ chi tiết + phường + tỉnh
+    const fullAddress = [w.address_detail, wardName, provinceName].filter(Boolean).join(', ');
 
     // Determine type
     let type = 'Kho Thường';
