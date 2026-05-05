@@ -75,7 +75,7 @@ function BanDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.banUser(token, user.id, { reason: reason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email}`);
+            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`);
             onSuccess();
             onClose();
         } catch (err: any) {
@@ -88,15 +88,37 @@ function BanDialog({ user, open, onClose, onSuccess }: {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Khóa tài khoản</DialogTitle>
-                    <DialogDescription>Khóa <strong>{user?.name || user?.full_name || user?.email}</strong> trong 7 ngày.</DialogDescription>
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Khóa tài khoản</DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                        Bạn đang thực hiện khóa tài khoản <strong>{user?.name || user?.full_name || user?.email}</strong>.
+                        Mặc định sẽ khóa trong 7 ngày.
+                    </DialogDescription>
                 </DialogHeader>
-                <Textarea placeholder="Lý do khóa tài khoản..." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={loading}>Hủy</Button>
-                    <Button variant="destructive" onClick={handleBan} disabled={!reason.trim() || loading} loading={loading}>Xác nhận khóa</Button>
+                <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <Label>Lý do khóa <span className="text-red-500">*</span></Label>
+                        <Textarea
+                            placeholder="Nhập lý do chi tiết để thông báo cho người dùng..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={4}
+                            className="rounded-xl border-slate-200 focus:border-red-300 focus:ring-red-50"
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-xl h-11 px-6">Hủy</Button>
+                    <Button
+                        variant="destructive"
+                        onClick={handleBan}
+                        disabled={!reason.trim() || loading}
+                        loading={loading}
+                        className="rounded-xl h-11 px-8"
+                    >
+                        Xác nhận khóa
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -129,7 +151,7 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
                 is_permanent: isPermanent,
                 ...(!isPermanent ? { duration_value: Number(durationValue), duration_type: durationType } : {}),
             });
-            toast.success("Đã gửi cảnh cáo thành công");
+            toast.success("Đã gửi cảnh cáo vi phạm thành công");
             onSuccess();
             onClose();
             reset();
@@ -142,46 +164,55 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
 
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); reset(); } }}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Gửi cảnh cáo</DialogTitle>
-                    <DialogDescription>Cảnh cáo sẽ được ghi vào hồ sơ người dùng.</DialogDescription>
+            <DialogContent className="sm:max-w-md p-6">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl">Gửi cảnh cáo mới</DialogTitle>
+                    <DialogDescription className="text-slate-500">Cảnh cáo sẽ được ghi lại trong hồ sơ vi phạm của người dùng.</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3">
-                    <div className="space-y-1.5">
-                        <Label>Danh mục <span className="text-red-500">*</span></Label>
+                <div className="space-y-6 py-2">
+                    <div className="space-y-2">
+                        <Label>Danh mục vi phạm <span className="text-red-500">*</span></Label>
                         <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger className="rounded-xl">
-                                <SelectValue placeholder="Chọn danh mục cảnh cáo" />
+                            <SelectTrigger className="rounded-xl h-11 border-slate-200">
+                                <SelectValue placeholder="Chọn loại vi phạm..." />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                                 {categories.map((c) => (
                                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="space-y-1.5">
-                        <Label>Lý do <span className="text-red-500">*</span></Label>
-                        <Textarea placeholder="Mô tả lý do cảnh cáo..." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="rounded-xl" />
+                    <div className="space-y-2">
+                        <Label>Lý do chi tiết <span className="text-red-500">*</span></Label>
+                        <Textarea
+                            placeholder="Mô tả cụ thể hành vi vi phạm..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={3}
+                            className="rounded-xl border-slate-200"
+                        />
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="permanent" className="text-sm font-semibold cursor-pointer">Cảnh cáo vĩnh viễn</Label>
+                            <p className="text-xs text-slate-500">Hình phạt sẽ không bao giờ tự hết hạn</p>
+                        </div>
                         <Switch id="permanent" checked={isPermanent} onCheckedChange={setIsPermanent} />
-                        <Label htmlFor="permanent" className="cursor-pointer">Vĩnh viễn</Label>
                     </div>
                     {!isPermanent && (
-                        <div className="flex gap-2">
-                            <div className="flex-1 space-y-1.5">
-                                <Label>Thời hạn</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Thời hạn hiệu lực</Label>
                                 <Input type="number" min={1} value={durationValue}
                                     onChange={(e) => setDurationValue(e.target.value)}
-                                    className="rounded-xl" />
+                                    className="rounded-xl h-11 border-slate-200" />
                             </div>
-                            <div className="w-28 space-y-1.5">
-                                <Label>Đơn vị</Label>
-                                <Select value={durationType} onValueChange={(v) => setDurationType(v as "hours" | "days" | "weeks" | "months")}>
-                                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
+                            <div className="space-y-2">
+                                <Label>Đơn vị thời gian</Label>
+                                <Select value={durationType} onValueChange={(v) => setDurationType(v as any)}>
+                                    <SelectTrigger className="rounded-xl h-11 border-slate-200"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl">
                                         <SelectItem value="hours">Giờ</SelectItem>
                                         <SelectItem value="days">Ngày</SelectItem>
                                         <SelectItem value="weeks">Tuần</SelectItem>
@@ -192,15 +223,15 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
                         </div>
                     )}
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => { onClose(); reset(); }} disabled={loading} className="rounded-xl">Hủy</Button>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button variant="outline" onClick={() => { onClose(); reset(); }} disabled={loading} className="rounded-xl h-11 px-6">Hủy</Button>
                     <Button
-                        className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                        className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 px-8"
                         onClick={handleWarn}
                         disabled={!categoryId || !reason.trim() || loading}
                         loading={loading}
                     >
-                        {loading ? "Đang gửi..." : "Gửi cảnh cáo"}
+                        Xác nhận gửi
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -297,6 +328,7 @@ export default function UserDetailPage() {
     const [assignRolesOpen, setAssignRolesOpen] = useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
     const [resendVerifyOpen, setResendVerifyOpen] = useState(false);
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     useBreadcrumbLabel(user?.name || user?.full_name || user?.email);
 
@@ -360,49 +392,61 @@ export default function UserDetailPage() {
     const handleUnban = async () => {
         const token = authStorage.getAccessToken();
         if (!token || !user) return;
+        setProcessingId("unban");
         try {
             await svc.unbanUser(token, user.id);
-            toast.success(`Đã mở khóa ${user.name || user.full_name || user.email}`);
+            toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`);
             fetchUser();
         } catch (err: any) {
             toast.error(err.message || "Không thể mở khóa tài khoản");
+        } finally {
+            setProcessingId(null);
         }
     };
 
     const handleRevokeSession = async (sessionId: string) => {
         const token = authStorage.getAccessToken();
         if (!token) return;
+        setProcessingId(`revoke-${sessionId}`);
         try {
             await svc.revokeSession(token, userId, sessionId);
-            toast.success("Đã thu hồi phiên đăng nhập");
+            toast.success("Đã thu hồi phiên đăng nhập thành công");
             fetchSessions();
         } catch (err: any) {
             toast.error(err.message || "Không thể thu hồi phiên");
+        } finally {
+            setProcessingId(null);
         }
     };
 
     const handleRevokeAllSessions = async () => {
         const token = authStorage.getAccessToken();
         if (!token) return;
+        setProcessingId("revoke-all");
         try {
             await svc.revokeAllSessions(token, userId);
-            toast.success("Đã thu hồi tất cả phiên đăng nhập");
+            toast.success("Đã thu hồi toàn bộ phiên đăng nhập thành công");
             fetchSessions();
         } catch (err: any) {
             toast.error(err.message || "Không thể thu hồi phiên");
+        } finally {
+            setProcessingId(null);
         }
     };
 
     const handleUnwarn = async (warningId: string) => {
         const token = authStorage.getAccessToken();
         if (!token) return;
+        setProcessingId(`unwarn-${warningId}`);
         try {
             await svc.unwarnUser(token, userId, warningId);
-            toast.success("Đã gỡ cảnh cáo");
+            toast.success("Đã gỡ cảnh cáo vi phạm thành công");
             fetchWarnings();
             fetchUser();
         } catch (err: any) {
             toast.error(err.message || "Không thể gỡ cảnh cáo");
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -438,23 +482,23 @@ export default function UserDetailPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                     {user.is_banned ? (
                         <Button variant="outline" size="sm" className="gap-1.5 text-green-600 border-green-300 hover:bg-green-50 rounded-xl h-9 px-4"
-                            onClick={handleUnban}>
+                            onClick={handleUnban} loading={processingId === "unban"} disabled={!!processingId}>
                             <ShieldCheck className="w-4 h-4" />Mở khóa
                         </Button>
                     ) : (
                         <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-300 hover:bg-red-50 rounded-xl h-9 px-4"
-                            onClick={() => setBanDialogOpen(true)}>
+                            onClick={() => setBanDialogOpen(true)} disabled={!!processingId}>
                             <ShieldOff className="w-4 h-4" />Khóa tài khoản
                         </Button>
                     )}
                     {(!user.is_verified || !user.email_confirmed) && (
                         <Button variant="outline" size="sm" className="gap-1.5 text-blue-600 border-blue-300 hover:bg-blue-50 rounded-xl h-9 px-4"
-                            onClick={() => setResendVerifyOpen(true)}>
+                            onClick={() => setResendVerifyOpen(true)} disabled={!!processingId}>
                             <CheckCircle2 className="w-4 h-4" />Gửi xác thực
                         </Button>
                     )}
                     <Button variant="outline" size="sm" className="gap-1.5 text-brand border-brand/30 hover:bg-brand/5 rounded-xl h-9 px-4"
-                        onClick={() => setPasswordDialogOpen(true)}>
+                        onClick={() => setPasswordDialogOpen(true)} disabled={!!processingId}>
                         <KeyRound className="w-4 h-4" />Đổi mật khẩu
                     </Button>
                 </div>
@@ -581,6 +625,8 @@ export default function UserDetailPage() {
                                                         size="sm"
                                                         className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg gap-1"
                                                         onClick={() => handleUnwarn(w.id)}
+                                                        loading={processingId === `unwarn-${w.id}`}
+                                                        disabled={!!processingId}
                                                     >
                                                         <Trash2 className="w-3 h-3" />Gỡ
                                                     </Button>
@@ -646,7 +692,10 @@ export default function UserDetailPage() {
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="sm"
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-xs h-7 px-2"
-                                                    onClick={() => handleRevokeSession(s.id)}>
+                                                    onClick={() => handleRevokeSession(s.id)}
+                                                    loading={processingId === `revoke-${s.id}`}
+                                                    disabled={!!processingId}
+                                                >
                                                     Thu hồi
                                                 </Button>
                                             </TableCell>
