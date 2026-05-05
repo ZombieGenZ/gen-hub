@@ -54,14 +54,7 @@ const RENTAL_TYPES = [
         Icon: UserGroupIcon,
         description: 'Chia sẻ không gian với đơn vị khác',
         iconBg: 'rental-icon-bg--blue',
-    },
-    {
-        id: 'fulfillment',
-        label: 'Fulfillment',
-        Icon: ArchiveBoxIcon,
-        description: 'Dịch vụ lưu kho & hoàn thiện đơn hàng',
-        iconBg: 'rental-icon-bg--violet',
-    },
+    }
 ];
 
 interface HeroSearchBarProps {
@@ -69,6 +62,8 @@ interface HeroSearchBarProps {
     onOpenFilter?: () => void;
     className?: string;
     variant?: 'hero' | 'compact';
+    /** Giá trị khởi tạo để restore trạng thái từ URL khi reload */
+    initialValues?: Partial<SearchFilters>;
 }
 
 export interface SearchFilters {
@@ -84,12 +79,31 @@ export default function HeroSearchBar({
     onOpenFilter,
     className,
     variant = 'hero',
-    minified = false
+    minified = false,
+    initialValues,
 }: HeroSearchBarProps & { minified?: boolean }) {
     const [activeSection, setActiveSection] = useState<ActiveSection>(null);
-    const [selectedLocation, setSelectedLocation] = useState<typeof LOCATIONS[0] | null>(null);
-    const [selectedArea, setSelectedArea] = useState<typeof AREA_RANGES[0] | null>(null);
-    const [selectedRental, setSelectedRental] = useState<typeof RENTAL_TYPES[0] | null>(null);
+
+    // Restore selected location từ initialValues
+    const [selectedLocation, setSelectedLocation] = useState<typeof LOCATIONS[0] | null>(() => {
+        if (!initialValues?.location) return null;
+        return LOCATIONS.find(l => l.id === initialValues.location) ?? null;
+    });
+
+    // Restore selected area từ initialValues
+    const [selectedArea, setSelectedArea] = useState<typeof AREA_RANGES[0] | null>(() => {
+        if (!initialValues?.areaRange) return null;
+        return AREA_RANGES.find(
+            a => a.min === initialValues.areaRange!.min && a.max === initialValues.areaRange!.max
+        ) ?? null;
+    });
+
+    // Restore rental type từ initialValues
+    const [selectedRental, setSelectedRental] = useState<typeof RENTAL_TYPES[0] | null>(() => {
+        if (!initialValues?.rentalType) return null;
+        return RENTAL_TYPES.find(r => r.id === initialValues.rentalType) ?? null;
+    });
+
     const [locationSearch, setLocationSearch] = useState('');
 
     const searchBarRef = useRef<HTMLDivElement>(null);

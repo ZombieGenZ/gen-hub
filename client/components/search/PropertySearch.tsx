@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PropertyList from '@/app/(public)/homepage/MapSearch/PropertyList';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
@@ -103,7 +103,53 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
     const searchParams = useSearchParams();
 
+    // ─────────────────────────────────────────────
+    // Helpers: parse & serialize advanced filters to URL
+    // ─────────────────────────────────────────────
+    const parseAdvancedFromParams = useCallback((params: URLSearchParams): FilterState => {
+        const priceMin = Number(params.get('priceMin') ?? 0);
+        const priceMax = Number(params.get('priceMax') ?? 500);
+        const amenities = params.get('amenities') ? params.get('amenities')!.split(',').filter(Boolean) : [];
+        const ceilingHeight = params.get('ceilH') ? Number(params.get('ceilH')) : null;
+        const floorLoad = Number(params.get('floorLoad') ?? 3);
+        const locationType = params.get('locType') ? params.get('locType')!.split(',').filter(Boolean) : [];
+        const pcccLevel = params.get('pccc') ? params.get('pccc')!.split(',').filter(Boolean) : [];
+        return {
+            priceRange: [priceMin, priceMax],
+            amenities,
+            ceilingHeight,
+            floorLoadCapacity: floorLoad,
+            locationType,
+            pcccLevel,
+        };
+    }, []);
+
+    const serializeAdvancedToParams = useCallback((filters: FilterState, params: URLSearchParams) => {
+        if (filters.priceRange[0] > 0) params.set('priceMin', String(filters.priceRange[0]));
+        else params.delete('priceMin');
+
+        if (filters.priceRange[1] < 500) params.set('priceMax', String(filters.priceRange[1]));
+        else params.delete('priceMax');
+
+        if (filters.amenities.length > 0) params.set('amenities', filters.amenities.join(','));
+        else params.delete('amenities');
+
+        if (filters.ceilingHeight !== null) params.set('ceilH', String(filters.ceilingHeight));
+        else params.delete('ceilH');
+
+        if (filters.floorLoadCapacity !== 3) params.set('floorLoad', String(filters.floorLoadCapacity));
+        else params.delete('floorLoad');
+
+        if (filters.locationType.length > 0) params.set('locType', filters.locationType.join(','));
+        else params.delete('locType');
+
+        if (filters.pcccLevel.length > 0) params.set('pccc', filters.pcccLevel.join(','));
+        else params.delete('pccc');
+    }, []);
+
+    // ─────────────────────────────────────────────
     // Filter Modal State
+    // ─────────────────────────────────────────────
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     // Hero Search Bar Filters
@@ -113,41 +159,36 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         rentalType: null,
     });
 
-    // Advanced Filter State (from FilterModal)
-    const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
-        priceRange: [0, 500],
-        amenities: [],
-        ceilingHeight: null,
-        floorLoadCapacity: 3,
-        locationType: [],
-        pcccLevel: [],
-    });
+    // Advanced Filter State (from FilterModal) - initialized from URL
+    const [advancedFilters, setAdvancedFilters] = useState<FilterState>(() =>
+        parseAdvancedFromParams(new URLSearchParams(
+            typeof window !== 'undefined' ? window.location.search : ''
+        ))
+    );
 
-    // Legacy filter state (for URL sync)
+    // Legacy filter state (synced from URL)
     const [searchText, setSearchText] = useState("");
-    const [priceRange, setPriceRange] = useState([0, 500]); // 0 - 500 Million
-    const [areaRange, setAreaRange] = useState([0, 5000]); // 0 - 5000 m2
+    const [priceRange, setPriceRange] = useState<[number, number]>(
+        () => advancedFilters.priceRange
+    );
+    const [areaRange, setAreaRange] = useState([0, 5000]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedCities, setSelectedCities] = useState<string[]>([]);
 
-    // State to track if search has been performed (or we have initial URL params)
+    // Track if search has been performed
     const [hasSearched, setHasSearched] = useState(false);
-    // Trigger to signal Map to auto-fit bounds (increment to trigger)
     const [searchTrigger, setSearchTrigger] = useState(0);
 
-    // Hero Search Handler
+    // ─────────────────────────────────────────────
+    // Hero Search Handler — writes to URL
+    // ─────────────────────────────────────────────
     const handleHeroSearch = (filters: SearchFilters) => {
         setHasSearched(true);
         setHeroFilters(filters);
-        // Reset bounds to allow global search (e.g. if user searches specific location)
         setBounds(null);
-        // Trigger map fit
         setSearchTrigger(prev => prev + 1);
 
-        // Construct new URLSearchParams
         const params = new URLSearchParams(searchParams.toString());
-
-        // Remove location from query if we are going to use path, OR if we are clearing it
         params.delete('location');
 
         if (filters.areaRange) {
@@ -161,7 +202,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         if (filters.rentalType) params.set('type', filters.rentalType);
         else params.delete('type');
 
-        // ROUTING LOGIC: Path vs Query
+        // Advanced filters carried over when navigating
+        serializeAdvancedToParams(advancedFilters, params);
+
         if (filters.location) {
             router.push(`/kho-bai/${filters.location}?${params.toString()}`);
             setSelectedCities([filters.location]);
@@ -170,9 +213,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             setSelectedCities([]);
         }
 
-        if (filters.areaRange) {
-            setAreaRange([filters.areaRange.min, filters.areaRange.max]);
-        }
+        if (filters.areaRange) setAreaRange([filters.areaRange.min, filters.areaRange.max]);
         if (filters.rentalType) {
             switch (filters.rentalType) {
                 case 'shared': setSelectedTypes(['shared']); break;
@@ -188,49 +229,51 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
-        };
+        const handleScroll = () => setIsScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Filter Modal Handler
+    // ─────────────────────────────────────────────
+    // Advanced Filter Handler — writes to URL
+    // ─────────────────────────────────────────────
     const handleApplyFilters = (filters: FilterState) => {
         setAdvancedFilters(filters);
         setPriceRange(filters.priceRange);
-        // Reset bounds to show all matching results
         setBounds(null);
-        // Trigger map fit
         setSearchTrigger(prev => prev + 1);
+
+        // Persist to URL
+        const params = new URLSearchParams(searchParams.toString());
+        serializeAdvancedToParams(filters, params);
+        router.replace(`?${params.toString()}`, { scroll: false });
     };
 
     // Scroll to top when page changes
     useEffect(() => {
-        if (currentPage > 1) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        if (currentPage > 1) window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [currentPage]);
 
-    // Sync from URL AND Props
+    // ─────────────────────────────────────────────
+    // Restore full state from URL on mount / navigation
+    // ─────────────────────────────────────────────
+    const isFirstSync = useRef(true);
+
     useEffect(() => {
         const typeParam = searchParams.get('type');
         const locationParam = searchParams.get('location');
         const areaMinParam = searchParams.get('areaMin');
         const areaMaxParam = searchParams.get('areaMax');
 
-        // Check if ANY search param is present to enable "Has Searched" mode
-        // Also check if initialLocationSlug is present (Path-based search)
+        // Hero search params
         if (typeParam || locationParam || areaMinParam || areaMaxParam || initialLocationSlug) {
             setHasSearched(true);
             setSearchTrigger(prev => prev + 1);
-            setBounds(null); // Reset bounds to ensure list shows results while map flies
+            setBounds(null);
         }
 
-        // Restore Filters
         if (typeParam) {
             switch (typeParam) {
-
                 case 'kho-thuong': case 'standard': setSelectedTypes(['standard']); break;
                 case 'kho-ngoai-quan': case 'bonded': setSelectedTypes(['bonded']); break;
                 case 'kho-chung': case 'shared': setSelectedTypes(['shared']); break;
@@ -245,17 +288,34 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             setAreaRange([Number(areaMinParam), Number(areaMaxParam)]);
         }
 
-        // Prefer Prop (Path) over Query Param for Location
         if (initialLocationSlug) {
             setSelectedCities([initialLocationSlug]);
-            // Also sync heroFilters
             setHeroFilters(prev => ({ ...prev, location: initialLocationSlug }));
         } else if (locationParam) {
             setSelectedCities([locationParam]);
             setHeroFilters(prev => ({ ...prev, location: locationParam }));
         }
 
-    }, [searchParams, initialLocationSlug]);
+        // Restore hero bar area/rental
+        if (areaMinParam && areaMaxParam) {
+            setHeroFilters(prev => ({
+                ...prev,
+                areaRange: { min: Number(areaMinParam), max: Number(areaMaxParam) }
+            }));
+        }
+        if (typeParam) {
+            setHeroFilters(prev => ({ ...prev, rentalType: typeParam }));
+        }
+
+        // Restore advanced filters from URL (only on first sync to avoid override)
+        if (isFirstSync.current) {
+            isFirstSync.current = false;
+            const restored = parseAdvancedFromParams(new URLSearchParams(searchParams.toString()));
+            setAdvancedFilters(restored);
+            setPriceRange(restored.priceRange);
+        }
+
+    }, [searchParams, initialLocationSlug, parseAdvancedFromParams]);
 
     // Filter properties
     const filteredProperties = useMemo(() => {
@@ -358,6 +418,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                     onSearch={handleHeroSearch}
                     onOpenFilter={() => setIsFilterModalOpen(true)}
                     isScrolled={isScrolled}
+                    initialSearchValues={heroFilters}
                 />
 
                 {/* FILTER MODAL */}
