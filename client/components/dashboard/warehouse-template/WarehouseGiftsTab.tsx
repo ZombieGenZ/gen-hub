@@ -58,8 +58,7 @@ export function WarehouseGiftsTab({ data, onChange }: WarehouseGiftsTabProps) {
         setLoadingAmenities(true);
         try {
             const res = await amenitiesService.getAllAmenities(token, { limit: 200 });
-            console.log('Amenities response:', res);
-            const amenitiesArray = res?.data?.items || [];
+            const amenitiesArray = res?.items || [];
             setAllAmenities(amenitiesArray);
         } catch (err) {
             console.error('Failed to fetch amenities:', err);
