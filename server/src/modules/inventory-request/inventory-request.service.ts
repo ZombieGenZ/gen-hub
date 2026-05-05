@@ -360,7 +360,7 @@ export class InventoryRequestService {
       rack_code: inv.block.shelf?.rack?.code || '',
       days_in_storage: Math.floor(
         (Date.now() - new Date(inv.created_at).getTime()) /
-          (1000 * 60 * 60 * 24),
+        (1000 * 60 * 60 * 24),
       ),
       created_at: inv.created_at.toISOString(),
     };
@@ -671,13 +671,13 @@ export class InventoryRequestService {
       }),
       batchIds.length > 0
         ? this.prisma.batch.findMany({
-            where: {
-              id: { in: batchIds },
-              product_id: { in: uniqueProductIds },
-              is_deleted: false,
-            },
-            select: { id: true, product_id: true },
-          })
+          where: {
+            id: { in: batchIds },
+            product_id: { in: uniqueProductIds },
+            is_deleted: false,
+          },
+          select: { id: true, product_id: true },
+        })
         : Promise.resolve([]),
       this.prisma.productUnit.findMany({
         where: {
@@ -990,13 +990,13 @@ export class InventoryRequestService {
       }),
       requiredBatchIds.length > 0
         ? this.prisma.batch.findMany({
-            where: {
-              id: { in: requiredBatchIds },
-              product_id: { in: uniqueProductIds },
-              is_deleted: false,
-            },
-            select: { id: true, product_id: true },
-          })
+          where: {
+            id: { in: requiredBatchIds },
+            product_id: { in: uniqueProductIds },
+            is_deleted: false,
+          },
+          select: { id: true, product_id: true },
+        })
         : Promise.resolve([]),
       this.prisma.productUnit.findMany({
         where: {
@@ -1064,13 +1064,13 @@ export class InventoryRequestService {
         requiredSpecificByProduct.set(
           detail.product_id,
           (requiredSpecificByProduct.get(detail.product_id) ?? 0) +
-            quantityInBaseUnit,
+          quantityInBaseUnit,
         );
       } else {
         requiredByGeneralProduct.set(
           detail.product_id,
           (requiredByGeneralProduct.get(detail.product_id) ?? 0) +
-            quantityInBaseUnit,
+          quantityInBaseUnit,
         );
       }
     }
@@ -1079,32 +1079,32 @@ export class InventoryRequestService {
     const specificBatchRows =
       requiredBySpecificBatch.size > 0
         ? await this.prisma.inventory.groupBy({
-            by: ['product_id', 'batch_id'],
-            where: {
-              organization_id: orgId,
-              warehouse_id: dto.warehouse_id,
-              is_deleted: false,
-              product_id: {
-                in: Array.from(
-                  new Set(
-                    Array.from(requiredBySpecificBatch.keys()).map(
-                      (key) => key.split(':')[0],
-                    ),
+          by: ['product_id', 'batch_id'],
+          where: {
+            organization_id: orgId,
+            warehouse_id: dto.warehouse_id,
+            is_deleted: false,
+            product_id: {
+              in: Array.from(
+                new Set(
+                  Array.from(requiredBySpecificBatch.keys()).map(
+                    (key) => key.split(':')[0],
                   ),
                 ),
-              },
-              batch_id: {
-                in: Array.from(
-                  new Set(
-                    Array.from(requiredBySpecificBatch.keys()).map(
-                      (key) => key.split(':')[1],
-                    ),
-                  ),
-                ),
-              },
+              ),
             },
-            _sum: { quantity_available: true },
-          })
+            batch_id: {
+              in: Array.from(
+                new Set(
+                  Array.from(requiredBySpecificBatch.keys()).map(
+                    (key) => key.split(':')[1],
+                  ),
+                ),
+              ),
+            },
+          },
+          _sum: { quantity_available: true },
+        })
         : [];
 
     const availableBySpecificBatch = new Map(
@@ -1130,15 +1130,15 @@ export class InventoryRequestService {
     const generalProductRows =
       generalProductIds.length > 0
         ? await this.prisma.inventory.groupBy({
-            by: ['product_id'],
-            where: {
-              organization_id: orgId,
-              warehouse_id: dto.warehouse_id,
-              is_deleted: false,
-              product_id: { in: generalProductIds },
-            },
-            _sum: { quantity_available: true },
-          })
+          by: ['product_id'],
+          where: {
+            organization_id: orgId,
+            warehouse_id: dto.warehouse_id,
+            is_deleted: false,
+            product_id: { in: generalProductIds },
+          },
+          _sum: { quantity_available: true },
+        })
         : [];
 
     const availableByProduct = new Map(
@@ -3276,13 +3276,13 @@ export class InventoryRequestService {
       const blocks =
         candidateBlockCodes.length > 0
           ? await tx.block.findMany({
-              where: {
-                code: { in: candidateBlockCodes },
-                shelf: { rack: { row: { warehouse_id: warehouseId } } },
-                is_deleted: false,
-              },
-              select: { id: true, code: true },
-            })
+            where: {
+              code: { in: candidateBlockCodes },
+              shelf: { rack: { row: { warehouse_id: warehouseId } } },
+              is_deleted: false,
+            },
+            select: { id: true, code: true },
+          })
           : [];
 
       const blockByCode = new Map(
@@ -3393,8 +3393,8 @@ export class InventoryRequestService {
     const blocksNeeded = Math.ceil(totalExpectedQty / UNIT_PER_BLOCK);
     if (blocksNeeded === 0) return;
 
-    // Đếm số ô còn trống thực tế (đã trừ các ô có hàng hoặc đã được gán)
-    const totalBlocksCount = await tx.block.count({
+    // ═══ BỔ SUNG: Tạo Bin cho các Block cũ chưa có Bin (dữ liệu seed) ═══
+    const allBlocks = await tx.block.findMany({
       where: {
         shelf: {
           rack: {
@@ -3405,37 +3405,74 @@ export class InventoryRequestService {
         },
         is_deleted: false,
       },
+      include: {
+        shelf: {
+          include: {
+            rack: {
+              include: { row: true },
+            },
+          },
+        },
+      },
     });
 
-    // Đếm số Bin bận
-    const occupiedBins = Number(
+    const existingBinUids = new Set(
+      (
+        await (tx as any).bin.findMany({
+          where: { warehouse_id: warehouseId, is_deleted: false },
+          select: { uid: true },
+        })
+      ).map((b: { uid: string }) => b.uid),
+    );
+
+    // Tạo Bin cho các Block cũ thiếu Bin
+    for (const block of allBlocks) {
+      const expectedUid = `BIN-${warehouseId.substring(0, 8)}-${block.code}`;
+      if (!existingBinUids.has(expectedUid)) {
+        const shelf = block.shelf;
+        const rack = shelf?.rack;
+        const row = rack?.row;
+        await (tx as any).bin.create({
+          data: {
+            uid: expectedUid,
+            warehouse_id: warehouseId,
+            zone_type: 'PICKING',
+            status: 'Available',
+            position_xyz: {
+              x:
+                Number(row?.position_x || 0) +
+                Number(rack?.position_x || 0) +
+                Number(block.position_x || 0),
+              y: Number(shelf?.height || 0) * 1.2,
+              z: Number(row?.position_y || 0),
+            },
+            dimensions: {
+              w: Number(block.dimensions_width || 1),
+              h: Number(block.dimensions_height || 1),
+              d: 1,
+            },
+          },
+        });
+        existingBinUids.add(expectedUid);
+      }
+    }
+
+    // ═══ Đếm chính xác số Bin Available (thay vì đếm Block) ═══
+    const availableBinsCount = Number(
       await (tx as any).bin.count({
         where: {
           warehouse_id: warehouseId,
-          status: { in: ['Reserved', 'Occupied'] },
+          status: 'Available',
           is_deleted: false,
         },
       }),
     );
 
-    // Đếm số ô có Inventory > 0 (Dành cho các ca đã cũ hoặc không qua Bin)
-    const itemsWithStock = await tx.inventory.count({
-      where: {
-        warehouse_id: warehouseId,
-        quantity: { gt: 0 },
-        is_deleted: false,
-      },
-    });
-
-    // Ô trống thực sự = Tổng ô - Max(Bin bận, Ô có hàng)
-    const emptyBlocks =
-      totalBlocksCount - Math.max(occupiedBins, itemsWithStock);
-
-    if (emptyBlocks >= blocksNeeded) {
-      return; // Đã đủ chỗ
+    if (availableBinsCount >= blocksNeeded) {
+      return; // Đã đủ Bin trống cho hàng nhập
     }
 
-    const blocksToGen = blocksNeeded - emptyBlocks;
+    const blocksToGen = blocksNeeded - availableBinsCount;
     const blocksPerShelf = 12; // 12 ô mỗi tầng
     const shelvesPerRack = 3; // 3 tầng mỗi kệ
     const blocksPerRack = blocksPerShelf * shelvesPerRack; // 36 ô/kệ
