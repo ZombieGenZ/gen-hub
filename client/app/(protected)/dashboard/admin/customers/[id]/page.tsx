@@ -17,6 +17,7 @@ import {
     ExclamationTriangleIcon,
     InformationCircleIcon,
     LockClosedIcon,
+    LockOpenIcon,
     PaperAirplaneIcon,
     PhoneIcon,
     UserCircleIcon,
@@ -26,6 +27,7 @@ import {
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { NotificationService } from "@/services/notification/notification.service";
 import {
@@ -83,6 +85,10 @@ export default function CustomerDetailPage() {
     const [timeline, setTimeline] = useState<TimelineItem[]>([]);
     const [activeTab, setActiveTab] = useState<"overview" | "warnings">("overview");
 
+    const [banDialogOpen, setBanDialogOpen] = useState(false);
+    const [banReason, setBanReason] = useState("");
+    const [isBanning, setIsBanning] = useState(false);
+
     const [showSendForm, setShowSendForm] = useState(false);
     const [sendFormData, setSendFormData] = useState({ title: "", content: "", type: "WARNING" as NotificationType });
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -139,6 +145,36 @@ export default function CustomerDetailPage() {
     useEffect(() => { fetchUser(); }, [fetchUser]);
     useEffect(() => { fetchWarnings(); }, [fetchWarnings]);
     useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+    // ── Ban / Unban ──
+    const handleBan = async () => {
+        const token = authStorage.getAccessToken();
+        if (!token || !user || !banReason.trim()) return;
+        setIsBanning(true);
+        try {
+            await svc.banUser(token, user.id, { reason: banReason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
+            showToast(`Đã khóa tài khoản ${displayName || user.email}`, "success");
+            setBanDialogOpen(false);
+            setBanReason("");
+            fetchUser();
+        } catch {
+            showToast("Không thể khóa tài khoản", "error");
+        } finally {
+            setIsBanning(false);
+        }
+    };
+
+    const handleUnban = async () => {
+        const token = authStorage.getAccessToken();
+        if (!token || !user) return;
+        try {
+            await svc.unbanUser(token, user.id);
+            showToast(`Đã mở khóa tài khoản ${displayName || user.email}`, "success");
+            fetchUser();
+        } catch {
+            showToast("Không thể mở khóa tài khoản", "error");
+        }
+    };
 
     // ── Send notification ──
     const handleConfirmSend = async () => {
@@ -215,6 +251,17 @@ export default function CustomerDetailPage() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                            {user.is_banned ? (
+                                <Button size="sm" variant="outline" onClick={handleUnban}
+                                    className="gap-1.5 text-green-600 border-green-300 hover:bg-green-50 rounded-xl text-xs">
+                                    <LockOpenIcon className="w-3.5 h-3.5" />Mở khóa
+                                </Button>
+                            ) : (
+                                <Button size="sm" variant="outline" onClick={() => setBanDialogOpen(true)}
+                                    className="gap-1.5 text-red-600 border-red-300 hover:bg-red-50 rounded-xl text-xs">
+                                    <LockClosedIcon className="w-3.5 h-3.5" />Khóa tài khoản
+                                </Button>
+                            )}
                             {user.is_banned ? (
                                 <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100 text-xs">
                                     <LockClosedIcon className="w-3 h-3 mr-1" />Đang bị khóa
@@ -295,8 +342,8 @@ export default function CustomerDetailPage() {
                                             <p className="text-sm text-slate-700 leading-snug">{w.reason}</p>
                                             <p className="text-xs text-slate-400 mt-0.5">{fmtDate(w.created_at)}</p>
                                         </div>
-                                        <Badge variant="outline" className={`text-xs shrink-0 ${w.status === "active" ? "bg-orange-50 text-orange-700 border-orange-200" : "bg-slate-50 text-slate-500 border-slate-200"}`}>
-                                            {w.status === "active" ? "Hiệu lực" : w.status === "expired" ? "Hết hạn" : "Đã gỡ"}
+                                        <Badge variant="outline" className={`text-xs shrink-0 ${w.is_active ? "bg-orange-50 text-orange-700 border-orange-200" : w.removed_by ? "bg-slate-50 text-slate-500 border-slate-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
+                                            {w.is_active ? "Hiệu lực" : w.removed_by ? "Đã gỡ" : "Hết hạn"}
                                         </Badge>
                                     </div>
                                 ))}
@@ -408,6 +455,30 @@ export default function CustomerDetailPage() {
                     </div>
                 )}
             </main>
+
+            {/* Ban Dialog */}
+            <Dialog open={banDialogOpen} onOpenChange={(o) => { if (!isBanning) setBanDialogOpen(o); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Khóa tài khoản</DialogTitle>
+                        <DialogDescription>
+                            Khóa tài khoản <strong>{displayName}</strong> trong 7 ngày.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                        placeholder="Lý do khóa tài khoản..."
+                        value={banReason}
+                        onChange={(e) => setBanReason(e.target.value)}
+                        rows={3}
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setBanDialogOpen(false)} disabled={isBanning} className="rounded-xl">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBan} disabled={!banReason.trim() || isBanning} className="rounded-xl">
+                            {isBanning ? "Đang xử lý..." : "Xác nhận khóa"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Confirm Dialog */}
             <Dialog open={confirmOpen} onOpenChange={o => { if (!isSending) setConfirmOpen(o); }}>

@@ -1,45 +1,25 @@
 "use client";
 
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
+    Dialog, DialogContent, DialogHeader, DialogTitle,
+    DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    Search,
-    Plus,
-    MoreHorizontal,
-    MapPin,
-    User,
-    Eye,
-    ShieldOff,
-    ShieldCheck,
-    AlertTriangle,
-    CheckCircle2,
-    Clock,
-    XCircle,
+    Search, Plus, MoreHorizontal, User, Eye,
+    ShieldOff, ShieldCheck, AlertTriangle, CheckCircle2,
+    Clock, XCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -50,49 +30,94 @@ import {
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { toast } from "sonner";
 
-const userManagementService = new UserManagementService();
+const svc = new UserManagementService();
+const LIMIT = 20;
 
-// ── Status config ────────────────────────────────────────────────────────────
+type StatusFilter = "all" | "active" | "banned" | "unverified";
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: "Tất cả" },
+    { key: "active", label: "Hoạt động" },
+    { key: "banned", label: "Bị khóa" },
+    { key: "unverified", label: "Chưa xác thực" },
+];
+
 function getStatusConfig(user: ManagedUser) {
-    if (user.is_banned) {
-        return {
-            label: "Bị khóa",
-            icon: <XCircle className="w-3 h-3" />,
-            className: "bg-red-50 text-red-700 border-red-200",
-        };
-    }
-    if (!user.is_verified) {
-        return {
-            label: "Chưa xác thực",
-            icon: <Clock className="w-3 h-3" />,
-            className: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        };
-    }
-    if (user.warning_count > 0) {
-        return {
-            label: `Hoạt động · ${user.warning_count} cảnh cáo`,
-            icon: <AlertTriangle className="w-3 h-3" />,
-            className: "bg-orange-50 text-orange-700 border-orange-200",
-        };
-    }
-    return {
-        label: "Hoạt động",
-        icon: <CheckCircle2 className="w-3 h-3" />,
-        className: "bg-green-50 text-green-700 border-green-200",
+    if (user.is_banned) return { label: "Bị khóa", icon: <XCircle className="w-3 h-3" />, className: "bg-red-50 text-red-700 border-red-200" };
+    if (!user.is_verified) return { label: "Chưa xác thực", icon: <Clock className="w-3 h-3" />, className: "bg-yellow-50 text-yellow-700 border-yellow-200" };
+    if (user.warning_count > 0) return { label: `Hoạt động · ${user.warning_count} cảnh cáo`, icon: <AlertTriangle className="w-3 h-3" />, className: "bg-orange-50 text-orange-700 border-orange-200" };
+    return { label: "Hoạt động", icon: <CheckCircle2 className="w-3 h-3" />, className: "bg-green-50 text-green-700 border-green-200" };
+}
+
+// ── Create User Dialog ────────────────────────────────────────────────────────
+function CreateUserDialog({ open, onClose, onSuccess }: {
+    open: boolean; onClose: () => void; onSuccess: () => void;
+}) {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const reset = () => { setName(""); setEmail(""); setPassword(""); };
+
+    const handleCreate = async () => {
+        if (!name.trim() || !email.trim() || !password.trim()) return;
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setLoading(true);
+        try {
+            await svc.createUser(token, { name: name.trim(), email: email.trim(), password: password.trim() });
+            toast.success(`Đã tạo tài khoản "${name}" thành công`);
+            onSuccess();
+            onClose();
+            reset();
+        } catch (err: any) {
+            toast.error(err.message || "Không thể tạo tài khoản");
+        } finally {
+            setLoading(false);
+        }
     };
+
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); reset(); } }}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Thêm nhân viên mới</DialogTitle>
+                    <DialogDescription>Tạo tài khoản mới cho nhân viên. Sau khi tạo, hãy phân quyền từ trang chi tiết.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                    <div className="space-y-1.5">
+                        <Label>Họ tên <span className="text-red-500">*</span></Label>
+                        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nguyễn Văn A" className="rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Email <span className="text-red-500">*</span></Label>
+                        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" className="rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Mật khẩu <span className="text-red-500">*</span></Label>
+                        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Tối thiểu 8 ký tự" className="rounded-xl" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => { onClose(); reset(); }} disabled={loading} className="rounded-xl">Hủy</Button>
+                    <Button
+                        className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl"
+                        onClick={handleCreate}
+                        disabled={!name.trim() || !email.trim() || !password.trim() || loading}
+                        loading={loading}
+                    >
+                        {loading ? "Đang tạo..." : "Tạo tài khoản"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 // ── Ban Dialog ────────────────────────────────────────────────────────────────
-function BanDialog({
-    user,
-    open,
-    onClose,
-    onSuccess,
-}: {
-    user: ManagedUser | null;
-    open: boolean;
-    onClose: () => void;
-    onSuccess: () => void;
+function BanDialog({ user, open, onClose, onSuccess }: {
+    user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(false);
@@ -103,12 +128,7 @@ function BanDialog({
         if (!token) return;
         setLoading(true);
         try {
-            await userManagementService.banUser(token, user.id, {
-                reason: reason.trim(),
-                is_permanent: false,
-                duration_value: 7,
-                duration_type: "DAYS",
-            });
+            await svc.banUser(token, user.id, { reason: reason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
             toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email}`);
             onSuccess();
             onClose();
@@ -129,24 +149,10 @@ function BanDialog({
                         Khóa tài khoản <strong>{user?.name || user?.full_name || user?.email}</strong> trong 7 ngày.
                     </DialogDescription>
                 </DialogHeader>
-                <Textarea
-                    placeholder="Lý do khóa tài khoản..."
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={3}
-                />
+                <Textarea placeholder="Lý do khóa tài khoản..." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={loading}>
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        onClick={handleBan}
-                        disabled={!reason.trim() || loading}
-                        loading={loading}
-                    >
-                        Xác nhận khóa
-                    </Button>
+                    <Button variant="outline" onClick={onClose} disabled={loading}>Hủy</Button>
+                    <Button variant="destructive" onClick={handleBan} disabled={!reason.trim() || loading} loading={loading}>Xác nhận khóa</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -157,41 +163,56 @@ function BanDialog({
 export default function StaffPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [staffList, setStaffList] = useState<ManagedUser[]>([]);
+    const [total, setTotal] = useState(0);
+    const [offset, setOffset] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [banTarget, setBanTarget] = useState<ManagedUser | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
 
-    const fetchStaff = async (keywords = "") => {
+    const fetchStaff = async (kw = searchTerm, status = statusFilter, off = offset) => {
         setIsLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            const res = await userManagementService.findMany(token, { keywords, limit: 50 });
-            setStaffList(res?.data?.items ?? (res as any)?.items ?? []);
-        } catch (error) {
-            console.error("Failed to fetch staff", error);
+            const query: any = { keywords: kw, limit: LIMIT, offset: off };
+            if (status !== "all") query.status = status;
+            const res = await svc.findMany(token, query);
+            setStaffList(res?.data?.items ?? []);
+            setTotal(res?.data?.total ?? 0);
+        } catch {
             setStaffList([]);
+            setTotal(0);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => fetchStaff(searchTerm), 300);
+        setOffset(0);
+    }, [searchTerm, statusFilter]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => fetchStaff(searchTerm, statusFilter, offset), 300);
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm, statusFilter, offset]);
 
     const handleUnban = async (user: ManagedUser) => {
         const token = authStorage.getAccessToken();
         if (!token) return;
         try {
-            await userManagementService.unbanUser(token, user.id);
+            await svc.unbanUser(token, user.id);
             toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email}`);
-            fetchStaff(searchTerm);
+            fetchStaff();
         } catch (err: any) {
             toast.error(err.message || "Không thể mở khóa tài khoản");
         }
     };
+
+    const totalPages = Math.ceil(total / LIMIT);
+    const currentPage = Math.floor(offset / LIMIT) + 1;
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
@@ -202,22 +223,40 @@ export default function StaffPage() {
                         <h1 className="text-2xl font-bold text-slate-900">Người dùng</h1>
                         <p className="text-sm text-slate-500 mt-1">Quản lý nhân sự và phân quyền truy cập</p>
                     </div>
-                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-xl shadow-sm shadow-brand/20">
+                    <Button
+                        className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-xl shadow-sm shadow-brand/20"
+                        onClick={() => setCreateOpen(true)}
+                    >
                         <Plus className="w-4 h-4" />
                         Thêm nhân viên
                     </Button>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
-                    <div className="relative w-full max-w-xl">
+                {/* Search + Filter */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                    <div className="relative w-full max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Tìm kiếm theo tên, email..."
-                            className="pl-9 h-9 bg-white border-slate-200 focus:ring-brand/20 transition-all rounded-xl text-sm"
+                            className="pl-9 h-9 bg-white border-slate-200 focus:ring-brand/20 rounded-xl text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
+                    </div>
+                    <div className="flex gap-1 p-1 bg-white border border-slate-200 rounded-xl">
+                        {STATUS_TABS.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setStatusFilter(tab.key)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                    statusFilter === tab.key
+                                        ? "bg-slate-900 text-white shadow-sm"
+                                        : "text-slate-500 hover:text-slate-700"
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -236,118 +275,73 @@ export default function StaffPage() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">
-                                        Đang tải dữ liệu...
-                                    </TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Đang tải dữ liệu...</TableCell>
                                 </TableRow>
                             ) : staffList.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">
-                                        Không tìm thấy người dùng nào
-                                    </TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Không tìm thấy người dùng nào</TableCell>
                                 </TableRow>
                             ) : staffList.map((staff) => {
                                 const status = getStatusConfig(staff);
                                 return (
                                     <TableRow key={staff.id} className="hover:bg-slate-50/50 transition-colors">
-                                        {/* Người dùng */}
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                                                     <User className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-slate-900 text-sm">
-                                                        {staff.name || staff.full_name || "—"}
-                                                    </div>
+                                                    <div className="font-medium text-slate-900 text-sm">{staff.name || staff.full_name || "—"}</div>
                                                     <div className="text-xs text-slate-500">{staff.email}</div>
                                                 </div>
                                             </div>
                                         </TableCell>
-
-                                        {/* Vai trò */}
                                         <TableCell>
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 {(!staff.roles || staff.roles.length === 0) && (
-                                                    <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
-                                                        Người dùng
-                                                    </Badge>
+                                                    <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">Người dùng</Badge>
                                                 )}
                                                 {staff.roles?.map((r) => {
-                                                    const name = r.name?.toLowerCase();
-                                                    const cfg =
-                                                        name === "admin"
-                                                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                            : name === "manager"
-                                                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                            : name === "staff"
-                                                            ? "bg-cyan-50 text-cyan-700 border-cyan-200"
-                                                            : "bg-slate-50 text-slate-600 border-slate-200";
-                                                    return (
-                                                        <Badge key={r.id} variant="outline" className={`text-xs ${cfg}`}>
-                                                            {r.name}
-                                                        </Badge>
-                                                    );
+                                                    const n = r.name?.toLowerCase();
+                                                    const cfg = n === "admin" ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                        : n === "manager" ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                        : n === "staff" ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                                                        : "bg-slate-50 text-slate-600 border-slate-200";
+                                                    return <Badge key={r.id} variant="outline" className={`text-xs ${cfg}`}>{r.name}</Badge>;
                                                 })}
                                             </div>
                                         </TableCell>
-
-                                        {/* Cảnh cáo */}
                                         <TableCell>
                                             {staff.warning_count > 0 ? (
                                                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs gap-1">
-                                                    <AlertTriangle className="w-3 h-3" />
-                                                    {staff.warning_count}
+                                                    <AlertTriangle className="w-3 h-3" />{staff.warning_count}
                                                 </Badge>
-                                            ) : (
-                                                <span className="text-xs text-slate-400">—</span>
-                                            )}
+                                            ) : <span className="text-xs text-slate-400">—</span>}
                                         </TableCell>
-
-                                        {/* Trạng thái */}
                                         <TableCell>
                                             <Badge variant="outline" className={`text-xs gap-1.5 ${status.className}`}>
-                                                {status.icon}
-                                                {status.label}
+                                                {status.icon}{status.label}
                                             </Badge>
                                         </TableCell>
-
-                                        {/* Thao tác */}
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-xl"
-                                                    >
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-xl">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-44">
-                                                    <DropdownMenuItem
-                                                        className="gap-2 cursor-pointer"
-                                                        onClick={() => router.push(`/dashboard/admin/users/${staff.id}`)}
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                        Xem chi tiết
+                                                    <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => router.push(`/dashboard/admin/users/${staff.id}`)}>
+                                                        <Eye className="w-4 h-4" />Xem chi tiết
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     {staff.is_banned ? (
-                                                        <DropdownMenuItem
-                                                            className="gap-2 cursor-pointer text-green-600 focus:text-green-700"
-                                                            onClick={() => handleUnban(staff)}
-                                                        >
-                                                            <ShieldCheck className="w-4 h-4" />
-                                                            Mở khóa
+                                                        <DropdownMenuItem className="gap-2 cursor-pointer text-green-600 focus:text-green-700" onClick={() => handleUnban(staff)}>
+                                                            <ShieldCheck className="w-4 h-4" />Mở khóa
                                                         </DropdownMenuItem>
                                                     ) : (
-                                                        <DropdownMenuItem
-                                                            className="gap-2 cursor-pointer text-red-600 focus:text-red-700"
-                                                            onClick={() => setBanTarget(staff)}
-                                                        >
-                                                            <ShieldOff className="w-4 h-4" />
-                                                            Khóa tài khoản
+                                                        <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 focus:text-red-700" onClick={() => setBanTarget(staff)}>
+                                                            <ShieldOff className="w-4 h-4" />Khóa tài khoản
                                                         </DropdownMenuItem>
                                                     )}
                                                 </DropdownMenuContent>
@@ -358,16 +352,43 @@ export default function StaffPage() {
                             })}
                         </TableBody>
                     </Table>
+
+                    {/* Pagination */}
+                    {total > LIMIT && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                            <p className="text-xs text-slate-500">
+                                {offset + 1}–{Math.min(offset + LIMIT, total)} / {total} người dùng
+                            </p>
+                            <div className="flex gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                    disabled={offset === 0 || isLoading}
+                                    onClick={() => setOffset(Math.max(0, offset - LIMIT))}
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Button>
+                                <div className="flex items-center px-3 text-xs font-medium text-slate-700">
+                                    {currentPage} / {totalPages}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                    disabled={offset + LIMIT >= total || isLoading}
+                                    onClick={() => setOffset(offset + LIMIT)}
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 
-            {/* Ban confirmation dialog */}
-            <BanDialog
-                user={banTarget}
-                open={!!banTarget}
-                onClose={() => setBanTarget(null)}
-                onSuccess={() => fetchStaff(searchTerm)}
-            />
+            <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => fetchStaff()} />
+            <BanDialog user={banTarget} open={!!banTarget} onClose={() => setBanTarget(null)} onSuccess={() => fetchStaff()} />
         </div>
     );
 }

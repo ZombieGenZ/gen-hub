@@ -6,7 +6,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Eye, AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
+import {
+    Search, Eye, AlertTriangle, CheckCircle2, Clock, XCircle,
+    ChevronLeft, ChevronRight,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -16,6 +19,16 @@ import {
 import { authStorage } from "@/services/auth/auth-storage.service";
 
 const svc = new UserManagementService();
+const LIMIT = 20;
+
+type StatusFilter = "all" | "active" | "banned" | "unverified";
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: "Tất cả" },
+    { key: "active", label: "Hoạt động" },
+    { key: "banned", label: "Bị khóa" },
+    { key: "unverified", label: "Chưa xác thực" },
+];
 
 function StatusBadge({ user }: { user: User }) {
     if (user.is_banned)
@@ -30,27 +43,40 @@ function StatusBadge({ user }: { user: User }) {
 export default function CustomersPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [users, setUsers] = useState<User[]>([]);
+    const [total, setTotal] = useState(0);
+    const [offset, setOffset] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchUsers = async (keywords = "") => {
+    const fetchUsers = async (kw = searchTerm, status = statusFilter, off = offset) => {
         setIsLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            const res = await svc.findMany(token, { keywords, limit: 50 });
-            setUsers(res?.data?.items ?? (res as any)?.items ?? []);
+            const query: any = { keywords: kw, limit: LIMIT, offset: off };
+            if (status !== "all") query.status = status;
+            const res = await svc.findMany(token, query);
+            setUsers(res?.data?.items ?? []);
+            setTotal(res?.data?.total ?? 0);
         } catch {
             setUsers([]);
+            setTotal(0);
         } finally {
             setIsLoading(false);
         }
     };
 
+    useEffect(() => { setOffset(0); }, [searchTerm, statusFilter]);
+
     useEffect(() => {
-        const timer = setTimeout(() => fetchUsers(searchTerm), 300);
+        const timer = setTimeout(() => fetchUsers(searchTerm, statusFilter, offset), 300);
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm, statusFilter, offset]);
+
+    const totalPages = Math.ceil(total / LIMIT);
+    const currentPage = Math.floor(offset / LIMIT) + 1;
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
@@ -63,9 +89,9 @@ export default function CustomersPage() {
                     </div>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
-                    <div className="relative w-full max-w-xl">
+                {/* Search + Filter */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                    <div className="relative w-full max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Tìm kiếm theo tên, email..."
@@ -73,6 +99,21 @@ export default function CustomersPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
+                    </div>
+                    <div className="flex gap-1 p-1 bg-white border border-slate-200 rounded-xl">
+                        {STATUS_TABS.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setStatusFilter(tab.key)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                    statusFilter === tab.key
+                                        ? "bg-slate-900 text-white shadow-sm"
+                                        : "text-slate-500 hover:text-slate-700"
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -116,9 +157,7 @@ export default function CustomersPage() {
                                             <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs gap-1">
                                                 <AlertTriangle className="w-3 h-3" />{user.warning_count}
                                             </Badge>
-                                        ) : (
-                                            <span className="text-xs text-slate-400">—</span>
-                                        )}
+                                        ) : <span className="text-xs text-slate-400">—</span>}
                                     </TableCell>
                                     <TableCell><StatusBadge user={user} /></TableCell>
                                     <TableCell className="text-right">
@@ -135,6 +174,38 @@ export default function CustomersPage() {
                             ))}
                         </TableBody>
                     </Table>
+
+                    {/* Pagination */}
+                    {total > LIMIT && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                            <p className="text-xs text-slate-500">
+                                {offset + 1}–{Math.min(offset + LIMIT, total)} / {total} khách hàng
+                            </p>
+                            <div className="flex gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                    disabled={offset === 0 || isLoading}
+                                    onClick={() => setOffset(Math.max(0, offset - LIMIT))}
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Button>
+                                <div className="flex items-center px-3 text-xs font-medium text-slate-700">
+                                    {currentPage} / {totalPages}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                    disabled={offset + LIMIT >= total || isLoading}
+                                    onClick={() => setOffset(offset + LIMIT)}
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
