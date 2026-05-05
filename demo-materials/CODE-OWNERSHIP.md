@@ -98,7 +98,7 @@ Chia 6 domain source code lớn thành 6 phần cho 6 người, để mỗi ngư
 
 - Chịu trách nhiệm toàn bộ backend: API, logic, database
 - Trả lời mọi câu hỏi về server, database, API
-- Hỗ trợ Bảo khi cần test API hoặc backend
+- Hỗ trợ Nam khi cần test API hoặc backend
 
 ---
 
