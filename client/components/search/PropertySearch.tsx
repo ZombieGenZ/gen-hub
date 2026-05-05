@@ -7,6 +7,7 @@ import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { Property, mapWarehouseToProperty } from '@/data/mockProperties';
 import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { MapIcon, ListBulletIcon } from '@heroicons/react/20/solid';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { HeroSearchBar, SearchFilters } from '@/components/search/HeroSearchBar';
 import { FilterModal, FilterState } from '@/components/search/FilterModal';
@@ -55,16 +56,25 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [user, setUser] = useState<UserData | null>(null);
     const [active, setActive] = useState<string | null>(null);
 
-    // Fetch warehouses from API
-    const fetchWarehouses = useCallback(async () => {
+    // Fetch warehouses from API với filter
+        const fetchWarehouses = useCallback(async (params?: {
+        keywords?: string;
+        province_id?: string;
+        rental_status?: string;
+        page?: number;
+    }) => {
         try {
             setIsLoading(true);
             const result = await publicWarehouseService.getPublicWarehouses({
-                limit: 24,
+                limit: 200, // Fetch more to allow map bound filtering
+                ...params,
+                province_id: undefined, // Bỏ filter cứng API để có thể zoom ra thấy pin khác
             });
             const items = result?.items || result || [];
             const mapped = Array.isArray(items) ? items.map(mapWarehouseToProperty) : [];
             setProperties(mapped);
+            // Trigger map re-center after properties load
+            setSearchTrigger(prev => prev + 1);
         } catch (error) {
             console.error('Failed to fetch warehouses:', error);
             setProperties([]);
@@ -155,6 +165,8 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     // Hero Search Bar Filters
     const [heroFilters, setHeroFilters] = useState<SearchFilters>({
         location: initialLocationSlug || null,
+        province_id: null,
+        province_name: null,
         areaRange: null,
         rentalType: null,
     });
@@ -180,13 +192,13 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [searchTrigger, setSearchTrigger] = useState(0);
 
     // ─────────────────────────────────────────────
-    // Hero Search Handler — writes to URL
+    // Hero Search Handler — writes to URL + re-fetches API
     // ─────────────────────────────────────────────
     const handleHeroSearch = (filters: SearchFilters) => {
         setHasSearched(true);
         setHeroFilters(filters);
         setBounds(null);
-        setSearchTrigger(prev => prev + 1);
+        // We will trigger map fitBounds after fetch completes
 
         const params = new URLSearchParams(searchParams.toString());
         params.delete('location');
@@ -205,9 +217,27 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         // Advanced filters carried over when navigating
         serializeAdvancedToParams(advancedFilters, params);
 
-        if (filters.location) {
-            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
-            setSelectedCities([filters.location]);
+        // keywords từ text user gõ tự do (không chọn từ dropdown)
+        const keywords = filters.keywords ?? undefined;
+        const rentalStatus = filters.rentalType === 'full' ? 'AVAILABLE' : undefined;
+        const locationId = filters.location;      // slug cho URL path
+        const provinceId = filters.province_id ?? undefined; // UUID cho API
+
+        // Persist keywords vào URL
+        if (keywords) params.set('q', keywords);
+        else params.delete('q');
+
+        // Persist province_id vào URL
+        if (provinceId) params.set('pid', provinceId);
+        else params.delete('pid');
+
+        if (locationId) {
+            router.push(`/kho-bai/${locationId}?${params.toString()}`);
+            setSelectedCities([locationId]);
+        } else if (provinceId) {
+            // Nếu chọn province từ dropdown nhưng không có slug thì dùng query
+            router.push(`/kho-bai?${params.toString()}`);
+            setSelectedCities([]);
         } else {
             router.push(`/kho-bai?${params.toString()}`);
             setSelectedCities([]);
@@ -221,6 +251,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 default: setSelectedTypes([]);
             }
         }
+
+        // Re-fetch từ API với filter mới (province_id ưu tiên, sau đó keywords)
+        fetchWarehouses({ province_id: provinceId, keywords, rental_status: rentalStatus });
 
         document.getElementById('search-list-container')?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -241,6 +274,8 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         setAdvancedFilters(filters);
         setPriceRange(filters.priceRange);
         setBounds(null);
+        // Map will not fit bounds on pure frontend filter unless we increment searchTrigger
+        // We can increment it here because properties list is already available
         setSearchTrigger(prev => prev + 1);
 
         // Persist to URL
@@ -248,6 +283,130 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         serializeAdvancedToParams(filters, params);
         router.replace(`?${params.toString()}`, { scroll: false });
     };
+
+    // ─────────────────────────────────────────────
+    // Clear All Filters
+    // ─────────────────────────────────────────────
+    const DEFAULT_ADVANCED: FilterState = {
+        priceRange: [0, 500],
+        amenities: [],
+        ceilingHeight: null,
+        floorLoadCapacity: 3,
+        locationType: [],
+        pcccLevel: [],
+    };
+
+    const handleClearAllFilters = useCallback(() => {
+        // Reset hero filters
+        setHeroFilters({ location: null, province_id: null, province_name: null, areaRange: null, rentalType: null });
+        // Reset advanced filters
+        setAdvancedFilters(DEFAULT_ADVANCED);
+        setPriceRange([0, 500]);
+        setAreaRange([0, 5000]);
+        setSelectedTypes([]);
+        setSelectedCities([]);
+        setBounds(null);
+        setCurrentPage(1);
+        // Clear URL
+        router.push('/kho-bai', { scroll: false });
+        // Re-fetch tất cả
+        fetchWarehouses();
+    }, [router, fetchWarehouses]);
+
+    const handleRemoveFilter = useCallback((key: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        switch (key) {
+            case 'province':
+                setHeroFilters(prev => ({ ...prev, location: null, province_id: null, province_name: null }));
+                setSelectedCities([]);
+                params.delete('pid');
+                params.delete('q');
+                router.push(`/kho-bai?${params.toString()}`, { scroll: false });
+                fetchWarehouses({ keywords: undefined, province_id: undefined });
+                break;
+            case 'area':
+                setHeroFilters(prev => ({ ...prev, areaRange: null }));
+                setAreaRange([0, 5000]);
+                params.delete('areaMin');
+                params.delete('areaMax');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'rental':
+                setHeroFilters(prev => ({ ...prev, rentalType: null }));
+                setSelectedTypes([]);
+                params.delete('type');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'price':
+                setAdvancedFilters(prev => ({ ...prev, priceRange: [0, 500] }));
+                setPriceRange([0, 500]);
+                params.delete('priceMin');
+                params.delete('priceMax');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'amenities':
+                setAdvancedFilters(prev => ({ ...prev, amenities: [] }));
+                params.delete('amenities');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'ceilH':
+                setAdvancedFilters(prev => ({ ...prev, ceilingHeight: null }));
+                params.delete('ceilH');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'floorLoad':
+                setAdvancedFilters(prev => ({ ...prev, floorLoadCapacity: 3 }));
+                params.delete('floorLoad');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'locType':
+                setAdvancedFilters(prev => ({ ...prev, locationType: [] }));
+                params.delete('locType');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+            case 'pccc':
+                setAdvancedFilters(prev => ({ ...prev, pcccLevel: [] }));
+                params.delete('pccc');
+                router.replace(`?${params.toString()}`, { scroll: false });
+                break;
+        }
+    }, [searchParams, router, fetchWarehouses]);
+
+    // ─────────────────────────────────────────────
+    // Compute active filter tags
+    // ─────────────────────────────────────────────
+    const activeFilterTags = useMemo(() => {
+        const tags: { key: string; label: string }[] = [];
+
+        if (heroFilters.province_name || heroFilters.location)
+            tags.push({ key: 'province', label: `📍 ${heroFilters.province_name || heroFilters.location}` });
+
+        if (heroFilters.areaRange)
+            tags.push({ key: 'area', label: `📐 ${heroFilters.areaRange.min}–${heroFilters.areaRange.max} m²` });
+
+        if (heroFilters.rentalType)
+            tags.push({ key: 'rental', label: heroFilters.rentalType === 'full' ? '🏭 Thuê nguyên kho' : '🤝 Thuê chung' });
+
+        if (advancedFilters.priceRange[0] > 0 || advancedFilters.priceRange[1] < 500)
+            tags.push({ key: 'price', label: `💰 ${advancedFilters.priceRange[0]}–${advancedFilters.priceRange[1]} Tr` });
+
+        if (advancedFilters.amenities.length > 0)
+            tags.push({ key: 'amenities', label: `✨ ${advancedFilters.amenities.length} tiện nghi` });
+
+        if (advancedFilters.ceilingHeight !== null)
+            tags.push({ key: 'ceilH', label: `🏗️ Trần > ${advancedFilters.ceilingHeight}m` });
+
+        if (advancedFilters.floorLoadCapacity !== 3)
+            tags.push({ key: 'floorLoad', label: `⚖️ Tải trọng ${advancedFilters.floorLoadCapacity} tấn` });
+
+        if (advancedFilters.locationType.length > 0)
+            tags.push({ key: 'locType', label: `🗺️ ${advancedFilters.locationType.length} vị trí` });
+
+        if (advancedFilters.pcccLevel.length > 0)
+            tags.push({ key: 'pccc', label: `🔥 ${advancedFilters.pcccLevel.length} PCCC` });
+
+        return tags;
+    }, [heroFilters, advancedFilters]);
 
     // Scroll to top when page changes
     useEffect(() => {
@@ -313,9 +472,27 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             const restored = parseAdvancedFromParams(new URLSearchParams(searchParams.toString()));
             setAdvancedFilters(restored);
             setPriceRange(restored.priceRange);
+
+            // Restore province_id và re-fetch với province filter
+            const pidParam = searchParams.get('pid');
+            const qParam = searchParams.get('q');
+
+            if (pidParam || qParam) {
+                setHasSearched(true);
+                if (pidParam) {
+                    setHeroFilters(prev => ({ ...prev, province_id: pidParam }));
+                }
+                if (qParam) {
+                    setHeroFilters(prev => ({ ...prev, keywords: qParam }));
+                }
+                fetchWarehouses({
+                    province_id: pidParam ?? undefined,
+                    keywords: qParam ?? undefined,
+                });
+            }
         }
 
-    }, [searchParams, initialLocationSlug, parseAdvancedFromParams]);
+    }, [searchParams, initialLocationSlug, parseAdvancedFromParams, fetchWarehouses]);
 
     // Filter properties
     const filteredProperties = useMemo(() => {
@@ -345,6 +522,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 return isShared || isStandard || isBonded;
             });
         }
+        /*
+        // Bỏ filter cứng này để khi zoom map ra ngoài tỉnh đã chọn, 
+        // người dùng vẫn thấy được kho ở tỉnh khác thông qua bounds filter
         if (selectedCities.length > 0) {
             result = result.filter(p => selectedCities.some(city => {
                 if (!p.province_name) return false;
@@ -359,6 +539,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 return normalizedProvince.includes(city.toLowerCase());
             }));
         }
+        */
 
         // Apply Map Bounds Filter if available
         if (bounds) {
@@ -428,6 +609,33 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                     onApply={handleApplyFilters}
                     initialFilters={advancedFilters}
                 />
+
+                {/* ACTIVE FILTER TAGS */}
+                {activeFilterTags.length > 0 && (
+                    <div className="search-page__filter-tags">
+                        <div className="search-page__filter-tags-inner">
+                            {activeFilterTags.map(tag => (
+                                <button
+                                    key={tag.key}
+                                    className="search-page__filter-tag"
+                                    onClick={() => handleRemoveFilter(tag.key)}
+                                    title={`Xóa lọc: ${tag.label}`}
+                                >
+                                    <span>{tag.label}</span>
+                                    <XMarkIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                                </button>
+                            ))}
+                            {activeFilterTags.length > 1 && (
+                                <button
+                                    className="search-page__filter-tag search-page__filter-tag--clear-all"
+                                    onClick={handleClearAllFilters}
+                                >
+                                    Xóa tất cả
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Container - Chứa cả List và Map */}
                 <div className="search-page__main-container">
@@ -554,6 +762,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                                         }
                                     }}
                                     searchTrigger={searchTrigger}
+                                    targetProvince={heroFilters.province_name || heroFilters.location || null}
                                 />
                             </div>
 
