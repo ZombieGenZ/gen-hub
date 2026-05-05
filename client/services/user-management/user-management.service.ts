@@ -10,6 +10,10 @@ export interface User {
     phone?: string;
     is_banned: boolean;
     is_verified: boolean;
+    email_confirmed: boolean;
+    banned_end?: string | null;
+    is_online?: boolean;
+    last_online?: string | null;
     warning_count: number;
     created_at: string;
     updated_at?: string;
