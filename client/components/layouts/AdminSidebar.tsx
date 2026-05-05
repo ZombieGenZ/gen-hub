@@ -40,7 +40,6 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/approval", icon: ClipboardDocumentCheckIcon, label: "Duyệt phiếu PO/Xuất" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
-            { href: "/dashboard/admin/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch thăm kho" },
         ]
     },
     {
@@ -57,13 +56,6 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/amenities", icon: SparklesIcon, label: "Tiện ích" },
             { href: "/dashboard/admin/addons", icon: PuzzlePieceIcon, label: "Dịch vụ thêm" },
             { href: "/dashboard/admin/insurances", icon: ShieldCheckIcon, label: "Bảo hiểm" },
-        ]
-    },
-    {
-        title: "Nội dung & CMS",
-        items: [
-            { href: "/dashboard/admin/categories", icon: RectangleGroupIcon, label: "Danh mục bài viết" },
-            { href: "/dashboard/admin/articles", icon: NewspaperIcon, label: "Bài viết & Tin tức" },
         ]
     },
     {

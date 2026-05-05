@@ -11,8 +11,8 @@ Vẽ lại full nghiệp vụ end-to-end để 6 anh em hiểu rõ luồng xử 
 ## 6 actor chính trong demo
 
 - **Thái:** 3D Warehouse & Floor (chính)
-- **Nam:** Customer marketplace & booking (frontend), hỗ trợ backend khi cần
-- **Bảo:** Organization owner setup kho và phân quyền
+- **Bảo:** Customer marketplace & booking (frontend), hỗ trợ backend khi cần
+- **Nam:** Organization owner setup kho và phân quyền
 - **Khoa:** Toàn bộ server/backend (NestJS, Prisma, API, DB)
 - **Đức Anh:** Staff xử lý inbound/outbound
 - **Hưng:** CRUD & hỗ trợ vận hành
@@ -49,12 +49,12 @@ Vẽ lại full nghiệp vụ end-to-end để 6 anh em hiểu rõ luồng xử 
 
 ## Giải thích full nghiệp vụ
 
-1. **Customer (Nam)**
+1. **Customer (Bảo)**
    - Tìm kho trên marketplace, xem chi tiết kho
    - Tạo booking / rental request
    - Theo dõi trạng thái booking trên dashboard customer
 
-2. **Organization owner (Bảo)**
+2. **Organization owner (Nam)**
    - Show dashboard org sau khi được duyệt
    - Quản lý kho, thiết lập thông tin kho, phân quyền nhân sự
    - Chuẩn bị kho cho staff bằng dữ liệu sản phẩm, đơn vị, PO
