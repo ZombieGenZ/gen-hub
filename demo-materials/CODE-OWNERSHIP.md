@@ -6,7 +6,7 @@ Chia 6 domain source code lớn thành 6 phần cho 6 người, để mỗi ngư
 
 ---
 
-## 1. NAM — Customer Marketplace & Booking (Frontend)
+## 1. BẢO — Customer Marketplace & Booking (Frontend)
 
 ### Domain chính
 
@@ -53,7 +53,7 @@ Chia 6 domain source code lớn thành 6 phần cho 6 người, để mỗi ngư
 
 ---
 
-## 3. BẢO — Organization Onboarding & Warehouse Setup
+## 3. NAM — Organization Onboarding & Warehouse Setup
 
 ### Domain chính
 
@@ -98,7 +98,7 @@ Chia 6 domain source code lớn thành 6 phần cho 6 người, để mỗi ngư
 
 - Chịu trách nhiệm toàn bộ backend: API, logic, database
 - Trả lời mọi câu hỏi về server, database, API
-- Hỗ trợ Nam khi cần test API hoặc backend
+- Hỗ trợ Bảo khi cần test API hoặc backend
 
 ---
 
