@@ -581,7 +581,7 @@ export default function OutboundApprovalDetail({
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
                                         <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
-                                        <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Vị trí</th>
+                                        <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Vị trí lấy hàng</th>
                                         <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL yêu cầu</th>
                                         <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL nhặt</th>
                                     </tr>
@@ -592,21 +592,108 @@ export default function OutboundApprovalDetail({
                                         if (!pickDetails.length) {
                                             return <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có danh sách nhặt hàng</td></tr>;
                                         }
-                                        return pickDetails.map((d) => {
-                                            const productName =
-                                                d.export_detail?.product?.name
-                                                ?? "—";
-                                            const position = d.block?.code ?? "—";
+
+                                        // Group by (export_detail_id) so same product+batch shows as one row
+                                        // with all block positions listed together
+                                        const groups = new Map<string, { details: typeof pickDetails; productName: string; totalRequired: number }>();
+                                        for (const d of pickDetails) {
+                                            const key = d.export_detail_id ?? d.id;
+                                            if (!groups.has(key)) {
+                                                groups.set(key, {
+                                                    details: [],
+                                                    productName: d.export_detail?.product?.name ?? "—",
+                                                    totalRequired: 0,
+                                                });
+                                            }
+                                            const g = groups.get(key)!;
+                                            g.details.push(d);
+                                            g.totalRequired += Number(d.required_qty);
+                                        }
+
+                                        return Array.from(groups.values()).map((g, idx) => {
+                                            const positions = g.details.map(d => d.block?.code).filter(Boolean) as string[];
+                                            const uniquePositions = Array.from(new Set(positions));
+                                            const totalPicked = g.details.reduce((sum, d) => sum + (pickedQty[d.id] ?? 0), 0);
+
+                                            // Parse block code: B-ZONE-RACK-RACKID-ROW-SHELF-SLOT
+                                            // Group by rack+shelf for compact display
+                                            interface ShelfGroup { rack: string; shelf: string; slots: string[] }
+                                            const shelfMap = new Map<string, ShelfGroup>();
+                                            const unparsed: string[] = [];
+                                            for (const code of uniquePositions) {
+                                                const p = code.split('-');
+                                                if (p.length >= 7) {
+                                                    const rack = `${p[1]}-RACK-${p[3]}`;
+                                                    const shelf = p[5];
+                                                    const slot = p[6];
+                                                    const key = `${rack}|${shelf}`;
+                                                    if (!shelfMap.has(key)) shelfMap.set(key, { rack, shelf, slots: [] });
+                                                    shelfMap.get(key)!.slots.push(slot);
+                                                } else {
+                                                    unparsed.push(code);
+                                                }
+                                            }
+                                            // Sort slots numerically within each shelf group
+                                            shelfMap.forEach(sg => sg.slots.sort((a, b) => Number(a) - Number(b)));
+
                                             return (
-                                                <tr key={d.id}>
-                                                    <td className="py-2 px-3 text-sm font-medium">{productName}</td>
-                                                    <td className="py-2 px-3 text-sm text-muted-foreground">{position}</td>
-                                                    <td className="py-2 px-3 text-center text-sm font-semibold">{d.required_qty}</td>
+                                                <tr key={idx}>
+                                                    <td className="py-2 px-3 text-sm font-medium">{g.productName}</td>
+                                                    <td className="py-2 px-3">
+                                                        {uniquePositions.length === 0 ? (
+                                                            <span className="text-muted-foreground text-sm">—</span>
+                                                        ) : (
+                                                            <details className="group">
+                                                                <summary className="list-none cursor-pointer select-none inline-flex items-center gap-1.5">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[11px] font-semibold">
+                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                                        {uniquePositions.length} vị trí
+                                                                    </span>
+                                                                    <svg className="w-3 h-3 text-muted-foreground transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                                                </summary>
+                                                                <div className="mt-2 space-y-1.5 pl-1">
+                                                                    {Array.from(shelfMap.values()).map((sg, si) => (
+                                                                        <div key={si} className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+                                                                            <span className="text-[11px] font-semibold text-slate-500 shrink-0 font-mono">{sg.rack} · T{sg.shelf}:</span>
+                                                                            <div className="flex flex-wrap gap-1">
+                                                                                {sg.slots.map((slot, si2) => (
+                                                                                    <span key={si2} className="inline-flex items-center px-1.5 py-0 rounded border border-slate-200 bg-slate-50 text-[11px] font-mono font-medium text-slate-700">
+                                                                                        Ô {slot}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                    {unparsed.map((code, ui) => (
+                                                                        <span key={ui} className="inline-flex items-center px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-mono text-slate-600">{code}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </details>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-center text-sm font-semibold">{g.totalRequired}</td>
                                                     <td className="py-2 px-3 text-center">
                                                         <Input
                                                             type="number" min={0}
-                                                            value={pickedQty[d.id] ?? 0}
-                                                            onChange={e => setPickedQty(p => ({ ...p, [d.id]: parseInt(e.target.value) || 0 }))}
+                                                            value={totalPicked}
+                                                            onChange={e => {
+                                                                const val = parseInt(e.target.value) || 0;
+                                                                const details = g.details;
+                                                                setPickedQty(p => {
+                                                                    const next = { ...p };
+                                                                    // rem must be inside the updater so React StrictMode
+                                                                    // double-invocation doesn't corrupt the value
+                                                                    let rem = val;
+                                                                    details.forEach((d, i) => {
+                                                                        const share = i === details.length - 1
+                                                                            ? rem
+                                                                            : Math.min(rem, Number(d.required_qty));
+                                                                        next[d.id] = Math.max(0, share);
+                                                                        rem -= next[d.id];
+                                                                    });
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             className="w-20 h-8 rounded-xl text-center text-sm mx-auto"
                                                         />
                                                     </td>
