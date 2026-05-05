@@ -583,7 +583,9 @@ export default function UserDetailPage() {
                 {/* Sessions */}
                 <TabsContent value="sessions" className="mt-4">
                     <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-slate-500">Các phiên đăng nhập đang hoạt động</p>
+                        <p className="text-sm text-slate-500">
+                            {sessions.length > 0 ? `${sessions.length} phiên đang hoạt động` : "Các phiên đăng nhập"}
+                        </p>
                         {sessions.length > 1 && (
                             <Button
                                 variant="outline"
@@ -599,9 +601,9 @@ export default function UserDetailPage() {
                         <Table>
                             <TableHeader className="bg-slate-50">
                                 <TableRow>
-                                    <TableHead className="font-semibold text-slate-600">Thiết bị</TableHead>
+                                    <TableHead className="font-semibold text-slate-600">Thiết bị / Trình duyệt</TableHead>
                                     <TableHead className="font-semibold text-slate-600">IP</TableHead>
-                                    <TableHead className="font-semibold text-slate-600">Hoạt động lần cuối</TableHead>
+                                    <TableHead className="font-semibold text-slate-600">Đăng nhập lúc</TableHead>
                                     <TableHead className="text-right font-semibold text-slate-600">Thao tác</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -610,28 +612,33 @@ export default function UserDetailPage() {
                                     <TableRow>
                                         <TableCell colSpan={4} className="text-center py-10 text-slate-400 text-sm">Không có phiên nào</TableCell>
                                     </TableRow>
-                                ) : sessions.map((s) => (
-                                    <TableRow key={s.id} className="hover:bg-slate-50/50">
-                                        <TableCell>
-                                            <div className="flex items-center gap-2 text-sm text-slate-700">
-                                                <ComputerDesktopIcon className="w-4 h-4 text-slate-400 shrink-0" />
-                                                <span>{s.device_name || "Thiết bị không rõ"}</span>
-                                                {s.is_current && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">Hiện tại</Badge>}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-slate-500 font-mono">{s.ip_address || "—"}</TableCell>
-                                        <TableCell className="text-sm text-slate-500 whitespace-nowrap">{formatDate(s.last_active_at)}</TableCell>
-                                        <TableCell className="text-right">
-                                            {!s.is_current && (
+                                ) : sessions.map((s) => {
+                                    const browser = parseBrowser(s.device);
+                                    const osName = parseOs(s.os);
+                                    const cleanIp = s.ip?.replace(/^::ffff:/, "") ?? "—";
+                                    return (
+                                        <TableRow key={s.id} className="hover:bg-slate-50/50">
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <ComputerDesktopIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm text-slate-700">{browser}</p>
+                                                        <p className="text-xs text-slate-400">{osName}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-slate-500 font-mono">{cleanIp}</TableCell>
+                                            <TableCell className="text-sm text-slate-500 whitespace-nowrap">{formatDate(s.created_at)}</TableCell>
+                                            <TableCell className="text-right">
                                                 <Button variant="ghost" size="sm"
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-xs h-7 px-2"
                                                     onClick={() => handleRevokeSession(s.id)}>
                                                     Thu hồi
                                                 </Button>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </Card>
@@ -656,6 +663,23 @@ export default function UserDetailPage() {
             />
         </div>
     );
+}
+
+function parseBrowser(ua?: string): string {
+    if (!ua) return "Trình duyệt không rõ";
+    if (ua.includes("Edg/")) return "Microsoft Edge";
+    if (ua.includes("OPR/") || ua.includes("Opera")) return "Opera";
+    if (ua.includes("Firefox/")) return "Firefox";
+    if (ua.includes("Chrome/")) return "Chrome";
+    if (ua.includes("Safari/")) return "Safari";
+    return "Trình duyệt không rõ";
+}
+
+function parseOs(os?: string): string {
+    if (!os) return "Hệ điều hành không rõ";
+    // API trả về chuỗi có dấu ngoặc kép thừa, vd: "\"Windows\""
+    const cleaned = os.replace(/^"+|"+$/g, "").replace(/\\"/g, "").trim();
+    return cleaned || "Hệ điều hành không rõ";
 }
 
 function InfoField({ label, value }: { label: string; value: React.ReactNode }) {

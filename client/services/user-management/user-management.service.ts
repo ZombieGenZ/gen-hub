@@ -49,10 +49,12 @@ export interface Warning {
 
 export interface Session {
     id: string;
-    device_name: string;
-    ip_address: string;
-    last_active_at: string;
-    is_current: boolean;
+    ip: string;
+    location?: string | null;
+    device?: string;
+    os?: string;
+    created_at: string;
+    updated_at?: string;
 }
 
 export interface QueryUsersParams {
