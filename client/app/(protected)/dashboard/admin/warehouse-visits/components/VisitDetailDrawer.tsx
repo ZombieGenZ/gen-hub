@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { warehouseVisitService } from '@/services/warehouse-visit/warehouse-visit.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
-import { toast } from 'sonner';
+import { useToast } from '@/contexts/ToastContext';
 import {
   XMarkIcon as XIcon,
   PhoneIcon,
@@ -36,6 +36,8 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
     enabled: !!visitId && !!token,
   });
 
+  const { showToast } = useToast();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionType, setActionType] = useState<'CONFIRM' | 'CANCEL' | 'COMPLETE' | null>(null);
 
@@ -63,10 +65,10 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
         ...payload
       });
 
-      toast.success('Cập nhật trạng thái lịch hẹn thành công');
+      showToast('Cập nhật trạng thái lịch hẹn thành công', "success");
       onSuccess(); // Close drawer & refresh list
     } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi cập nhật trạng thái');
+      showToast(error.message || 'Lỗi khi cập nhật trạng thái', "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -295,10 +297,10 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
                           setIsSubmitting(true);
                           warehouseVisitService.deleteBooking(token, visit.id)
                             .then(() => {
-                              toast.success('Đã xóa dữ liệu');
+                              showToast('Đã xóa dữ liệu', "success");
                               onSuccess();
                             })
-                            .catch(err => toast.error(err.message || 'Lỗi xóa'))
+                            .catch(err => showToast(err.message || 'Lỗi xóa', "error"))
                             .finally(() => setIsSubmitting(false));
                         }
                       }}

@@ -17,8 +17,7 @@ import {
     type User,
 } from "@/services/user-management/user-management.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const svc = new UserManagementService();
 const LIMIT = 20;
 
@@ -43,6 +42,7 @@ function StatusBadge({ user }: { user: User }) {
 
 export default function CustomersPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [users, setUsers] = useState<User[]>([]);
@@ -62,7 +62,7 @@ export default function CustomersPage() {
             setUsers(res?.data?.items ?? []);
             setTotal(res?.data?.total ?? 0);
         } catch (err: any) {
-            toast.error(err.message || "Không thể tải danh sách khách hàng");
+            showToast(err.message || "Không thể tải danh sách khách hàng", "error");
             setUsers([]);
             setTotal(0);
         } finally {

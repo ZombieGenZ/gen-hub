@@ -18,8 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { warehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 // Define a type for the form data, looser than the strict entity
 type WarehouseFormData = {
     name: string;
@@ -68,6 +67,7 @@ interface CreateWarehouseModalProps {
 }
 
 export function CreateWarehouseModal({ open, onOpenChange, onSuccess }: CreateWarehouseModalProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<WarehouseFormData>(initialFormData);
 
@@ -91,13 +91,13 @@ export function CreateWarehouseModal({ open, onOpenChange, onSuccess }: CreateWa
             if (!token) throw new Error("Unauthorized");
 
             await warehouseTemplateService.createWarehouseTemplate(token, formData);
-            toast.success("Tạo kho thành công");
+            showToast("Tạo kho thành công", "success");
             setFormData(initialFormData);
             onSuccess();
             onOpenChange(false);
         } catch (error) {
             console.error(error);
-            toast.error("Tạo kho thất bại");
+            showToast("Tạo kho thất bại", "error");
         } finally {
             setLoading(false);
         }
@@ -201,7 +201,8 @@ interface UpdateWarehouseModalProps {
 }
 
 export function UpdateWarehouseModal({ open, onOpenChange, warehouse, onSuccess }: UpdateWarehouseModalProps) {
-    const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<WarehouseFormData>(initialFormData);
 
     useEffect(() => {
@@ -249,12 +250,12 @@ export function UpdateWarehouseModal({ open, onOpenChange, warehouse, onSuccess 
             if (!token) throw new Error("Unauthorized");
 
             await warehouseTemplateService.updateWarehouseTemplate(token, warehouse.id, formData);
-            toast.success("Cập nhật kho thành công");
+            showToast("Cập nhật kho thành công", "success");
             onSuccess();
             onOpenChange(false);
         } catch (error) {
             console.error(error);
-            toast.error("Cập nhật kho thất bại");
+            showToast("Cập nhật kho thất bại", "error");
         } finally {
             setLoading(false);
         }
@@ -359,7 +360,8 @@ interface DeleteWarehouseDialogProps {
 }
 
 export function DeleteWarehouseDialog({ open, onOpenChange, warehouse, onSuccess }: DeleteWarehouseDialogProps) {
-    const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
 
     const handleDelete = async () => {
         if (!warehouse) return;
@@ -369,12 +371,12 @@ export function DeleteWarehouseDialog({ open, onOpenChange, warehouse, onSuccess
             if (!token) throw new Error("Unauthorized");
 
             await warehouseTemplateService.deleteWarehouseTemplate(token, warehouse.id);
-            toast.success("Xóa kho thành công");
+            showToast("Xóa kho thành công", "success");
             onSuccess();
             onOpenChange(false);
         } catch (error) {
             console.error(error);
-            toast.error("Xóa kho thất bại");
+            showToast("Xóa kho thất bại", "error");
         } finally {
             setLoading(false);
         }

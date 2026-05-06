@@ -15,7 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -40,6 +40,7 @@ const categoryService = new CategoryService();
 
 export default function ArticlesPage() {
     // --- Data States ---
+    const { showToast } = useToast();
     const [articles, setArticles] = useState<ArticleResponse[]>([]);
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export default function ArticlesPage() {
             setCategories(items);
         } catch(e) { 
             console.error(e);
-            toast.error("Không thể tải danh sách danh mục");
+            showToast("Không thể tải danh sách danh mục", "error");
         }
     }, []);
 
@@ -126,7 +127,7 @@ export default function ArticlesPage() {
 
         } catch (error: any) {
             console.error("Failed to fetch articles", error);
-            toast.error(error.message || "Không thể tải danh sách bài viết");
+            showToast(error.message || "Không thể tải danh sách bài viết", "error");
         } finally {
             setLoading(false);
         }
@@ -157,12 +158,12 @@ export default function ArticlesPage() {
 
             if (targetArticle) {
                 await articleService.deleteArticle(token, targetArticle.id);
-                toast.success(`Đã xóa bài viết "${targetArticle.title}"`);
+                showToast(`Đã xóa bài viết "${targetArticle.title}"`, "success");
             }
             handleRefresh();
         } catch (error: any) {
             console.error("Delete failed", error);
-            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -175,13 +176,13 @@ export default function ArticlesPage() {
             if (!token) return;
 
             await articleService.deleteManyArticles(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} bài viết thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} bài viết thành công!`, "success");
             
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            toast.error(error.message || "Xóa nhiều thất bại");
+            showToast(error.message || "Xóa nhiều thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }

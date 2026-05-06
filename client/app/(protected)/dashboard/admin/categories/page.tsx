@@ -15,7 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -35,6 +35,7 @@ const categoryService = new CategoryService();
 
 export default function CategoriesPage() {
     // --- Data States ---
+    const { showToast } = useToast();
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -120,7 +121,7 @@ export default function CategoriesPage() {
 
         } catch (error: any) {
             console.error("Failed to fetch categories", error);
-            toast.error(error.message || "Không thể tải danh sách danh mục");
+            showToast(error.message || "Không thể tải danh sách danh mục", "error");
         } finally {
             setLoading(false);
         }
@@ -154,16 +155,16 @@ export default function CategoriesPage() {
 
             if (targetCategory) {
                 if(targetCategory.children && targetCategory.children.length > 0) {
-                     toast.error(`Không thể xóa danh mục đang có danh mục con.`);
+                     showToast(`Không thể xóa danh mục đang có danh mục con.`, "error");
                      return;
                 }
                 await categoryService.deleteCategory(token, targetCategory.id);
-                toast.success(`Đã xóa danh mục "${targetCategory.name}"`);
+                showToast(`Đã xóa danh mục "${targetCategory.name}"`, "success");
             }
             handleRefresh();
         } catch (error: any) {
             console.error("Delete failed", error);
-            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -176,13 +177,13 @@ export default function CategoriesPage() {
             if (!token) return;
 
             await categoryService.deleteManyCategories(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} danh mục thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} danh mục thành công!`, "success");
             
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            toast.error(error.message || "Xóa nhiều thất bại");
+            showToast(error.message || "Xóa nhiều thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }

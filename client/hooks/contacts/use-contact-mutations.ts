@@ -3,8 +3,7 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { ContactService } from "@/services/contact/contact.service";
 import { UpdateContactDto } from "@/types/contact/contact.type";
 import { contactKeys } from "./use-contacts";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const contactService = new ContactService();
 
 function getToken() {
@@ -12,6 +11,7 @@ function getToken() {
 }
 
 export function useReplyContact(ticketId: string) {
+    const { showToast } = useToast();
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -23,16 +23,17 @@ export function useReplyContact(ticketId: string) {
             queryClient.invalidateQueries({ queryKey: contactKeys.messages(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Đã gửi phản hồi thành công! ✉️");
+            showToast("Đã gửi phản hồi thành công! ✉️", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Gửi phản hồi thất bại");
+            showToast(error.message || "Gửi phản hồi thất bại", "error");
         },
     });
 }
 
 export function useUpdateContact(ticketId: string) {
-    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (updateData: UpdateContactDto) => {
@@ -42,16 +43,17 @@ export function useUpdateContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Cập nhật ticket thành công ✅");
+            showToast("Cập nhật ticket thành công ✅", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Cập nhật thất bại");
+            showToast(error.message || "Cập nhật thất bại", "error");
         },
     });
 }
 
 export function useCloseContact(ticketId: string) {
-    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async () => {
@@ -61,16 +63,17 @@ export function useCloseContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Đã đóng ticket 🔒");
+            showToast("Đã đóng ticket 🔒", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Không thể đóng ticket");
+            showToast(error.message || "Không thể đóng ticket", "error");
         },
     });
 }
 
 export function useReopenContact(ticketId: string) {
-    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async () => {
@@ -80,16 +83,17 @@ export function useReopenContact(ticketId: string) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Đã mở lại ticket 🔓");
+            showToast("Đã mở lại ticket 🔓", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Không thể mở lại ticket");
+            showToast(error.message || "Không thể mở lại ticket", "error");
         },
     });
 }
 
 export function useDeleteContact() {
-    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (ticketId: string) => {
@@ -98,16 +102,17 @@ export function useDeleteContact() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Đã xóa ticket thành công 🗑️");
+            showToast("Đã xóa ticket thành công 🗑️", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Xóa ticket thất bại");
+            showToast(error.message || "Xóa ticket thất bại", "error");
         },
     });
 }
 
 export function useDeleteManyContacts() {
-    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (ids: string[]) => {
@@ -116,10 +121,10 @@ export function useDeleteManyContacts() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
-            toast.success("Đã xóa các ticket đã chọn 🗑️");
+            showToast("Đã xóa các ticket đã chọn 🗑️", "success");
         },
         onError: (error: any) => {
-            toast.error(error.message || "Xóa nhiều ticket thất bại");
+            showToast(error.message || "Xóa nhiều ticket thất bại", "error");
         },
     });
 }

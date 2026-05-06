@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
-import { toast } from 'sonner';
-
+import { useToast } from '@/contexts/ToastContext';
 interface UseRackKeyboardNavProps {
   selectedRackId: string | null;
   isDragMode: boolean;
@@ -20,6 +19,7 @@ export const useRackKeyboardNav = ({
   onUpdatePosition,
   getRackPosition,
 }: UseRackKeyboardNavProps) => {
+  const { showToast } = useToast();
   const lastMoveTime = useRef(0);
   const moveThrottle = 50; // ms between moves
 
@@ -83,10 +83,7 @@ export const useRackKeyboardNav = ({
   // Show instruction toast when drag mode is enabled
   useEffect(() => {
     if (isDragMode && selectedRackId) {
-      toast.info('Dùng phím mũi tên ←↑↓→ để di chuyển kệ (Shift: nhanh hơn)', {
-        id: 'rack-nav-hint',
-        duration: 3000,
-      });
+      showToast('Dùng phím mũi tên ←↑↓→ để di chuyển kệ (Shift: nhanh hơn)', "info");
     }
   }, [isDragMode, selectedRackId]);
 };

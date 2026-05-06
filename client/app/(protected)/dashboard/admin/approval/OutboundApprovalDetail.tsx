@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, PickingStrategy } from "@/services/inventory/inventory.types";
 import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
 
@@ -139,6 +139,8 @@ export default function OutboundApprovalDetail({
     onOpenSplitTicket,
 }: OutboundApprovalDetailProps) {
 
+    const { showToast } = useToast();
+
     const [data, setData] = useState<OutboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -204,7 +206,7 @@ export default function OutboundApprovalDetail({
 
             const message = OUTBOUND_REALTIME_TOAST_MESSAGES[eventName];
             if (message) {
-                toast.success(message);
+                showToast(message, "success");
                 lastRealtimeToastRef.current = { eventName, at: now };
             }
         },
@@ -212,7 +214,7 @@ export default function OutboundApprovalDetail({
 
     const getToken = () => {
         const t = authStorage.getAccessToken();
-        if (!t) { toast.error("Phiên đăng nhập hết hạn"); return null; }
+        if (!t) { showToast("Phiên đăng nhập hết hạn", "error"); return null; }
         return t;
     };
 
@@ -237,10 +239,10 @@ export default function OutboundApprovalDetail({
         try {
             const pickingStrategy = strategy === "NEAREST" ? "FEFO" : strategy;
             await wmInventoryService.approveOutbound(token, ticketId, { picking_strategy: pickingStrategy as "FEFO" | "FIFO" });
-            toast.success("Đã duyệt lệnh xuất — chuyển sang Đang nhặt hàng");
+            showToast("Đã duyệt lệnh xuất — chuyển sang Đang nhặt hàng", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể duyệt phiếu xuất");
+            showToast(err.message || "Không thể duyệt phiếu xuất", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -250,11 +252,11 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             await wmInventoryService.rejectOutbound(token, ticketId, reason);
-            toast.success(`Đã từ chối phiếu xuất — Lý do: ${reason}`);
+            showToast(`Đã từ chối phiếu xuất — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể từ chối phiếu xuất");
+            showToast(err.message || "Không thể từ chối phiếu xuất", "error");
             setRejectOpen(false);
             fetchData();
         } finally { setSubmitting(false); }
@@ -266,7 +268,7 @@ export default function OutboundApprovalDetail({
         // Kiểm tra tất cả số lượng nhặt phải lớn hơn 0
         const allPickedPositive = Object.values(pickedQty).every(qty => qty > 0);
         if (!allPickedPositive) {
-            toast.error("Số lượng nhặt phải lớn hơn 0 cho tất cả sản phẩm");
+            showToast("Số lượng nhặt phải lớn hơn 0 cho tất cả sản phẩm", "error");
             return;
         }
         setSubmitting(true);
@@ -276,10 +278,10 @@ export default function OutboundApprovalDetail({
                 picked_qty: qty,
             }));
             await wmInventoryService.confirmPicking(token, ticketId, { details });
-            toast.success("Đã xác nhận nhặt hàng — chuyển sang Đang kiểm tra");
+            showToast("Đã xác nhận nhặt hàng — chuyển sang Đang kiểm tra", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể xác nhận nhặt hàng");
+            showToast(err.message || "Không thể xác nhận nhặt hàng", "error");
             if (err.status === 403) {
                 authStorage.clearTokens();
                 window.location.href = '/auth/login';
@@ -295,7 +297,7 @@ export default function OutboundApprovalDetail({
         // Kiểm tra tất cả số lượng kiểm tra phải lớn hơn 0
         const allCheckedPositive = Object.values(checkingData).every(d => d.checked_qty > 0);
         if (!allCheckedPositive) {
-            toast.error("Số lượng kiểm tra phải lớn hơn 0 cho tất cả sản phẩm");
+            showToast("Số lượng kiểm tra phải lớn hơn 0 cho tất cả sản phẩm", "error");
             return;
         }
         // Kiểm tra chênh lệch giữa số lượng kiểm thực tế và số lượng yêu cầu
@@ -305,7 +307,7 @@ export default function OutboundApprovalDetail({
         });
         if (hasMismatch && !checkingMismatchAcknowledged) {
             setCheckingMismatchAcknowledged(true);
-            toast.error("Số lượng kiểm thực tế không khớp với yêu cầu. Vui lòng xem cảnh báo bên dưới và xác nhận tiếp tục.");
+            showToast("Số lượng kiểm thực tế không khớp với yêu cầu. Vui lòng xem cảnh báo bên dưới và xác nhận tiếp tục.", "error");
             return;
         }
         setSubmitting(true);
@@ -316,10 +318,10 @@ export default function OutboundApprovalDetail({
                 passed: d.passed,
             }));
             await wmInventoryService.confirmChecking(token, ticketId, { details });
-            toast.success("Đã xác nhận kiểm tra — chuyển sang Đóng gói");
+            showToast("Đã xác nhận kiểm tra — chuyển sang Đóng gói", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể xác nhận kiểm tra");
+            showToast(err.message || "Không thể xác nhận kiểm tra", "error");
             if (err.status === 403) {
                 authStorage.clearTokens();
                 window.location.href = '/auth/login';
@@ -335,10 +337,10 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             await wmInventoryService.completeShipment(token, ticketId, {});
-            toast.success("Hoàn tất xuất kho! Hàng đã được giao cho vận chuyển.");
+            showToast("Hoàn tất xuất kho! Hàng đã được giao cho vận chuyển.", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể hoàn tất xuất kho");
+            showToast(err.message || "Không thể hoàn tất xuất kho", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -350,13 +352,13 @@ export default function OutboundApprovalDetail({
             const splitData = (res as any)?.data;
             setSplitResult(splitData || null);
             if (splitData?.split_export_code) {
-                toast.success(`Đã tách phiếu thành công: ${splitData.split_export_code}`);
+                showToast(`Đã tách phiếu thành công: ${splitData.split_export_code}`, "success");
             } else {
-                toast.success("Đã tách phiếu xuất thành công");
+                showToast("Đã tách phiếu xuất thành công", "success");
             }
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể tách phiếu xuất");
+            showToast(err.message || "Không thể tách phiếu xuất", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -365,7 +367,7 @@ export default function OutboundApprovalDetail({
         try {
             await onOpenSplitTicket(splitResult.split_export_id);
         } catch {
-            toast.error("Không thể mở phiếu mới vừa tách");
+            showToast("Không thể mở phiếu mới vừa tách", "error");
         }
     };
 
@@ -375,10 +377,10 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             await wmInventoryService.revertOutboundToPending(token, ticketId);
-            toast.success("Đã quay lại bước Chờ duyệt");
+            showToast("Đã quay lại bước Chờ duyệt", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể hoàn tác bước duyệt");
+            showToast(err.message || "Không thể hoàn tác bước duyệt", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -388,10 +390,10 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             await wmInventoryService.revertOutboundToPicking(token, ticketId);
-            toast.success("Đã quay lại bước Nhặt hàng");
+            showToast("Đã quay lại bước Nhặt hàng", "success");
             fetchData();
         } catch (err: any) {
-            toast.error(err.message || "Không thể hoàn tác bước nhặt hàng");
+            showToast(err.message || "Không thể hoàn tác bước nhặt hàng", "error");
         } finally { setSubmitting(false); }
     };
 

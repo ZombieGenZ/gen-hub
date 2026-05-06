@@ -42,14 +42,15 @@ import { ContractFullDocument } from "@/components/contract/ContractFullDocument
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import type { RentalContractDetail, ContractCancelType } from "@/types/rental-contracts/rental-contracts.type";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const rentalDurationTierService = new RentalDurationTierService();
 
 export default function AdminContractDetailPage() {
     const params = useParams();
     const router = useRouter();
     const contractId = params.id as string;
+
+    const { showToast } = useToast();
 
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -97,7 +98,7 @@ export default function AdminContractDetailPage() {
                 res?.data?.items ?? res?.data ?? res?.items ?? [];
             setTiers(items);
         } catch (error: any) {
-            toast.error(error.message || "Không thể tải danh sách gói gia hạn");
+            showToast(error.message || "Không thể tải danh sách gói gia hạn", "error");
         } finally {
             setTiersLoading(false);
         }
@@ -116,10 +117,10 @@ export default function AdminContractDetailPage() {
             });
             setRenewOpen(false);
             setRenewTierId("");
-            toast.success("Gia hạn hợp đồng thành công ✅");
+            showToast("Gia hạn hợp đồng thành công ✅", "success");
             fetchContract();
         } catch (err: any) {
-            toast.error(err.message || "Không thể gia hạn hợp đồng");
+            showToast(err.message || "Không thể gia hạn hợp đồng", "error");
         } finally {
             setRenewing(false);
         }
@@ -297,11 +298,11 @@ ${notesHtml}${cancelHtml}
             });
             setCancelOpen(false);
             setCancelReason("");
-            toast.success("Đã hủy hợp đồng thành công ✅");
+            showToast("Đã hủy hợp đồng thành công ✅", "success");
             fetchContract();
         } catch (err: any) {
             console.error("Cancel error", err);
-            toast.error(err.message || "Không thể hủy hợp đồng");
+            showToast(err.message || "Không thể hủy hợp đồng", "error");
         } finally {
             setCancelling(false);
         }

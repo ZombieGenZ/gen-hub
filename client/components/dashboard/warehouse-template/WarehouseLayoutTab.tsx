@@ -8,8 +8,7 @@ import {
     TrashIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 // ── shadcn/ui ──
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -157,6 +156,7 @@ function ListItem({
 // MAIN COMPONENT
 // ════════════════════════════════════════════════
 export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLayoutTabProps) {
+    const { showToast } = useToast();
     const [rows, setRows] = useState<LayoutRow[]>([]);
     const [loadingRows, setLoadingRows] = useState(true);
     const [processing, setProcessing] = useState(false);
@@ -364,11 +364,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 price_per_month: 0,
                 is_active: true,
             });
-            toast.success("Đã thêm Row mới");
+            showToast("Đã thêm Row mới", "success");
             fetchRows(true);
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error(message);
+            showToast(message, "error");
         } finally {
             setProcessing(false);
         }
@@ -393,7 +393,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error("Lỗi cập nhật Row: " + message);
+            showToast("Lỗi cập nhật Row: " + message, "error");
         }
     };
 
@@ -406,12 +406,12 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 warehouse_template_id: warehouseId,
                 row_template_id: row.id
             });
-            toast.success("Đã xóa Row");
+            showToast("Đã xóa Row", "success");
             setRows(prev => prev.filter((_, i) => i !== idx));
             if (selectedRowIdx === idx) closeSheet();
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error("Lỗi xóa Row: " + message);
+            showToast("Lỗi xóa Row: " + message, "error");
         }
     };
 
@@ -429,11 +429,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 code: `${row.code}-RK${row.racks.length + 1}`,
                 description: "",
             });
-            toast.success("Đã thêm Rack");
+            showToast("Đã thêm Rack", "success");
             loadRacks(rowIdx, true);
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error(message);
+            showToast(message, "error");
         } finally {
             setProcessing(false);
         }
@@ -460,7 +460,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 return updated;
             });
         } catch {
-            toast.error("Lỗi cập nhật Rack");
+            showToast("Lỗi cập nhật Rack", "error");
         }
     };
 
@@ -475,11 +475,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 row_template_id: row.id,
                 rack_template_id: rack.id,
             });
-            toast.success("Đã xóa Rack");
+            showToast("Đã xóa Rack", "success");
             loadRacks(rowIdx, true);
             if (selectedRackIdx === rackIdx) goBack("row");
         } catch {
-            toast.error("Lỗi xóa Rack");
+            showToast("Lỗi xóa Rack", "error");
         }
     };
 
@@ -498,11 +498,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 name: `Shelf ${rack.shelves.length + 1}`,
                 code: `${rack.code}-S${rack.shelves.length + 1}`,
             });
-            toast.success("Đã thêm Shelf");
+            showToast("Đã thêm Shelf", "success");
             loadShelves(rowIdx, rackIdx, true);
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error(message);
+            showToast(message, "error");
         } finally {
             setProcessing(false);
         }
@@ -533,7 +533,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 return updated;
             });
         } catch {
-            toast.error("Lỗi cập nhật Shelf");
+            showToast("Lỗi cập nhật Shelf", "error");
         }
     };
 
@@ -550,11 +550,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 rack_template_id: rack.id,
                 shelf_template_id: shelf.id,
             });
-            toast.success("Đã xóa Shelf");
+            showToast("Đã xóa Shelf", "success");
             loadShelves(rowIdx, rackIdx, true);
             if (selectedShelfIdx === shelfIdx) goBack("rack");
         } catch {
-            toast.error("Lỗi xóa Shelf");
+            showToast("Lỗi xóa Shelf", "error");
         }
     };
 
@@ -575,11 +575,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 name: `Block ${shelf.blocks.length + 1}`,
                 code: `${shelf.code}-B${shelf.blocks.length + 1}`,
             });
-            toast.success("Đã thêm Block");
+            showToast("Đã thêm Block", "success");
             loadBlocks(rowIdx, rackIdx, shelfIdx, true);
         } catch (err) {
             const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
-            toast.error(message);
+            showToast(message, "error");
         } finally {
             setProcessing(false);
         }
@@ -614,7 +614,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 return updated;
             });
         } catch {
-            toast.error("Lỗi cập nhật Block");
+            showToast("Lỗi cập nhật Block", "error");
         }
     };
 
@@ -633,11 +633,11 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 shelf_template_id: shelf.id,
                 block_template_id: block.id,
             });
-            toast.success("Đã xóa Block");
+            showToast("Đã xóa Block", "success");
             loadBlocks(rowIdx, rackIdx, shelfIdx, true);
             if (selectedBlockIdx === blockIdx) goBack("shelf");
         } catch {
-            toast.error("Lỗi xóa Block");
+            showToast("Lỗi xóa Block", "error");
         }
     };
 

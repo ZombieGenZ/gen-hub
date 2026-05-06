@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { AddonsTypeService } from "@/services/addons/addonsType.service";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ interface AddonTypeFormProps {
 }
 
 export function AddonTypeForm({ initialData, onSuccess, onCancel, isEdit = false }: AddonTypeFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: initialData?.name || "",
@@ -36,15 +37,15 @@ export function AddonTypeForm({ initialData, onSuccess, onCancel, isEdit = false
 
             if (isEdit && initialData?.id) {
                 await addonsTypeService.updateAddonType(token, initialData.id, formData);
-                toast.success(`Đã cập nhật nhóm dịch vụ "${formData.name}" ✅`);
+                showToast(`Đã cập nhật nhóm dịch vụ "${formData.name}" ✅`, "success");
             } else {
                 await addonsTypeService.createAddonType(token, formData);
-                toast.success(`Đã tạo nhóm dịch vụ "${formData.name}" thành công ✅`);
+                showToast(`Đã tạo nhóm dịch vụ "${formData.name}" thành công ✅`, "success");
             }
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save addon type", error);
-            toast.error(error.message || "Không thể lưu thông tin nhóm dịch vụ");
+            showToast(error.message || "Không thể lưu thông tin nhóm dịch vụ", "error");
         } finally {
             setLoading(false);
         }

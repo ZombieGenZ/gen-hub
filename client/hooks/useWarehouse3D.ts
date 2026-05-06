@@ -10,8 +10,7 @@ import {
     RackConfig, BoxItem, WarehouseState, BoxCategory,
     categoryColors, WarehouseStats, FillRateStatus, getFillRateStatus,
 } from '@/types/warehouse';
-import { toast } from 'sonner';
-
+import { useToast } from '@/contexts/ToastContext';
 // ────────────────────────────────────────────────
 // Query Keys
 // ────────────────────────────────────────────────
@@ -234,6 +233,7 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
     const socketRef = useRef<Socket | null>(null);
 
     // ─── UI-only state (ko cần persist) ─────────
+    const { showToast } = useToast();
     const [uiState, setUiState] = useState({
         showBackground: true,
         showAxes: true,
@@ -407,7 +407,7 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
 
     const setViewMode = useCallback((mode: 'default' | 'category' | 'heatmap') => {
         setUiState(prev => ({ ...prev, viewMode: mode }));
-        toast.success(`Chế độ xem: ${mode === 'default' ? 'Mặc định' : mode === 'category' ? 'Theo loại' : 'Nhiệt'}`);
+        showToast(`Chế độ xem: ${mode === 'default' ? 'Mặc định' : mode === 'category' ? 'Theo loại' : 'Nhiệt'}`, "success");
     }, []);
 
     const setSearchQuery = useCallback((query: string) => {
@@ -518,7 +518,7 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
         if (!warehouseId) return;
         queryClient.invalidateQueries({ queryKey: warehouseKeys.layout(warehouseId) });
         queryClient.invalidateQueries({ queryKey: warehouseKeys.stock(warehouseId) });
-        toast.success('Đang làm mới dữ liệu kho...');
+        showToast('Đang làm mới dữ liệu kho...', "success");
     }, [warehouseId, queryClient]);
 
     // ─── Compose state (tương thích với WarehouseState) ─────

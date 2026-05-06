@@ -37,7 +37,7 @@ import {
     type Warning,
 } from "@/services/user-management/user-management.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -79,6 +79,8 @@ export default function CustomerDetailPage() {
     const params = useParams();
     const userId = params?.id as string;
 
+    const { showToast } = useToast();
+
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
     const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -105,7 +107,7 @@ export default function CustomerDetailPage() {
             const res = await svc.findById(token, userId);
             setUser(res.data);
         } catch (err: any) {
-            toast.error(err.message || "Không thể tải thông tin khách hàng");
+            showToast(err.message || "Không thể tải thông tin khách hàng", "error");
             router.push("/dashboard/admin/customers");
         } finally {
             setLoading(false);
@@ -120,7 +122,7 @@ export default function CustomerDetailPage() {
             const res = await svc.findUserWarnings(token, userId, { limit: 50 });
             setWarnings(res?.data?.items ?? (res as any)?.items ?? []);
         } catch (err: any) {
-            toast.error("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"), "error");
         }
     }, [userId]);
 
@@ -142,7 +144,7 @@ export default function CustomerDetailPage() {
                 }))
             );
         } catch (err: any) {
-            toast.error("Lỗi khi tải lịch sử thông báo: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải lịch sử thông báo: " + (err.message || "Không xác định"), "error");
         }
     }, [userId]);
 
@@ -157,12 +159,12 @@ export default function CustomerDetailPage() {
         setIsBanning(true);
         try {
             await svc.banUser(token, user.id, { reason: banReason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            toast.success(`Đã khóa tài khoản ${displayName || user.email} thành công`);
+            showToast(`Đã khóa tài khoản ${displayName || user.email} thành công`, "success");
             setBanDialogOpen(false);
             setBanReason("");
             fetchUser();
         } catch (err: any) {
-            toast.error(err.message || "Không thể khóa tài khoản");
+            showToast(err.message || "Không thể khóa tài khoản", "error");
         } finally {
             setIsBanning(false);
         }
@@ -173,10 +175,10 @@ export default function CustomerDetailPage() {
         if (!token || !user) return;
         try {
             await svc.unbanUser(token, user.id);
-            toast.success(`Đã mở khóa tài khoản ${displayName || user.email} thành công`);
+            showToast(`Đã mở khóa tài khoản ${displayName || user.email} thành công`, "success");
             fetchUser();
         } catch (err: any) {
-            toast.error(err.message || "Không thể mở khóa tài khoản");
+            showToast(err.message || "Không thể mở khóa tài khoản", "error");
         }
     };
 
@@ -204,9 +206,9 @@ export default function CustomerDetailPage() {
             setSendFormData({ title: "", content: "", type: "WARNING" });
             setShowSendForm(false);
             setConfirmOpen(false);
-            toast.success("Đã gửi thông báo thành công");
+            showToast("Đã gửi thông báo thành công", "success");
         } catch (err: any) {
-            toast.error(err.message || "Gửi thông báo thất bại");
+            showToast(err.message || "Gửi thông báo thất bại", "error");
         } finally {
             setIsSending(false);
         }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/contexts/ToastContext';
 import { BoxCategory } from '@/types/warehouse';
 
 // ==================== TYPES ====================
@@ -531,6 +531,7 @@ const createVoiceCommands = (props: UseAIVoiceCommandsProps): VoiceCommandConfig
 export const useAIVoiceCommands = (
   props: UseAIVoiceCommandsProps
 ): UseAIVoiceCommandsReturn => {
+  const { showToast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -597,9 +598,9 @@ export const useAIVoiceCommands = (
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         if (event.error === 'not-allowed') {
-          toast.error('Vui lòng cấp quyền microphone để sử dụng voice command');
+          showToast('Vui lòng cấp quyền microphone để sử dụng voice command', "error");
         } else if (event.error === 'network') {
-          toast.error('Lỗi kết nối mạng, vui lòng thử lại');
+          showToast('Lỗi kết nối mạng, vui lòng thử lại', "error");
         } else if (event.error === 'no-speech') {
           // No speech detected, restart listening if still active
           if (isListening) {
@@ -695,9 +696,7 @@ export const useAIVoiceCommands = (
 
       // No command matched
       console.log('❌ Unknown command:', text);
-      toast.info(`Không hiểu lệnh: "${text}"\nNói "trợ giúp" để xem các lệnh`, {
-        duration: 3000,
-      });
+      showToast(`Không hiểu lệnh: "${text}"\nNói "trợ giúp" để xem các lệnh`, "info");
       setIsProcessing(false);
     },
     [props]
@@ -710,7 +709,7 @@ export const useAIVoiceCommands = (
         // Search
         case 'search':
           if (params.query) {
-            toast.success(`🔍 Đang tìm: "${params.query}"`);
+            showToast(`🔍 Đang tìm: "${params.query}"`, "success");
             props.onSearch(params.query);
           }
           break;
@@ -719,10 +718,10 @@ export const useAIVoiceCommands = (
         case 'highlight_rack': {
           const rack = findRack(params.rackQuery);
           if (rack) {
-            toast.success(`📍 Đang chọn: ${rack.name}`);
+            showToast(`📍 Đang chọn: ${rack.name}`, "success");
             props.onHighlightRack(rack.id);
           } else {
-            toast.error(`Không tìm thấy kệ: "${params.rackQuery}"`);
+            showToast(`Không tìm thấy kệ: "${params.rackQuery}"`, "error");
           }
           break;
         }
@@ -730,10 +729,10 @@ export const useAIVoiceCommands = (
         case 'open_rack_modal': {
           const rack = findRack(params.rackQuery);
           if (rack && props.onOpenRackModal) {
-            toast.success(`📂 Mở chi tiết: ${rack.name}`);
+            showToast(`📂 Mở chi tiết: ${rack.name}`, "success");
             props.onOpenRackModal(rack.id);
           } else if (!rack) {
-            toast.error(`Không tìm thấy kệ: "${params.rackQuery}"`);
+            showToast(`Không tìm thấy kệ: "${params.rackQuery}"`, "error");
           }
           break;
         }
@@ -741,7 +740,7 @@ export const useAIVoiceCommands = (
         case 'show_only_rack': {
           const rack = findRack(params.rackQuery);
           if (rack && props.onShowOnlyRack) {
-            toast.success(`🎯 Chỉ hiện: ${rack.name}`);
+            showToast(`🎯 Chỉ hiện: ${rack.name}`, "success");
             props.onShowOnlyRack(rack.id);
           }
           break;
@@ -749,7 +748,7 @@ export const useAIVoiceCommands = (
 
         case 'show_all_racks':
           props.onShowAllRacks?.();
-          toast.success('👁️ Hiện tất cả kệ');
+          showToast('👁️ Hiện tất cả kệ', "success");
           break;
 
         // Rack Management
@@ -759,12 +758,12 @@ export const useAIVoiceCommands = (
             columns: params.columns || 3,
             levels: params.levels || 4,
           });
-          toast.success(`✨ Tạo kệ ${params.rows}x${params.columns}x${params.levels}`);
+          showToast(`✨ Tạo kệ ${params.rows}x${params.columns}x${params.levels}`, "success");
           break;
 
         case 'remove_rack':
           props.onRemoveRack?.();
-          toast.success('🗑️ Đã xóa kệ');
+          showToast('🗑️ Đã xóa kệ', "success");
           break;
 
         case 'rotate_rack': {
@@ -775,9 +774,9 @@ export const useAIVoiceCommands = (
             : null;
           if (targetRack && props.onRotateRack) {
             props.onRotateRack(targetRack.id);
-            toast.success('🔄 Đã xoay kệ');
+            showToast('🔄 Đã xoay kệ', "success");
           } else {
-            toast.error('Vui lòng chọn kệ trước');
+            showToast('Vui lòng chọn kệ trước', "error");
           }
           break;
         }
@@ -790,9 +789,9 @@ export const useAIVoiceCommands = (
             : null;
           if (targetRack && props.onCloneRack) {
             props.onCloneRack(targetRack.id);
-            toast.success('📋 Đã nhân đôi kệ');
+            showToast('📋 Đã nhân đôi kệ', "success");
           } else {
-            toast.error('Vui lòng chọn kệ trước');
+            showToast('Vui lòng chọn kệ trước', "error");
           }
           break;
         }
@@ -800,116 +799,116 @@ export const useAIVoiceCommands = (
         // Box Management
         case 'add_boxes':
           props.onAddBoxes?.(params.count || 10, params.category || 'standard');
-          toast.success(`📦 Thêm ${params.count || 10} thùng ${params.category || 'standard'}`);
+          showToast(`📦 Thêm ${params.count || 10} thùng ${params.category || 'standard'}`, "success");
           break;
 
         case 'remove_all_boxes':
           props.onRemoveAllBoxes?.();
-          toast.success('🗑️ Đã xóa tất cả thùng');
+          showToast('🗑️ Đã xóa tất cả thùng', "success");
           break;
 
         case 'remove_selected_box':
           props.onRemoveSelectedBox?.();
-          toast.success('🗑️ Đã xóa thùng');
+          showToast('🗑️ Đã xóa thùng', "success");
           break;
 
         // View Controls
         case 'toggle_axes':
           props.onToggleAxes?.();
-          toast.success('📐 Đã chuyển trục');
+          showToast('📐 Đã chuyển trục', "success");
           break;
 
         case 'toggle_grid':
           props.onToggleGrid?.();
-          toast.success('📏 Đã chuyển lưới');
+          showToast('📏 Đã chuyển lưới', "success");
           break;
 
         case 'view_default':
           props.onSetViewMode?.('default');
-          toast.success('👁️ Chế độ mặc định');
+          showToast('👁️ Chế độ mặc định', "success");
           break;
 
         case 'view_category':
           props.onSetViewMode?.('category');
-          toast.success('🎨 Chế độ theo loại');
+          showToast('🎨 Chế độ theo loại', "success");
           break;
 
         case 'view_heatmap':
           props.onSetViewMode?.('heatmap');
-          toast.success('🌡️ Chế độ bản đồ nhiệt');
+          showToast('🌡️ Chế độ bản đồ nhiệt', "success");
           break;
 
         // Category Filters
         case 'filter_standard':
           props.onFilterCategory?.('standard');
-          toast.success('📦 Lọc: Tiêu chuẩn');
+          showToast('📦 Lọc: Tiêu chuẩn', "success");
           break;
 
         case 'filter_fragile':
           props.onFilterCategory?.('fragile');
-          toast.success('⚠️ Lọc: Dễ vỡ');
+          showToast('⚠️ Lọc: Dễ vỡ', "success");
           break;
 
         case 'filter_electronics':
           props.onFilterCategory?.('electronics');
-          toast.success('💻 Lọc: Điện tử');
+          showToast('💻 Lọc: Điện tử', "success");
           break;
 
         case 'filter_food':
           props.onFilterCategory?.('food');
-          toast.success('🍎 Lọc: Thực phẩm');
+          showToast('🍎 Lọc: Thực phẩm', "success");
           break;
 
         case 'filter_all':
           props.onFilterCategory?.('all');
-          toast.success('📋 Hiện tất cả loại');
+          showToast('📋 Hiện tất cả loại', "success");
           break;
 
         // Environment
         case 'create_background':
           props.onCreateBackground?.();
-          toast.success('🏭 Hiện nền kho');
+          showToast('🏭 Hiện nền kho', "success");
           break;
 
         case 'remove_background':
           props.onRemoveBackground?.();
-          toast.success('🏭 Ẩn nền kho');
+          showToast('🏭 Ẩn nền kho', "success");
           break;
 
         case 'toggle_humans':
           props.onToggleHumans?.();
-          toast.success('👤 Đã chuyển người');
+          showToast('👤 Đã chuyển người', "success");
           break;
 
         case 'toggle_roof':
           props.onToggleRoof?.();
-          toast.success('🏠 Đã chuyển mái');
+          showToast('🏠 Đã chuyển mái', "success");
           break;
 
         case 'toggle_performance':
           props.onTogglePerformanceMode?.();
-          toast.success('⚡ Đã chuyển chế độ hiệu suất');
+          showToast('⚡ Đã chuyển chế độ hiệu suất', "success");
           break;
 
         case 'toggle_fps':
           props.onToggleFPS?.();
-          toast.success('📊 Đã chuyển FPS');
+          showToast('📊 Đã chuyển FPS', "success");
           break;
 
         // Data
         case 'load_demo':
           props.onLoadDemoData?.();
-          toast.success('📂 Đang tải demo...');
+          showToast('📂 Đang tải demo...', "success");
           break;
 
         case 'export_data':
           props.onExportData?.();
-          toast.success('💾 Đang xuất dữ liệu...');
+          showToast('💾 Đang xuất dữ liệu...', "success");
           break;
 
         case 'import_data':
           props.onImportData?.();
-          toast.info('📁 Mở dialog nhập dữ liệu');
+          showToast('📁 Mở dialog nhập dữ liệu', "info");
           break;
 
         // Panels
@@ -940,13 +939,13 @@ export const useAIVoiceCommands = (
         // Mode
         case 'toggle_drag_mode':
           props.onToggleDragMode?.();
-          toast.success('✋ Đã chuyển chế độ di chuyển');
+          showToast('✋ Đã chuyển chế độ di chuyển', "success");
           break;
 
         // Clear
         case 'clear_selection':
           props.onClearSelection();
-          toast.success('✅ Đã bỏ chọn');
+          showToast('✅ Đã bỏ chọn', "success");
           break;
 
         // Help
@@ -961,7 +960,7 @@ export const useAIVoiceCommands = (
             '📊 "Mở thống kê" - Xem stats',
             '⚡ "Chế độ hiệu suất" - Tăng FPS',
           ];
-          toast.info(helpCommands.join('\n'), { duration: 8000 });
+          showToast(helpCommands.join('\n'), "info");
           break;
 
         default:
@@ -982,7 +981,7 @@ export const useAIVoiceCommands = (
   // Start listening
   const startListening = useCallback(() => {
     if (!recognitionRef.current) {
-      toast.error('Trình duyệt không hỗ trợ voice command');
+      showToast('Trình duyệt không hỗ trợ voice command', "error");
       return;
     }
 
@@ -990,10 +989,10 @@ export const useAIVoiceCommands = (
       recognitionRef.current.start();
       setIsListening(true);
       setTranscript('');
-      toast.success('🎤 Đang lắng nghe... Nói "trợ giúp" để xem các lệnh', { duration: 3000 });
+      showToast('🎤 Đang lắng nghe... Nói "trợ giúp" để xem các lệnh', "success");
     } catch (err) {
       console.error('Failed to start recognition:', err);
-      toast.error('Không thể bắt đầu voice command');
+      showToast('Không thể bắt đầu voice command', "error");
     }
   }, []);
 
@@ -1004,7 +1003,7 @@ export const useAIVoiceCommands = (
     }
     setIsListening(false);
     setTranscript('');
-    toast.info('🎤 Đã tắt voice command', { duration: 2000 });
+    showToast('🎤 Đã tắt voice command', "info");
   }, []);
 
   // Toggle listening

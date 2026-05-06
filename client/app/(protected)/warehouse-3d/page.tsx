@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { warehouseService } from '@/services/warehouse/warehouse.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
-import { Toaster, toast } from 'sonner';
-
+import { useToast } from '@/contexts/ToastContext';
 function getToken() {
   return authStorage.getAccessToken() || '';
 }
@@ -15,6 +14,7 @@ function getToken() {
  * Sau khi chọn kho → navigate tới /warehouse-3d/[warehouseId] để xem 3D live.
  */
 export default function WarehousePickerPage() {
+  const { showToast } = useToast();
   const router = useRouter();
 
   const {
@@ -34,13 +34,13 @@ export default function WarehousePickerPage() {
   });
 
   const handleSelectWarehouse = (id: string, name: string) => {
-    toast.success(`Đang mở kho: ${name}`);
+    showToast(`Đang mở kho: ${name}`, "success");
     router.push(`/warehouse-3d/${id}`);
   };
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Toaster position="top-right" richColors />
+      
 
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-700/50">

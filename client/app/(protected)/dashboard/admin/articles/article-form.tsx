@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArticleResponse, CreateArticleDto, ArticleType, ArticleStatus } from "@/types/article/article.type";
 import { CategoryResponse } from "@/types/article/category.type";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { TiptapEditor } from "@/components/contacts/TiptapEditor";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -29,6 +29,7 @@ interface ArticleFormProps {
 
 export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
     const router = useRouter();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
 
@@ -69,7 +70,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                 setCategories(items);
             } catch (e) {
                 console.error(e);
-                toast.error("Không thể tải danh sách danh mục");
+                showToast("Không thể tải danh sách danh mục", "error");
             }
         };
         fetchCategories();
@@ -78,18 +79,18 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
     const handleSubmit = async () => {
         try {
             if (!formData.title.trim()) {
-                toast.error("Vui lòng nhập tiêu đề bài viết");
+                showToast("Vui lòng nhập tiêu đề bài viết", "error");
                 return;
             }
             if (!formData.content.trim()) {
-                toast.error("Vui lòng nhập nội dung bài viết");
+                showToast("Vui lòng nhập nội dung bài viết", "error");
                 return;
             }
 
             setLoading(true);
             const token = authStorage.getAccessToken();
             if (!token) {
-                toast.error("Lỗi xác thực, vui lòng đăng nhập lại");
+                showToast("Lỗi xác thực, vui lòng đăng nhập lại", "error");
                 return;
             }
 
@@ -123,15 +124,15 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
             if (isEdit && initialData?.id) {
                 await articleService.updateArticle(token, initialData.id, submitData);
-                toast.success("Cập nhật bài viết thành công");
+                showToast("Cập nhật bài viết thành công", "success");
             } else {
                 await articleService.createArticle(token, submitData);
-                toast.success("Tạo bài viết thành công");
+                showToast("Tạo bài viết thành công", "success");
             }
             router.push("/dashboard/admin/articles");
         } catch (error: any) {
             console.error("Failed to save article", error);
-            toast.error(error.message || "Có lỗi xảy ra khi lưu bài viết");
+            showToast(error.message || "Có lỗi xảy ra khi lưu bài viết", "error");
         } finally {
             setLoading(false);
         }

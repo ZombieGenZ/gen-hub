@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import {
     CheckoutProvider,
@@ -110,6 +110,7 @@ function CheckoutContent() {
     const { session, setSession, currentStep, nextStep, setIsSubmitting } = useCheckout();
 
     // Form data states
+    const { showToast } = useToast();
     const [companyData, setCompanyData] = useState<CompanyData>({
         name: '',
         international_name: '',
@@ -434,19 +435,9 @@ function CheckoutContent() {
 
             if (isEmailNotVerified) {
                 setIsEmailVerified(false);
-                toast.error('Email chưa được xác minh', {
-                    description: 'Vui lòng xác minh địa chỉ email của bạn để tiếp tục tạo đơn hàng.',
-                    duration: 6000,
-                    action: {
-                        label: 'Xác minh ngay',
-                        onClick: () => router.push('/verify-email'),
-                    },
-                });
+                showToast('Email chưa được xác minh', "error");
             } else {
-                toast.error('Không thể tạo đơn hàng', {
-                    description: 'Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại.',
-                    duration: 5000,
-                });
+                showToast('Không thể tạo đơn hàng', "error");
             }
             throw error; // Re-throw so signature step doesn't advance
         } finally {

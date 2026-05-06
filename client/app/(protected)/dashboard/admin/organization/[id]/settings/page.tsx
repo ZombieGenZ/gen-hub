@@ -20,7 +20,7 @@ import {
     ChevronRight, Loader2, Users, KeyRound, Shield,
     CheckCircle2, XCircle, Mail, Phone, User,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 const organizationService = new OrganizationService();
@@ -46,6 +46,8 @@ export default function AdminOrganizationSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const orgId = params.id as string;
+
+    const { showToast } = useToast();
 
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -121,12 +123,12 @@ export default function AdminOrganizationSettingsPage() {
         onEvent: (eventName) => {
             if (eventName.startsWith("orgRole:")) {
                 void fetchRoles();
-                toast.success("Vai trò đã được cập nhật realtime");
+                showToast("Vai trò đã được cập nhật realtime", "success");
                 return;
             }
             if (eventName.startsWith("organization:member")) {
                 void fetchMembers();
-                toast.success("Danh sách thành viên đã được cập nhật");
+                showToast("Danh sách thành viên đã được cập nhật", "success");
                 return;
             }
             if (eventName === "organization:updated") {
@@ -140,10 +142,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await organizationService.updateOrganization(token, orgId, data as any);
-            toast.success("Cập nhật thông tin tổ chức thành công");
+            showToast("Cập nhật thông tin tổ chức thành công", "success");
             await fetchOrganization();
         } catch (error: any) {
-            toast.error(error.message || "Không thể cập nhật tổ chức");
+            showToast(error.message || "Không thể cập nhật tổ chức", "error");
         }
     };
 
@@ -156,10 +158,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await memberService.inviteMembers(token, orgId, emails);
-            toast.success(`Đã gửi lời mời tới ${emails.length} email`);
+            showToast(`Đã gửi lời mời tới ${emails.length} email`, "success");
             await fetchMembers();
         } catch (error: any) {
-            toast.error(error.message || "Không thể gửi lời mời");
+            showToast(error.message || "Không thể gửi lời mời", "error");
         }
     };
 
@@ -168,10 +170,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await memberService.removeMember(token, orgId, memberId);
-            toast.success("Đã xóa thành viên khỏi tổ chức");
+            showToast("Đã xóa thành viên khỏi tổ chức", "success");
             await fetchMembers();
         } catch (error: any) {
-            toast.error(error.message || "Không thể xóa thành viên");
+            showToast(error.message || "Không thể xóa thành viên", "error");
         }
     };
 
@@ -180,10 +182,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await memberService.assignRoles(token, orgId, memberId, roleIds);
-            toast.success("Đã cập nhật vai trò thành viên");
+            showToast("Đã cập nhật vai trò thành viên", "success");
             await fetchMembers();
         } catch (error: any) {
-            toast.error(error.message || "Không thể cập nhật vai trò");
+            showToast(error.message || "Không thể cập nhật vai trò", "error");
         }
     };
 
@@ -192,10 +194,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await memberService.cancelInvite(token, orgId, memberId);
-            toast.success("Đã hủy lời mời");
+            showToast("Đã hủy lời mời", "success");
             await fetchMembers();
         } catch (error: any) {
-            toast.error(error.message || "Không thể hủy lời mời");
+            showToast(error.message || "Không thể hủy lời mời", "error");
         }
     };
 
@@ -204,10 +206,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await roleService.createRole(token, orgId, data);
-            toast.success(`Đã tạo vai trò "${data.name}" thành công`);
+            showToast(`Đã tạo vai trò "${data.name}" thành công`, "success");
             await fetchRoles();
         } catch (error: any) {
-            toast.error(error.message || "Không thể tạo vai trò");
+            showToast(error.message || "Không thể tạo vai trò", "error");
         }
     };
 
@@ -216,10 +218,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await roleService.updateRole(token, orgId, roleId, data);
-            toast.success("Cập nhật vai trò thành công");
+            showToast("Cập nhật vai trò thành công", "success");
             await fetchRoles();
         } catch (error: any) {
-            toast.error(error.message || "Không thể cập nhật vai trò");
+            showToast(error.message || "Không thể cập nhật vai trò", "error");
         }
     };
 
@@ -228,10 +230,10 @@ export default function AdminOrganizationSettingsPage() {
         if (!token) return;
         try {
             await roleService.deleteRole(token, orgId, roleId);
-            toast.success("Đã xóa vai trò");
+            showToast("Đã xóa vai trò", "success");
             await fetchRoles();
         } catch (error: any) {
-            toast.error(error.message || "Không thể xóa vai trò");
+            showToast(error.message || "Không thể xóa vai trò", "error");
         }
     };
 

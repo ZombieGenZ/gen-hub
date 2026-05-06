@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { AddonsService } from "@/services/addons/addons.service";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface AddonFormProps {
 }
 
 export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: AddonFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<AddonRequest>({
         name: initialData?.name || "",
@@ -39,15 +40,15 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
 
             if (isEdit && initialData?.id) {
                 await addonsService.updateAddon(token, initialData.id, formData);
-                toast.success(`Đã cập nhật dịch vụ "${formData.name}" ✅`);
+                showToast(`Đã cập nhật dịch vụ "${formData.name}" ✅`, "success");
             } else {
                 await addonsService.createAddon(token, formData);
-                toast.success(`Đã tạo dịch vụ "${formData.name}" thành công ✅`);
+                showToast(`Đã tạo dịch vụ "${formData.name}" thành công ✅`, "success");
             }
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save addon", error);
-            toast.error(error.message || "Không thể lưu thông tin dịch vụ");
+            showToast(error.message || "Không thể lưu thông tin dịch vụ", "error");
         } finally {
             setLoading(false);
         }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/contexts/ToastContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ const authStorage = AuthStorageService.getInstance();
 const userService = new UserService();
 
 export default function UserSettingsPage() {
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('profile');
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -66,7 +67,7 @@ export default function UserSettingsPage() {
                 });
                 setTwoFactorEnabled(user.twoFactorEnabled || user.two_factor_enabled || false);
             } catch (error) {
-                toast.error('Không thể tải thông tin người dùng');
+                showToast('Không thể tải thông tin người dùng', "error");
             } finally {
                 setIsLoading(false);
             }
@@ -97,11 +98,9 @@ export default function UserSettingsPage() {
                 bio: profile.bio,
             });
 
-            toast.success('Cập nhật thông tin thành công');
+            showToast('Cập nhật thông tin thành công', "success");
         } catch (error) {
-            toast.error('Không thể cập nhật thông tin', {
-                description: error instanceof Error ? error.message : 'Đã xảy ra lỗi',
-            });
+            showToast('Không thể cập nhật thông tin', "error");
         } finally {
             setIsSaving(false);
         }
@@ -113,12 +112,12 @@ export default function UserSettingsPage() {
         if (!token) return;
 
         if (passwords.newPassword !== passwords.confirmPassword) {
-            toast.error('Mật khẩu xác nhận không khớp');
+            showToast('Mật khẩu xác nhận không khớp', "error");
             return;
         }
 
         if (passwords.newPassword.length < 8) {
-            toast.error('Mật khẩu mới phải có ít nhất 8 ký tự');
+            showToast('Mật khẩu mới phải có ít nhất 8 ký tự', "error");
             return;
         }
 
@@ -130,16 +129,14 @@ export default function UserSettingsPage() {
                 confirm_password: passwords.confirmPassword,
             });
 
-            toast.success('Đổi mật khẩu thành công');
+            showToast('Đổi mật khẩu thành công', "success");
             setPasswords({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: '',
             });
         } catch (error) {
-            toast.error('Không thể đổi mật khẩu', {
-                description: error instanceof Error ? error.message : 'Đã xảy ra lỗi',
-            });
+            showToast('Không thể đổi mật khẩu', "error");
         } finally {
             setIsSaving(false);
         }
@@ -159,11 +156,9 @@ export default function UserSettingsPage() {
             }
 
             setTwoFactorEnabled(enabled);
-            toast.success(enabled ? 'Đã bật xác thực 2 lớp' : 'Đã tắt xác thực 2 lớp');
+            showToast(enabled ? 'Đã bật xác thực 2 lớp' : 'Đã tắt xác thực 2 lớp', "success");
         } catch (error) {
-            toast.error('Không thể cập nhật xác thực 2 lớp', {
-                description: error instanceof Error ? error.message : 'Đã xảy ra lỗi',
-            });
+            showToast('Không thể cập nhật xác thực 2 lớp', "error");
             setTwoFactorEnabled(!enabled);
         } finally {
             setIsSaving(false);
@@ -186,11 +181,9 @@ export default function UserSettingsPage() {
                 image: result.url,
             });
 
-            toast.success('Tải ảnh đại diện thành công');
+            showToast('Tải ảnh đại diện thành công', "success");
         } catch (error) {
-            toast.error('Không thể tải ảnh đại diện', {
-                description: error instanceof Error ? error.message : 'Đã xảy ra lỗi',
-            });
+            showToast('Không thể tải ảnh đại diện', "error");
         } finally {
             setIsLoading(false);
         }

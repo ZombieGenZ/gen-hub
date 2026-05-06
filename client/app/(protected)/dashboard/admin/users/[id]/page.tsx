@@ -12,7 +12,7 @@ import {
 import { RoleService, type Role } from "@/services/role/role.service";
 import { WarningCategoryService, type WarningCategory } from "@/services/warning-category/warning-category.service";
 import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { ArrowLeftIcon, ComputerDesktopIcon } from "@heroicons/react/24/outline";
 import {
     ShieldOff, ShieldCheck, AlertTriangle, CheckCircle2, Clock, XCircle,
@@ -65,6 +65,7 @@ function roleStyle(name: string) {
 function BanDialog({ user, open, onClose, onSuccess }: {
     user: User | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
+    const { showToast } = useToast();
     const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -75,11 +76,11 @@ function BanDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.banUser(token, user.id, { reason: reason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`);
+            showToast(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`, "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Không thể khóa tài khoản");
+            showToast(err.message || "Không thể khóa tài khoản", "error");
         } finally {
             setLoading(false);
             setReason("");
@@ -131,6 +132,7 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
     open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const [categoryId, setCategoryId] = useState("");
+    const { showToast } = useToast();
     const [reason, setReason] = useState("");
     const [isPermanent, setIsPermanent] = useState(false);
     const [durationValue, setDurationValue] = useState("7");
@@ -151,12 +153,12 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
                 is_permanent: isPermanent,
                 ...(!isPermanent ? { duration_value: Number(durationValue), duration_type: durationType } : {}),
             });
-            toast.success("Đã gửi cảnh cáo vi phạm thành công");
+            showToast("Đã gửi cảnh cáo vi phạm thành công", "success");
             onSuccess();
             onClose();
             reset();
         } catch (err: any) {
-            toast.error(err.message || "Không thể gửi cảnh cáo");
+            showToast(err.message || "Không thể gửi cảnh cáo", "error");
         } finally {
             setLoading(false);
         }
@@ -244,7 +246,8 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
     userId: string; allRoles: Role[]; currentRoleIds: string[];
     open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-    const [selected, setSelected] = useState<string[]>(currentRoleIds);
+    const { showToast } = useToast();
+    const [selected, setSelected] = useState<string[]>(currentRoleIds);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => { if (open) setSelected(currentRoleIds); }, [open, currentRoleIds]);
@@ -257,11 +260,11 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
         setLoading(true);
         try {
             await svc.assignUserRolesAndPermissions(token, userId, { role_ids: selected });
-            toast.success("Đã cập nhật vai trò");
+            showToast("Đã cập nhật vai trò", "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Không thể cập nhật vai trò");
+            showToast(err.message || "Không thể cập nhật vai trò", "error");
         } finally {
             setLoading(false);
         }
@@ -311,7 +314,8 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function UserDetailPage() {
-    const router = useRouter();
+    const { showToast } = useToast();
+    const router = useRouter();
     const params = useParams();
     const userId = params?.id as string;
 
@@ -340,7 +344,7 @@ export default function UserDetailPage() {
             const res = await svc.findById(token, userId);
             setUser(res.data);
         } catch (err: any) {
-            toast.error(err.message || "Không thể tải thông tin người dùng");
+            showToast(err.message || "Không thể tải thông tin người dùng", "error");
             router.push("/dashboard/admin/users");
         } finally {
             setLoading(false);
@@ -354,7 +358,7 @@ export default function UserDetailPage() {
             const res = await svc.findUserWarnings(token, userId, { limit: 50 });
             setWarnings(res?.data?.items ?? []);
         } catch (err: any) {
-            toast.error("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải lịch sử cảnh cáo: " + (err.message || "Không xác định"), "error");
         }
     }, [userId]);
 
@@ -365,7 +369,7 @@ export default function UserDetailPage() {
             const res = await svc.findUserSessions(token, userId, { limit: 20 });
             setSessions(res?.data?.items ?? []);
         } catch (err: any) {
-            toast.error("Lỗi khi tải phiên đăng nhập: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải phiên đăng nhập: " + (err.message || "Không xác định"), "error");
         }
     }, [userId]);
 
@@ -376,7 +380,7 @@ export default function UserDetailPage() {
             const res = await svc.getUserRolesAndPermissions(token, userId);
             setRoles(res.data?.roles ?? []);
         } catch (err: any) {
-            toast.error("Lỗi khi tải vai trò hiện tại: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải vai trò hiện tại: " + (err.message || "Không xác định"), "error");
         }
     }, [userId]);
 
@@ -392,10 +396,10 @@ export default function UserDetailPage() {
         const token = authStorage.getAccessToken();
         if (!token) return;
         roleSvc.findMany(token, { limit: 100 }).then((res) => setAllRoles(res?.data?.items ?? [])).catch((err: any) => {
-            toast.error("Lỗi khi tải danh sách vai trò: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải danh sách vai trò: " + (err.message || "Không xác định"), "error");
         });
         warnCatSvc.findAllActive(token).then((res) => setWarnCategories(res?.data ?? [])).catch((err: any) => {
-            toast.error("Lỗi khi tải danh mục vi phạm: " + (err.message || "Không xác định"));
+            showToast("Lỗi khi tải danh mục vi phạm: " + (err.message || "Không xác định"), "error");
         });
     }, []);
 
@@ -405,10 +409,10 @@ export default function UserDetailPage() {
         setProcessingId("unban");
         try {
             await svc.unbanUser(token, user.id);
-            toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`);
+            showToast(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`, "success");
             fetchUser();
         } catch (err: any) {
-            toast.error(err.message || "Không thể mở khóa tài khoản");
+            showToast(err.message || "Không thể mở khóa tài khoản", "error");
         } finally {
             setProcessingId(null);
         }
@@ -420,10 +424,10 @@ export default function UserDetailPage() {
         setProcessingId(`revoke-${sessionId}`);
         try {
             await svc.revokeSession(token, userId, sessionId);
-            toast.success("Đã thu hồi phiên đăng nhập thành công");
+            showToast("Đã thu hồi phiên đăng nhập thành công", "success");
             fetchSessions();
         } catch (err: any) {
-            toast.error(err.message || "Không thể thu hồi phiên");
+            showToast(err.message || "Không thể thu hồi phiên", "error");
         } finally {
             setProcessingId(null);
         }
@@ -435,10 +439,10 @@ export default function UserDetailPage() {
         setProcessingId("revoke-all");
         try {
             await svc.revokeAllSessions(token, userId);
-            toast.success("Đã thu hồi toàn bộ phiên đăng nhập thành công");
+            showToast("Đã thu hồi toàn bộ phiên đăng nhập thành công", "success");
             fetchSessions();
         } catch (err: any) {
-            toast.error(err.message || "Không thể thu hồi phiên");
+            showToast(err.message || "Không thể thu hồi phiên", "error");
         } finally {
             setProcessingId(null);
         }
@@ -450,11 +454,11 @@ export default function UserDetailPage() {
         setProcessingId(`unwarn-${warningId}`);
         try {
             await svc.unwarnUser(token, userId, warningId);
-            toast.success("Đã gỡ cảnh cáo vi phạm thành công");
+            showToast("Đã gỡ cảnh cáo vi phạm thành công", "success");
             fetchWarnings();
             fetchUser();
         } catch (err: any) {
-            toast.error(err.message || "Không thể gỡ cảnh cáo");
+            showToast(err.message || "Không thể gỡ cảnh cáo", "error");
         } finally {
             setProcessingId(null);
         }
@@ -764,7 +768,8 @@ function parseBrowser(ua?: string): string {
 function ChangePasswordDialog({ userId, open, onClose, onSuccess }: {
     userId: string; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-    const [newPassword, setNewPassword] = useState("");
+    const { showToast } = useToast();
+    const [newPassword, setNewPassword] = useState("");
     const [adminPassword, setAdminPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -780,12 +785,12 @@ function ChangePasswordDialog({ userId, open, onClose, onSuccess }: {
                 new_password: newPassword,
                 admin_password: adminPassword,
             });
-            toast.success("Đã đổi mật khẩu thành công");
+            showToast("Đã đổi mật khẩu thành công", "success");
             onSuccess();
             onClose();
             reset();
         } catch (err: any) {
-            toast.error(err.message || "Không thể đổi mật khẩu");
+            showToast(err.message || "Không thể đổi mật khẩu", "error");
         } finally {
             setLoading(false);
         }
@@ -842,7 +847,8 @@ function ChangePasswordDialog({ userId, open, onClose, onSuccess }: {
 function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
     user: User | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-    const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
         if (!user) return;
@@ -851,11 +857,11 @@ function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.resendVerification(token, user.id);
-            toast.success(`Đã gửi email xác thực đến ${user.email}`);
+            showToast(`Đã gửi email xác thực đến ${user.email}`, "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Không thể gửi email xác thực");
+            showToast(err.message || "Không thể gửi email xác thực", "error");
         } finally {
             setLoading(false);
         }

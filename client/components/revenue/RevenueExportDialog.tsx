@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { revenueAnalyticsService } from "@/services/revenue-analytics/revenue-analytics.service";
@@ -25,6 +25,7 @@ const EXPORT_COLUMNS = [
 ];
 
 export function RevenueExportDialog({ filters, open, onOpenChange }: RevenueExportDialogProps) {
+    const { showToast } = useToast();
     const [selectedCols, setSelectedCols] = useState<Set<string>>(
         new Set(EXPORT_COLUMNS.filter(c => c.default).map(c => c.key)),
     );
@@ -55,7 +56,7 @@ export function RevenueExportDialog({ filters, open, onOpenChange }: RevenueExpo
             URL.revokeObjectURL(url);
             onOpenChange(false);
         } catch {
-            toast.error("Xuất báo cáo thất bại. Vui lòng thử lại.");
+            showToast("Xuất báo cáo thất bại. Vui lòng thử lại.", "error");
         } finally {
             setIsExporting(false);
         }

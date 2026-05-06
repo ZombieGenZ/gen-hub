@@ -10,8 +10,7 @@ import { CreateContractModal } from "@/components/dashboard/CreateContractModal"
 import { OrganizationService } from "@/services/organization/organization.service";
 import type { ContractStatus } from "@/types/rental-contracts/rental-contracts.type";
 import React from "react";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 // Components
 import { ContractHeader } from "@/components/dashboard/admin/contracts/ContractHeader";
 import { ContractFilterBar } from "@/components/dashboard/admin/contracts/ContractFilterBar";
@@ -60,6 +59,7 @@ const EXTRA_STATUSES: { value: string; label: string }[] = [
 
 const ContractsPage = () => {
     const router = useRouter();
+    const { showToast } = useToast();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -159,7 +159,7 @@ const ContractsPage = () => {
                     if (orgs.length > 0) setOrganizations(orgs);
                 } catch (err) {
                     console.error("Failed to fetch organizations", err);
-                    toast.error("Không thể tải danh sách tổ chức");
+                    showToast("Không thể tải danh sách tổ chức", "error");
                 }
             }
 
@@ -192,7 +192,7 @@ const ContractsPage = () => {
                 router.push("/login");
                 return;
             }
-            toast.error(err.message || "Không thể tải danh sách hợp đồng");
+            showToast(err.message || "Không thể tải danh sách hợp đồng", "error");
             setError("Không thể tải danh sách hợp đồng");
         } finally {
             setIsLoading(false);
@@ -223,11 +223,11 @@ const ContractsPage = () => {
                 })),
             });
             setSelectedIds(new Set());
-            toast.success(`Đã hủy ${selectedIds.size} hợp đồng thành công ✅`);
+            showToast(`Đã hủy ${selectedIds.size} hợp đồng thành công ✅`, "success");
             fetchContracts();
         } catch (err: any) {
             console.error("Bulk cancel error", err);
-            toast.error(err.message || "Hủy hàng loạt thất bại");
+            showToast(err.message || "Hủy hàng loạt thất bại", "error");
         }
     };
 

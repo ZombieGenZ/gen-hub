@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { RentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { RentalDurationTierService } from "@/services/rental-duration-tier/rental-duration-tier.service";
@@ -58,6 +58,7 @@ interface CreateContractModalProps {
 }
 
 export function CreateContractModal({ open, onOpenChange, onSuccess, organizations }: CreateContractModalProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -112,7 +113,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
             setWarehouseTemplates(templatesList as Warehouse[]);
         } catch (error) {
             console.error("Error fetching data:", error);
-            toast.error("Không thể tải dữ liệu danh mục");
+            showToast("Không thể tải dữ liệu danh mục", "error");
         } finally {
             setLoading(false);
         }
@@ -152,21 +153,21 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
         try {
             const token = authStorage.getAccessToken();
             if (!token) {
-                toast.error("Vui lòng đăng nhập lại");
+                showToast("Vui lòng đăng nhập lại", "error");
                 return;
             }
 
             // Validation
             if (!formData.organization_id) {
-                toast.error("Vui lòng chọn tổ chức");
+                showToast("Vui lòng chọn tổ chức", "error");
                 return;
             }
             if (!formData.duration_tier_id) {
-                toast.error("Vui lòng chọn gói thời gian");
+                showToast("Vui lòng chọn gói thời gian", "error");
                 return;
             }
             if (!selectedTemplateId) {
-                toast.error("Vui lòng chọn kho");
+                showToast("Vui lòng chọn kho", "error");
                 return;
             }
 
@@ -188,7 +189,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
 
             await rentalContractService.createRentalContract(token, payload);
 
-            toast.success("Tạo hợp đồng thành công");
+            showToast("Tạo hợp đồng thành công", "success");
             onSuccess();
             onOpenChange(false);
 
@@ -207,7 +208,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
 
         } catch (error: any) {
             console.error("Create contract error:", error);
-            toast.error(error.message || "Tạo hợp đồng thất bại");
+            showToast(error.message || "Tạo hợp đồng thất bại", "error");
         } finally {
             setSubmitting(false);
         }

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-
+import { useToast } from '@/contexts/ToastContext';
 interface VoiceCommand {
   pattern: RegExp;
   action: string;
@@ -31,6 +30,7 @@ export const useVoiceCommands = ({
   onClearSelection,
   racks,
 }: UseVoiceCommandsProps): UseVoiceCommandsReturn => {
+  const { showToast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
@@ -73,7 +73,7 @@ export const useVoiceCommands = ({
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         if (event.error === 'not-allowed') {
-          toast.error('Vui lòng cấp quyền microphone để sử dụng voice command');
+          showToast('Vui lòng cấp quyền microphone để sử dụng voice command', "error");
         }
         setIsListening(false);
       };
@@ -129,7 +129,7 @@ export const useVoiceCommands = ({
       const match = text.match(pattern);
       if (match && match[1]) {
         const query = match[1].trim();
-        toast.success(`🔍 Đang tìm: "${query}"`);
+        showToast(`🔍 Đang tìm: "${query}"`, "success");
         onSearch(query);
         return;
       }
@@ -156,10 +156,10 @@ export const useVoiceCommands = ({
         );
 
         if (rack) {
-          toast.success(`📍 Đang highlight: ${rack.name}`);
+          showToast(`📍 Đang highlight: ${rack.name}`, "success");
           onHighlightRack(rack.id);
         } else {
-          toast.error(`Không tìm thấy kệ: "${rackQuery}"`);
+          showToast(`Không tìm thấy kệ: "${rackQuery}"`, "error");
         }
         return;
       }
@@ -175,7 +175,7 @@ export const useVoiceCommands = ({
 
     for (const pattern of clearPatterns) {
       if (pattern.test(text)) {
-        toast.success('✅ Đã bỏ chọn');
+        showToast('✅ Đã bỏ chọn', "success");
         onClearSelection();
         return;
       }
@@ -183,10 +183,7 @@ export const useVoiceCommands = ({
 
     // Help command
     if (/trợ giúp|help|hướng dẫn/i.test(text)) {
-      toast.info(
-        'Các lệnh hỗ trợ:\n• "Tìm [tên thùng]"\n• "Highlight kệ [tên kệ]"\n• "Xóa chọn"',
-        { duration: 5000 }
-      );
+      showToast('Các lệnh hỗ trợ:\n• "Tìm [tên thùng]"\n• "Highlight kệ [tên kệ]"\n• "Xóa chọn"', "info");
       return;
     }
 
@@ -196,7 +193,7 @@ export const useVoiceCommands = ({
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current) {
-      toast.error('Trình duyệt không hỗ trợ voice command');
+      showToast('Trình duyệt không hỗ trợ voice command', "error");
       return;
     }
 
@@ -204,10 +201,10 @@ export const useVoiceCommands = ({
       recognitionRef.current.start();
       setIsListening(true);
       setTranscript('');
-      toast.success('🎤 Đang lắng nghe...', { duration: 2000 });
+      showToast('🎤 Đang lắng nghe...', "success");
     } catch (err) {
       console.error('Failed to start recognition:', err);
-      toast.error('Không thể bắt đầu voice command');
+      showToast('Không thể bắt đầu voice command', "error");
     }
   }, []);
 
@@ -217,7 +214,7 @@ export const useVoiceCommands = ({
     }
     setIsListening(false);
     setTranscript('');
-    toast.info('🎤 Đã tắt voice command', { duration: 2000 });
+    showToast('🎤 Đã tắt voice command', "info");
   }, []);
 
   const toggleListening = useCallback(() => {

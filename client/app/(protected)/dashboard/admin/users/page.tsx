@@ -28,8 +28,7 @@ import {
     type User as ManagedUser,
 } from "@/services/user-management/user-management.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const svc = new UserManagementService();
 const LIMIT = 20;
 
@@ -53,6 +52,7 @@ function getStatusConfig(user: ManagedUser) {
 function CreateUserDialog({ open, onClose, onSuccess }: {
     open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
+    const { showToast } = useToast();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -67,12 +67,12 @@ function CreateUserDialog({ open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.createUser(token, { name: name.trim(), email: email.trim(), password: password.trim() });
-            toast.success(`Đã tạo tài khoản "${name}" thành công`);
+            showToast(`Đã tạo tài khoản "${name}" thành công`, "success");
             onSuccess();
             onClose();
             reset();
         } catch (err: any) {
-            toast.error(err.message || "Không thể tạo tài khoản");
+            showToast(err.message || "Không thể tạo tài khoản", "error");
         } finally {
             setLoading(false);
         }
@@ -119,7 +119,8 @@ function CreateUserDialog({ open, onClose, onSuccess }: {
 function BanDialog({ user, open, onClose, onSuccess }: {
     user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-    const [reason, setReason] = useState("");
+    const { showToast } = useToast();
+    const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(false);
 
     const handleBan = async () => {
@@ -129,11 +130,11 @@ function BanDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.banUser(token, user.id, { reason: reason.trim(), is_permanent: false, duration_value: 7, duration_type: "days" });
-            toast.success(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`);
+            showToast(`Đã khóa tài khoản ${user.name || user.full_name || user.email} trong 7 ngày`, "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Không thể khóa tài khoản");
+            showToast(err.message || "Không thể khóa tài khoản", "error");
         } finally {
             setLoading(false);
             setReason("");
@@ -182,7 +183,8 @@ function BanDialog({ user, open, onClose, onSuccess }: {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function StaffPage() {
-    const router = useRouter();
+    const { showToast } = useToast();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [staffList, setStaffList] = useState<ManagedUser[]>([]);
@@ -205,7 +207,7 @@ export default function StaffPage() {
             setStaffList(res?.data?.items ?? []);
             setTotal(res?.data?.total ?? 0);
         } catch (err: any) {
-            toast.error(err.message || "Không thể tải danh sách người dùng");
+            showToast(err.message || "Không thể tải danh sách người dùng", "error");
             setStaffList([]);
             setTotal(0);
         } finally {
@@ -229,10 +231,10 @@ export default function StaffPage() {
         setProcessingId(`unban-${user.id}`);
         try {
             await svc.unbanUser(token, user.id);
-            toast.success(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`);
+            showToast(`Đã mở khóa tài khoản ${user.name || user.full_name || user.email} thành công`, "success");
             fetchStaff();
         } catch (err: any) {
-            toast.error(err.message || "Không thể mở khóa tài khoản");
+            showToast(err.message || "Không thể mở khóa tài khoản", "error");
         } finally {
             setProcessingId(null);
         }
@@ -430,7 +432,8 @@ export default function StaffPage() {
 function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
     user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-    const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
         if (!user) return;
@@ -439,11 +442,11 @@ function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
         setLoading(true);
         try {
             await svc.resendVerification(token, user.id);
-            toast.success(`Đã gửi email xác thực đến ${user.email} thành công`);
+            showToast(`Đã gửi email xác thực đến ${user.email} thành công`, "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            toast.error(err.message || "Không thể gửi email xác thực");
+            showToast(err.message || "Không thể gửi email xác thực", "error");
         } finally {
             setLoading(false);
         }

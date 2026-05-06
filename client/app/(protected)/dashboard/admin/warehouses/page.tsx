@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
 import { Province } from "@/types/location/provinces.type";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 // Components
 import { WarehouseHeader } from "@/components/dashboard/admin/warehouses/WarehouseHeader";
 import { WarehouseFilterBar } from "@/components/dashboard/admin/warehouses/WarehouseFilterBar";
@@ -30,6 +29,8 @@ function formatVND(value: string | number): string {
 
 export default function WarehouseTemplatePage() {
     const router = useRouter();
+
+    const { showToast } = useToast();
 
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [provinces, setProvinces] = useState<Province[]>([]);
@@ -98,7 +99,7 @@ export default function WarehouseTemplatePage() {
             const error = err instanceof Error ? err : new Error(String(err));
             if (error.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
-            toast.error("Lỗi khi tải dữ liệu kho.");
+            showToast("Lỗi khi tải dữ liệu kho.", "error");
         } finally {
             setLoading(false);
         }
@@ -109,7 +110,7 @@ export default function WarehouseTemplatePage() {
             const data = await locationService.getProvinces();
             if (Array.isArray(data)) setProvinces(data);
         } catch {
-            toast.error("Không thể tải danh sách tỉnh thành");
+            showToast("Không thể tải danh sách tỉnh thành", "error");
         }
     }, []);
 
@@ -148,13 +149,13 @@ export default function WarehouseTemplatePage() {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteWarehouseTemplate(token, deleteTarget.id);
-            toast.success(`Đã xóa "${deleteTarget.name}"`);
+            showToast(`Đã xóa "${deleteTarget.name}"`, "success");
             setDeleteDialogOpen(false);
             setDeleteTarget(null);
             setSelectedIds([]);
             fetchWarehouses();
         } catch (err: any) {
-            toast.error(err.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -166,12 +167,12 @@ export default function WarehouseTemplatePage() {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteManyWarehouseTemplates(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} kho thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} kho thành công!`, "success");
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchWarehouses();
         } catch (err: any) {
-            toast.error(err.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -179,7 +180,7 @@ export default function WarehouseTemplatePage() {
 
     const handleCreate = async () => {
         if (!createForm.name.trim()) {
-            toast.error("Vui lòng nhập tên kho.");
+            showToast("Vui lòng nhập tên kho.", "error");
             return;
         }
         const token = authStorage.getAccessToken();
@@ -193,7 +194,7 @@ export default function WarehouseTemplatePage() {
                 block_width: 1,
                 is_active: false,
             });
-            toast.success(`Đã tạo kho "${createForm.name}" thành công!`);
+            showToast(`Đã tạo kho "${createForm.name}" thành công!`, "success");
             setCreateDialogOpen(false);
             setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
             const newId = result?.data?.id || result?.id;
@@ -203,7 +204,7 @@ export default function WarehouseTemplatePage() {
                 fetchWarehouses();
             }
         } catch (err: any) {
-            toast.error(err.message || "Tạo kho thất bại, vui lòng thử lại");
+            showToast(err.message || "Tạo kho thất bại, vui lòng thử lại", "error");
         } finally {
             setIsCreating(false);
         }

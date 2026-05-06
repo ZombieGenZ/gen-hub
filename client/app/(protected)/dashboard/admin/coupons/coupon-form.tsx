@@ -25,8 +25,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePicker } from "@/components/ui/date-picker";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const couponService = new CouponService();
 
 interface CouponFormProps {
@@ -39,6 +38,7 @@ interface CouponFormProps {
 type CouponTypeOption = 'AMOUNT' | 'PERCENT' | 'FREE_MONTHS' | 'GIFT';
 
 export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }: CouponFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
 
     // Determine initial selected type
@@ -130,7 +130,7 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save coupon", error);
-            toast.error(error.message || "Failed to save coupon");
+            showToast(error.message || "Failed to save coupon", "error");
         } finally {
             setLoading(false);
         }

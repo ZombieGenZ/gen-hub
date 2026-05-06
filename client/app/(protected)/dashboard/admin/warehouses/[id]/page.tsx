@@ -6,7 +6,7 @@ import { WarehouseTemplateService } from "@/services/warehouse_template/warehous
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { useBreadcrumbLabel } from "@/components/providers/breadcrumb-provider";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { ArrowLeftIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 
 // ── shadcn/ui ──
@@ -29,6 +29,8 @@ export default function WarehouseEditPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id as string;
+
+    const { showToast } = useToast();
 
     const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
     useBreadcrumbLabel(warehouse?.name);
@@ -59,7 +61,7 @@ export default function WarehouseEditPage() {
             };
             setFormData(normalized);
         } catch (err) {
-            toast.error("Không thể tải dữ liệu kho.");
+            showToast("Không thể tải dữ liệu kho.", "error");
             goToWarehouses();
         } finally {
             setLoading(false);
@@ -168,27 +170,27 @@ export default function WarehouseEditPage() {
 
         // Validate required fields
         if (!cleanData.name) {
-            toast.error("Tên kho không được để trống");
+            showToast("Tên kho không được để trống", "error");
             return;
         }
         if (!cleanData.length || cleanData.length <= 0) {
-            toast.error("Chiều dài phải lớn hơn 0");
+            showToast("Chiều dài phải lớn hơn 0", "error");
             return;
         }
         if (!cleanData.width || cleanData.width <= 0) {
-            toast.error("Chiều rộng phải lớn hơn 0");
+            showToast("Chiều rộng phải lớn hơn 0", "error");
             return;
         }
         if (!cleanData.block_length || cleanData.block_length <= 0) {
-            toast.error("Chiều dài block phải lớn hơn 0");
+            showToast("Chiều dài block phải lớn hơn 0", "error");
             return;
         }
         if (!cleanData.block_width || cleanData.block_width <= 0) {
-            toast.error("Chiều rộng block phải lớn hơn 0");
+            showToast("Chiều rộng block phải lớn hơn 0", "error");
             return;
         }
         if (!cleanData.price_per_month || cleanData.price_per_month <= 0) {
-            toast.error("Giá thuê phải lớn hơn 0");
+            showToast("Giá thuê phải lớn hơn 0", "error");
             return;
         }
 
@@ -215,12 +217,12 @@ export default function WarehouseEditPage() {
                 // Note: 409 Conflict (already assigned) is acceptable — ignore silently
             }
 
-            toast.success("Đã lưu thay đổi.");
+            showToast("Đã lưu thay đổi.", "success");
             setIsDirty(false);
             fetchWarehouse();
         } catch (err: any) {
             const msg = err?.message || "Lỗi không xác định";
-            toast.error(`Lưu thất bại: ${msg}`);
+            showToast(`Lưu thất bại: ${msg}`, "error");
         } finally {
             setSaving(false);
         }
@@ -235,10 +237,10 @@ export default function WarehouseEditPage() {
         try {
             const newStatus = !formData.is_active;
             await warehouseService.updateWarehouseTemplate(token, id, { is_active: newStatus });
-            toast.success(newStatus ? "Kho đã được xuất bản!" : "Kho đã được ẩn.");
+            showToast(newStatus ? "Kho đã được xuất bản!" : "Kho đã được ẩn.", "success");
             fetchWarehouse();
         } catch {
-            toast.error("Thao tác thất bại. Vui lòng thử lại.");
+            showToast("Thao tác thất bại. Vui lòng thử lại.", "error");
         } finally {
             setPublishing(false);
         }

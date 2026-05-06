@@ -5,8 +5,7 @@ import {
   RackConfig, BoxItem, WarehouseState, BoxCategory, 
   categoryColors, WarehouseStats, FillRateStatus, getFillRateStatus
 } from '@/types/warehouse';
-import { toast } from 'sonner';
-
+import { useToast } from '@/contexts/ToastContext';
 const initialState: WarehouseState = {
   showBackground: true,
   showAxes: true,
@@ -32,6 +31,7 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 const rackColors = ['#0066ff', '#0088ff', '#00aaff', '#0044dd', '#0055cc'];
 
 export const useWarehouse = () => {
+  const { showToast } = useToast();
   const [state, setState] = useState<WarehouseState>(initialState);
 
   // Calculate statistics
@@ -60,12 +60,12 @@ export const useWarehouse = () => {
 
   const createBackground = useCallback(() => {
     setState(prev => ({ ...prev, showBackground: true }));
-    toast.success('Đã tạo nền kho');
+    showToast('Đã tạo nền kho', "success");
   }, []);
 
   const removeBackground = useCallback(() => {
     setState(prev => ({ ...prev, showBackground: false }));
-    toast.success('Đã ẩn nền kho');
+    showToast('Đã ẩn nền kho', "success");
   }, []);
 
   const toggleAxes = useCallback(() => {
@@ -78,7 +78,7 @@ export const useWarehouse = () => {
 
   const setViewMode = useCallback((mode: 'default' | 'category' | 'heatmap') => {
     setState(prev => ({ ...prev, viewMode: mode }));
-    toast.success(`Chế độ xem: ${mode === 'default' ? 'Mặc định' : mode === 'category' ? 'Theo loại' : 'Nhiệt'}`);
+    showToast(`Chế độ xem: ${mode === 'default' ? 'Mặc định' : mode === 'category' ? 'Theo loại' : 'Nhiệt'}`, "success");
   }, []);
 
   const createRack = useCallback((config: { rows: number; columns: number; levels: number }) => {
@@ -107,7 +107,7 @@ export const useWarehouse = () => {
     };
     
     setState(prev => ({ ...prev, racks: [...prev.racks, newRack] }));
-    toast.success(`Đã tạo ${newRack.name}`);
+    showToast(`Đã tạo ${newRack.name}`, "success");
   }, [state.racks.length]);
 
   const removeRack = useCallback(() => {
@@ -123,12 +123,12 @@ export const useWarehouse = () => {
       selectedRack: null,
     }));
     
-    toast.success(`Đã xóa ${rack?.name || 'kệ'}`);
+    showToast(`Đã xóa ${rack?.name || 'kệ'}`, "success");
   }, [state.racks, state.selectedRack]);
 
   const addBoxes = useCallback((count: number, category: BoxCategory) => {
     if (state.racks.length === 0) {
-      toast.error('Vui lòng tạo kệ trước');
+      showToast('Vui lòng tạo kệ trước', "error");
       return;
     }
     
@@ -138,7 +138,7 @@ export const useWarehouse = () => {
       : state.racks;
     
     if (targetRacks.length === 0) {
-      toast.error('Kệ được chọn không tồn tại');
+      showToast('Kệ được chọn không tồn tại', "error");
       return;
     }
     
@@ -189,7 +189,7 @@ export const useWarehouse = () => {
       
       // If no slot found in any rack, show warning
       if (!placed) {
-        toast.warning(`Không đủ chỗ để thêm tất cả ${count} thùng, chỉ thêm được ${newBoxes.length} thùng`);
+        showToast(`Không đủ chỗ để thêm tất cả ${count} thùng, chỉ thêm được ${newBoxes.length} thùng`, "warning");
         break;
       }
     }
@@ -200,7 +200,7 @@ export const useWarehouse = () => {
         : 'kho';
       
       setState(prev => ({ ...prev, boxes: [...prev.boxes, ...newBoxes] }));
-      toast.success(`Đã thêm ${newBoxes.length} thùng vào ${rackName}`);
+      showToast(`Đã thêm ${newBoxes.length} thùng vào ${rackName}`, "success");
     }
   }, [state.racks, state.selectedRack, state.boxes]);
 
@@ -212,16 +212,16 @@ export const useWarehouse = () => {
         boxes: prev.boxes.filter(b => b.rackId !== state.selectedRack),
         selectedBox: null,
       }));
-      toast.success(`Đã xóa thùng hàng trong ${rack?.name || 'kệ'}`);
+      showToast(`Đã xóa thùng hàng trong ${rack?.name || 'kệ'}`, "success");
     } else {
       setState(prev => ({ ...prev, boxes: [], selectedBox: null }));
-      toast.success('Đã xóa tất cả thùng hàng');
+      showToast('Đã xóa tất cả thùng hàng', "success");
     }
   }, [state.selectedRack, state.racks]);
 
   const removeSelectedBox = useCallback(() => {
     if (!state.selectedBox) {
-      toast.error('Chưa chọn thùng hàng');
+      showToast('Chưa chọn thùng hàng', "error");
       return;
     }
     const box = state.boxes.find(b => b.id === state.selectedBox);
@@ -230,7 +230,7 @@ export const useWarehouse = () => {
       boxes: prev.boxes.filter(b => b.id !== state.selectedBox),
       selectedBox: null,
     }));
-    toast.success(`Đã xóa ${box?.name || 'thùng hàng'}`);
+    showToast(`Đã xóa ${box?.name || 'thùng hàng'}`, "success");
   }, [state.selectedBox, state.boxes]);
 
   const moveBoxToRack = useCallback((boxId: string, targetRackId: string) => {
@@ -260,7 +260,7 @@ export const useWarehouse = () => {
           : box
       ),
     }));
-    toast.success(`Đã di chuyển thùng đến ${targetRack.name}`);
+    showToast(`Đã di chuyển thùng đến ${targetRack.name}`, "success");
   }, [state.racks]);
 
   const duplicateBox = useCallback((boxId: string) => {
@@ -276,7 +276,7 @@ export const useWarehouse = () => {
     };
     
     setState(prev => ({ ...prev, boxes: [...prev.boxes, newBox] }));
-    toast.success(`Đã nhân đôi thùng`);
+    showToast(`Đã nhân đôi thùng`, "success");
   }, [state.boxes]);
 
   const clearSelection = useCallback(() => {
@@ -408,7 +408,7 @@ export const useWarehouse = () => {
       fillRateFilter: null,
     });
     
-    toast.success(`Đã tải ${demoRacks.length} kệ và ${demoBoxes.length} thùng hàng`);
+    showToast(`Đã tải ${demoRacks.length} kệ và ${demoBoxes.length} thùng hàng`, "success");
   }, []);
 
   const selectBox = useCallback((id: string) => {
@@ -450,7 +450,7 @@ export const useWarehouse = () => {
     a.download = `warehouse-layout-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Đã xuất dữ liệu');
+    showToast('Đã xuất dữ liệu', "success");
   }, [state]);
 
   const importData = useCallback(() => {
@@ -471,12 +471,12 @@ export const useWarehouse = () => {
             racks: data.racks,
             boxes: data.boxes.map((box: BoxItem) => ({ ...box, selected: false })),
           }));
-          toast.success(`Đã nhập ${data.racks.length} kệ và ${data.boxes.length} thùng`);
+          showToast(`Đã nhập ${data.racks.length} kệ và ${data.boxes.length} thùng`, "success");
         } else {
-          toast.error('File không hợp lệ');
+          showToast('File không hợp lệ', "error");
         }
       } catch {
-        toast.error('Không thể đọc file');
+        showToast('Không thể đọc file', "error");
       }
     };
     input.click();
@@ -484,7 +484,7 @@ export const useWarehouse = () => {
 
   const toggleDragMode = useCallback(() => {
     setState(prev => ({ ...prev, isDragMode: !prev.isDragMode }));
-    toast.success(state.isDragMode ? 'Đã tắt chế độ di chuyển kệ' : 'Bật chế độ di chuyển kệ - chọn kệ rồi dùng phím mũi tên ←↑↓→');
+    showToast(state.isDragMode ? 'Đã tắt chế độ di chuyển kệ' : 'Bật chế độ di chuyển kệ - chọn kệ rồi dùng phím mũi tên ←↑↓→', "success");
   }, [state.isDragMode]);
 
   // Get rack position for keyboard navigation
@@ -555,7 +555,7 @@ export const useWarehouse = () => {
         return { ...r, rows: r.columns, columns: r.rows };
       }),
     }));
-    toast.success('Đã xoay kệ 90°');
+    showToast('Đã xoay kệ 90°', "success");
   }, []);
 
   const cloneRack = useCallback((rackId: string) => {
@@ -574,7 +574,7 @@ export const useWarehouse = () => {
     };
     
     setState(prev => ({ ...prev, racks: [...prev.racks, newRack] }));
-    toast.success(`Đã nhân đôi ${sourceRack.name}`);
+    showToast(`Đã nhân đôi ${sourceRack.name}`, "success");
   }, [state.racks]);
 
   const openRackModal = useCallback((rackId: string) => {
@@ -602,7 +602,7 @@ export const useWarehouse = () => {
       selectedBox: prev.selectedBox === boxId ? null : prev.selectedBox,
     }));
     if (box) {
-      toast.success(`Đã xóa ${box.name}`);
+      showToast(`Đã xóa ${box.name}`, "success");
     }
   }, [state.boxes]);
 
@@ -626,31 +626,31 @@ export const useWarehouse = () => {
   const setVisibleRacks = useCallback((rackIds: string[] | null) => {
     setState(prev => ({ ...prev, visibleRackIds: rackIds }));
     if (rackIds === null) {
-      toast.success('Hiển thị tất cả kệ');
+      showToast('Hiển thị tất cả kệ', "success");
     } else if (rackIds.length === 0) {
-      toast.info('Đã ẩn tất cả kệ');
+      showToast('Đã ẩn tất cả kệ', "info");
     } else {
-      toast.success(`Hiển thị ${rackIds.length} kệ`);
+      showToast(`Hiển thị ${rackIds.length} kệ`, "success");
     }
   }, []);
 
   const showOnlyRack = useCallback((rackId: string) => {
     setState(prev => ({ ...prev, visibleRackIds: [rackId] }));
     const rack = state.racks.find(r => r.id === rackId);
-    toast.success(`Chỉ hiển thị ${rack?.name || 'kệ đã chọn'}`);
+    showToast(`Chỉ hiển thị ${rack?.name || 'kệ đã chọn'}`, "success");
   }, [state.racks]);
 
   const showAllRacks = useCallback(() => {
     setState(prev => ({ ...prev, visibleRackIds: null }));
-    toast.success('Hiển thị tất cả kệ');
+    showToast('Hiển thị tất cả kệ', "success");
   }, []);
 
   const setFillRateFilter = useCallback((status: FillRateStatus | null) => {
     setState(prev => ({ ...prev, fillRateFilter: status }));
     if (status === null) {
-      toast.success('Hiển thị tất cả kệ');
+      showToast('Hiển thị tất cả kệ', "success");
     } else {
-      toast.success(`Đang lọc kệ: ${status}`);
+      showToast(`Đang lọc kệ: ${status}`, "success");
     }
   }, []);
 
@@ -683,7 +683,7 @@ export const useWarehouse = () => {
           selected: b.id === boxId,
         })),
       }));
-      toast.success(`Đang định vị: ${box.name}`);
+      showToast(`Đang định vị: ${box.name}`, "success");
     }
   }, [state.boxes]);
 

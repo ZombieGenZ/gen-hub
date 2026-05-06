@@ -16,8 +16,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Insurance, CreateInsuranceRequest } from "@/types/insurance/Insurance.types";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const insuranceService = new IsuranceService();
 
 interface InsuranceFormProps {
@@ -28,6 +27,7 @@ interface InsuranceFormProps {
 }
 
 export function InsuranceForm({ initialData, onSuccess, onCancel, isEdit = false }: InsuranceFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<CreateInsuranceRequest>({
         name: initialData?.name || "",
@@ -47,15 +47,15 @@ export function InsuranceForm({ initialData, onSuccess, onCancel, isEdit = false
 
             if (isEdit && initialData?.id) {
                 await insuranceService.updateInsurance(token, initialData.id, formData);
-                toast.success(`Đã cập nhật gói bảo hiểm "${formData.name}" ✅`);
+                showToast(`Đã cập nhật gói bảo hiểm "${formData.name}" ✅`, "success");
             } else {
                 await insuranceService.createInsurance(token, formData);
-                toast.success(`Đã tạo gói bảo hiểm "${formData.name}" thành công ✨`);
+                showToast(`Đã tạo gói bảo hiểm "${formData.name}" thành công ✨`, "success");
             }
             onSuccess();
         } catch (error: any) {
             console.error("Failed to save insurance", error);
-            toast.error(error.message || "Không thể lưu gói bảo hiểm, vui lòng thử lại");
+            showToast(error.message || "Không thể lưu gói bảo hiểm, vui lòng thử lại", "error");
         } finally {
             setLoading(false);
         }

@@ -30,7 +30,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { AmenityRequest, AmenityResponse } from "@/types/amenities/amenities.type";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { AmenityDialog, AmenityGridView, getIconComponent } from "@/components/amenities";
 import { TablePagination } from "@/components/ui/table-pagination";
 
@@ -39,6 +39,7 @@ const amenitiesService = new AmenitiesService();
 export default function AmenitiesPage() {
 
     // --- Data States ---
+    const { showToast } = useToast();
     const [amenities, setAmenities] = useState<AmenityResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -119,7 +120,7 @@ export default function AmenitiesPage() {
             setTotalItems(total);
         } catch (error: any) {
             console.error("Failed to fetch amenities", error);
-            toast.error(error.message || "Không thể tải danh sách tiện ích");
+            showToast(error.message || "Không thể tải danh sách tiện ích", "error");
         } finally {
             setLoading(false);
         }
@@ -149,10 +150,10 @@ export default function AmenitiesPage() {
 
             if (formMode === "create") {
                 await amenitiesService.createAmenity(token, data);
-                toast.success("Đã thêm tiện ích mới thành công!");
+                showToast("Đã thêm tiện ích mới thành công!", "success");
             } else if (selectedAmenity) {
                 await amenitiesService.updateAmenity(token, selectedAmenity.id, data);
-                toast.success("Cập nhật tiện ích thành công!");
+                showToast("Cập nhật tiện ích thành công!", "success");
             }
 
             setIsFormDialogOpen(false);
@@ -161,7 +162,7 @@ export default function AmenitiesPage() {
             fetchStats();
         } catch (error: any) {
             console.error("Failed to save amenity", error);
-            toast.error(error.message || (formMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại"));
+            showToast(error.message || (formMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại"), "error");
             throw error; // Re-throw for dialog to handle state
         } finally {
             setIsFormLoading(false);
@@ -177,12 +178,12 @@ export default function AmenitiesPage() {
             await amenitiesService.deleteAmenity(token, selectedAmenity.id);
             setIsDeleteDialogOpen(false);
             setSelectedAmenity(null);
-            toast.success(`Đã xóa tiện ích "${selectedAmenity.name}"`);
+            showToast(`Đã xóa tiện ích "${selectedAmenity.name}"`, "success");
             fetchAmenities();
             fetchStats();
         } catch (error: any) {
             console.error("Failed to delete amenity", error);
-            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -195,14 +196,14 @@ export default function AmenitiesPage() {
             if (!token) return;
 
             await amenitiesService.deleteMultipleAmenities(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} tiện ích thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} tiện ích thành công!`, "success");
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchAmenities();
             fetchStats();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            toast.error(error.message || "Xóa nhiều thất bại");
+            showToast(error.message || "Xóa nhiều thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }

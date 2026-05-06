@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
 import { io, Socket } from "socket.io-client";
 
@@ -177,6 +177,7 @@ export default function ApprovalQueuePage() {
     const router = useRouter();
 
     // ── Data state ──
+    const { showToast } = useToast();
     const [inboundItems, setInboundItems] = useState<InboundRequest[]>([]);
     const [outboundItems, setOutboundItems] = useState<OutboundRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -228,7 +229,7 @@ export default function ApprovalQueuePage() {
             }
             if (showLoadingSpinner) {
                 setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
-                toast.error("Lỗi kết nối: Không thể tải danh sách phiếu phê duyệt");
+                showToast("Lỗi kết nối: Không thể tải danh sách phiếu phê duyệt", "error");
             }
         } finally {
             if (showLoadingSpinner) setLoading(false);
@@ -384,11 +385,9 @@ export default function ApprovalQueuePage() {
         setSelectedIds(new Set());
 
         if (failCount === 0) {
-            toast.success(`Đã duyệt thành công ${successCount} phiếu`);
+            showToast(`Đã duyệt thành công ${successCount} phiếu`, "success");
         } else {
-            toast.error(
-                `Duyệt ${successCount} thành công, ${failCount} thất bại`
-            );
+            showToast(`Duyệt ${successCount} thành công, ${failCount} thất bại`, "error");
         }
 
         fetchData();
@@ -408,9 +407,7 @@ export default function ApprovalQueuePage() {
         if (draggedId) {
             const ticket = allTickets.find((t) => t.id === draggedId);
             if (ticket) {
-                 toast.success(
-                     `Đã chuyển "${ticket.code}" sang "${KANBAN_COLUMNS.find((c) => c.key === column)?.title}"`
-                 );
+                 showToast(`Đã chuyển "${ticket.code}" sang "${KANBAN_COLUMNS.find((c) => c.key === column)?.title}"`, "success");
             }
         }
         setDraggedId(null);

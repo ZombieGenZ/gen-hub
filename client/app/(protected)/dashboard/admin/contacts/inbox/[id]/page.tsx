@@ -21,7 +21,7 @@ import { TicketComposer } from "@/components/contacts/TicketComposer";
 import { TicketStatusBadge } from "@/components/contacts/TicketStatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { useCloseContact, useDeleteContact, useReopenContact, useReplyContact, useUpdateContact } from "@/hooks/contacts/use-contact-mutations";
 import { useContactSocket } from "@/hooks/contacts/use-contact-socket";
 import { useContactDetail, useContactMessages, useContacts } from "@/hooks/contacts/use-contacts";
@@ -61,6 +61,7 @@ export default function TicketDetailPage() {
     const params = useParams();
     const router = useRouter();
     const ticketId = params.id as string;
+    const { showToast } = useToast();
     const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -252,15 +253,15 @@ export default function TicketDetailPage() {
                                 if (isBlocked) {
                                     if (!window.confirm("Bỏ chặn người gửi này?")) return;
                                     await deleteBlacklist.mutateAsync(blacklistEntry.id);
-                                    toast.success("Đã bỏ chặn người gửi");
+                                    showToast("Đã bỏ chặn người gửi", "success");
                                 } else {
                                     if (!window.confirm("Chặn người gửi này?")) return;
                                     await createBlacklist.mutateAsync({ list_type: ContactListType.BLACKLIST, match_type: ContactListMatchType.EMAIL, value: ticket.customer_email, reason: `Blocked from ticket #${ticket.code}`, is_active: true });
-                                    toast.success("Đã chặn người gửi");
+                                    showToast("Đã chặn người gửi", "success");
                                 }
                             } catch (err) {
                                 console.error("Failed to toggle blacklist", err);
-                                toast.error("Không thể cập nhật trạng thái chặn");
+                                showToast("Không thể cập nhật trạng thái chặn", "error");
                             }
                         }}
                         className={cn("w-full rounded-xl border px-4 py-2.5 text-sm font-medium", isBlocked ? "border-slate-200 bg-slate-100 text-slate-700" : "border-red-200 bg-red-50 text-red-600")}

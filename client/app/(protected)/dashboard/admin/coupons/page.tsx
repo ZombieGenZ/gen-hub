@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { CouponService } from "@/services/coupons/coupon.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { Coupon, CouponRequest } from "@/types/coupons/coupon.type";
 
 // Components
@@ -18,6 +18,7 @@ type CouponFilterStatus = 'all' | CouponStatus;
 const couponService = new CouponService();
 
 export default function CouponsPage() {
+    const { showToast } = useToast();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -61,7 +62,7 @@ export default function CouponsPage() {
         } catch (error: any) {
             console.error("Failed to fetch coupons", error);
             setError(error.message || "Failed to fetch coupons");
-            toast.error("Không thể tải danh sách mã giảm giá");
+            showToast("Không thể tải danh sách mã giảm giá", "error");
         } finally {
             setLoading(false);
         }
@@ -167,14 +168,14 @@ export default function CouponsPage() {
 
     const handleCreateSuccess = () => {
         setIsCreateDialogOpen(false);
-        toast.success("Đã tạo mã giảm giá mới thành công!");
+        showToast("Đã tạo mã giảm giá mới thành công!", "success");
         fetchCoupons();
     };
 
     const handleEditSuccess = () => {
         setIsEditDialogOpen(false);
         setSelectedCoupon(null);
-        toast.success("Cập nhật thông tin mã giảm giá thành công!");
+        showToast("Cập nhật thông tin mã giảm giá thành công!", "success");
         fetchCoupons();
     };
 
@@ -184,12 +185,12 @@ export default function CouponsPage() {
             const token = authStorage.getAccessToken();
             if (!token || !selectedCoupon) return;
             await couponService.deleteCoupon(token, selectedCoupon.id);
-            toast.success(`Đã xóa mã giảm giá "${selectedCoupon.name}"`);
+            showToast(`Đã xóa mã giảm giá "${selectedCoupon.name}"`, "success");
             setIsDeleteDialogOpen(false);
             setSelectedCoupon(null);
             fetchCoupons();
         } catch (error: any) {
-            toast.error(error.message || "Xóa thất bại, vui lòng thử lại");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -220,11 +221,11 @@ export default function CouponsPage() {
                 setBulkActionType(null);
                 setBulkActionSuccess(false);
                 setSelectedCouponIds([]);
-                toast.success(`Đã xóa ${selectedCouponIds.length} mã giảm giá thành công!`);
+                showToast(`Đã xóa ${selectedCouponIds.length} mã giảm giá thành công!`, "success");
                 fetchCoupons();
             }, 800);
         } catch (error: any) {
-            toast.error(error.message || 'Không thể xóa mã giảm giá');
+            showToast(error.message || 'Không thể xóa mã giảm giá', "error");
             setIsBulkActionDialogOpen(false);
         } finally {
             setIsBulkActionLoading(false);
@@ -257,11 +258,11 @@ export default function CouponsPage() {
                 setBulkActionType(null);
                 setBulkActionSuccess(false);
                 setSelectedCouponIds([]);
-                toast.success(successMessage);
+                showToast(successMessage, "success");
                 fetchCoupons();
             }, 800);
         } catch (error: any) {
-            toast.error(error.message || errorMessage);
+            showToast(error.message || errorMessage, "error");
             setIsBulkActionDialogOpen(false);
         } finally {
             setIsBulkActionLoading(false);
@@ -321,12 +322,10 @@ export default function CouponsPage() {
             if (!token) return;
             const newStatus = !coupon.is_active;
             await couponService.toggleCouponStatus(token, coupon.id, newStatus);
-            toast.success(
-                newStatus ? `Đã bật mã "${coupon.name}"` : `Đã tắt mã "${coupon.name}"`
-            );
+            showToast(newStatus ? `Đã bật mã "${coupon.name}"` : `Đã tắt mã "${coupon.name}"`, "success");
             fetchCoupons();
         } catch (error: any) {
-            toast.error(error.message || 'Không thể cập nhật trạng thái');
+            showToast(error.message || 'Không thể cập nhật trạng thái', "error");
         }
     };
 

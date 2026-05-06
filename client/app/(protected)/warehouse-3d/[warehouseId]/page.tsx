@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useWarehouse3D } from '@/hooks/useWarehouse3D';
 import { useInventory } from '@/hooks/useInventory';
 import { useRealtimePresence } from '@/hooks/useRealtimePresence';
-import { Toaster } from 'sonner';
 import RackModal from '@/components/warehouse/RackModal';
 import FeatureToolbar from '@/components/warehouse/FeatureToolbar';
 import SearchPanel from '@/components/warehouse/SearchPanel';
@@ -21,7 +20,7 @@ import { WarehouseManagementSheet } from '@/components/warehouse/WarehouseManage
 import OnlineUsersList from '@/components/warehouse/OnlineUsersList';
 import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
 import { useAIVoiceCommands } from '@/hooks/useAIVoiceCommands';
-import { toast } from 'sonner';
+import { useToast } from '@/contexts/ToastContext';
 import { BoxCategory } from '@/types/warehouse';
 import { SearchResult } from '@/types/inventory';
 
@@ -81,6 +80,7 @@ export default function Warehouse3DLivePage() {
   } = useWarehouse3D({ warehouseId });
 
   // Display feature states
+  const { showToast } = useToast();
   const [showHumans, setShowHumans] = useState(true);
   const [showRoof, setShowRoof] = useState(true);
   const [performanceMode, setPerformanceMode] = useState(false);
@@ -236,7 +236,7 @@ export default function Warehouse3DLivePage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <Toaster position="top-right" richColors />
+      
 
       {/* Warehouse name header */}
       {warehouseInfo && (
@@ -282,15 +282,15 @@ export default function Warehouse3DLivePage() {
           <ControlPanel
             onCreateBackground={createBackground}
             onRemoveBackground={removeBackground}
-            onCreateRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout')}
-            onRemoveRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout')}
-            onAddBoxes={() => toast.info('Vui lòng sử dụng tính năng Nhập kho để thêm hàng')}
-            onRemoveAllBoxes={() => toast.info('Chế độ xem trực tiếp không hỗ trợ xóa hàng')}
-            onRemoveSelectedBox={() => toast.info('Chế độ xem trực tiếp không hỗ trợ xóa hàng')}
-            onMoveBoxToRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ di chuyển')}
+            onCreateRack={() => showToast('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout', "info")}
+            onRemoveRack={() => showToast('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout', "info")}
+            onAddBoxes={() => showToast('Vui lòng sử dụng tính năng Nhập kho để thêm hàng', "info")}
+            onRemoveAllBoxes={() => showToast('Chế độ xem trực tiếp không hỗ trợ xóa hàng', "info")}
+            onRemoveSelectedBox={() => showToast('Chế độ xem trực tiếp không hỗ trợ xóa hàng', "info")}
+            onMoveBoxToRack={() => showToast('Chế độ xem trực tiếp không hỗ trợ di chuyển', "info")}
             onDuplicateBox={() => {}}
             onClearSelection={clearSelection}
-            onLoadDemoData={() => toast.info('Đang ở chế độ dữ liệu thực từ kho')}
+            onLoadDemoData={() => showToast('Đang ở chế độ dữ liệu thực từ kho', "info")}
             onExportData={() => {}}
             onImportData={() => {}}
             onToggleAxes={toggleAxes}

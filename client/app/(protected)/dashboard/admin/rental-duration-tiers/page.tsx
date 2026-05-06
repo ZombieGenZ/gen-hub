@@ -36,7 +36,7 @@ import {
     RentalDurationTier,
     RentalDurationTierRequest,
 } from "@/types/rental-duration-tier/rental-duration-tier.type";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { TierForm } from "./tier-form";
 
 const tierService = new RentalDurationTierService();
@@ -222,6 +222,7 @@ function TierCard({
 export default function RentalDurationTiersPage() {
 
     // ─── Data ────────────────────────────────────────────────────────────────────
+    const { showToast } = useToast();
     const [tiers, setTiers] = useState<RentalDurationTier[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
@@ -284,7 +285,7 @@ export default function RentalDurationTiersPage() {
             });
         } catch (error: any) {
             console.error("Failed to fetch tiers", error);
-            toast.error(error.message || "Không thể tải danh sách gói thuê");
+            showToast(error.message || "Không thể tải danh sách gói thuê", "error");
         } finally {
             setLoading(false);
         }
@@ -318,7 +319,7 @@ export default function RentalDurationTiersPage() {
             setSelectedTier(tier);
             setFormKey((k) => k + 1);
             console.error("Failed to fetch tier detail", error);
-            toast.error(error.message || "Không thể tải chi tiết gói thuê");
+            showToast(error.message || "Không thể tải chi tiết gói thuê", "error");
         }
     };
 
@@ -333,7 +334,7 @@ export default function RentalDurationTiersPage() {
                 const maxOrder = tiers.length > 0 ? Math.max(...tiers.map((t) => t.order)) : -1;
                 payload.order = maxOrder + 1;
                 const created: any = await tierService.createRentalDurationTier(token, payload);
-                toast.success("Đã tạo gói thuê mới thành công!");
+                showToast("Đã tạo gói thuê mới thành công!", "success");
                 setIsFormDialogOpen(false);
                 setSelectedTier(null);
                 // Server returns full tier (with gifts) in create response — use it directly
@@ -344,7 +345,7 @@ export default function RentalDurationTiersPage() {
                 fetchTiers();
             } else if (selectedTier) {
                 const updated: any = await tierService.updateRentalDurationTier(token, selectedTier.id, payload);
-                toast.success("Đã cập nhật gói thuê thành công!");
+                showToast("Đã cập nhật gói thuê thành công!", "success");
                 setIsFormDialogOpen(false);
                 // Server returns full tier (with gifts) in update response — use it directly
                 const updatedData = updated?.data || updated;
@@ -356,7 +357,7 @@ export default function RentalDurationTiersPage() {
             }
         } catch (error: any) {
             console.error("Failed to save tier", error);
-            toast.error(error?.message || "Lưu gói thuê thất bại");
+            showToast(error?.message || "Lưu gói thuê thất bại", "error");
         } finally {
             setIsFormLoading(false);
         }
@@ -370,13 +371,13 @@ export default function RentalDurationTiersPage() {
             if (!token || !deleteTier) return;
 
             await tierService.deleteRentalDurationTier(token, deleteTier.id);
-            toast.success(`Đã xóa gói thuê "${deleteTier.name}"`);
+            showToast(`Đã xóa gói thuê "${deleteTier.name}"`, "success");
             setIsDeleteOpen(false);
             setDeleteTier(null);
             fetchTiers();
         } catch (error: any) {
             console.error("Failed to delete tier", error);
-            toast.error(error.message || "Xóa gói thuê thất bại");
+            showToast(error.message || "Xóa gói thuê thất bại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -389,13 +390,13 @@ export default function RentalDurationTiersPage() {
             if (!token) return;
 
             await tierService.deleteMultipleRentalDurationTier(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} gói thuê thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} gói thuê thành công!`, "success");
             setIsBulkDeleteOpen(false);
             setSelectedIds([]);
             fetchTiers();
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            toast.error(error.message || "Xóa nhiều gói thuê thất bại");
+            showToast(error.message || "Xóa nhiều gói thuê thất bại", "error");
         } finally {
             setIsBulkLoading(false);
         }
@@ -417,10 +418,10 @@ export default function RentalDurationTiersPage() {
                 active: active ? prev.active + 1 : prev.active - 1,
                 inactive: active ? prev.inactive - 1 : prev.inactive + 1,
             }));
-            toast.success(active ? "Đã kích hoạt gói" : "Đã tắt gói");
+            showToast(active ? "Đã kích hoạt gói" : "Đã tắt gói", "success");
         } catch (error: any) {
             console.error("Failed to toggle tier", error);
-            toast.error(error.message || "Cập nhật trạng thái thất bại");
+            showToast(error.message || "Cập nhật trạng thái thất bại", "error");
         }
     };
 
@@ -456,7 +457,7 @@ export default function RentalDurationTiersPage() {
             setTiers(updated.map((t, idx) => ({ ...t, order: idx })));
         } catch (error: any) {
             console.error("Failed to reorder", error);
-            toast.error(error.message || "Sắp xếp thứ tự thất bại");
+            showToast(error.message || "Sắp xếp thứ tự thất bại", "error");
             fetchTiers(); // Revert
         }
     };

@@ -20,13 +20,14 @@ import {
     TrashIcon,
     TagIcon,
 } from "@heroicons/react/24/outline";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { CreateTagDialog } from "./components/create-tag-dialog";
 import { EditTagDialog } from "./components/edit-tag-dialog";
 
 const contactTagsService = new ContactTagsService();
 
 export default function ContactTagsPage() {
+    const { showToast } = useToast();
     const [tags, setTags] = useState<ContactTag[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -51,7 +52,7 @@ export default function ContactTagsPage() {
             }
         } catch (error) {
             console.error("Failed to fetch contact tags", error);
-            toast.error("Không thể tải danh sách nhãn (tags)");
+            showToast("Không thể tải danh sách nhãn (tags)", "error");
         } finally {
             setLoading(false);
         }
@@ -69,11 +70,11 @@ export default function ContactTagsPage() {
             if (!token) return;
 
             await contactTagsService.delete(token, id);
-            toast.success("Đã xóa nhãn thành công");
+            showToast("Đã xóa nhãn thành công", "success");
             fetchTags();
         } catch (error) {
             console.error("Failed to delete tag", error);
-            toast.error("Không thể xóa nhãn, vui lòng thử lại");
+            showToast("Không thể xóa nhãn, vui lòng thử lại", "error");
         }
     };
 

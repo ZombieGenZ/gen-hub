@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 // ── shadcn/ui ──
@@ -33,6 +33,8 @@ export default function WarehouseCreatePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const duplicateId = searchParams?.get("duplicate");
+
+    const { showToast } = useToast();
 
     const [loading, setLoading] = useState(!!duplicateId);
     const [saving, setSaving] = useState(false);
@@ -80,7 +82,7 @@ export default function WarehouseCreatePage() {
                     updated_at: undefined,
                 });
             } catch {
-                toast.error("Không thể tải dữ liệu để nhân bản.");
+                showToast("Không thể tải dữ liệu để nhân bản.", "error");
             } finally {
                 setLoading(false);
             }
@@ -96,14 +98,14 @@ export default function WarehouseCreatePage() {
         if (!token) return;
 
         if (!formData.name) {
-            toast.error("Vui lòng nhập tên kho.");
+            showToast("Vui lòng nhập tên kho.", "error");
             return;
         }
 
         setSaving(true);
         try {
             const result = await warehouseService.createWarehouseTemplate(token, formData);
-            toast.success("Đã tạo kho mới.");
+            showToast("Đã tạo kho mới.", "success");
             const newId = result?.data?.id;
             if (newId) {
                 router.push(`${WAREHOUSES_BASE_PATH}/${newId}`);
@@ -111,7 +113,7 @@ export default function WarehouseCreatePage() {
                 goToWarehouses();
             }
         } catch {
-            toast.error("Tạo kho thất bại. Vui lòng thử lại.");
+            showToast("Tạo kho thất bại. Vui lòng thử lại.", "error");
         } finally {
             setSaving(false);
         }

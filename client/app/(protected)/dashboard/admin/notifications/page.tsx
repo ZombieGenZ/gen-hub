@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { NotificationService } from "@/services/notification/notification.service";
 import { UserNotification, NotificationType } from "@/types/notification/notification.type";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 // Icons
 import {
     CheckCircleIcon,
@@ -57,6 +56,7 @@ interface SentNotification extends UserNotification {
 
 export default function AdminNotificationsPage() {
     // State
+    const { showToast } = useToast();
     const [notifications, setNotifications] = useState<SentNotification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState("");
@@ -103,7 +103,7 @@ export default function AdminNotificationsPage() {
                 setTotalPages(Math.ceil((response.total || 0) / limit));
             } catch (error) {
                 console.error("Failed to fetch notifications", error);
-                toast.error("Không thể tải danh sách thông báo");
+                showToast("Không thể tải danh sách thông báo", "error");
                 setNotifications([]);
             } finally {
                 setIsLoading(false);
@@ -140,13 +140,13 @@ export default function AdminNotificationsPage() {
             if (!token) return;
 
             await notificationService.deleteMultipleGlobalNotifications(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} thông báo thành công!`);
+            showToast(`Đã xóa ${selectedIds.length} thông báo thành công!`, "success");
             setSelectedIds([]);
             setIsBulkDeleteDialogOpen(false);
             setRefreshKey(prev => prev + 1);
         } catch (error: any) {
             console.error("Bulk delete failed", error);
-            toast.error(error.message || "Xóa thông báo thất bại");
+            showToast(error.message || "Xóa thông báo thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }

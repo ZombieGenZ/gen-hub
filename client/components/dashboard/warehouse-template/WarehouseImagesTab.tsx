@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import {
     TrashIcon,
     ArrowUpTrayIcon,
@@ -24,6 +24,7 @@ interface WarehouseImagesTabProps {
 }
 
 export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
+    const { showToast } = useToast();
     const [images, setImages] = useState<any[]>([]);
     const [uploading, setUploading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -54,10 +55,10 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
         setUploading(true);
         try {
             await warehouseService.uploadImages(token, warehouseId, Array.from(files));
-            toast.success(`Đã tải lên ${files.length} ảnh`);
+            showToast(`Đã tải lên ${files.length} ảnh`, "success");
             await fetchImages();
         } catch {
-            toast.error("Upload thất bại.");
+            showToast("Upload thất bại.", "error");
         } finally {
             setUploading(false);
         }
@@ -69,10 +70,10 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
         if (!token) return;
         try {
             await warehouseService.deleteImage(token, warehouseId, imageId);
-            toast.success("Đã xóa ảnh.");
+            showToast("Đã xóa ảnh.", "success");
             await fetchImages();
         } catch {
-            toast.error("Xóa thất bại.");
+            showToast("Xóa thất bại.", "error");
         }
     };
 
@@ -83,11 +84,11 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
         if (!token) return;
         try {
             await warehouseService.deleteManyImages(token, warehouseId, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} ảnh.`);
+            showToast(`Đã xóa ${selectedIds.length} ảnh.`, "success");
             setSelectedIds([]);
             await fetchImages();
         } catch {
-            toast.error("Xóa thất bại.");
+            showToast("Xóa thất bại.", "error");
         }
     };
 
@@ -149,9 +150,9 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
                 order: idx + 1,
             }));
             await warehouseService.reorderImages(token, warehouseId, orderPayload);
-            toast.success("Đã cập nhật thứ tự ảnh.");
+            showToast("Đã cập nhật thứ tự ảnh.", "success");
         } catch {
-            toast.error("Cập nhật thứ tự thất bại.");
+            showToast("Cập nhật thứ tự thất bại.", "error");
             await fetchImages(); // rollback
         } finally {
             setReordering(false);

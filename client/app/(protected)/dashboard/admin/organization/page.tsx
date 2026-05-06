@@ -17,13 +17,13 @@ import {
     Plus, Search, Building2, ChevronRight, Loader2,
     Users, CheckCircle2, XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const organizationService = new OrganizationService();
 const PAGE_SIZE = 15;
 
 export default function OrganizationPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [data, setData] = useState<OrganizationResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -48,7 +48,7 @@ export default function OrganizationPage() {
             setData(response);
         } catch (error: any) {
             console.error("Fetch organizations error", error);
-            toast.error(error.message || "Không thể tải danh sách tổ chức");
+            showToast(error.message || "Không thể tải danh sách tổ chức", "error");
             setData(null);
         } finally {
             setLoading(false);
@@ -75,11 +75,11 @@ export default function OrganizationPage() {
                 representative_phone: "",
                 representative_email: "",
             });
-            toast.success(`Đã tạo tổ chức "${formData.name}" thành công`);
+            showToast(`Đã tạo tổ chức "${formData.name}" thành công`, "success");
             await fetchOrganizations();
         } catch (error: any) {
             console.error("Create organization error", error);
-            toast.error(error.message || "Không thể tạo tổ chức mới");
+            showToast(error.message || "Không thể tạo tổ chức mới", "error");
         }
     };
 

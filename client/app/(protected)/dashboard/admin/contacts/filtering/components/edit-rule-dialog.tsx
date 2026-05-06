@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactListService } from "@/services/contact-list/contact-list.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { ContactListType, ContactListMatchType, ContactListEntry } from "@/types/contact/contact-list.type";
 
 const contactListService = new ContactListService();
@@ -55,6 +55,7 @@ interface EditRuleDialogProps {
 }
 
 export function EditRuleDialog({ open, onOpenChange, entry, onSuccess }: EditRuleDialogProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -90,12 +91,12 @@ export function EditRuleDialog({ open, onOpenChange, entry, onSuccess }: EditRul
             if (!token) return;
 
             await contactListService.update(token, entry.id, values);
-            toast.success("Đã cập nhật quy tắc");
+            showToast("Đã cập nhật quy tắc", "success");
             onOpenChange(false);
             onSuccess();
         } catch (error: any) {
             console.error("Failed to update rule", error);
-            toast.error(error.message || "Không thể cập nhật quy tắc");
+            showToast(error.message || "Không thể cập nhật quy tắc", "error");
         } finally {
             setLoading(false);
         }

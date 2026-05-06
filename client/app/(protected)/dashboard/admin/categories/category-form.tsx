@@ -11,8 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryResponse, CreateCategoryDto } from "@/types/article/category.type";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-
+import { useToast } from "@/contexts/ToastContext";
 const categoryService = new CategoryService();
 
 interface CategoryFormProps {
@@ -23,6 +22,7 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false }: CategoryFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [formData, setFormData] = useState<CreateCategoryDto>({
@@ -51,7 +51,7 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
                 setCategories(validParents);
             } catch(e) {
                 console.error(e);
-                toast.error("Không thể tải danh sách danh mục cha");
+                showToast("Không thể tải danh sách danh mục cha", "error");
             }
         };
         fetchCategories();
@@ -60,14 +60,14 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
     const handleSubmit = async () => {
         try {
             if(!formData.name.trim()) {
-                toast.error("Vui lòng nhập tên danh mục");
+                showToast("Vui lòng nhập tên danh mục", "error");
                 return;
             }
 
             setLoading(true);
             const token = authStorage.getAccessToken();
             if (!token) {
-                 toast.error("Lỗi xác thực, vui lòng đăng nhập lại");
+                 showToast("Lỗi xác thực, vui lòng đăng nhập lại", "error");
                  return;
             }
 
@@ -84,15 +84,15 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
 
             if (isEdit && initialData?.id) {
                 await categoryService.updateCategory(token, initialData.id, submitData);
-                toast.success("Cập nhật danh mục thành công");
+                showToast("Cập nhật danh mục thành công", "success");
             } else {
                 await categoryService.createCategory(token, submitData);
-                toast.success("Tạo danh mục mới thành công");
+                showToast("Tạo danh mục mới thành công", "success");
             }
             onSuccess();
         } catch (error: any) {
              console.error("Failed to save category", error);
-             toast.error(error.message || "Có lỗi xảy ra khi lưu danh mục");
+             showToast(error.message || "Có lỗi xảy ra khi lưu danh mục", "error");
         } finally {
             setLoading(false);
         }

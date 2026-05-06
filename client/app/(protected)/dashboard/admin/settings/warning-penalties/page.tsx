@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import {
     BanknotesIcon,
     CheckIcon,
@@ -136,6 +136,7 @@ const daysToDuration = (days?: number | null): { value: number; unit: BanDuratio
 // ─── Component ───────────────────────────────────────────────────────
 export default function WarningPenaltiesPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<"categories" | "penalties">("penalties");
     const [loading, setLoading] = useState(true);
 
@@ -248,7 +249,7 @@ export default function WarningPenaltiesPage() {
             setPenalties(mappedPenalties);
         } catch (error) {
             console.error(error);
-            toast.error("Không thể tải dữ liệu từ hệ thống");
+            showToast("Không thể tải dữ liệu từ hệ thống", "error");
         } finally {
             setLoading(false);
         }
@@ -290,11 +291,11 @@ export default function WarningPenaltiesPage() {
             setNewCatName("");
             setNewCatDesc("");
             setShowAddCat(false);
-            toast.success("Đã tạo danh mục vi phạm mới");
+            showToast("Đã tạo danh mục vi phạm mới", "success");
             await fetchData();
         } catch (error) {
             console.error(error);
-            toast.error("Tạo danh mục thất bại");
+            showToast("Tạo danh mục thất bại", "error");
         }
     };
 
@@ -319,10 +320,10 @@ export default function WarningPenaltiesPage() {
             }
 
             setCategories((prev) => prev.filter((c) => c.id !== id));
-            toast.success("Đã xóa danh mục");
+            showToast("Đã xóa danh mục", "success");
         } catch (error) {
             console.error(error);
-            toast.error("Xóa danh mục thất bại");
+            showToast("Xóa danh mục thất bại", "error");
         }
     };
 
@@ -376,12 +377,12 @@ export default function WarningPenaltiesPage() {
         if (!builderState.name.trim() || !builderState.conditions[0].category_id) return;
 
         if (builderState.action !== "BAN_ACCOUNT") {
-            toast.error("Backend hiện chỉ hỗ trợ quy tắc khóa tài khoản theo số lần cảnh báo");
+            showToast("Backend hiện chỉ hỗ trợ quy tắc khóa tài khoản theo số lần cảnh báo", "error");
             return;
         }
 
         if (builderState.conditions.length > 1) {
-            toast.error("Phiên bản backend hiện chỉ hỗ trợ 1 điều kiện cảnh báo cho mỗi quy tắc");
+            showToast("Phiên bản backend hiện chỉ hỗ trợ 1 điều kiện cảnh báo cho mỗi quy tắc", "error");
             return;
         }
 
@@ -417,11 +418,11 @@ export default function WarningPenaltiesPage() {
             setShowBuilder(false);
             setConflictWarning(null);
             resetBuilder();
-            toast.success("Đã tạo quy tắc phạt mới");
+            showToast("Đã tạo quy tắc phạt mới", "success");
             await fetchData();
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Tạo quy tắc phạt thất bại");
+            showToast(error.message || "Tạo quy tắc phạt thất bại", "error");
         }
     };
 
@@ -463,10 +464,10 @@ export default function WarningPenaltiesPage() {
             setPenalties((prev) =>
                 prev.map((p) => (p.id === id ? { ...p, is_active: !p.is_active } : p))
             );
-            toast.success(`Đã ${!target.is_active ? 'bật' : 'tắt'} quy tắc thành công`);
+            showToast(`Đã ${!target.is_active ? 'bật' : 'tắt'} quy tắc thành công`, "success");
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Cập nhật trạng thái thất bại");
+            showToast(error.message || "Cập nhật trạng thái thất bại", "error");
         }
     };
 
@@ -491,10 +492,10 @@ export default function WarningPenaltiesPage() {
             }
 
             setPenalties((prev) => prev.filter((p) => p.id !== id));
-            toast.success("Đã xóa quy tắc");
+            showToast("Đã xóa quy tắc", "success");
         } catch (error) {
             console.error(error);
-            toast.error("Xóa quy tắc thất bại");
+            showToast("Xóa quy tắc thất bại", "error");
         }
     };
 

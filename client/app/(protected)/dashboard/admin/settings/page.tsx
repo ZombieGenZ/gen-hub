@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { Organization } from "@/types/organization/organization.type";
@@ -34,6 +34,7 @@ interface GeneralSettingsForm {
 
 export default function SettingsPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [organization, setOrganization] = useState<Organization | null>(null);
@@ -66,7 +67,7 @@ export default function SettingsPage() {
             const org = response?.items?.[0] ?? null;
 
             if (!org) {
-                toast.error("Không tìm thấy tổ chức để cấu hình");
+                showToast("Không tìm thấy tổ chức để cấu hình", "error");
                 return;
             }
 
@@ -82,7 +83,7 @@ export default function SettingsPage() {
             });
         } catch (error) {
             console.error(error);
-            toast.error("Không thể tải dữ liệu cài đặt");
+            showToast("Không thể tải dữ liệu cài đặt", "error");
         } finally {
             setLoading(false);
         }
@@ -110,11 +111,11 @@ export default function SettingsPage() {
                 auto_delete_org_audit_logs: form.auto_delete_org_audit_logs,
             });
 
-            toast.success("Cập nhật cài đặt hệ thống thành công");
+            showToast("Cập nhật cài đặt hệ thống thành công", "success");
             await fetchOrganization();
         } catch (error) {
             console.error(error);
-            toast.error("Lưu cài đặt thất bại, vui lòng thử lại sau");
+            showToast("Lưu cài đặt thất bại, vui lòng thử lại sau", "error");
         } finally {
             setSaving(false);
         }
