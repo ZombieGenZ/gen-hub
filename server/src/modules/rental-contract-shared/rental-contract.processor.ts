@@ -256,8 +256,10 @@ export class RentalContractProcessor {
       const vatAmount = Math.round(
         parseFloat(contract.vat_amount?.toString() || '0'),
       );
-      const finalPrice = Math.round(parseFloat(contract.final_price.toString()));
-      
+      const finalPrice = Math.round(
+        parseFloat(contract.final_price.toString()),
+      );
+
       const paymentResult = await this.sepayService.createContractPayment({
         rentalContractId: contractId,
         amount: finalPrice - vatAmount, // Tách giá gốc ra khỏi tổng tiền đã có VAT

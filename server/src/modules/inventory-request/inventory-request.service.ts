@@ -115,10 +115,19 @@ export class InventoryRequestService {
     limit = 20,
     offset = 0,
     grouped = true,
-  ): Promise<{ items: ReturnType<typeof this._mapStockItem>[] | any[]; total: number }> {
+  ): Promise<{
+    items: ReturnType<typeof this._mapStockItem>[];
+    total: number;
+  }> {
     // Nếu grouped=true: gộp theo product+warehouse và tổng hợp số lượng
     if (grouped) {
-      return this._listInventoryStockGrouped(orgId, warehouseId, keywords, limit, offset);
+      return this._listInventoryStockGrouped(
+        orgId,
+        warehouseId,
+        keywords,
+        limit,
+        offset,
+      );
     }
 
     const where = {
@@ -268,7 +277,10 @@ export class InventoryRequestService {
       const locationCount = g._count.id;
       const createdAt = g._min.created_at;
       const daysInStorage = createdAt
-        ? Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.floor(
+            (Date.now() - new Date(createdAt).getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
         : 0;
 
       return {
@@ -289,7 +301,9 @@ export class InventoryRequestService {
         location: locationCount > 1 ? `${locationCount} vị trí` : '1 vị trí',
         location_count: locationCount,
         days_in_storage: daysInStorage,
-        created_at: createdAt ? createdAt.toISOString() : new Date().toISOString(),
+        created_at: createdAt
+          ? createdAt.toISOString()
+          : new Date().toISOString(),
       };
     });
 
@@ -360,7 +374,7 @@ export class InventoryRequestService {
       rack_code: inv.block.shelf?.rack?.code || '',
       days_in_storage: Math.floor(
         (Date.now() - new Date(inv.created_at).getTime()) /
-        (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
       ),
       created_at: inv.created_at.toISOString(),
     };
@@ -671,13 +685,13 @@ export class InventoryRequestService {
       }),
       batchIds.length > 0
         ? this.prisma.batch.findMany({
-          where: {
-            id: { in: batchIds },
-            product_id: { in: uniqueProductIds },
-            is_deleted: false,
-          },
-          select: { id: true, product_id: true },
-        })
+            where: {
+              id: { in: batchIds },
+              product_id: { in: uniqueProductIds },
+              is_deleted: false,
+            },
+            select: { id: true, product_id: true },
+          })
         : Promise.resolve([]),
       this.prisma.productUnit.findMany({
         where: {
@@ -990,13 +1004,13 @@ export class InventoryRequestService {
       }),
       requiredBatchIds.length > 0
         ? this.prisma.batch.findMany({
-          where: {
-            id: { in: requiredBatchIds },
-            product_id: { in: uniqueProductIds },
-            is_deleted: false,
-          },
-          select: { id: true, product_id: true },
-        })
+            where: {
+              id: { in: requiredBatchIds },
+              product_id: { in: uniqueProductIds },
+              is_deleted: false,
+            },
+            select: { id: true, product_id: true },
+          })
         : Promise.resolve([]),
       this.prisma.productUnit.findMany({
         where: {
@@ -1064,13 +1078,13 @@ export class InventoryRequestService {
         requiredSpecificByProduct.set(
           detail.product_id,
           (requiredSpecificByProduct.get(detail.product_id) ?? 0) +
-          quantityInBaseUnit,
+            quantityInBaseUnit,
         );
       } else {
         requiredByGeneralProduct.set(
           detail.product_id,
           (requiredByGeneralProduct.get(detail.product_id) ?? 0) +
-          quantityInBaseUnit,
+            quantityInBaseUnit,
         );
       }
     }
@@ -1079,32 +1093,32 @@ export class InventoryRequestService {
     const specificBatchRows =
       requiredBySpecificBatch.size > 0
         ? await this.prisma.inventory.groupBy({
-          by: ['product_id', 'batch_id'],
-          where: {
-            organization_id: orgId,
-            warehouse_id: dto.warehouse_id,
-            is_deleted: false,
-            product_id: {
-              in: Array.from(
-                new Set(
-                  Array.from(requiredBySpecificBatch.keys()).map(
-                    (key) => key.split(':')[0],
+            by: ['product_id', 'batch_id'],
+            where: {
+              organization_id: orgId,
+              warehouse_id: dto.warehouse_id,
+              is_deleted: false,
+              product_id: {
+                in: Array.from(
+                  new Set(
+                    Array.from(requiredBySpecificBatch.keys()).map(
+                      (key) => key.split(':')[0],
+                    ),
                   ),
                 ),
-              ),
-            },
-            batch_id: {
-              in: Array.from(
-                new Set(
-                  Array.from(requiredBySpecificBatch.keys()).map(
-                    (key) => key.split(':')[1],
+              },
+              batch_id: {
+                in: Array.from(
+                  new Set(
+                    Array.from(requiredBySpecificBatch.keys()).map(
+                      (key) => key.split(':')[1],
+                    ),
                   ),
                 ),
-              ),
+              },
             },
-          },
-          _sum: { quantity_available: true },
-        })
+            _sum: { quantity_available: true },
+          })
         : [];
 
     const availableBySpecificBatch = new Map(
@@ -1130,15 +1144,15 @@ export class InventoryRequestService {
     const generalProductRows =
       generalProductIds.length > 0
         ? await this.prisma.inventory.groupBy({
-          by: ['product_id'],
-          where: {
-            organization_id: orgId,
-            warehouse_id: dto.warehouse_id,
-            is_deleted: false,
-            product_id: { in: generalProductIds },
-          },
-          _sum: { quantity_available: true },
-        })
+            by: ['product_id'],
+            where: {
+              organization_id: orgId,
+              warehouse_id: dto.warehouse_id,
+              is_deleted: false,
+              product_id: { in: generalProductIds },
+            },
+            _sum: { quantity_available: true },
+          })
         : [];
 
     const availableByProduct = new Map(
@@ -1179,9 +1193,7 @@ export class InventoryRequestService {
           notes: dto.notes,
           delivery_address: dto.delivery_address,
           vehicle_info: dto.vehicle_info,
-          required_date: dto.required_date
-            ? new Date(dto.required_date)
-            : null,
+          required_date: dto.required_date ? new Date(dto.required_date) : null,
           organization_id: orgId,
           warehouse: { connect: { id: dto.warehouse_id } },
           ...(dto.partner_id && {
@@ -1436,7 +1448,13 @@ export class InventoryRequestService {
     warehouseId?: string,
     keywords?: string,
   ): Promise<{ buffer: Buffer; fileName: string }> {
-    const { items: stocks } = await this.listInventoryStock(orgId, warehouseId, keywords, 10000, 0);
+    const { items: stocks } = await this.listInventoryStock(
+      orgId,
+      warehouseId,
+      keywords,
+      10000,
+      0,
+    );
 
     const columns = [
       { header: 'Sản phẩm', key: 'product_name', width: 30 },
@@ -1686,8 +1704,10 @@ export class InventoryRequestService {
             orgId,
             {
               warehouse_id: warehouse.id,
-              sales_order_code: soCode === 'DEFAULT' ? `EXCEL-${Date.now()}` : soCode,
-              vehicle_info: firstRow['Thông tin xe'] || firstRow['vehicle_info'] || 'N/A',
+              sales_order_code:
+                soCode === 'DEFAULT' ? `EXCEL-${Date.now()}` : soCode,
+              vehicle_info:
+                firstRow['Thông tin xe'] || firstRow['vehicle_info'] || 'N/A',
               details,
               notes: 'Xuất hàng từ file Excel',
             },
@@ -3276,13 +3296,13 @@ export class InventoryRequestService {
       const blocks =
         candidateBlockCodes.length > 0
           ? await tx.block.findMany({
-            where: {
-              code: { in: candidateBlockCodes },
-              shelf: { rack: { row: { warehouse_id: warehouseId } } },
-              is_deleted: false,
-            },
-            select: { id: true, code: true },
-          })
+              where: {
+                code: { in: candidateBlockCodes },
+                shelf: { rack: { row: { warehouse_id: warehouseId } } },
+                is_deleted: false,
+              },
+              select: { id: true, code: true },
+            })
           : [];
 
       const blockByCode = new Map(
@@ -3772,7 +3792,11 @@ export class InventoryRequestService {
     month_outbound_count: number;
   }> {
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [
@@ -3785,7 +3809,11 @@ export class InventoryRequestService {
     ] = await Promise.all([
       // Tổng số SKU đang có tồn kho
       this.prisma.inventory.count({
-        where: { organization_id: orgId, is_deleted: false, quantity: { gt: 0 } },
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          quantity: { gt: 0 },
+        },
       }),
       // Số SKU sắp hết hàng
       this.prisma.inventory.count({
@@ -3860,12 +3888,16 @@ export class InventoryRequestService {
     });
     if (!exportRecord) {
       throw new NotFoundException(
-        await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+        await this.i18n.translate('inventory-request.errors.export_not_found', {
+          lang,
+        }),
       );
     }
     if (exportRecord.status !== ExportStatus.PICKING) {
       throw new BadRequestException(
-        await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+        await this.i18n.translate('inventory-request.errors.invalid_status', {
+          lang,
+        }),
       );
     }
 
@@ -3886,7 +3918,10 @@ export class InventoryRequestService {
           });
           if (inv) {
             const qty = detail.required_qty.toNumber();
-            reservedByInventoryId.set(inv.id, (reservedByInventoryId.get(inv.id) ?? 0) + qty);
+            reservedByInventoryId.set(
+              inv.id,
+              (reservedByInventoryId.get(inv.id) ?? 0) + qty,
+            );
           }
         }
       }
@@ -3928,7 +3963,9 @@ export class InventoryRequestService {
           details: {
             where: { is_deleted: false },
             include: {
-              product: { select: { id: true, name: true, sku: true, image_url: true } },
+              product: {
+                select: { id: true, name: true, sku: true, image_url: true },
+              },
               batch: { select: { id: true, code: true, expiry_date: true } },
               unit: { select: { id: true, name: true } },
             },
@@ -3970,12 +4007,16 @@ export class InventoryRequestService {
     });
     if (!exportRecord) {
       throw new NotFoundException(
-        await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+        await this.i18n.translate('inventory-request.errors.export_not_found', {
+          lang,
+        }),
       );
     }
     if (exportRecord.status !== ExportStatus.CHECKING) {
       throw new BadRequestException(
-        await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+        await this.i18n.translate('inventory-request.errors.invalid_status', {
+          lang,
+        }),
       );
     }
 
@@ -4004,7 +4045,9 @@ export class InventoryRequestService {
           details: {
             where: { is_deleted: false },
             include: {
-              product: { select: { id: true, name: true, sku: true, image_url: true } },
+              product: {
+                select: { id: true, name: true, sku: true, image_url: true },
+              },
               batch: { select: { id: true, code: true, expiry_date: true } },
               unit: { select: { id: true, name: true } },
             },
@@ -4018,12 +4061,16 @@ export class InventoryRequestService {
       this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
     ]);
 
-    this.websocketGateway.emitToOrganization(orgId, 'outbound:picking-confirmed', {
-      exportId: id,
-      code: updated.code,
-      revertedBy: actorId,
-      timestamp: new Date().toISOString(),
-    });
+    this.websocketGateway.emitToOrganization(
+      orgId,
+      'outbound:picking-confirmed',
+      {
+        exportId: id,
+        code: updated.code,
+        revertedBy: actorId,
+        timestamp: new Date().toISOString(),
+      },
+    );
 
     return updated as unknown as IOutboundRequest;
   }

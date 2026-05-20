@@ -295,7 +295,7 @@ export class InventoryRequestController {
   constructor(
     private readonly inventoryRequestService: InventoryRequestService,
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   @Get('warehouses')
   @RequireOrgPermission('org.inventory.inbound.list')
@@ -366,7 +366,10 @@ export class InventoryRequestController {
     schema: buildSuccessResponseSchema({
       code: 'inventory-request.list_stock',
       message: 'Lấy danh sách tồn kho thành công',
-      dataSchema: buildPaginationDataSchema({ type: 'array', items: stockItemSchema }),
+      dataSchema: buildPaginationDataSchema({
+        type: 'array',
+        items: stockItemSchema,
+      }),
       dataExample: {
         items: [
           {
@@ -394,14 +397,15 @@ export class InventoryRequestController {
     @Query() query: QueryStockDto,
     @I18nLang() lang: string,
   ) {
-    const { items, total } = await this.inventoryRequestService.listInventoryStock(
-      orgId,
-      query.warehouse_id,
-      query.keywords,
-      query.limit ?? 20,
-      query.offset ?? 0,
-      true, // always grouped by product+warehouse
-    );
+    const { items, total } =
+      await this.inventoryRequestService.listInventoryStock(
+        orgId,
+        query.warehouse_id,
+        query.keywords,
+        query.limit ?? 20,
+        query.offset ?? 0,
+        true, // always grouped by product+warehouse
+      );
     return new GetResponse(
       'inventory-request.list_stock',
       { items, total, limit: query.limit ?? 20, offset: query.offset ?? 0 },
@@ -441,12 +445,32 @@ export class InventoryRequestController {
       dataSchema: {
         type: 'object',
         properties: {
-          warehouse_id: { type: 'string', format: 'uuid', example: WAREHOUSE_ID },
+          warehouse_id: {
+            type: 'string',
+            format: 'uuid',
+            example: WAREHOUSE_ID,
+          },
           warehouse_name: { type: 'string', example: 'Kho lạnh Quận 7' },
-          total_qty: { type: 'number', example: 1250, description: 'Tổng số lượng thực tế trong kho' },
-          available_qty: { type: 'number', example: 970, description: 'Số lượng khả dụng (chưa bị giữ)' },
-          reserved_qty: { type: 'number', example: 280, description: 'Số lượng đang được giữ cho đơn xuất' },
-          total_skus: { type: 'number', example: 42, description: 'Tổng số loại sản phẩm (SKU) trong kho' },
+          total_qty: {
+            type: 'number',
+            example: 1250,
+            description: 'Tổng số lượng thực tế trong kho',
+          },
+          available_qty: {
+            type: 'number',
+            example: 970,
+            description: 'Số lượng khả dụng (chưa bị giữ)',
+          },
+          reserved_qty: {
+            type: 'number',
+            example: 280,
+            description: 'Số lượng đang được giữ cho đơn xuất',
+          },
+          total_skus: {
+            type: 'number',
+            example: 42,
+            description: 'Tổng số loại sản phẩm (SKU) trong kho',
+          },
         },
       },
       dataExample: {
@@ -475,7 +499,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.inbound.list')
   @ApiOperation({
     summary: 'Lịch sử giao dịch kho',
-    description: 'Lấy danh sách các biến động kho theo thời gian thực (Nhập kho/Xuất kho/Điều chuyển/Điều chỉnh/Trả hàng). Hỗ trợ lọc theo kho, loại giao dịch và từ khóa, có phân trang. Yêu cầu quyền `org.inventory.inbound.list`.',
+    description:
+      'Lấy danh sách các biến động kho theo thời gian thực (Nhập kho/Xuất kho/Điều chuyển/Điều chỉnh/Trả hàng). Hỗ trợ lọc theo kho, loại giao dịch và từ khóa, có phân trang. Yêu cầu quyền `org.inventory.inbound.list`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -488,7 +513,8 @@ export class InventoryRequestController {
     name: 'warehouse_id',
     required: false,
     type: String,
-    description: 'ID kho cần lọc. Bỏ trống để xem giao dịch tất cả kho thuộc tổ chức.',
+    description:
+      'ID kho cần lọc. Bỏ trống để xem giao dịch tất cả kho thuộc tổ chức.',
     example: WAREHOUSE_ID,
   })
   @ApiQuery({
@@ -528,13 +554,33 @@ export class InventoryRequestController {
       dataSchema: buildPaginationDataSchema({
         type: 'object',
         properties: {
-          id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440080' },
-          type: { type: 'string', example: 'INBOUND', enum: ['INBOUND', 'OUTBOUND', 'TRANSFER', 'ADJUSTMENT', 'RETURN'] },
-          reference_code: { type: 'string', example: 'PN-202603-0001', description: 'Mã phiếu tham chiếu' },
+          id: {
+            type: 'string',
+            format: 'uuid',
+            example: '550e8400-e29b-41d4-a716-446655440080',
+          },
+          type: {
+            type: 'string',
+            example: 'INBOUND',
+            enum: ['INBOUND', 'OUTBOUND', 'TRANSFER', 'ADJUSTMENT', 'RETURN'],
+          },
+          reference_code: {
+            type: 'string',
+            example: 'PN-202603-0001',
+            description: 'Mã phiếu tham chiếu',
+          },
           product_name: { type: 'string', example: 'Táo Envy New Zealand' },
-          quantity: { type: 'number', example: 100, description: 'Số lượng giao dịch (dương = nhập, âm = xuất)' },
+          quantity: {
+            type: 'number',
+            example: 100,
+            description: 'Số lượng giao dịch (dương = nhập, âm = xuất)',
+          },
           warehouse_name: { type: 'string', example: 'Kho lạnh Quận 7' },
-          created_at: { type: 'string', format: 'date-time', example: '2026-03-13T08:00:00.000Z' },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            example: '2026-03-13T08:00:00.000Z',
+          },
         },
       }),
       dataExample: {
@@ -592,16 +638,28 @@ export class InventoryRequestController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Tái cấu trúc kho thành công. Trả về số lượng ô đã được phân bổ lại.',
+    description:
+      'Tái cấu trúc kho thành công. Trả về số lượng ô đã được phân bổ lại.',
     schema: buildSuccessResponseSchema({
       code: 'inventory-request.rebalance_success',
       message: 'Tái cấu trúc kho thành công',
       dataSchema: {
         type: 'object',
         properties: {
-          rebalanced_slots: { type: 'number', example: 15, description: 'Số lượng ô được phân bổ lại' },
-          expanded_slots: { type: 'number', example: 3, description: 'Số lượng ô mới được tạo thêm do thiếu' },
-          message: { type: 'string', example: 'Đã tái cấu trúc 15 ô, tạo thêm 3 ô mới' },
+          rebalanced_slots: {
+            type: 'number',
+            example: 15,
+            description: 'Số lượng ô được phân bổ lại',
+          },
+          expanded_slots: {
+            type: 'number',
+            example: 3,
+            description: 'Số lượng ô mới được tạo thêm do thiếu',
+          },
+          message: {
+            type: 'string',
+            example: 'Đã tái cấu trúc 15 ô, tạo thêm 3 ô mới',
+          },
         },
       },
       dataExample: {
@@ -906,7 +964,8 @@ export class InventoryRequestController {
     name: 'warehouse_id',
     required: false,
     type: String,
-    description: 'Lọc theo ID kho nhận hàng (UUID). Bỏ trống để xuất tất cả kho.',
+    description:
+      'Lọc theo ID kho nhận hàng (UUID). Bỏ trống để xuất tất cả kho.',
     example: WAREHOUSE_ID,
   })
   @ApiQuery({
@@ -919,7 +978,15 @@ export class InventoryRequestController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['PENDING', 'APPROVED', 'RECEIVING', 'PROCESSING', 'PUTAWAY', 'COMPLETED', 'CANCELLED'],
+    enum: [
+      'PENDING',
+      'APPROVED',
+      'RECEIVING',
+      'PROCESSING',
+      'PUTAWAY',
+      'COMPLETED',
+      'CANCELLED',
+    ],
     description: 'Lọc theo trạng thái phiếu nhập kho.',
     example: 'PENDING',
   })
@@ -942,7 +1009,8 @@ export class InventoryRequestController {
     description: 'Trả về file Excel danh sách phiếu nhập kho dạng binary.',
     headers: {
       'Content-Type': {
-        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        description:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         schema: { type: 'string' },
       },
       'Content-Disposition': {
@@ -2416,11 +2484,15 @@ export class InventoryRequestController {
       'Quay phiếu xuất từ trạng thái `PICKING` về `PENDING`, xoá pick list và giải phóng tồn kho đã giữ chỗ. Yêu cầu quyền `org.inventory.outbound.approve`.',
   })
   @ApiParam({
-    name: 'orgId', required: true, description: 'ID tổ chức',
+    name: 'orgId',
+    required: true,
+    description: 'ID tổ chức',
     schema: { type: 'string', format: 'uuid' },
   })
   @ApiParam({
-    name: 'id', required: true, description: 'ID phiếu xuất',
+    name: 'id',
+    required: true,
+    description: 'ID phiếu xuất',
     schema: { type: 'string', format: 'uuid' },
   })
   @ApiAuthResponses()
@@ -2431,7 +2503,10 @@ export class InventoryRequestController {
     @I18nLang() lang: string,
   ) {
     const result = await this.inventoryRequestService.revertOutboundToPending(
-      orgId, id, actorId, lang,
+      orgId,
+      id,
+      actorId,
+      lang,
     );
     return new UpdatedResponse(
       'inventory-request.revert_outbound_to_pending',
@@ -2448,11 +2523,15 @@ export class InventoryRequestController {
       'Quay phiếu xuất từ trạng thái `CHECKING` về `PICKING` để thực hiện lại bước nhặt hàng. Yêu cầu quyền `org.inventory.outbound.approve`.',
   })
   @ApiParam({
-    name: 'orgId', required: true, description: 'ID tổ chức',
+    name: 'orgId',
+    required: true,
+    description: 'ID tổ chức',
     schema: { type: 'string', format: 'uuid' },
   })
   @ApiParam({
-    name: 'id', required: true, description: 'ID phiếu xuất',
+    name: 'id',
+    required: true,
+    description: 'ID phiếu xuất',
     schema: { type: 'string', format: 'uuid' },
   })
   @ApiAuthResponses()
@@ -2463,7 +2542,10 @@ export class InventoryRequestController {
     @I18nLang() lang: string,
   ) {
     const result = await this.inventoryRequestService.revertOutboundToPicking(
-      orgId, id, actorId, lang,
+      orgId,
+      id,
+      actorId,
+      lang,
     );
     return new UpdatedResponse(
       'inventory-request.revert_outbound_to_picking',
@@ -2476,7 +2558,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.inbound.list')
   @ApiOperation({
     summary: 'Xuất báo cáo tồn kho ra Excel',
-    description: 'Tải về báo cáo tồn kho chi tiết (thực tế, khả dụng, đang giữ) theo kho. Yêu cầu quyền `org.inventory.inbound.list`.',
+    description:
+      'Tải về báo cáo tồn kho chi tiết (thực tế, khả dụng, đang giữ) theo kho. Yêu cầu quyền `org.inventory.inbound.list`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -2490,7 +2573,8 @@ export class InventoryRequestController {
     description: 'Trả về file Excel báo cáo tồn kho.',
     headers: {
       'Content-Type': {
-        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        description:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         schema: { type: 'string' },
       },
       'Content-Disposition': {
@@ -2529,7 +2613,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.inbound.create')
   @ApiOperation({
     summary: 'Tải file mẫu nhập kho',
-    description: 'Tải file Excel mẫu để điền dữ liệu nhập kho hàng loạt. Yêu cầu quyền `org.inventory.inbound.create`.',
+    description:
+      'Tải file Excel mẫu để điền dữ liệu nhập kho hàng loạt. Yêu cầu quyền `org.inventory.inbound.create`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -2565,7 +2650,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.outbound.create')
   @ApiOperation({
     summary: 'Tải file mẫu xuất kho',
-    description: 'Tải file Excel mẫu để điền dữ liệu xuất kho hàng loạt. Yêu cầu quyền `org.inventory.outbound.create`.',
+    description:
+      'Tải file Excel mẫu để điền dữ liệu xuất kho hàng loạt. Yêu cầu quyền `org.inventory.outbound.create`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -2600,7 +2686,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.inbound.create')
   @ApiOperation({
     summary: 'Nhập dữ liệu nhập kho từ file Excel',
-    description: 'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu nhập kho. Yêu cầu quyền `org.inventory.inbound.create`.',
+    description:
+      'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu nhập kho. Yêu cầu quyền `org.inventory.inbound.create`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -2675,7 +2762,8 @@ export class InventoryRequestController {
   @RequireOrgPermission('org.inventory.outbound.create')
   @ApiOperation({
     summary: 'Nhập dữ liệu xuất kho từ file Excel',
-    description: 'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu xuất kho. Yêu cầu quyền `org.inventory.outbound.create`.',
+    description:
+      'Tải lên file Excel (.xlsx) đã điền dữ liệu để tạo hàng loạt phiếu xuất kho. Yêu cầu quyền `org.inventory.outbound.create`.',
   })
   @ApiParam({
     name: 'orgId',
@@ -2793,7 +2881,10 @@ export class InventoryRequestController {
     @I18nLang() lang?: string,
   ) {
     const threshold = lowStockThreshold ? parseInt(lowStockThreshold, 10) : 10;
-    const stats = await this.inventoryRequestService.getInventoryStats(orgId, threshold);
+    const stats = await this.inventoryRequestService.getInventoryStats(
+      orgId,
+      threshold,
+    );
     return new GetResponse(
       'inventory-request.stats',
       stats,

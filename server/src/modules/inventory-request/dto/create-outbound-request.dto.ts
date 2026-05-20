@@ -183,9 +183,7 @@ export class CreateOutboundRequestDto {
   })
   @IsOptional()
   @IsString({
-    message: i18nValidationMessage(
-      'inventory-request.validation.notes_string',
-    ),
+    message: i18nValidationMessage('inventory-request.validation.notes_string'),
   })
   delivery_address?: string;
 

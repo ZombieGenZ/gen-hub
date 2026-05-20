@@ -533,7 +533,9 @@ export class RentalContractService {
     if (mapped.signers?.length) {
       for (const signer of mapped.signers) {
         if (signer.avatar) {
-          const signedUrl = this.signatureService.getSignedUrlByRawUrl(signer.avatar);
+          const signedUrl = this.signatureService.getSignedUrlByRawUrl(
+            signer.avatar,
+          );
           signer.avatar = signedUrl;
           signer.url = signedUrl;
         }

@@ -18,7 +18,11 @@ export class AdminPanelService implements OnModuleInit, OnModuleDestroy {
   }
 
   isAdminPanelEnabled(): boolean {
-    const adminPanelEnabled = this.configService.get<string>('ADMIN_PANEL_ENABLED');
-    return ['true', '1', 'yes', 'on'].includes(adminPanelEnabled?.trim().toLowerCase() || 'false');
+    const adminPanelEnabled = this.configService.get<string>(
+      'ADMIN_PANEL_ENABLED',
+    );
+    return ['true', '1', 'yes', 'on'].includes(
+      adminPanelEnabled?.trim().toLowerCase() || 'false',
+    );
   }
 }

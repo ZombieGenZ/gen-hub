@@ -827,7 +827,9 @@ export class RentalContractRepository {
       ...contract,
       logs: (contract as any).logs.map((log: any) => ({
         ...log,
-        created_by_user: log.created_by ? (userMap.get(log.created_by) ?? null) : null,
+        created_by_user: log.created_by
+          ? (userMap.get(log.created_by) ?? null)
+          : null,
       })),
     };
   }

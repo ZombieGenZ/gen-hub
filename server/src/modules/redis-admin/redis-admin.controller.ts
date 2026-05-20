@@ -45,7 +45,7 @@ import { I18n, I18nContext } from 'nestjs-i18n';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiAuthResponses()
 export class RedisAdminController {
-  constructor(private readonly redisAdminService: RedisAdminService) { }
+  constructor(private readonly redisAdminService: RedisAdminService) {}
 
   @Post('cache')
   @RequirePermission('redis.manage')
@@ -60,7 +60,8 @@ export class RedisAdminController {
     examples: {
       simple_string: {
         summary: 'Cache giá trị chuỗi đơn giản',
-        description: 'Tạo cache không có TTL - tồn tại vĩnh viễn cho đến khi bị xóa thủ công',
+        description:
+          'Tạo cache không có TTL - tồn tại vĩnh viễn cho đến khi bị xóa thủ công',
         value: {
           key: 'greeting_message',
           value: 'Xin chào, GEN-HUB!',
@@ -68,7 +69,8 @@ export class RedisAdminController {
       },
       with_ttl: {
         summary: 'Cache có TTL (1 giờ)',
-        description: 'Tạo cache với thời gian sống 3600 giây (1 giờ). Sau thời gian này cache sẽ tự động bị xóa',
+        description:
+          'Tạo cache với thời gian sống 3600 giây (1 giờ). Sau thời gian này cache sẽ tự động bị xóa',
         value: {
           key: 'user:session:abc123',
           value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -77,7 +79,8 @@ export class RedisAdminController {
       },
       json_value: {
         summary: 'Cache giá trị JSON (serialize dưới dạng string)',
-        description: 'Lưu object JSON đã stringify. Khi đọc ra cần JSON.parse()',
+        description:
+          'Lưu object JSON đã stringify. Khi đọc ra cần JSON.parse()',
         value: {
           key: 'config:app:v1',
           value: '{"brandName":"GEN-HUB","primaryColor":"#0F766E"}',
@@ -89,7 +92,8 @@ export class RedisAdminController {
         description: 'Lưu trữ thông tin phiên người dùng với TTL 30 phút',
         value: {
           key: 'session:user:550e8400',
-          value: '{"userId":"550e8400","role":"admin","email":"admin@gen-hub.dev"}',
+          value:
+            '{"userId":"550e8400","role":"admin","email":"admin@gen-hub.dev"}',
           ttl: 1800,
         },
       },
@@ -116,7 +120,11 @@ export class RedisAdminController {
         data: {
           type: 'object',
           properties: {
-            key: { type: 'string', description: 'Key của cache vừa được tạo', example: 'user:session:abc123' },
+            key: {
+              type: 'string',
+              description: 'Key của cache vừa được tạo',
+              example: 'user:session:abc123',
+            },
           },
         },
       },
@@ -129,10 +137,7 @@ export class RedisAdminController {
     },
   })
   @ApiValidationErrorResponse()
-  async addCache(
-    @Body() dto: CreateCacheDto,
-    @I18n() i18n: I18nContext,
-  ) {
+  async addCache(@Body() dto: CreateCacheDto, @I18n() i18n: I18nContext) {
     const data = await this.redisAdminService.addCache(dto);
     return new CreatedResponse(
       ResponseCode.REDIS_ADMIN_CACHE_CREATE_SUCCESS,
@@ -176,11 +181,16 @@ export class RedisAdminController {
       },
       bulk_config_seed: {
         summary: 'Seed cấu hình hệ thống vào cache',
-        description: 'Khởi tạo các giá trị cấu hình quan trọng vào Redis khi khởi động hệ thống',
+        description:
+          'Khởi tạo các giá trị cấu hình quan trọng vào Redis khi khởi động hệ thống',
         value: {
           items: [
             { key: 'config:max_upload_size', value: '10485760', ttl: 86400 },
-            { key: 'config:allowed_origins', value: 'https://gen-hub.dev,https://admin.gen-hub.dev', ttl: 86400 },
+            {
+              key: 'config:allowed_origins',
+              value: 'https://gen-hub.dev,https://admin.gen-hub.dev',
+              ttl: 86400,
+            },
             { key: 'config:smtp_host', value: 'smtp.gmail.com', ttl: 86400 },
           ],
         },
@@ -193,13 +203,20 @@ export class RedisAdminController {
     schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', example: 'REDIS_ADMIN_CACHE_BULK_CREATE_SUCCESS' },
+        code: {
+          type: 'string',
+          example: 'REDIS_ADMIN_CACHE_BULK_CREATE_SUCCESS',
+        },
         message: { type: 'string', example: 'Thêm nhiều cache thành công' },
         success: { type: 'boolean', example: true },
         data: {
           type: 'object',
           properties: {
-            count: { type: 'number', description: 'Số lượng cache entries đã được tạo', example: 3 },
+            count: {
+              type: 'number',
+              description: 'Số lượng cache entries đã được tạo',
+              example: 3,
+            },
           },
         },
       },
@@ -212,10 +229,7 @@ export class RedisAdminController {
     },
   })
   @ApiValidationErrorResponse()
-  async addBulkCache(
-    @Body() dto: BulkCacheDto,
-    @I18n() i18n: I18nContext,
-  ) {
+  async addBulkCache(@Body() dto: BulkCacheDto, @I18n() i18n: I18nContext) {
     const data = await this.redisAdminService.addBulkCache(dto);
     return new CreatedResponse(
       ResponseCode.REDIS_ADMIN_CACHE_BULK_CREATE_SUCCESS,
@@ -340,10 +354,7 @@ export class RedisAdminController {
       },
     },
   })
-  async getCacheByKey(
-    @Param('key') key: string,
-    @I18n() i18n: I18nContext,
-  ) {
+  async getCacheByKey(@Param('key') key: string, @I18n() i18n: I18nContext) {
     const data = await this.redisAdminService.getCacheByKey(key);
     return new GetResponse(
       ResponseCode.REDIS_ADMIN_CACHE_GET_SUCCESS,
@@ -366,7 +377,8 @@ export class RedisAdminController {
     examples: {
       delete_user_sessions: {
         summary: 'Xóa nhiều phiên đăng nhập của user',
-        description: 'Xóa tất cả sessions của nhiều user cùng lúc (ví dụ: force logout)',
+        description:
+          'Xóa tất cả sessions của nhiều user cùng lúc (ví dụ: force logout)',
         value: {
           keys: [
             'session:user:550e8400',
@@ -391,10 +403,7 @@ export class RedisAdminController {
         summary: 'Xóa cache OTP đã sử dụng',
         description: 'Dọn dẹp các OTP cache sau khi xác thực thành công',
         value: {
-          keys: [
-            'otp:email:user@gen-hub.dev',
-            'otp:phone:0783504540',
-          ],
+          keys: ['otp:email:user@gen-hub.dev', 'otp:phone:0783504540'],
         },
       },
     },
@@ -405,13 +414,20 @@ export class RedisAdminController {
     schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', example: 'REDIS_ADMIN_CACHE_BULK_DELETE_SUCCESS' },
+        code: {
+          type: 'string',
+          example: 'REDIS_ADMIN_CACHE_BULK_DELETE_SUCCESS',
+        },
         message: { type: 'string', example: 'Xóa nhiều cache thành công' },
         success: { type: 'boolean', example: true },
         data: {
           type: 'object',
           properties: {
-            count: { type: 'number', description: 'Số lượng keys thực sự đã bị xóa', example: 3 },
+            count: {
+              type: 'number',
+              description: 'Số lượng keys thực sự đã bị xóa',
+              example: 3,
+            },
           },
         },
       },
@@ -424,10 +440,7 @@ export class RedisAdminController {
     },
   })
   @ApiValidationErrorResponse()
-  async removeBulkCache(
-    @Body() dto: BulkKeysDto,
-    @I18n() i18n: I18nContext,
-  ) {
+  async removeBulkCache(@Body() dto: BulkKeysDto, @I18n() i18n: I18nContext) {
     const data = await this.redisAdminService.removeBulkCache(dto.keys);
     return new DeletedResponse(
       ResponseCode.REDIS_ADMIN_CACHE_BULK_DELETE_SUCCESS,
@@ -468,10 +481,7 @@ export class RedisAdminController {
       },
     },
   })
-  async removeCache(
-    @Param('key') key: string,
-    @I18n() i18n: I18nContext,
-  ) {
+  async removeCache(@Param('key') key: string, @I18n() i18n: I18nContext) {
     await this.redisAdminService.removeCache(key);
     return new DeletedResponse(
       ResponseCode.REDIS_ADMIN_CACHE_DELETE_SUCCESS,
@@ -493,11 +503,20 @@ export class RedisAdminController {
     examples: {
       extend_ttl: {
         summary: 'Gia hạn TTL cho nhiều sessions',
-        description: 'Gia hạn thời gian sống của nhiều phiên đăng nhập cùng lúc',
+        description:
+          'Gia hạn thời gian sống của nhiều phiên đăng nhập cùng lúc',
         value: {
           items: [
-            { key: 'session:user:001', value: '{"userId":"001","role":"user"}', ttl: 7200 },
-            { key: 'session:user:002', value: '{"userId":"002","role":"admin"}', ttl: 7200 },
+            {
+              key: 'session:user:001',
+              value: '{"userId":"001","role":"user"}',
+              ttl: 7200,
+            },
+            {
+              key: 'session:user:002',
+              value: '{"userId":"002","role":"admin"}',
+              ttl: 7200,
+            },
           ],
         },
       },
@@ -514,7 +533,8 @@ export class RedisAdminController {
       },
       update_config_cache: {
         summary: 'Cập nhật cache cấu hình',
-        description: 'Refresh cache cấu hình hệ thống sau khi thay đổi settings',
+        description:
+          'Refresh cache cấu hình hệ thống sau khi thay đổi settings',
         value: {
           items: [
             { key: 'config:max_upload_size', value: '20971520', ttl: 86400 },
@@ -530,13 +550,20 @@ export class RedisAdminController {
     schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', example: 'REDIS_ADMIN_CACHE_BULK_UPDATE_SUCCESS' },
+        code: {
+          type: 'string',
+          example: 'REDIS_ADMIN_CACHE_BULK_UPDATE_SUCCESS',
+        },
         message: { type: 'string', example: 'Cập nhật nhiều cache thành công' },
         success: { type: 'boolean', example: true },
         data: {
           type: 'object',
           properties: {
-            count: { type: 'number', description: 'Số lượng cache entries đã được cập nhật', example: 3 },
+            count: {
+              type: 'number',
+              description: 'Số lượng cache entries đã được cập nhật',
+              example: 3,
+            },
           },
         },
       },
@@ -549,10 +576,7 @@ export class RedisAdminController {
     },
   })
   @ApiValidationErrorResponse()
-  async editBulkCache(
-    @Body() dto: BulkCacheDto,
-    @I18n() i18n: I18nContext,
-  ) {
+  async editBulkCache(@Body() dto: BulkCacheDto, @I18n() i18n: I18nContext) {
     const data = await this.redisAdminService.editBulkCache(dto);
     return new UpdatedResponse(
       ResponseCode.REDIS_ADMIN_CACHE_BULK_UPDATE_SUCCESS,
@@ -580,16 +604,19 @@ export class RedisAdminController {
     examples: {
       update_value_only: {
         summary: 'Chỉ cập nhật value, giữ nguyên TTL',
-        description: 'Thay đổi giá trị của cache mà không ảnh hưởng đến TTL hiện tại',
+        description:
+          'Thay đổi giá trị của cache mà không ảnh hưởng đến TTL hiện tại',
         value: {
           value: 'new_value_here',
         },
       },
       update_with_new_ttl: {
         summary: 'Cập nhật value và gia hạn TTL',
-        description: 'Thay đổi giá trị và đặt lại thời gian sống mới (3600 giây)',
+        description:
+          'Thay đổi giá trị và đặt lại thời gian sống mới (3600 giây)',
         value: {
-          value: '{"userId":"550e8400","role":"admin","lastActive":"2026-04-27T07:00:00Z"}',
+          value:
+            '{"userId":"550e8400","role":"admin","lastActive":"2026-04-27T07:00:00Z"}',
           ttl: 3600,
         },
       },
@@ -597,7 +624,8 @@ export class RedisAdminController {
         summary: 'Cập nhật JSON config trong cache',
         description: 'Refresh cache cấu hình với giá trị mới, TTL 24 giờ',
         value: {
-          value: '{"brandName":"GEN-HUB Pro","primaryColor":"#6366F1","enableAiReply":true}',
+          value:
+            '{"brandName":"GEN-HUB Pro","primaryColor":"#6366F1","enableAiReply":true}',
           ttl: 86400,
         },
       },
@@ -623,7 +651,11 @@ export class RedisAdminController {
         data: {
           type: 'object',
           properties: {
-            key: { type: 'string', description: 'Key của cache entry vừa được cập nhật', example: 'user:session:abc123' },
+            key: {
+              type: 'string',
+              description: 'Key của cache entry vừa được cập nhật',
+              example: 'user:session:abc123',
+            },
           },
         },
       },

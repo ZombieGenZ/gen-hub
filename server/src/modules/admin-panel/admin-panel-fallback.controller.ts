@@ -9,12 +9,16 @@ import { Public } from '../../common/decorators';
 @Public()
 @Controller('admin')
 export class AdminPanelFallbackController {
-  constructor(private readonly configService: ConfigService) { }
+  constructor(private readonly configService: ConfigService) {}
 
   @Get()
   getAdminPanel(@Res() res: Response) {
-    const adminPanelEnabled = this.configService.get<string>('ADMIN_PANEL_ENABLED');
-    const isEnabled = ['true', '1', 'yes', 'on'].includes(adminPanelEnabled?.trim().toLowerCase() || 'false');
+    const adminPanelEnabled = this.configService.get<string>(
+      'ADMIN_PANEL_ENABLED',
+    );
+    const isEnabled = ['true', '1', 'yes', 'on'].includes(
+      adminPanelEnabled?.trim().toLowerCase() || 'false',
+    );
 
     if (!isEnabled) {
       return res.status(403).send(`

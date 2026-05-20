@@ -498,7 +498,8 @@ export class RevenueAnalyticsController {
     required: false,
     enum: DatePreset,
     default: DatePreset.THIS_MONTH,
-    description: 'Preset khoảng thời gian cần thống kê. Dùng `CUSTOM` kết hợp `from_date` và `to_date` để tùy chỉnh khoảng ngày.',
+    description:
+      'Preset khoảng thời gian cần thống kê. Dùng `CUSTOM` kết hợp `from_date` và `to_date` để tùy chỉnh khoảng ngày.',
     example: DatePreset.THIS_MONTH,
   })
   @ApiQuery({
@@ -519,7 +520,8 @@ export class RevenueAnalyticsController {
     name: 'province_id',
     required: false,
     type: String,
-    description: 'Lọc theo tỉnh/thành phố (UUID). Bỏ trống để lấy tất cả tỉnh/thành.',
+    description:
+      'Lọc theo tỉnh/thành phố (UUID). Bỏ trống để lấy tất cả tỉnh/thành.',
     example: '550e8400-e29b-41d4-a716-446655440001',
   })
   @ApiQuery({
@@ -534,15 +536,18 @@ export class RevenueAnalyticsController {
     required: false,
     enum: ['excel', 'pdf'],
     default: 'excel',
-    description: 'Định dạng file xuất ra. `excel` trả về file `.xlsx`, `pdf` trả về file `.pdf`.',
+    description:
+      'Định dạng file xuất ra. `excel` trả về file `.xlsx`, `pdf` trả về file `.pdf`.',
     example: 'excel',
   })
   @ApiResponse({
     status: 200,
-    description: 'Trả về file báo cáo doanh thu dạng binary (Excel hoặc PDF). Header `Content-Disposition` chứa tên file đề xuất.',
+    description:
+      'Trả về file báo cáo doanh thu dạng binary (Excel hoặc PDF). Header `Content-Disposition` chứa tên file đề xuất.',
     headers: {
       'Content-Type': {
-        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet (excel) hoặc application/pdf',
+        description:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet (excel) hoặc application/pdf',
         schema: { type: 'string' },
       },
       'Content-Disposition': {

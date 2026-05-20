@@ -150,7 +150,7 @@ export class WarehouseTemplateController {
     private readonly service: WarehouseTemplateService,
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   /**
    * Kiểm tra user có permission cụ thể không
@@ -893,7 +893,7 @@ export class WarehouseTemplateController {
               req.i18n?.t('warehouse-template.errors.file_type_invalid', {
                 args: { allowedTypes: ALLOWED_MIME_TYPES.join(', ') },
               }) ||
-              `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
+                `Only image files are accepted: ${ALLOWED_MIME_TYPES.join(', ')}`,
             ),
             false,
           );

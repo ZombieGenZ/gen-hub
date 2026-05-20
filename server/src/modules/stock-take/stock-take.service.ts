@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StockTakeStatus } from '@prisma/client';
-import { CreateStockTakeDto, QueryStockTakeDto, UpdateStockTakeDetailsDto } from './dto';
+import {
+  CreateStockTakeDto,
+  QueryStockTakeDto,
+  UpdateStockTakeDetailsDto,
+} from './dto';
 
 @Injectable()
 export class StockTakeService {
@@ -43,9 +47,16 @@ export class StockTakeService {
   async create(orgId: string, dto: CreateStockTakeDto, actorId: string) {
     // Kiểm tra kho tồn tại và thuộc org
     const warehouse = await this.prisma.warehouse.findFirst({
-      where: { id: dto.warehouse_id, organization_id: orgId, is_deleted: false },
+      where: {
+        id: dto.warehouse_id,
+        organization_id: orgId,
+        is_deleted: false,
+      },
     });
-    if (!warehouse) throw new NotFoundException('Kho không tồn tại hoặc không thuộc tổ chức này');
+    if (!warehouse)
+      throw new NotFoundException(
+        'Kho không tồn tại hoặc không thuộc tổ chức này',
+      );
 
     // Kiểm tra không có phiếu kiểm kê đang chạy cho kho này
     const existing = await this.prisma.stockTake.findFirst({
@@ -64,7 +75,12 @@ export class StockTakeService {
 
     // Snapshot tồn kho hiện tại
     const inventories = await this.prisma.inventory.findMany({
-      where: { organization_id: orgId, warehouse_id: dto.warehouse_id, is_deleted: false, quantity: { gt: 0 } },
+      where: {
+        organization_id: orgId,
+        warehouse_id: dto.warehouse_id,
+        is_deleted: false,
+        quantity: { gt: 0 },
+      },
     });
 
     const code = await this.generateCode(orgId);
@@ -104,7 +120,9 @@ export class StockTakeService {
       is_deleted: false,
       ...(query.warehouse_id && { warehouse_id: query.warehouse_id }),
       ...(query.status && { status: query.status as StockTakeStatus }),
-      ...(query.keywords && { code: { contains: query.keywords, mode: 'insensitive' as const } }),
+      ...(query.keywords && {
+        code: { contains: query.keywords, mode: 'insensitive' as const },
+      }),
     };
 
     const [items, total] = await Promise.all([
@@ -121,7 +139,12 @@ export class StockTakeService {
       this.prisma.stockTake.count({ where }),
     ]);
 
-    return { items, total, limit: query.limit ?? 20, offset: query.offset ?? 0 };
+    return {
+      items,
+      total,
+      limit: query.limit ?? 20,
+      offset: query.offset ?? 0,
+    };
   }
 
   /**
@@ -134,7 +157,9 @@ export class StockTakeService {
         warehouse: { select: { id: true, name: true } },
         details: {
           include: {
-            product: { select: { id: true, name: true, sku: true, image_url: true } },
+            product: {
+              select: { id: true, name: true, sku: true, image_url: true },
+            },
             batch: { select: { id: true, code: true, expiry_date: true } },
             block: {
               select: {
@@ -143,7 +168,12 @@ export class StockTakeService {
                 shelf: {
                   select: {
                     code: true,
-                    rack: { select: { code: true, row: { select: { code: true, name: true } } } },
+                    rack: {
+                      select: {
+                        code: true,
+                        row: { select: { code: true, name: true } },
+                      },
+                    },
                   },
                 },
               },
@@ -165,7 +195,9 @@ export class StockTakeService {
   async start(orgId: string, id: string, actorId: string) {
     const stockTake = await this.findOneOrThrow(orgId, id);
     if (stockTake.status !== StockTakeStatus.DRAFT) {
-      throw new BadRequestException('Chỉ có thể bắt đầu phiếu ở trạng thái DRAFT');
+      throw new BadRequestException(
+        'Chỉ có thể bắt đầu phiếu ở trạng thái DRAFT',
+      );
     }
 
     return this.prisma.stockTake.update({
@@ -178,10 +210,17 @@ export class StockTakeService {
   /**
    * Cập nhật số đếm thực tế cho các dòng trong phiếu kiểm kê
    */
-  async updateDetails(orgId: string, id: string, dto: UpdateStockTakeDetailsDto, actorId: string) {
+  async updateDetails(
+    orgId: string,
+    id: string,
+    dto: UpdateStockTakeDetailsDto,
+    actorId: string,
+  ) {
     const stockTake = await this.findOneOrThrow(orgId, id);
     if (!['IN_PROGRESS', 'DRAFT'].includes(stockTake.status)) {
-      throw new BadRequestException('Chỉ có thể cập nhật số đếm khi phiếu đang ở DRAFT hoặc IN_PROGRESS');
+      throw new BadRequestException(
+        'Chỉ có thể cập nhật số đếm khi phiếu đang ở DRAFT hoặc IN_PROGRESS',
+      );
     }
 
     // Cập nhật từng dòng và tính chênh lệch
@@ -205,7 +244,9 @@ export class StockTakeService {
   async complete(orgId: string, id: string, actorId: string) {
     const stockTake = await this.findOneOrThrow(orgId, id);
     if (stockTake.status !== StockTakeStatus.IN_PROGRESS) {
-      throw new BadRequestException('Chỉ có thể hoàn tất phiếu ở trạng thái IN_PROGRESS');
+      throw new BadRequestException(
+        'Chỉ có thể hoàn tất phiếu ở trạng thái IN_PROGRESS',
+      );
     }
 
     // Tính chênh lệch cho tất cả dòng có counted_qty
@@ -241,16 +282,16 @@ export class StockTakeService {
   async adjust(orgId: string, id: string, actorId: string) {
     const stockTake = await this.findOneOrThrow(orgId, id);
     if (stockTake.status !== StockTakeStatus.COMPLETED) {
-      throw new BadRequestException('Chỉ có thể điều chỉnh phiếu ở trạng thái COMPLETED');
+      throw new BadRequestException(
+        'Chỉ có thể điều chỉnh phiếu ở trạng thái COMPLETED',
+      );
     }
 
     const details = await this.prisma.stockTakeDetail.findMany({
       where: { stock_take_id: id },
     });
 
-    const adjustableDetails = details.filter(
-      (d) => Number(d.difference) !== 0,
-    );
+    const adjustableDetails = details.filter((d) => Number(d.difference) !== 0);
 
     if (adjustableDetails.length === 0) {
       // Không có chênh lệch → vẫn đánh dấu ADJUSTED
@@ -279,7 +320,10 @@ export class StockTakeService {
 
         if (inv) {
           const newOnHand = Math.max(0, Number(inv.quantity_on_hand) + diff);
-          const newAvailable = Math.max(0, Number(inv.quantity_available) + diff);
+          const newAvailable = Math.max(
+            0,
+            Number(inv.quantity_available) + diff,
+          );
           const newQty = Math.max(0, Number(inv.quantity) + diff);
 
           await tx.inventory.update({
@@ -326,7 +370,9 @@ export class StockTakeService {
   async cancel(orgId: string, id: string, actorId: string) {
     const stockTake = await this.findOneOrThrow(orgId, id);
     if (['ADJUSTED', 'CANCELLED'].includes(stockTake.status)) {
-      throw new BadRequestException('Không thể hủy phiếu đã được điều chỉnh hoặc đã hủy');
+      throw new BadRequestException(
+        'Không thể hủy phiếu đã được điều chỉnh hoặc đã hủy',
+      );
     }
 
     return this.prisma.stockTake.update({

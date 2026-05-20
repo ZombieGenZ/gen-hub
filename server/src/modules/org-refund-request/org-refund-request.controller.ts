@@ -68,11 +68,13 @@ export class OrgRefundRequestController {
   })
   @ApiBody({
     type: CreateRefundRequestDto,
-    description: 'Thông tin yêu cầu hoàn tiền. Số tiền phí và số tiền thực nhận phải nhất quán: `final_refund_amount = original_amount - fee_amount`.',
+    description:
+      'Thông tin yêu cầu hoàn tiền. Số tiền phí và số tiền thực nhận phải nhất quán: `final_refund_amount = original_amount - fee_amount`.',
     examples: {
       full_refund: {
         summary: 'Yêu cầu hoàn tiền đầy đủ thông tin',
-        description: 'Ví dụ tạo yêu cầu hoàn tiền với đầy đủ lý do và các trường bắt buộc',
+        description:
+          'Ví dụ tạo yêu cầu hoàn tiền với đầy đủ lý do và các trường bắt buộc',
         value: {
           rental_contract_id: '550e8400-e29b-41d4-a716-446655440010',
           original_amount: 10000000,
@@ -84,7 +86,8 @@ export class OrgRefundRequestController {
       },
       minimal_refund: {
         summary: 'Yêu cầu hoàn tiền tối thiểu (không có lý do)',
-        description: 'Ví dụ tạo yêu cầu hoàn tiền chỉ với các trường bắt buộc, không kèm lý do',
+        description:
+          'Ví dụ tạo yêu cầu hoàn tiền chỉ với các trường bắt buộc, không kèm lý do',
         value: {
           rental_contract_id: '550e8400-e29b-41d4-a716-446655440011',
           original_amount: 5000000,
@@ -109,27 +112,75 @@ export class OrgRefundRequestController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Tạo yêu cầu hoàn tiền thành công. Yêu cầu sẽ ở trạng thái `PENDING` và chờ admin xét duyệt.',
+    description:
+      'Tạo yêu cầu hoàn tiền thành công. Yêu cầu sẽ ở trạng thái `PENDING` và chờ admin xét duyệt.',
     schema: {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'refund-request.create_success' },
-        message: { type: 'string', example: 'Tạo yêu cầu hoàn tiền thành công' },
+        message: {
+          type: 'string',
+          example: 'Tạo yêu cầu hoàn tiền thành công',
+        },
         success: { type: 'boolean', example: true },
         data: {
           type: 'object',
           properties: {
-            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440099' },
-            code: { type: 'string', example: 'RR-202603-0001', description: 'Mã yêu cầu hoàn tiền tự sinh' },
-            status: { type: 'string', example: 'PENDING', enum: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'] },
-            original_amount: { type: 'number', example: 10000000, description: 'Số tiền gốc hợp đồng (VND)' },
-            fee_percent: { type: 'number', example: 10, description: 'Phần trăm phí hủy hợp đồng' },
-            fee_amount: { type: 'number', example: 1000000, description: 'Số tiền phí (VND)' },
-            final_refund_amount: { type: 'number', example: 9000000, description: 'Số tiền thực nhận sau khi trừ phí (VND)' },
-            reason: { type: 'string', nullable: true, example: 'Chuyển văn phòng nên không còn nhu cầu sử dụng kho' },
-            organization_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
-            rental_contract_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440010' },
-            created_at: { type: 'string', format: 'date-time', example: '2026-03-12T08:00:00.000Z' },
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440099',
+            },
+            code: {
+              type: 'string',
+              example: 'RR-202603-0001',
+              description: 'Mã yêu cầu hoàn tiền tự sinh',
+            },
+            status: {
+              type: 'string',
+              example: 'PENDING',
+              enum: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'],
+            },
+            original_amount: {
+              type: 'number',
+              example: 10000000,
+              description: 'Số tiền gốc hợp đồng (VND)',
+            },
+            fee_percent: {
+              type: 'number',
+              example: 10,
+              description: 'Phần trăm phí hủy hợp đồng',
+            },
+            fee_amount: {
+              type: 'number',
+              example: 1000000,
+              description: 'Số tiền phí (VND)',
+            },
+            final_refund_amount: {
+              type: 'number',
+              example: 9000000,
+              description: 'Số tiền thực nhận sau khi trừ phí (VND)',
+            },
+            reason: {
+              type: 'string',
+              nullable: true,
+              example: 'Chuyển văn phòng nên không còn nhu cầu sử dụng kho',
+            },
+            organization_id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440001',
+            },
+            rental_contract_id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440010',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-03-12T08:00:00.000Z',
+            },
           },
         },
       },
@@ -155,12 +206,19 @@ export class OrgRefundRequestController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Yêu cầu hoàn tiền không hợp lệ về nghiệp vụ. Ví dụ: hợp đồng đã có yêu cầu hoàn tiền đang xử lý, số tiền không nhất quán, hoặc hợp đồng không đủ điều kiện hoàn tiền.',
+    description:
+      'Yêu cầu hoàn tiền không hợp lệ về nghiệp vụ. Ví dụ: hợp đồng đã có yêu cầu hoàn tiền đang xử lý, số tiền không nhất quán, hoặc hợp đồng không đủ điều kiện hoàn tiền.',
     schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', example: 'error.refund_request.contract_not_eligible' },
-        message: { type: 'string', example: 'Hợp đồng không đủ điều kiện yêu cầu hoàn tiền' },
+        code: {
+          type: 'string',
+          example: 'error.refund_request.contract_not_eligible',
+        },
+        message: {
+          type: 'string',
+          example: 'Hợp đồng không đủ điều kiện yêu cầu hoàn tiền',
+        },
         success: { type: 'boolean', example: false },
       },
     },
@@ -171,7 +229,10 @@ export class OrgRefundRequestController {
     schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', example: 'error.refund_request.contract_not_found' },
+        code: {
+          type: 'string',
+          example: 'error.refund_request.contract_not_found',
+        },
         message: { type: 'string', example: 'Không tìm thấy hợp đồng thuê' },
         success: { type: 'boolean', example: false },
       },

@@ -113,9 +113,12 @@ export class OrganizationService {
     if (!taxInfo) {
       if (!dto.name || !dto.headquarters_address) {
         throw new BadRequestException(
-          await this.i18n.translate('organization.validation.tax_code_invalid', {
-            lang,
-          }),
+          await this.i18n.translate(
+            'organization.validation.tax_code_invalid',
+            {
+              lang,
+            },
+          ),
         );
       }
       this.systemLogService.warn(

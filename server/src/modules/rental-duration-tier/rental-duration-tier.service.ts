@@ -360,7 +360,11 @@ export class RentalDurationTierService {
           });
         } else {
           // Check for soft-deleted record with same (duration_tier_id, addon_id) to avoid unique constraint violation
-          const softDeleted = await this.repository.findAddonGiftIncludingDeleted(id, gift.addon_id);
+          const softDeleted =
+            await this.repository.findAddonGiftIncludingDeleted(
+              id,
+              gift.addon_id,
+            );
           if (softDeleted) {
             await this.repository.restoreAddonGift(softDeleted.id, {
               require_min_order_amount: gift.require_min_order_amount,
@@ -442,7 +446,11 @@ export class RentalDurationTierService {
           });
         } else {
           // Check for soft-deleted record with same (duration_tier_id, insurance_id) to avoid unique constraint violation
-          const softDeleted = await this.repository.findInsuranceGiftIncludingDeleted(id, gift.insurance_id);
+          const softDeleted =
+            await this.repository.findInsuranceGiftIncludingDeleted(
+              id,
+              gift.insurance_id,
+            );
           if (softDeleted) {
             await this.repository.restoreInsuranceGift(softDeleted.id, {
               require_min_order_amount: gift.require_min_order_amount,

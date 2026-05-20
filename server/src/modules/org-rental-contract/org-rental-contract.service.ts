@@ -522,13 +522,19 @@ export class OrgRentalContractService {
       );
       await this.invalidateContractListCache();
 
-      const finalPriceNum = Math.round(parseFloat(contract.final_price.toString()));
-      const vatAmountNum = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
+      const finalPriceNum = Math.round(
+        parseFloat(contract.final_price.toString()),
+      );
+      const vatAmountNum = Math.round(
+        parseFloat(contract.vat_amount?.toString() || '0'),
+      );
       const depositAmount = Math.max(
         QUOTATION_CONSTANTS.MIN_DEPOSIT_AMOUNT,
         Math.round(finalPriceNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT),
       );
-      const depositVatAmount = Math.round(vatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT);
+      const depositVatAmount = Math.round(
+        vatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT,
+      );
 
       const paymentResult = await this.sepayService.createContractPayment({
         rentalContractId: contract.id,
@@ -583,7 +589,9 @@ export class OrgRentalContractService {
       }
 
       // Re-fetch full contract to include addons, insurances, etc.
-      const fullContract = await this.repository.findByIdWithFullDetails(contract.id);
+      const fullContract = await this.repository.findByIdWithFullDetails(
+        contract.id,
+      );
 
       return {
         contract: RentalContractMapper.mapToFrontend(fullContract),
@@ -704,7 +712,9 @@ export class OrgRentalContractService {
     if (mapped.signers?.length) {
       for (const signer of mapped.signers) {
         if (signer.avatar) {
-          const signedUrl = this.signatureService.getSignedUrlByRawUrl(signer.avatar);
+          const signedUrl = this.signatureService.getSignedUrlByRawUrl(
+            signer.avatar,
+          );
           signer.avatar = signedUrl;
           signer.url = signedUrl;
         }
@@ -1118,13 +1128,19 @@ export class OrgRentalContractService {
       this.paymentScheduler.cancelScheduledExpire(currentPayment.id);
     }
 
-    const retryFinalPriceNum = Math.round(parseFloat(contract.final_price.toString()));
-    const retryVatAmountNum = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
+    const retryFinalPriceNum = Math.round(
+      parseFloat(contract.final_price.toString()),
+    );
+    const retryVatAmountNum = Math.round(
+      parseFloat(contract.vat_amount?.toString() || '0'),
+    );
     const retryDepositAmount = Math.max(
       QUOTATION_CONSTANTS.MIN_DEPOSIT_AMOUNT,
       Math.round(retryFinalPriceNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT),
     );
-    const retryDepositVatAmount = Math.round(retryVatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT);
+    const retryDepositVatAmount = Math.round(
+      retryVatAmountNum * QUOTATION_CONSTANTS.DEPOSIT_PERCENT,
+    );
 
     const paymentResult = await this.sepayService.createContractPayment({
       rentalContractId: contractId,

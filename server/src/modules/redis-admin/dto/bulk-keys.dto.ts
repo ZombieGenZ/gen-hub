@@ -8,6 +8,9 @@ export class BulkKeysDto {
     example: ['key1', 'key2'],
   })
   @IsArray({ message: i18nValidationMessage('validation.IS_ARRAY') })
-  @IsString({ each: true, message: i18nValidationMessage('validation.IS_STRING') })
+  @IsString({
+    each: true,
+    message: i18nValidationMessage('validation.IS_STRING'),
+  })
   keys: string[];
 }

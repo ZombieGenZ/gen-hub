@@ -1420,8 +1420,7 @@ export class UserManagementService {
     }
 
     // Xác thực mật khẩu admin
-    const adminPasswordHash =
-      await this.repository.getPasswordHash(adminId);
+    const adminPasswordHash = await this.repository.getPasswordHash(adminId);
     if (!adminPasswordHash) {
       throw new UnauthorizedException(
         this.i18n.t('user-management.error.admin_password_invalid', { lang }) ||

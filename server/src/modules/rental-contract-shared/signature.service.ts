@@ -113,7 +113,10 @@ export class SignatureService {
    * @param expireSeconds - Thời gian hết hạn URL (giây), mặc định 8 giờ
    */
   getSignedUrlByRawUrl(imagekitUrl: string, expireSeconds = 3600 * 8): string {
-    return this.imageUploadService.getSignedUrlFromSrc(imagekitUrl, expireSeconds);
+    return this.imageUploadService.getSignedUrlFromSrc(
+      imagekitUrl,
+      expireSeconds,
+    );
   }
 
   /**

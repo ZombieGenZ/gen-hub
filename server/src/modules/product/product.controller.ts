@@ -336,7 +336,8 @@ export class ProductController {
     description: 'File Excel danh sách sản phẩm',
     headers: {
       'Content-Type': {
-        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        description:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         schema: { type: 'string' },
       },
       'Content-Disposition': {
@@ -399,7 +400,8 @@ export class ProductController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Import thành công, trả về thống kê số lượng thành công và thất bại',
+    description:
+      'Import thành công, trả về thống kê số lượng thành công và thất bại',
     schema: {
       type: 'object',
       properties: {
@@ -414,7 +416,10 @@ export class ProductController {
             errors: {
               type: 'array',
               items: { type: 'string' },
-              example: ['Dòng 5: Thiếu mã SKU', 'Dòng 12: Giá vốn không hợp lệ'],
+              example: [
+                'Dòng 5: Thiếu mã SKU',
+                'Dòng 12: Giá vốn không hợp lệ',
+              ],
             },
           },
         },
@@ -460,7 +465,8 @@ export class ProductController {
     description: 'File Excel mẫu nhập sản phẩm',
     headers: {
       'Content-Type': {
-        description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        description:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         schema: { type: 'string' },
       },
       'Content-Disposition': {

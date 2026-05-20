@@ -22,7 +22,10 @@ export class QueryStockTakeDto {
   @IsIn(['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ADJUSTED', 'CANCELLED'])
   status?: string;
 
-  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm theo mã phiếu', example: 'KK-2026' })
+  @ApiPropertyOptional({
+    description: 'Từ khóa tìm kiếm theo mã phiếu',
+    example: 'KK-2026',
+  })
   @IsOptional()
   @IsString()
   keywords?: string;

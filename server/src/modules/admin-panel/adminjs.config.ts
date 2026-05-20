@@ -49,7 +49,10 @@ const getPrismaClient = (): PrismaClient => {
   return adminPrismaClient;
 };
 
-const checkAdminPermission = async (userId: string, prismaClient: PrismaClient): Promise<boolean> => {
+const checkAdminPermission = async (
+  userId: string,
+  prismaClient: PrismaClient,
+): Promise<boolean> => {
   // Check direct permissions
   const directPermissions = await prismaClient.userPermission.findMany({
     where: {
@@ -117,26 +120,108 @@ export const createAdminJS = async (cookieSecret: string) => {
             name: { isVisible: true },
             email: { isVisible: true },
             phone: { isVisible: true },
-            is_verified: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_banned: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_online: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            last_online: { isVisible: { list: false, edit: false, filter: false, show: true } },
-            total_deposited: { isVisible: { list: true, edit: false, filter: false, show: true } },
-            loyalty_points: { isVisible: { list: true, edit: true, filter: false, show: true } },
-            password: { isVisible: { list: false, edit: true, filter: false, show: false }, type: 'password' },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            updated_at: { isVisible: { list: false, edit: false, filter: false, show: true } },
-            is_deleted: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            deleted_at: { isVisible: { list: false, edit: false, filter: false, show: true } },
+            is_verified: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_banned: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_online: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            last_online: {
+              isVisible: {
+                list: false,
+                edit: false,
+                filter: false,
+                show: true,
+              },
+            },
+            total_deposited: {
+              isVisible: { list: true, edit: false, filter: false, show: true },
+            },
+            loyalty_points: {
+              isVisible: { list: true, edit: true, filter: false, show: true },
+            },
+            password: {
+              isVisible: {
+                list: false,
+                edit: true,
+                filter: false,
+                show: false,
+              },
+              type: 'password',
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            updated_at: {
+              isVisible: {
+                list: false,
+                edit: false,
+                filter: false,
+                show: true,
+              },
+            },
+            is_deleted: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            deleted_at: {
+              isVisible: {
+                list: false,
+                edit: false,
+                filter: false,
+                show: true,
+              },
+            },
           },
           sort: {
             sortBy: 'created_at',
             direction: 'desc',
           },
-          filterProperties: ['name', 'email', 'phone', 'is_verified', 'is_banned', 'is_online', 'created_at'],
-          listProperties: ['id', 'name', 'email', 'phone', 'is_verified', 'is_banned', 'is_online', 'total_deposited', 'created_at'],
-          showProperties: ['id', 'name', 'email', 'phone', 'is_verified', 'is_banned', 'is_online', 'total_deposited', 'loyalty_points', 'created_at', 'updated_at'],
-          editProperties: ['name', 'email', 'phone', 'is_verified', 'is_banned', 'loyalty_points', 'password', 'is_deleted'],
+          filterProperties: [
+            'name',
+            'email',
+            'phone',
+            'is_verified',
+            'is_banned',
+            'is_online',
+            'created_at',
+          ],
+          listProperties: [
+            'id',
+            'name',
+            'email',
+            'phone',
+            'is_verified',
+            'is_banned',
+            'is_online',
+            'total_deposited',
+            'created_at',
+          ],
+          showProperties: [
+            'id',
+            'name',
+            'email',
+            'phone',
+            'is_verified',
+            'is_banned',
+            'is_online',
+            'total_deposited',
+            'loyalty_points',
+            'created_at',
+            'updated_at',
+          ],
+          editProperties: [
+            'name',
+            'email',
+            'phone',
+            'is_verified',
+            'is_banned',
+            'loyalty_points',
+            'password',
+            'is_deleted',
+          ],
         },
       },
       {
@@ -147,11 +232,26 @@ export const createAdminJS = async (cookieSecret: string) => {
           properties: {
             name: { isTitle: true },
             description: { isVisible: true },
-            is_active: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_default: { isVisible: { list: true, edit: true, filter: false, show: true } },
-            is_deleted: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            updated_at: { isVisible: { list: false, edit: false, filter: false, show: true } },
+            is_active: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_default: {
+              isVisible: { list: true, edit: true, filter: false, show: true },
+            },
+            is_deleted: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            updated_at: {
+              isVisible: {
+                list: false,
+                edit: false,
+                filter: false,
+                show: true,
+              },
+            },
           },
         },
       },
@@ -162,11 +262,19 @@ export const createAdminJS = async (cookieSecret: string) => {
           navigation: { name: 'Phân quyền' },
           properties: {
             name: { isTitle: true },
-            key: { isVisible: { list: true, edit: true, filter: true, show: true } },
+            key: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
             description: { isVisible: true },
-            is_active: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_deleted: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            is_active: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_deleted: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
         },
       },
@@ -176,10 +284,18 @@ export const createAdminJS = async (cookieSecret: string) => {
           name: 'Vai trò người dùng',
           navigation: { name: 'Phân quyền' },
           properties: {
-            user_id: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            role_id: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_active: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            user_id: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            role_id: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_active: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
         },
       },
@@ -189,10 +305,18 @@ export const createAdminJS = async (cookieSecret: string) => {
           name: 'Quyền hạn người dùng',
           navigation: { name: 'Phân quyền' },
           properties: {
-            user_id: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            permission_id: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_active: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            user_id: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            permission_id: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_active: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
         },
       },
@@ -203,12 +327,20 @@ export const createAdminJS = async (cookieSecret: string) => {
           navigation: { name: 'Quản lý hệ thống' },
           properties: {
             name: { isTitle: true },
-            tax_code: { isVisible: { list: true, edit: true, filter: true, show: true } },
+            tax_code: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
             email: { isVisible: true },
             phone: { isVisible: true },
-            is_active: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            is_verified: { isVisible: { list: true, edit: true, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            is_active: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            is_verified: {
+              isVisible: { list: true, edit: true, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
         },
       },
@@ -219,9 +351,15 @@ export const createAdminJS = async (cookieSecret: string) => {
           navigation: { name: 'Nhật ký' },
           properties: {
             id: { isTitle: true },
-            level: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            message: { isVisible: { list: true, edit: false, filter: false, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            level: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            message: {
+              isVisible: { list: true, edit: false, filter: false, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
           actions: {
             new: { isVisible: false },
@@ -238,9 +376,15 @@ export const createAdminJS = async (cookieSecret: string) => {
           navigation: { name: 'Nhật ký' },
           properties: {
             id: { isTitle: true },
-            action: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            table_name: { isVisible: { list: true, edit: false, filter: true, show: true } },
-            created_at: { isVisible: { list: true, edit: false, filter: true, show: true } },
+            action: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            table_name: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
+            created_at: {
+              isVisible: { list: true, edit: false, filter: true, show: true },
+            },
           },
           actions: {
             new: { isVisible: false },
@@ -301,7 +445,8 @@ export const createAdminJS = async (cookieSecret: string) => {
             filter: 'Lọc',
             resetFilter: 'Đặt lại bộ lọc',
             confirmRemovalMany: 'Xác nhận xóa nhiều bản ghi',
-            confirmRemovalManyDescription: 'Bạn có chắc chắn muốn xóa các bản ghi đã chọn?',
+            confirmRemovalManyDescription:
+              'Bạn có chắc chắn muốn xóa các bản ghi đã chọn?',
             logout: 'Đăng xuất',
             login: 'Đăng nhập',
             seeTheDocumentation: 'Xem tài liệu',
@@ -342,7 +487,8 @@ export const createAdminJS = async (cookieSecret: string) => {
             recordNotFound: 'Không tìm thấy bản ghi',
             noRecordsSelected: 'Chưa chọn bản ghi nào',
             theseRecordsWillBeRemoved: 'Các bản ghi sau sẽ bị xóa',
-            theseRecordsWillBeRemovedMany: '{{ recordsSelected }} bản ghi sẽ bị xóa',
+            theseRecordsWillBeRemovedMany:
+              '{{ recordsSelected }} bản ghi sẽ bị xóa',
             pickSomeFirstToRemove: 'Chọn các bản ghi cần xóa',
             error404Resource: 'Không tìm thấy tài nguyên',
             error404Action: 'Không tìm thấy hành động',
@@ -370,7 +516,8 @@ export const createAdminJS = async (cookieSecret: string) => {
             search: 'Tìm kiếm...',
             selectedRecords: '{{ selected }} đã chọn',
             confirmDelete: 'Xác nhận xóa',
-            confirmDeleteDescription: 'Bạn có chắc chắn muốn xóa bản ghi này? Hành động này không thể hoàn tác.',
+            confirmDeleteDescription:
+              'Bạn có chắc chắn muốn xóa bản ghi này? Hành động này không thể hoàn tác.',
             systemHealth: 'Trạng thái hệ thống',
             systemHealthDescription: 'Kiểm tra tình trạng hệ thống',
             ok: 'OK',
@@ -417,7 +564,10 @@ export const createAdminJS = async (cookieSecret: string) => {
           }
 
           // Check if user has server.admin permission
-          const hasAdminPermission = await checkAdminPermission(user.id, prismaClient);
+          const hasAdminPermission = await checkAdminPermission(
+            user.id,
+            prismaClient,
+          );
           if (!hasAdminPermission) {
             return null;
           }

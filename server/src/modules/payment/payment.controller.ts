@@ -35,7 +35,7 @@ export class PaymentController {
     private readonly sepayService: SepayService,
     private readonly paymentScheduler: PaymentSchedulerService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   @Post('webhook')
   @Public()
@@ -272,11 +272,11 @@ export class PaymentController {
         message: 'Thanh toán thành công',
         data: payment
           ? {
-            paymentCode: payment.payment_code,
-            amount: payment.amount,
-            status: payment.status,
-            contractId: payment.rental_contract_id,
-          }
+              paymentCode: payment.payment_code,
+              amount: payment.amount,
+              status: payment.status,
+              contractId: payment.rental_contract_id,
+            }
           : null,
       };
     }
