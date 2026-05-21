@@ -14,6 +14,7 @@ import { StockHeader } from "@/components/dashboard/organization/stock/StockHead
 import { StockTable, ITEMS_PER_PAGE } from "@/components/dashboard/organization/stock/StockTable";
 import { InboundOutboundTab } from "@/components/dashboard/organization/stock/InboundOutboundTab";
 import { StockTakeTab } from "@/components/dashboard/organization/stock/StockTakeTab";
+import { InventoryAlertBanner } from "@/components/dashboard/organization/stock/InventoryAlertBanner";
 
 const inventoryService = new InventoryService();
 
@@ -199,6 +200,8 @@ export default function StockPage() {
 
     return (
         <div className="space-y-6 p-6">
+            <InventoryAlertBanner onResolve={() => { void fetchStats(); }} />
+
             <StockHeader
                 totalItems={totalItems}
                 searchTerm={searchTerm}

@@ -442,6 +442,56 @@ export class GeminiService implements OnModuleInit {
   }
 
   /**
+   * Generate text response từ prompt tùy ý
+   * Dùng cho các use-case như cảnh báo tồn kho, phân tích ngắn
+   */
+  async generateText(prompt: string, purpose = 'general'): Promise<string> {
+    if (!this.isEnabled) {
+      return '';
+    }
+
+    const startTime = Date.now();
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent(prompt);
+        const text = response.response.text().trim();
+        const durationMs = Date.now() - startTime;
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose,
+            inputText: prompt.substring(0, 500),
+            outputText: text.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+          });
+        });
+
+        return text;
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (msg.includes('quota') || msg.includes('rate') || msg.includes('429')) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(`generateText error: ${(error as Error).message}`);
+        return '';
+      }
+    }
+
+    this.logger.error('All Gemini API keys exhausted in generateText');
+    return '';
+  }
+
+  /**
    * Lưu log AI call vào database (bất đồng bộ)
    */
   private async logAICall(data: IAILogData): Promise<void> {

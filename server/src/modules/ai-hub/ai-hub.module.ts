@@ -15,6 +15,6 @@ import { GeminiService } from './services/gemini.service';
     CozeService,
     DifyService,
   ],
-  exports: [AiHubService],
+  exports: [AiHubService, GeminiService],
 })
 export class AiHubModule {}

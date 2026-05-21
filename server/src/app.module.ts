@@ -22,6 +22,8 @@ import { WarehouseManagerModule } from './modules/warehouse-manager/warehouse-ma
 import { WarehouseManagerViewModule } from './modules/warehouse-manager-view/warehouse-manager-view.module';
 import { WarehouseManagerRoleModule } from './modules/warehouse-manager-role/warehouse-manager-role.module';
 import { WarehouseVisitModule } from './modules/warehouse-visit/warehouse-visit.module';
+import { InventoryAlertModule } from './modules/inventory-alert/inventory-alert.module';
+import { WarehouseVehicleLogModule } from './modules/warehouse-vehicle-log/warehouse-vehicle-log.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { OrganizationRoleModule } from './modules/organization-role/organization-role.module';
 import { OrganizationApiKeyModule } from './modules/organization-api-key/organization-api-key.module';
@@ -212,6 +214,10 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
     InventoryRequestModule,
     WarehouseManagerInventoryModule,
     StockTakeModule,
+    InventoryAlertModule,
+
+    // Vehicle Logistics
+    WarehouseVehicleLogModule,
 
     // Organization Update Request
     OrganizationUpdateRequestModule,

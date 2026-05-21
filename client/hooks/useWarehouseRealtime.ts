@@ -1,0 +1,68 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { authStorage } from "@/services/auth/auth-storage.service";
+
+interface UseWarehouseRealtimeOptions {
+    warehouseTemplateId?: string | null;
+    events: string[];
+    enabled?: boolean;
+    onEvent?: (eventName: string, payload: unknown) => void;
+}
+
+export function useWarehouseRealtime({
+    warehouseTemplateId,
+    events,
+    enabled = true,
+    onEvent,
+}: UseWarehouseRealtimeOptions) {
+    const [connected, setConnected] = useState(false);
+    const socketRef = useRef<Socket | null>(null);
+    const onEventRef = useRef(onEvent);
+    onEventRef.current = onEvent;
+
+    const eventsKey = useMemo(() => events.join("|"), [events]);
+
+    useEffect(() => {
+        if (!enabled || !warehouseTemplateId || events.length === 0) return;
+
+        const token = authStorage.getAccessToken();
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;
+        if (!token || !socketUrl) return;
+
+        const socket = io(socketUrl, {
+            auth: { token: `Bearer ${token}` },
+            transports: ["websocket", "polling"],
+        });
+
+        socketRef.current = socket;
+
+        const handlers = new Map<string, (payload: unknown) => void>();
+
+        socket.on("connect", () => setConnected(true));
+        socket.on("disconnect", () => setConnected(false));
+
+        events.forEach((eventName) => {
+            const handler = (payload: unknown) => {
+                onEventRef.current?.(eventName, payload);
+            };
+            handlers.set(eventName, handler);
+            socket.on(eventName, handler);
+        });
+
+        return () => {
+            handlers.forEach((handler, eventName) => {
+                socket.off(eventName, handler);
+            });
+            socket.off("connect");
+            socket.off("disconnect");
+            socket.disconnect();
+            socketRef.current = null;
+            setConnected(false);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enabled, warehouseTemplateId, eventsKey]);
+
+    return { connected };
+}
