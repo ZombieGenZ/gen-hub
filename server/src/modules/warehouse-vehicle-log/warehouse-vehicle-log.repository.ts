@@ -126,6 +126,17 @@ export class VehicleLogRepository {
     return { active_log: activeLog, pending_receipts: pendingReceipts, pending_exports: pendingExports };
   }
 
+  async findActiveByPlate(licensePlate: string, warehouseTemplateId: string) {
+    return this.prisma.vehicleLog.findFirst({
+      where: {
+        license_plate: licensePlate,
+        warehouse_template_id: warehouseTemplateId,
+        status: VehicleLogStatus.INSIDE,
+        is_deleted: false,
+      },
+    });
+  }
+
   async countInsideToday(warehouseTemplateId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

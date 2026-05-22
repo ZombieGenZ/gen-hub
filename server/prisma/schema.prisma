@@ -594,6 +594,7 @@ model WarehouseTemplate {
   consultation_requests ConsultationRequest[]
   generated_warehouses  Warehouse[]                @relation("GeneratedWarehouses")
   vehicle_logs          VehicleLog[]
+  gps_sessions          GpsSession[]
 
   @@map("warehouse_templates")
 }
@@ -4833,4 +4834,51 @@ model AppDownloadInvite {
   @@index([share_id])
   @@index([email])
   @@map("app_download_invites")
+}
+
+// ─────────────────────────────────────────────────────────────
+// GPS Tracking — Vehicle Location (browser-based, no app required)
+// ─────────────────────────────────────────────────────────────
+
+enum GpsSessionStatus {
+  ACTIVE
+  EXPIRED
+  COMPLETED
+}
+
+model GpsSession {
+  id                    String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  token                 String           @unique
+  license_plate         String
+  receipt_id            String?          @db.Uuid
+  export_id             String?          @db.Uuid
+  warehouse_template_id String           @db.Uuid
+  driver_phone          String?
+  status                GpsSessionStatus @default(ACTIVE)
+  expires_at            DateTime
+  created_at            DateTime         @default(now())
+  created_by            String?          @db.Uuid
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
+  tracks             GpsTrack[]
+
+  @@index([token])
+  @@index([warehouse_template_id])
+  @@index([status])
+  @@map("gps_sessions")
+}
+
+model GpsTrack {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  session_id  String   @db.Uuid
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  accuracy    Float?
+  speed       Float?
+  recorded_at DateTime @default(now())
+
+  session GpsSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id, recorded_at])
+  @@map("gps_tracks")
 }

@@ -3,9 +3,13 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { VehicleLogService } from "@/services/vehicle-log/vehicle-log.service";
+import { GpsService } from "@/services/gps/gps.service";
+import type { GpsSessionCreated } from "@/services/gps/gps.service";
 import { warehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { useWarehouseRealtime } from "@/hooks/useWarehouseRealtime";
 import { useToast } from "@/contexts/ToastContext";
+import { GpsLiveMap } from "@/components/dashboard/staff/vehicle-log/GpsLiveMap";
+import type { VehiclePosition } from "@/components/dashboard/staff/vehicle-log/GpsLiveMap";
 import type {
     VehicleLog,
     VehicleStats,
@@ -17,6 +21,7 @@ import type {
 import { VEHICLE_TYPE_LABELS, VEHICLE_PURPOSE_LABELS } from "@/services/vehicle-log/vehicle-log.types";
 
 const vehicleLogService = new VehicleLogService();
+const gpsService = new GpsService();
 
 const STATUS_COLORS: Record<VehicleLogStatus, string> = {
     INSIDE: "bg-green-100 text-green-800",
@@ -31,6 +36,8 @@ const STATUS_LABELS: Record<VehicleLogStatus, string> = {
 interface WarehouseOption {
     id: string;
     name: string;
+    latitude?: number | string | null;
+    longitude?: number | string | null;
 }
 
 type TabKey = "active" | "all";
@@ -62,6 +69,17 @@ export default function VehicleLogPage() {
     const [lookupResult, setLookupResult] = useState<{ active_log: VehicleLog | null } | null>(null);
     const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // ── GPS Session form ──
+    const [showGpsForm, setShowGpsForm] = useState(false);
+    const [gpsForm, setGpsForm] = useState({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" });
+    const [gpsSubmitting, setGpsSubmitting] = useState(false);
+    const [gpsCreated, setGpsCreated] = useState<GpsSessionCreated | null>(null);
+
+    // ── GPS Live Map state ──
+    const [vehiclePositions, setVehiclePositions] = useState<Map<string, VehiclePosition>>(new Map());
+    const [warehouseCoords, setWarehouseCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [showMap, setShowMap] = useState(false);
+
     // ── Filters history tab ──
     const [filterDate, setFilterDate] = useState("");
     const [filterStatus, setFilterStatus] = useState<VehicleLogStatus | "">("");
@@ -74,12 +92,58 @@ export default function VehicleLogPage() {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
                 const raw = await warehouseTemplateService.getWarehouseTemplates(token, { is_active: true, limit: 100 });
-                // API may return array or {items: [...]}
                 const items = (Array.isArray(raw) ? raw : (raw?.items ?? [])) as WarehouseOption[];
-                setWarehouseTemplates(items.map((w) => ({ id: w.id, name: w.name })));
+                setWarehouseTemplates(items.map((w) => ({
+                    id: w.id,
+                    name: w.name,
+                    latitude: w.latitude,
+                    longitude: w.longitude,
+                })));
             } catch { /* non-critical */ }
         })();
     }, []);
+
+    // ── Extract warehouse coords when filter changes ──
+    useEffect(() => {
+        if (!filterWarehouseId) {
+            setWarehouseCoords(null);
+            setVehiclePositions(new Map());
+            return;
+        }
+        const wt = warehouseTemplates.find((w) => w.id === filterWarehouseId);
+        if (wt?.latitude && wt?.longitude) {
+            setWarehouseCoords({ lat: Number(wt.latitude), lng: Number(wt.longitude) });
+        } else {
+            setWarehouseCoords(null);
+        }
+    }, [filterWarehouseId, warehouseTemplates]);
+
+    // ── Fetch active GPS sessions to seed map positions ──
+    const fetchGpsSessions = useCallback(async () => {
+        if (!filterWarehouseId) return;
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const sessions = await gpsService.listActiveSessions(token, filterWarehouseId);
+            const positions = new Map<string, VehiclePosition>();
+            sessions.forEach((s) => {
+                const track = s.tracks?.[0];
+                if (track) {
+                    positions.set(s.id, {
+                        sessionId: s.id,
+                        licensePlate: s.license_plate,
+                        lat: Number(track.latitude),
+                        lng: Number(track.longitude),
+                        distanceM: null,
+                        geofence: null,
+                    });
+                }
+            });
+            setVehiclePositions(positions);
+        } catch { /* non-critical */ }
+    }, [filterWarehouseId]);
+
+    useEffect(() => { void fetchGpsSessions(); }, [fetchGpsSessions]);
 
     // Pre-fill form warehouse when filter changes
     useEffect(() => {
@@ -125,22 +189,68 @@ export default function VehicleLogPage() {
     useEffect(() => { void fetchActive(); }, [fetchActive]);
     useEffect(() => { if (activeTab === "all") void fetchAll(); }, [activeTab, fetchAll]);
 
-    // ── Real-time WebSocket — subscribe khi chọn cụ thể một kho ──
+    // ── Real-time WebSocket — subscribe vehicle-approaching + entered/exited ──
     const realtimeEvents = useMemo(
         () => filterWarehouseId
             ? [
                 `warehouse:${filterWarehouseId}:vehicle-entered`,
                 `warehouse:${filterWarehouseId}:vehicle-exited`,
+                `warehouse:${filterWarehouseId}:vehicle-approaching`,
               ]
             : [],
         [filterWarehouseId]
+    );
+
+    const selectedWarehouseName = useMemo(
+        () => warehouseTemplates.find((w) => w.id === filterWarehouseId)?.name ?? "",
+        [filterWarehouseId, warehouseTemplates]
     );
 
     const { connected: wsConnected } = useWarehouseRealtime({
         warehouseTemplateId: filterWarehouseId || null,
         events: realtimeEvents,
         enabled: !!filterWarehouseId,
-        onEvent: () => { void fetchActive(); },
+        onEvent: (eventName, payload) => {
+            if (eventName.includes("vehicle-approaching")) {
+                const p = payload as {
+                    session_id: string;
+                    license_plate: string;
+                    latitude: number;
+                    longitude: number;
+                    distance_m: number;
+                    event: "APPROACHING" | "ARRIVED";
+                };
+
+                // Update vehicle position on live map
+                setVehiclePositions((prev) => {
+                    const next = new Map(prev);
+                    next.set(p.session_id, {
+                        sessionId: p.session_id,
+                        licensePlate: p.license_plate,
+                        lat: p.latitude,
+                        lng: p.longitude,
+                        distanceM: p.distance_m,
+                        geofence: p.event,
+                    });
+                    return next;
+                });
+
+                if (p.event === "ARRIVED") {
+                    showToast(
+                        `✅ Xe ${p.license_plate} đã đến khu vực kho (${p.distance_m}m)`,
+                        "success",
+                    );
+                    void fetchActive();
+                } else {
+                    showToast(
+                        `🚚 Xe ${p.license_plate} đang tiến đến kho — còn ${p.distance_m}m`,
+                        "info",
+                    );
+                }
+            } else {
+                void fetchActive();
+            }
+        },
     });
 
     // ── Lookup biển số với debounce 600ms ──
@@ -183,6 +293,32 @@ export default function VehicleLogPage() {
         }
     };
 
+    const handleCreateGpsSession = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!gpsForm.license_plate || !filterWarehouseId) {
+            showToast("Vui lòng nhập biển số và chọn kho.", "error");
+            return;
+        }
+        try {
+            setGpsSubmitting(true);
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const result = await gpsService.createSession(token, {
+                license_plate: gpsForm.license_plate,
+                warehouse_template_id: filterWarehouseId,
+                driver_phone: gpsForm.driver_phone || undefined,
+                receipt_id: gpsForm.receipt_id || undefined,
+                export_id: gpsForm.export_id || undefined,
+            });
+            setGpsCreated(result);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+            showToast(`Không thể tạo link GPS: ${msg}`, "error");
+        } finally {
+            setGpsSubmitting(false);
+        }
+    };
+
     const handleExit = async (id: string, plate: string) => {
         try {
             setExitingId(id);
@@ -210,7 +346,13 @@ export default function VehicleLogPage() {
         return h > 0 ? `${h}g ${m}p` : `${m}p`;
     };
 
+    const vehiclePositionsList = useMemo(
+        () => Array.from(vehiclePositions.values()),
+        [vehiclePositions]
+    );
+
     return (
+        <>
         <div className="space-y-6 p-6">
             {/* Header */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -225,6 +367,13 @@ export default function VehicleLogPage() {
                             <span className="text-green-600 ml-1">xe trong kho</span>
                         </div>
                     )}
+                    <button
+                        onClick={() => { setShowGpsForm(true); setGpsCreated(null); setGpsForm({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" }); }}
+                        className="px-4 py-2 border border-input bg-background rounded-lg text-sm font-medium hover:bg-muted/50 transition-colors"
+                        title="Tạo link GPS gửi cho tài xế"
+                    >
+                        📍 Link GPS
+                    </button>
                     <button
                         onClick={() => setShowForm(true)}
                         className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
@@ -248,12 +397,51 @@ export default function VehicleLogPage() {
                     ))}
                 </select>
                 {filterWarehouseId && (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
-                        <span className={`w-2 h-2 rounded-full inline-block ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
-                        {wsConnected ? "Real-time" : "Đang kết nối..."}
-                    </span>
+                    <>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
+                            <span className={`w-2 h-2 rounded-full inline-block ${wsConnected ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                            {wsConnected ? "Real-time" : "Đang kết nối..."}
+                        </span>
+                        <button
+                            onClick={() => setShowMap((v) => !v)}
+                            className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                                showMap
+                                    ? "bg-teal-50 border-teal-200 text-teal-700"
+                                    : "border-input text-muted-foreground hover:bg-muted/50"
+                            }`}
+                        >
+                            🗺️ {showMap ? "Ẩn bản đồ" : "GPS Live"}
+                            {vehiclePositionsList.length > 0 && (
+                                <span className="ml-1.5 px-1.5 py-0.5 bg-teal-500 text-white text-[10px] rounded-full">
+                                    {vehiclePositionsList.length}
+                                </span>
+                            )}
+                        </button>
+                    </>
                 )}
             </div>
+
+            {/* GPS Live Map */}
+            {showMap && filterWarehouseId && (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-muted-foreground">
+                            GPS Live — {vehiclePositionsList.length === 0 ? "Không có xe đang tracking" : `${vehiclePositionsList.length} xe`}
+                        </p>
+                        <button
+                            onClick={() => void fetchGpsSessions()}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            ↻ Làm mới
+                        </button>
+                    </div>
+                    <GpsLiveMap
+                        warehouseCoords={warehouseCoords}
+                        warehouseName={selectedWarehouseName}
+                        vehiclePositions={vehiclePositionsList}
+                    />
+                </div>
+            )}
 
             {/* Form ghi nhận xe vào */}
             {showForm && (
@@ -540,5 +728,128 @@ export default function VehicleLogPage() {
                 </div>
             )}
         </div>
+
+        {/* ── GPS Session Modal ── */}
+        {showGpsForm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className="bg-background rounded-2xl shadow-xl w-full max-w-md">
+                    <div className="flex items-center justify-between px-6 py-4 border-b">
+                        <div>
+                            <h2 className="font-semibold text-base">📍 Tạo link GPS cho tài xế</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">Tài xế mở link → browser gửi vị trí tự động mỗi 30 giây</p>
+                        </div>
+                        <button onClick={() => { setShowGpsForm(false); setGpsCreated(null); }} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
+                    </div>
+
+                    {gpsCreated ? (
+                        <div className="px-6 py-5 space-y-4">
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+                                <p className="text-sm font-medium text-green-800">Link GPS đã tạo thành công!</p>
+                                <div className="space-y-1">
+                                    <p className="text-xs text-green-700">Biển số: <strong>{gpsCreated.license_plate}</strong></p>
+                                    <p className="text-xs text-green-700">Hết hạn: {new Date(gpsCreated.expires_at).toLocaleString("vi-VN")}</p>
+                                </div>
+                                <div className="bg-white rounded-lg border border-green-200 p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Link gửi cho tài xế:</p>
+                                    <p className="text-xs font-mono break-all text-gray-700">{gpsCreated.tracking_url}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => { void navigator.clipboard.writeText(gpsCreated.tracking_url); showToast("Đã copy link!", "success"); }}
+                                        className="flex-1 px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                                    >
+                                        Copy link
+                                    </button>
+                                    <button
+                                        onClick={() => { setGpsCreated(null); setGpsForm({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" }); }}
+                                        className="flex-1 px-3 py-2 text-xs border border-input rounded-lg hover:bg-muted/50 transition-colors"
+                                    >
+                                        Tạo link khác
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowGpsForm(false)}
+                                className="w-full px-4 py-2 text-sm border border-input rounded-lg hover:bg-muted/50 transition-colors"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleCreateGpsSession} className="px-6 py-5 space-y-4">
+                            {!filterWarehouseId && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-700">
+                                    Vui lòng chọn kho ở phần lọc trước khi tạo link GPS.
+                                </div>
+                            )}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium">Biển số xe <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="VD: 51A-12345"
+                                    value={gpsForm.license_plate}
+                                    onChange={(e) => setGpsForm((f) => ({ ...f, license_plate: e.target.value }))}
+                                    required
+                                    className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring font-mono uppercase"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium">SĐT tài xế</label>
+                                <input
+                                    type="tel"
+                                    placeholder="VD: 0901234567"
+                                    value={gpsForm.driver_phone}
+                                    onChange={(e) => setGpsForm((f) => ({ ...f, driver_phone: e.target.value }))}
+                                    className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                />
+                                <p className="text-xs text-muted-foreground">Dùng để gửi link qua SMS (nếu tích hợp Twilio)</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">Mã phiếu nhập</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Receipt ID (tùy chọn)"
+                                        value={gpsForm.receipt_id}
+                                        onChange={(e) => setGpsForm((f) => ({ ...f, receipt_id: e.target.value }))}
+                                        className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">Mã phiếu xuất</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Export ID (tùy chọn)"
+                                        value={gpsForm.export_id}
+                                        onChange={(e) => setGpsForm((f) => ({ ...f, export_id: e.target.value }))}
+                                        className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3">
+                                Link có hiệu lực <strong>24 giờ</strong>. Tài xế mở link trên điện thoại → click đồng ý cấp quyền vị trí → hệ thống tự động theo dõi.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGpsForm(false)}
+                                    className="flex-1 px-4 py-2 text-sm border border-input rounded-lg hover:bg-muted/50 transition-colors"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={gpsSubmitting || !filterWarehouseId}
+                                    className="flex-1 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+                                >
+                                    {gpsSubmitting ? "Đang tạo..." : "Tạo link GPS"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            </div>
+        )}
+        </>
     );
 }

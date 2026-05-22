@@ -10,6 +10,7 @@ import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 import { orgHelper } from "@/lib/organization.utils";
 import type { StockItem, StockStats } from "@/services/inventory/inventory.types";
 
+import Link from "next/link";
 import { StockHeader } from "@/components/dashboard/organization/stock/StockHeader";
 import { StockTable, ITEMS_PER_PAGE } from "@/components/dashboard/organization/stock/StockTable";
 import { InboundOutboundTab } from "@/components/dashboard/organization/stock/InboundOutboundTab";
@@ -200,6 +201,14 @@ export default function StockPage() {
 
     return (
         <div className="space-y-6 p-6">
+            <div className="flex items-center justify-end">
+                <Link
+                    href="/dashboard/organization/stock/alert-config"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors"
+                >
+                    <span>🔔</span> Cấu hình cảnh báo tồn kho
+                </Link>
+            </div>
             <InventoryAlertBanner onResolve={() => { void fetchStats(); }} />
 
             <StockHeader

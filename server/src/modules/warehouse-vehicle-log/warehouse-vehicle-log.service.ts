@@ -109,6 +109,10 @@ export class VehicleLogService {
     return { success: true };
   }
 
+  async findActiveByPlate(licensePlate: string, warehouseTemplateId: string) {
+    return this.repo.findActiveByPlate(licensePlate, warehouseTemplateId);
+  }
+
   async getDashboardStats(warehouseTemplateId?: string) {
     const insideCount = await this.repo.countInsideToday(warehouseTemplateId);
     return { inside_count: insideCount };
