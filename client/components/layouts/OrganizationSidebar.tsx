@@ -20,6 +20,7 @@ import {
     MapIcon,
     CalendarDaysIcon,
     SparklesIcon,
+    TruckIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -47,6 +48,7 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/dashboard/organization/stock", icon: ClipboardDocumentCheckIcon, label: "Tồn kho" },
             { href: "/dashboard/organization/purchase-order", icon: ArrowDownTrayIcon, label: "Phiếu PO" },
             { href: "/dashboard/organization/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
+            { href: "/dashboard/organization/vehicle-log", icon: TruckIcon, label: "Xe ra vào kho" },
         ]
     },
     {

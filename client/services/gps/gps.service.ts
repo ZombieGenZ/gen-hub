@@ -106,7 +106,7 @@ export class GpsService {
         warehouseTemplateId: string,
     ): Promise<GpsActiveSession[]> {
         const res = await fetch(
-            `${API}/warehouse-manager/vehicle-log/gps-sessions?warehouse_template_id=${warehouseTemplateId}`,
+            `${API}/warehouse-manager/gps/active-sessions?warehouse_template_id=${warehouseTemplateId}`,
             { headers: { Authorization: `Bearer ${token}` } },
         );
         if (!res.ok) return [];

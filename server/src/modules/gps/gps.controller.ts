@@ -62,7 +62,7 @@ export class GpsController {
   /**
    * Staff xem danh sách phiên GPS đang hoạt động tại kho
    */
-  @Get('warehouse-manager/vehicle-log/gps-sessions')
+  @Get('warehouse-manager/gps/active-sessions')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Danh sách phiên GPS đang active tại kho' })
