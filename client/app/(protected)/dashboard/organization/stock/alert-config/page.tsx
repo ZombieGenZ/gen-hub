@@ -30,6 +30,7 @@ export default function AlertConfigPage() {
     const [configs, setConfigs] = useState<AlertConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+    const [warehousesLoading, setWarehousesLoading] = useState(true);
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
 
@@ -61,10 +62,13 @@ export default function AlertConfigPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
+            setWarehousesLoading(true);
             const list = await inventoryService.listWarehouses(token);
             setWarehouses(list);
         } catch {
             // không critical
+        } finally {
+            setWarehousesLoading(false);
         }
     }, []);
 
@@ -152,18 +156,24 @@ export default function AlertConfigPage() {
             </div>
 
             {/* Filter */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
                 <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Lọc theo kho:</label>
-                <select
-                    value={selectedWarehouseId}
-                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
-                    className="text-sm border border-input rounded-lg px-3 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                    <option value="">Tất cả kho</option>
-                    {warehouses.map((w) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                    ))}
-                </select>
+                {warehousesLoading ? (
+                    <span className="text-sm text-muted-foreground">Đang tải kho...</span>
+                ) : warehouses.length === 0 ? (
+                    <span className="text-sm text-orange-600">Chưa có kho nào từ hợp đồng đang hiệu lực</span>
+                ) : (
+                    <select
+                        value={selectedWarehouseId}
+                        onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                        className="text-sm border border-input rounded-lg px-3 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="">Tất cả kho</option>
+                        {warehouses.map((w) => (
+                            <option key={w.id} value={w.id}>{w.name}</option>
+                        ))}
+                    </select>
+                )}
             </div>
 
             {/* Table */}
@@ -255,17 +265,23 @@ export default function AlertConfigPage() {
                             {/* Kho */}
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium">Kho <span className="text-red-500">*</span></label>
-                                <select
-                                    value={form.warehouse_id}
-                                    onChange={(e) => setForm((f) => ({ ...f, warehouse_id: e.target.value }))}
-                                    required
-                                    className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                                >
-                                    <option value="">Chọn kho...</option>
-                                    {warehouses.map((w) => (
-                                        <option key={w.id} value={w.id}>{w.name}</option>
-                                    ))}
-                                </select>
+                                {warehouses.length === 0 ? (
+                                    <p className="text-sm text-orange-600 py-1">
+                                        Chưa có kho nào từ hợp đồng đang hiệu lực
+                                    </p>
+                                ) : (
+                                    <select
+                                        value={form.warehouse_id}
+                                        onChange={(e) => setForm((f) => ({ ...f, warehouse_id: e.target.value }))}
+                                        required
+                                        className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                    >
+                                        <option value="">Chọn kho...</option>
+                                        {warehouses.map((w) => (
+                                            <option key={w.id} value={w.id}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {/* Sản phẩm */}

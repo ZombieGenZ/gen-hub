@@ -4620,7 +4620,8 @@ model VehicleLog {
 
   status VehicleLogStatus @default(INSIDE)
 
-  notes String? @db.Text
+  notes           String? @db.Text
+  plate_image_url String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())

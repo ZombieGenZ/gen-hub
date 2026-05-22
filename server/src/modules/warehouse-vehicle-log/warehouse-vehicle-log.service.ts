@@ -5,6 +5,8 @@ import { CreateVehicleLogDto } from './dto/create-vehicle-log.dto';
 import { QueryVehicleLogDto } from './dto/query-vehicle-log.dto';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { GeminiService } from '../ai-hub/services/gemini.service';
+import { ImageUploadService } from '../../common/services/image-upload.service';
 
 @Injectable()
 export class VehicleLogService {
@@ -15,6 +17,8 @@ export class VehicleLogService {
     private readonly redis: RedisService,
     private readonly websocket: WebsocketGateway,
     private readonly config: ConfigService,
+    private readonly gemini: GeminiService,
+    private readonly imageUpload: ImageUploadService,
   ) {}
 
   async create(dto: CreateVehicleLogDto, userId: string) {
@@ -34,6 +38,7 @@ export class VehicleLogService {
       linked_export_id: dto.linked_export_id,
       entry_time: dto.entry_time ? new Date(dto.entry_time) : new Date(),
       notes: dto.notes,
+      plate_image_url: dto.plate_image_url,
       created_by: userId,
     });
 
@@ -116,6 +121,28 @@ export class VehicleLogService {
   async getDashboardStats(warehouseTemplateId?: string) {
     const insideCount = await this.repo.countInsideToday(warehouseTemplateId);
     return { inside_count: insideCount };
+  }
+
+  async ocrPlate(
+    file: Express.Multer.File,
+  ): Promise<{ license_plate: string; confidence: number; image_url: string }> {
+    const uploadResult = await this.imageUpload.processAndUpload(
+      file.buffer,
+      file.originalname,
+      '/vehicle-log/plates',
+    );
+
+    const base64 = file.buffer.toString('base64');
+    const { plate, confidence } = await this.gemini.recognizeLicensePlate(
+      base64,
+      file.mimetype,
+    );
+
+    return {
+      license_plate: plate.toUpperCase().replace(/\s+/g, ''),
+      confidence,
+      image_url: uploadResult.url,
+    };
   }
 
   private async invalidateCache(warehouseTemplateId: string) {

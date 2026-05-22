@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Public } from '../../common/decorators';
 import { GpsService } from './gps.service';
 import { CreateGpsSessionDto } from './dto/create-gps-session.dto';
 import { PostLocationDto } from './dto/post-location.dto';
@@ -44,6 +45,7 @@ export class GpsController {
    * Không cần đăng nhập
    */
   @Get('gps/session/:token')
+  @Public()
   @ApiOperation({ summary: 'Lấy thông tin phiên GPS (public)' })
   getSessionInfo(@Param('token') token: string) {
     return this.service.getSessionInfo(token);
@@ -54,6 +56,7 @@ export class GpsController {
    * Không cần đăng nhập — xác thực qua token trong body
    */
   @Post('gps/location')
+  @Public()
   @ApiOperation({ summary: 'Gửi vị trí GPS từ browser tài xế (public)' })
   postLocation(@Body() dto: PostLocationDto) {
     return this.service.postLocation(dto);

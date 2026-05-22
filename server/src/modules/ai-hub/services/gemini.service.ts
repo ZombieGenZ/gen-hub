@@ -492,6 +492,80 @@ export class GeminiService implements OnModuleInit {
   }
 
   /**
+   * Nhận diện biển số xe từ ảnh base64 bằng Gemini Vision
+   */
+  async recognizeLicensePlate(
+    base64: string,
+    mimeType: string,
+  ): Promise<{ plate: string; confidence: number }> {
+    if (!this.isEnabled) {
+      return { plate: '', confidence: 0 };
+    }
+
+    const startTime = Date.now();
+    const prompt =
+      'Extract the vehicle license plate number from this image. Return ONLY valid JSON in this exact format: {"plate": "LICENSE_PLATE_TEXT", "confidence": 0.95}. The confidence should be a number between 0 and 1. If no license plate is visible, return {"plate": "", "confidence": 0}.';
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent([
+          { inlineData: { data: base64, mimeType } },
+          prompt,
+        ]);
+        const text = response.response.text().trim();
+        const durationMs = Date.now() - startTime;
+
+        const jsonText = text
+          .replace(/```json?\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        const parsed = JSON.parse(jsonText);
+        const result = {
+          plate: String(parsed.plate || ''),
+          confidence: Number(parsed.confidence) || 0,
+        };
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose: 'license_plate_ocr',
+            inputText: '[image data]',
+            outputText: text.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+          });
+        });
+
+        return result;
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('exceeded') ||
+          msg.includes('429')
+        ) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(
+          `recognizeLicensePlate error: ${(error as Error).message}`,
+        );
+        return { plate: '', confidence: 0 };
+      }
+    }
+
+    this.logger.error('All Gemini API keys exhausted in recognizeLicensePlate');
+    return { plate: '', confidence: 0 };
+  }
+
+  /**
    * Lưu log AI call vào database (bất đồng bộ)
    */
   private async logAICall(data: IAILogData): Promise<void> {

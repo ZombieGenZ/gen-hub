@@ -577,6 +577,17 @@ export class InventoryRequestRepository {
         organization_id: orgId,
         is_deleted: false,
         is_active: true,
+        warehouse_template: {
+          rental_contract_details: {
+            some: {
+              is_deleted: false,
+              rental_contract: {
+                organization_id: orgId,
+                status: 'ACTIVE',
+              },
+            },
+          },
+        },
       },
       select: { id: true, name: true },
       orderBy: { name: 'asc' },

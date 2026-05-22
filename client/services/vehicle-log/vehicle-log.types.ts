@@ -18,6 +18,7 @@ export interface VehicleLog {
     exit_time?: string;
     status: VehicleLogStatus;
     notes?: string;
+    plate_image_url?: string;
     created_at: string;
     warehouse_template?: { id: string; name: string };
 }
@@ -40,6 +41,13 @@ export interface CreateVehicleLogPayload {
     linked_export_id?: string;
     entry_time?: string;
     notes?: string;
+    plate_image_url?: string;
+}
+
+export interface OcrPlateResult {
+    license_plate: string;
+    confidence: number;
+    image_url: string;
 }
 
 export interface VehicleLookupResult {

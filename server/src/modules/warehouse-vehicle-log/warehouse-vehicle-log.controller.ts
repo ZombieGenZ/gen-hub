@@ -9,9 +9,12 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { VehicleLogService } from './warehouse-vehicle-log.service';
 import { CreateVehicleLogDto } from './dto/create-vehicle-log.dto';
@@ -62,6 +65,16 @@ export class VehicleLogController {
     @Query('warehouse_template_id') warehouseTemplateId: string,
   ) {
     return this.service.lookup(licensePlate, warehouseTemplateId);
+  }
+
+  @Post('ocr-plate')
+  @ApiOperation({ summary: 'OCR biển số xe từ ảnh camera' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  ocrPlate(@UploadedFile() file: Express.Multer.File) {
+    return this.service.ocrPlate(file);
   }
 
   @Get(':id')

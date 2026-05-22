@@ -12,6 +12,7 @@ import { useWarehouseRealtime } from "@/hooks/useWarehouseRealtime";
 import { useToast } from "@/contexts/ToastContext";
 import { GpsLiveMap } from "@/components/dashboard/staff/vehicle-log/GpsLiveMap";
 import type { VehiclePosition } from "@/components/dashboard/staff/vehicle-log/GpsLiveMap";
+import { LicensePlateScannerModal } from "@/components/dashboard/shared/vehicle-log/LicensePlateScannerModal";
 import type {
     VehicleLog,
     VehicleStats,
@@ -82,6 +83,10 @@ export default function OrgVehicleLogPage() {
     const [vehiclePositions, setVehiclePositions] = useState<Map<string, VehiclePosition>>(new Map());
     const [warehouseCoords, setWarehouseCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [showMap, setShowMap] = useState(false);
+
+    // Scanner modal
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const [plateImageUrl, setPlateImageUrl] = useState<string | null>(null);
 
     // Filters history tab
     const [filterDate, setFilterDate] = useState("");
@@ -308,10 +313,11 @@ export default function OrgVehicleLogPage() {
             setSubmitting(true);
             const token = authStorage.getAccessToken();
             if (!token) return;
-            await vehicleLogService.create(token, form as CreateVehicleLogPayload);
+            await vehicleLogService.create(token, { ...(form as CreateVehicleLogPayload), plate_image_url: plateImageUrl ?? undefined });
             showToast("Ghi nhận xe vào kho thành công!", "success");
             setShowForm(false);
             setForm({ vehicle_type: "TRUCK", purpose: "INBOUND", warehouse_template_id: filterWarehouseId || undefined });
+            setPlateImageUrl(null);
             void fetchActive();
         } catch {
             showToast("Không thể ghi nhận xe. Vui lòng thử lại.", "error");
@@ -380,6 +386,16 @@ export default function OrgVehicleLogPage() {
 
     return (
         <>
+        <LicensePlateScannerModal
+            open={scannerOpen}
+            onClose={() => setScannerOpen(false)}
+            onResult={(plate, imgUrl) => {
+                setForm((f) => ({ ...f, license_plate: plate }));
+                setLookupPlate(plate);
+                setPlateImageUrl(imgUrl);
+                setScannerOpen(false);
+            }}
+        />
         <div className="space-y-6 p-6">
             {/* Header */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -508,13 +524,29 @@ export default function OrgVehicleLogPage() {
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium mb-1">Biển số *</label>
-                            <input
-                                required
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 uppercase"
-                                placeholder="51A-12345"
-                                value={form.license_plate ?? ""}
-                                onChange={(e) => setForm((f) => ({ ...f, license_plate: e.target.value }))}
-                            />
+                            <div className="flex gap-1.5">
+                                <input
+                                    required
+                                    className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 uppercase"
+                                    placeholder="51A-12345"
+                                    value={form.license_plate ?? ""}
+                                    onChange={(e) => setForm((f) => ({ ...f, license_plate: e.target.value }))}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setScannerOpen(true)}
+                                    title="Quét biển số bằng camera"
+                                    className="px-2.5 border rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            {plateImageUrl && (
+                                <p className="text-xs text-green-600 mt-1">Ảnh biển số đã chụp</p>
+                            )}
                         </div>
 
                         <div>

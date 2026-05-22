@@ -65,4 +65,9 @@ export class CreateVehicleLogDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  plate_image_url?: string;
 }
