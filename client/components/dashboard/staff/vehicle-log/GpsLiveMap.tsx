@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import Map, { Marker, Source, Layer } from "react-map-gl/mapbox";
-import type { FillLayer, LineLayer } from "react-map-gl";
+import type { FillLayerSpecification, LineLayerSpecification } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -41,14 +41,14 @@ function makeCircleGeoJSON(lng: number, lat: number, radiusM: number, steps = 64
     };
 }
 
-const geofenceFillLayer: FillLayer = {
+const geofenceFillLayer: FillLayerSpecification = {
     id: "geofence-fill",
     type: "fill",
     source: "geofence",
     paint: { "fill-color": "#0ea5e9", "fill-opacity": 0.1 },
 };
 
-const geofenceBorderLayer: LineLayer = {
+const geofenceBorderLayer: LineLayerSpecification = {
     id: "geofence-border",
     type: "line",
     source: "geofence",

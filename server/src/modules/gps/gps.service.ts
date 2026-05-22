@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
-  TooManyRequestsException,
 } from '@nestjs/common';
 import { GpsSession, VehiclePurpose, VehicleType } from '@prisma/client';
 import { randomBytes } from 'crypto';
@@ -79,8 +80,9 @@ export class GpsService {
     const rateKey = `gps-rate:${dto.token}`;
     const rateLimited = await this.redis.get(rateKey);
     if (rateLimited) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         'Vui lòng chờ 30 giây trước khi gửi vị trí tiếp theo',
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 

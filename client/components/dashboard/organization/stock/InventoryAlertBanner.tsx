@@ -36,7 +36,7 @@ export function InventoryAlertBanner({ onResolve }: InventoryAlertBannerProps) {
     const [orgId, setOrgId] = useState<string | null>(null);
 
     // Dùng ref để giữ hàm fetch ổn định (không gây loop trong useEffect)
-    const fetchAlertsRef = useRef<() => Promise<void>>();
+    const fetchAlertsRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
     const fetchAlerts = useCallback(async () => {
         try {

@@ -165,7 +165,7 @@ export class InventoryAlertRepository {
       where: { id: warehouseId },
       select: { warehouse_template_id: true },
     });
-    if (!warehouse) return [];
+    if (!warehouse || !warehouse.warehouse_template_id) return [];
 
     const managers = await this.prisma.warehouseTemplateManager.findMany({
       where: {
