@@ -7,6 +7,8 @@ export interface GpsSessionInfo {
     warehouse: {
         name: string;
         address: string | null;
+        latitude: number | null;
+        longitude: number | null;
     } | null;
 }
 

@@ -175,6 +175,7 @@ export default function OrgVehicleLogPage() {
                         lng: Number(track.longitude),
                         distanceM: null,
                         geofence: null,
+                        speedKmh: track.speed != null ? Math.round(Number(track.speed) * 3.6) : null,
                     });
                 }
             });
@@ -257,6 +258,7 @@ export default function OrgVehicleLogPage() {
                     latitude: number;
                     longitude: number;
                     distance_m: number;
+                    speed_kmh: number | null;
                     event: "APPROACHING" | "ARRIVED";
                 };
 
@@ -269,15 +271,17 @@ export default function OrgVehicleLogPage() {
                         lng: p.longitude,
                         distanceM: p.distance_m,
                         geofence: p.event,
+                        speedKmh: p.speed_kmh ?? null,
                     });
                     return next;
                 });
 
+                const speedText = p.speed_kmh ? ` • ${p.speed_kmh} km/h` : "";
                 if (p.event === "ARRIVED") {
-                    showToast(`Xe ${p.license_plate} đã đến khu vực kho (${p.distance_m}m)`, "success");
+                    showToast(`Xe ${p.license_plate} đã đến khu vực kho (${p.distance_m}m)${speedText}`, "success");
                     void fetchActive();
                 } else {
-                    showToast(`Xe ${p.license_plate} đang tiến đến kho — còn ${p.distance_m}m`, "info");
+                    showToast(`Xe ${p.license_plate} đang tiến đến kho — còn ${p.distance_m}m${speedText}`, "info");
                 }
             } else {
                 void fetchActive();

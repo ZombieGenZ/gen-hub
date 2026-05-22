@@ -70,6 +70,12 @@ export class GpsService {
         ? {
             name: session.warehouse_template.name,
             address: session.warehouse_template.address_detail,
+            latitude: session.warehouse_template.latitude
+              ? Number(session.warehouse_template.latitude)
+              : null,
+            longitude: session.warehouse_template.longitude
+              ? Number(session.warehouse_template.longitude)
+              : null,
           }
         : null,
     };
@@ -121,7 +127,7 @@ export class GpsService {
 
       if (distanceM <= ARRIVED_DISTANCE_M) {
         result.geofence = 'ARRIVED';
-        await this.handleArrived(session, dto.latitude, dto.longitude, distanceM);
+        await this.handleArrived(session, dto.latitude, dto.longitude, distanceM, dto.speed);
       } else if (distanceM <= APPROACHING_DISTANCE_M) {
         result.geofence = 'APPROACHING';
         this.websocket.server.emit(
@@ -133,6 +139,7 @@ export class GpsService {
             latitude: dto.latitude,
             longitude: dto.longitude,
             distance_m: Math.round(distanceM),
+            speed_kmh: dto.speed != null ? Math.round(dto.speed * 3.6) : null,
             event: 'APPROACHING',
           },
         );
@@ -147,6 +154,7 @@ export class GpsService {
     latitude: number,
     longitude: number,
     distanceM: number,
+    speed?: number,
   ) {
     const existing = await this.vehicleLogService.findActiveByPlate(
       session.license_plate,
@@ -189,6 +197,7 @@ export class GpsService {
         latitude,
         longitude,
         distance_m: Math.round(distanceM),
+        speed_kmh: speed != null ? Math.round(speed * 3.6) : null,
         event: 'ARRIVED',
       },
     );

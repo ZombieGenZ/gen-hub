@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { GpsService } from "@/services/gps/gps.service";
 import type { GpsSessionInfo } from "@/services/gps/gps.service";
+import { DriverTrackingMap } from "@/components/track/DriverTrackingMap";
 
 const gpsService = new GpsService();
 
@@ -36,10 +37,14 @@ export default function TrackingPage() {
     const [distanceM, setDistanceM] = useState<number | null>(null);
     const [geofence, setGeofence] = useState<"APPROACHING" | "ARRIVED" | null>(null);
     const [errorMsg, setErrorMsg] = useState("");
+    const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [speedKmh, setSpeedKmh] = useState<number | null>(null);
 
     const watchIdRef = useRef<number | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastPositionRef = useRef<GeolocationPosition | null>(null);
+    // Client-side rate limit — tránh spam server (server giới hạn 30s/request)
+    const lastApiCallRef = useRef<number>(0);
 
     // Lấy thông tin session
     useEffect(() => {
@@ -82,8 +87,9 @@ export default function TrackingPage() {
             return;
         }
 
-        const sendPosition = async (pos: GeolocationPosition) => {
-            lastPositionRef.current = pos;
+        // Gửi vị trí lên server — chỉ gọi khi đã qua 30s (rate limit)
+        const postToServer = async (pos: GeolocationPosition) => {
+            lastApiCallRef.current = Date.now();
             try {
                 const result = await gpsService.postLocation({
                     token,
@@ -98,14 +104,26 @@ export default function TrackingPage() {
                 }
                 if (result.geofence) setGeofence(result.geofence);
             } catch {
-                // bỏ qua lỗi gửi vị trí đơn lẻ
+                // bỏ qua lỗi mạng đơn lẻ
             }
         };
 
         watchIdRef.current = navigator.geolocation.watchPosition(
             (pos) => {
                 setStatus("tracking");
-                void sendPosition(pos);
+                lastPositionRef.current = pos;
+
+                // Cập nhật UI ngay lập tức — không phụ thuộc vào API
+                setDriverCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                if (pos.coords.speed !== null) {
+                    setSpeedKmh(pos.coords.speed * 3.6);
+                }
+
+                // Gửi lên server chỉ khi đã qua đủ 30s
+                const elapsed = Date.now() - lastApiCallRef.current;
+                if (elapsed >= GPS_INTERVAL_MS) {
+                    void postToServer(pos);
+                }
             },
             () => {
                 setStatus("no_gps");
@@ -113,10 +131,10 @@ export default function TrackingPage() {
             { enableHighAccuracy: true, timeout: 10_000 },
         );
 
-        // Gửi lại mỗi 30s ngay cả khi vị trí không đổi
+        // Fallback: gửi lại mỗi 30s ngay cả khi vị trí không đổi
         intervalRef.current = setInterval(() => {
             if (lastPositionRef.current) {
-                void sendPosition(lastPositionRef.current);
+                void postToServer(lastPositionRef.current);
             }
         }, GPS_INTERVAL_MS);
 
@@ -167,6 +185,17 @@ export default function TrackingPage() {
                         </p>
                     )}
 
+                    {/* Bản đồ — hiển thị khi kho có tọa độ */}
+                    {sessionInfo?.warehouse?.latitude && sessionInfo.warehouse.longitude && (
+                        <DriverTrackingMap
+                            warehouseLat={sessionInfo.warehouse.latitude}
+                            warehouseLng={sessionInfo.warehouse.longitude}
+                            warehouseName={sessionInfo.warehouse.name}
+                            driverLat={driverCoords?.lat ?? null}
+                            driverLng={driverCoords?.lng ?? null}
+                        />
+                    )}
+
                     {/* Trạng thái GPS */}
                     <div className="rounded-xl border p-4 text-center space-y-1">
                         {status === "loading" && (
@@ -212,23 +241,44 @@ export default function TrackingPage() {
                         )}
                     </div>
 
-                    {/* Khoảng cách đến kho */}
-                    {distanceM !== null && status === "tracking" && (
-                        <div
-                            className={`rounded-xl p-3 text-center text-sm font-medium ${
-                                geofence === "ARRIVED"
-                                    ? "bg-green-100 text-green-700"
-                                    : geofence === "APPROACHING"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {geofence === "ARRIVED" ? (
-                                <span>✅ Đã đến khu vực kho</span>
-                            ) : geofence === "APPROACHING" ? (
-                                <span>🚚 Gần kho — còn {distanceM}m</span>
-                            ) : (
-                                <span>Cách kho {(distanceM / 1000).toFixed(1)} km</span>
+                    {/* Khoảng cách + tốc độ */}
+                    {status === "tracking" && (
+                        <div className="grid grid-cols-2 gap-2">
+                            {distanceM !== null && (
+                                <div
+                                    className={[
+                                        "rounded-xl p-3 text-center text-sm font-medium",
+                                        speedKmh === null ? "col-span-2" : "col-span-1",
+                                        geofence === "ARRIVED"
+                                            ? "bg-green-100 text-green-700"
+                                            : geofence === "APPROACHING"
+                                            ? "bg-yellow-100 text-yellow-700"
+                                            : "bg-gray-100 text-gray-600",
+                                    ].join(" ")}
+                                >
+                                    {geofence === "ARRIVED" ? (
+                                        <div>
+                                            <div className="text-base">✅</div>
+                                            <div className="text-xs mt-0.5">Đã đến kho</div>
+                                        </div>
+                                    ) : geofence === "APPROACHING" ? (
+                                        <div>
+                                            <div className="font-bold">{distanceM}m</div>
+                                            <div className="text-xs mt-0.5">Gần kho</div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <div className="font-bold">{(distanceM / 1000).toFixed(1)} km</div>
+                                            <div className="text-xs mt-0.5">đến kho</div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {speedKmh !== null && (
+                                <div className="rounded-xl p-3 text-center bg-blue-50 text-blue-700">
+                                    <div className="font-bold text-sm">{speedKmh.toFixed(0)} km/h</div>
+                                    <div className="text-xs mt-0.5">Tốc độ</div>
+                                </div>
                             )}
                         </div>
                     )}

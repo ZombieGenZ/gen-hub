@@ -14,6 +14,7 @@ export interface VehiclePosition {
     lng: number;
     distanceM: number | null;
     geofence: "APPROACHING" | "ARRIVED" | null;
+    speedKmh: number | null;
 }
 
 interface GpsLiveMapProps {
@@ -123,11 +124,18 @@ export function GpsLiveMap({ warehouseCoords, warehouseName, vehiclePositions }:
                             >
                                 🚚 {v.licensePlate}
                             </div>
+                            {/* Khoảng cách */}
                             {v.distanceM !== null && (
-                                <div className="text-[10px] text-gray-500 bg-white/80 px-1 rounded mt-0.5">
+                                <div className="text-[10px] text-gray-500 bg-white/80 px-1.5 rounded mt-0.5 font-medium">
                                     {v.distanceM < 1000
                                         ? `${v.distanceM}m`
                                         : `${(v.distanceM / 1000).toFixed(1)}km`}
+                                </div>
+                            )}
+                            {/* Vận tốc */}
+                            {v.speedKmh !== null && v.speedKmh > 0 && (
+                                <div className="text-[10px] text-blue-600 bg-white/90 px-1.5 rounded mt-0.5 font-medium">
+                                    {v.speedKmh} km/h
                                 </div>
                             )}
                             <div className="w-0.5 h-2 bg-gray-400" />
