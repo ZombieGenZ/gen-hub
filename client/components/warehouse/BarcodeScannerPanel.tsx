@@ -78,6 +78,27 @@ const BarcodeScannerPanel = ({
     };
   }, []);
 
+  // Gắn stream vào <video> SAU KHI nó xuất hiện trong DOM (isScanning → true)
+  // Fix màn đen: video chỉ render khi isScanning=true, nhưng applyStream chạy trước khi video có trong DOM
+  useEffect(() => {
+    if (!isScanning) return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+    video.srcObject = stream;
+    video.play()
+      .then(() => {
+        if (!hasBarcodeDetector || !isMountedRef.current) return;
+        // @ts-ignore
+        detectorRef.current = new BarcodeDetector({
+          formats: ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e'],
+        });
+        detectBarcode();
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScanning]);
+
   const stopCamera = useCallback(() => {
     // Cancel animation frame
     if (animationRef.current) {
@@ -174,49 +195,36 @@ const BarcodeScannerPanel = ({
     setSearchResults([]);
     setInventoryResult(null);
 
-    try {
-      // Request camera permission
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }
-      });
+    const applyStream = (stream: MediaStream) => {
+      if (!isMountedRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+      streamRef.current = stream;
+      // Lưu stream, setIsScanning sau → useEffect sẽ gắn vào <video> sau khi nó render
+      setIsScanning(true);
+    };
 
-      if (!isMountedRef.current) {
-        stream.getTracks().forEach(track => track.stop());
+    try {
+      // Ưu tiên camera sau nhưng KHÔNG bắt buộc — máy tính sẽ dùng webcam trước
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      await applyStream(stream);
+    } catch (err: any) {
+      if (!isMountedRef.current) return;
+      if (err.name === 'NotAllowedError') {
+        setError('Quyền camera bị từ chối. Vui lòng cho phép truy cập camera trong cài đặt trình duyệt.');
         return;
       }
-
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-
-      setIsScanning(true);
-
-      // Start barcode detection if supported
-      if (hasBarcodeDetector) {
-        // @ts-ignore
-        detectorRef.current = new BarcodeDetector({ 
-          formats: ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e'] 
-        });
-        detectBarcode();
-      }
-
-    } catch (err: any) {
-      console.error('Camera error:', err);
-      if (!isMountedRef.current) return;
-      
-      if (err.name === 'NotAllowedError') {
-        setError('Quyền camera bị từ chối. Vui lòng cho phép truy cập camera.');
-      } else if (err.name === 'NotFoundError') {
+      if (err.name === 'NotFoundError') {
         setError('Không tìm thấy camera. Vui lòng kiểm tra thiết bị.');
-      } else {
-        setError(`Lỗi camera: ${err.message || 'Không xác định'}`);
+        return;
+      }
+      // OverconstrainedError hoặc lỗi khác — thử không có ràng buộc facing
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        await applyStream(stream);
+      } catch {
+        if (!isMountedRef.current) return;
+        setError('Không thể mở camera. Kiểm tra trình duyệt đang dùng HTTPS và thiết bị có camera.');
       }
     }
   }, [hasBarcodeDetector, detectBarcode]);
@@ -290,10 +298,11 @@ const BarcodeScannerPanel = ({
             }}
           >
             {isScanning ? (
-              <video 
+              <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
                 playsInline
+                autoPlay
                 muted
               />
             ) : (

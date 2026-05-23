@@ -40,6 +40,7 @@ export default function TrackingPage() {
     const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [speedKmh, setSpeedKmh] = useState<number | null>(null);
+    const [panelExpanded, setPanelExpanded] = useState(false);
 
     const watchIdRef = useRef<number | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -175,7 +176,7 @@ export default function TrackingPage() {
                     deliveryLng={deliveryCoords?.lng ?? null}
                     deliveryAddress={sessionInfo.delivery?.address}
                     className="absolute inset-0"
-                    recenterOffset="top-20 right-3"
+                    recenterOffset="top-36 right-3"
                 />
             ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-teal-900" />
@@ -218,111 +219,154 @@ export default function TrackingPage() {
                 </div>
             </div>
 
-            {/* Bottom info panel */}
+            {/* Bottom info panel — collapsible bottom sheet */}
             <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-8">
                 <div className={[
                     "bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border-2 transition-colors duration-500",
                     geofence === "ARRIVED" ? "border-green-400" :
                     geofence === "APPROACHING" ? "border-yellow-400" : "border-transparent",
                 ].join(" ")}>
-                    {/* Biển số + đếm ngược */}
-                    <div className="bg-teal-600 px-5 py-3 flex items-center justify-between gap-4">
+
+                    {/* Drag handle */}
+                    <button
+                        className="w-full flex justify-center pt-2.5 pb-1"
+                        onClick={() => setPanelExpanded(v => !v)}
+                        aria-label={panelExpanded ? "Thu gọn" : "Mở rộng thông tin"}
+                    >
+                        <div className="w-10 h-1 rounded-full bg-gray-300" />
+                    </button>
+
+                    {/* Always-visible header: biển số + chip trạng thái */}
+                    <button
+                        className="w-full bg-teal-600 px-5 py-3 flex items-center justify-between gap-3 text-left hover:bg-teal-700 transition-colors"
+                        onClick={() => setPanelExpanded(v => !v)}
+                    >
                         <span className="font-mono font-bold text-white text-xl tracking-widest">
                             {sessionInfo?.license_plate ?? "—"}
                         </span>
-                        {countdown && status !== "expired" && (
-                            <div className="text-right shrink-0">
-                                <div className="text-teal-200 text-[10px] leading-none">Còn hiệu lực</div>
-                                <div className="font-mono text-white text-sm font-semibold leading-tight mt-0.5">
-                                    {countdown}
+                        <div className="flex items-center gap-2 shrink-0">
+                            {/* Chip khoảng cách — chỉ hiện khi thu gọn */}
+                            {!panelExpanded && distanceM !== null && (
+                                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                    geofence === "ARRIVED" ? "bg-green-400/80 text-white" :
+                                    geofence === "APPROACHING" ? "bg-yellow-300 text-yellow-900" :
+                                    "bg-white/20 text-white"
+                                }`}>
+                                    {geofence === "ARRIVED" ? "✅ Đến nơi" :
+                                     distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)} km` : `${distanceM} m`}
+                                </span>
+                            )}
+                            {/* Chip tốc độ — chỉ hiện khi thu gọn */}
+                            {!panelExpanded && speedKmh !== null && speedKmh > 1 && (
+                                <span className="text-[11px] font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-full">
+                                    {speedKmh.toFixed(0)} km/h
+                                </span>
+                            )}
+                            {/* Đếm ngược — chỉ hiện khi thu gọn */}
+                            {!panelExpanded && countdown && status !== "expired" && (
+                                <div className="text-right">
+                                    <div className="text-teal-200 text-[9px] leading-none">hết hạn</div>
+                                    <div className="font-mono text-white text-xs font-semibold leading-tight">{countdown}</div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                            <span className="text-white/60 text-sm ml-1">{panelExpanded ? "↓" : "↑"}</span>
+                        </div>
+                    </button>
 
-                    <div className="px-5 py-4 space-y-3">
-                        {/* Trạng thái chờ / lỗi */}
-                        {(status === "loading" || status === "requesting_permission") && (
-                            <p className="text-sm text-gray-400 text-center animate-pulse">
-                                {status === "loading" ? "Đang tải phiên..." : "Đang yêu cầu quyền GPS..."}
-                            </p>
-                        )}
-                        {status === "no_gps" && (
-                            <p className="text-sm text-red-500 text-center">
-                                Vui lòng cấp quyền vị trí cho trình duyệt
-                            </p>
-                        )}
-                        {status === "expired" && (
-                            <p className="text-sm text-orange-500 font-medium text-center">
-                                Phiên theo dõi đã hết hạn
-                            </p>
-                        )}
-                        {status === "error" && (
-                            <p className="text-sm text-red-500 text-center">
-                                {errorMsg || "Lỗi không xác định"}
-                            </p>
-                        )}
+                    {/* Expandable content */}
+                    {panelExpanded && (
+                        <div className="px-5 py-4 space-y-3">
+                            {/* Đếm ngược */}
+                            {countdown && status !== "expired" && (
+                                <div className="flex items-center justify-between bg-teal-50 rounded-xl px-4 py-2.5">
+                                    <span className="text-xs text-teal-600">Còn hiệu lực</span>
+                                    <span className="font-mono text-teal-800 text-sm font-bold">{countdown}</span>
+                                </div>
+                            )}
 
-                        {/* Số liệu khi đang theo dõi */}
-                        {status === "tracking" && (
-                            <div className="flex gap-2">
-                                {distanceM !== null && (
-                                    <div className={[
-                                        "flex-1 rounded-xl py-2.5 text-center",
-                                        geofence === "ARRIVED" ? "bg-green-50" :
-                                        geofence === "APPROACHING" ? "bg-yellow-50" : "bg-gray-50",
-                                    ].join(" ")}>
-                                        {geofence === "ARRIVED" ? (
-                                            <>
-                                                <div className="text-xl">✅</div>
-                                                <div className="text-xs text-green-700 font-medium">Đến nơi</div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className={`font-bold text-sm ${geofence === "APPROACHING" ? "text-yellow-700" : "text-gray-700"}`}>
-                                                    {distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)} km` : `${distanceM} m`}
-                                                </div>
-                                                <div className={`text-[11px] ${geofence === "APPROACHING" ? "text-yellow-500" : "text-gray-400"}`}>
-                                                    {geofence === "APPROACHING" ? "Gần kho" : "đến kho"}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                                {speedKmh !== null && (
-                                    <div className="flex-1 rounded-xl py-2.5 text-center bg-blue-50">
-                                        <div className="font-bold text-sm text-blue-700">
-                                            {speedKmh.toFixed(0)}<span className="text-xs font-normal"> km/h</span>
+                            {/* Trạng thái chờ / lỗi */}
+                            {(status === "loading" || status === "requesting_permission") && (
+                                <p className="text-sm text-gray-400 text-center animate-pulse">
+                                    {status === "loading" ? "Đang tải phiên..." : "Đang yêu cầu quyền GPS..."}
+                                </p>
+                            )}
+                            {status === "no_gps" && (
+                                <p className="text-sm text-red-500 text-center">
+                                    Vui lòng cấp quyền vị trí cho trình duyệt
+                                </p>
+                            )}
+                            {status === "expired" && (
+                                <p className="text-sm text-orange-500 font-medium text-center">
+                                    Phiên theo dõi đã hết hạn
+                                </p>
+                            )}
+                            {status === "error" && (
+                                <p className="text-sm text-red-500 text-center">
+                                    {errorMsg || "Lỗi không xác định"}
+                                </p>
+                            )}
+
+                            {/* Số liệu khi đang theo dõi */}
+                            {status === "tracking" && (
+                                <div className="flex gap-2">
+                                    {distanceM !== null && (
+                                        <div className={[
+                                            "flex-1 rounded-xl py-2.5 text-center",
+                                            geofence === "ARRIVED" ? "bg-green-50" :
+                                            geofence === "APPROACHING" ? "bg-yellow-50" : "bg-gray-50",
+                                        ].join(" ")}>
+                                            {geofence === "ARRIVED" ? (
+                                                <>
+                                                    <div className="text-xl">✅</div>
+                                                    <div className="text-xs text-green-700 font-medium">Đến nơi</div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className={`font-bold text-sm ${geofence === "APPROACHING" ? "text-yellow-700" : "text-gray-700"}`}>
+                                                        {distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)} km` : `${distanceM} m`}
+                                                    </div>
+                                                    <div className={`text-[11px] ${geofence === "APPROACHING" ? "text-yellow-500" : "text-gray-400"}`}>
+                                                        {geofence === "APPROACHING" ? "Gần kho" : "đến kho"}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                        <div className="text-[11px] text-blue-400">Tốc độ</div>
-                                    </div>
-                                )}
-                                {lastSent && (
-                                    <div className="flex-1 rounded-xl py-2.5 text-center bg-gray-50">
-                                        <div className="font-medium text-xs text-gray-600">
-                                            {lastSent.toLocaleTimeString("vi-VN", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                                second: "2-digit",
-                                            })}
+                                    )}
+                                    {speedKmh !== null && (
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-blue-50">
+                                            <div className="font-bold text-sm text-blue-700">
+                                                {speedKmh.toFixed(0)}<span className="text-xs font-normal"> km/h</span>
+                                            </div>
+                                            <div className="text-[11px] text-blue-400">Tốc độ</div>
                                         </div>
-                                        <div className="text-[11px] text-gray-400">Gửi lúc</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                    )}
+                                    {lastSent && (
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-gray-50">
+                                            <div className="font-medium text-xs text-gray-600">
+                                                {lastSent.toLocaleTimeString("vi-VN", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                    second: "2-digit",
+                                                })}
+                                            </div>
+                                            <div className="text-[11px] text-gray-400">Gửi lúc</div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                        {sessionInfo?.warehouse?.address && (
-                            <p className="text-[11px] text-gray-400 text-center truncate">
-                                📦 {sessionInfo.warehouse.address}
-                            </p>
-                        )}
-                        {sessionInfo?.delivery?.address && (
-                            <p className="text-[11px] text-orange-500 text-center truncate font-medium">
-                                📍 {sessionInfo.delivery.address}
-                            </p>
-                        )}
-                    </div>
+                            {sessionInfo?.warehouse?.address && (
+                                <p className="text-[11px] text-gray-400 text-center truncate">
+                                    📦 {sessionInfo.warehouse.address}
+                                </p>
+                            )}
+                            {sessionInfo?.delivery?.address && (
+                                <p className="text-[11px] text-orange-500 text-center truncate font-medium">
+                                    📍 {sessionInfo.delivery.address}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <p className="text-center text-white/50 text-[10px] mt-3 drop-shadow">

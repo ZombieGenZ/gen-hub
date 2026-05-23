@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
+import Map, { Marker, Source, Layer, NavigationControl, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -121,6 +121,8 @@ export function DriverTrackingMap({
                 attributionControl={false}
                 onDragStart={handleDragStart}
             >
+                <NavigationControl position="top-right" visualizePitch={false} />
+
                 {/* Route line: warehouse → delivery */}
                 {routeGeo && (
                     <Source id="route" type="geojson" data={{ type: "Feature", geometry: routeGeo, properties: {} }}>

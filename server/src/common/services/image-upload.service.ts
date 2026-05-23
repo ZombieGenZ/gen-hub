@@ -55,9 +55,17 @@ export class ImageUploadService {
     this.watermarkPath =
       this.configService.get<string>('WATERMARK_PATH') ||
       './assets/watermark.png';
-    this.watermarkPosition = (this.configService.get<string>(
-      'WATERMARK_POSITION',
-    ) || 'bottom-right') as WatermarkPosition;
+    const rawPosition = (
+      this.configService.get<string>('WATERMARK_POSITION') || ''
+    ).trim();
+    const validPositions: WatermarkPosition[] = [
+      'top-left', 'top-center', 'top-right',
+      'center-left', 'center', 'center-right',
+      'bottom-left', 'bottom-center', 'bottom-right',
+    ];
+    this.watermarkPosition = validPositions.includes(rawPosition as WatermarkPosition)
+      ? (rawPosition as WatermarkPosition)
+      : 'bottom-right';
     this.watermarkOpacity = parseFloat(
       this.configService.get<string>('WATERMARK_OPACITY') || '0.5',
     );
@@ -128,22 +136,19 @@ export class ImageUploadService {
         return imageBuffer;
       }
 
-      // Đọc watermark
-      let watermark: sharp.Sharp;
+      // Đọc watermark — sharp() là lazy, lỗi file-not-found chỉ xảy ra khi .toBuffer()
+      const watermarkWidth = Math.round(metadata.width * 0.15);
+      let resizedWatermark: Buffer;
       try {
-        watermark = sharp(this.watermarkPath);
+        resizedWatermark = await sharp(this.watermarkPath)
+          .resize(watermarkWidth, null, { withoutEnlargement: true })
+          .toBuffer();
       } catch {
         this.logger.warn(
-          `Không tìm thấy file watermark: ${this.watermarkPath}`,
+          `Không tìm thấy hoặc không đọc được file watermark: ${this.watermarkPath}`,
         );
         return imageBuffer;
       }
-
-      // Tính toán kích thước watermark (15% chiều rộng ảnh)
-      const watermarkWidth = Math.round(metadata.width * 0.15);
-      const resizedWatermark = await watermark
-        .resize(watermarkWidth, null, { withoutEnlargement: true })
-        .toBuffer();
 
       // Tính toán vị trí watermark
       const position = this.calculateWatermarkPosition(
@@ -219,7 +224,7 @@ export class ImageUploadService {
         },
       };
 
-    return positions[position];
+    return positions[position] ?? positions['bottom-right'];
   }
 
   /**

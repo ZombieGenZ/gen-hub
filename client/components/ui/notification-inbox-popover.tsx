@@ -86,6 +86,24 @@ export function useNotifications() {
         }
     }, []);
 
+    const refreshUnreadCount = useCallback(async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        try {
+            const count = await notificationService.getUnreadCount(token);
+            setUnreadCount(count);
+        } catch {
+            // Silent fail for background refresh
+        }
+    }, []);
+
+    // Auto-fetch on mount and poll every 60s for badge count
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(refreshUnreadCount, 60_000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications, refreshUnreadCount]);
+
     const markAsRead = useCallback(async (id: string) => {
         const token = authStorage.getAccessToken();
         if (!token) return;

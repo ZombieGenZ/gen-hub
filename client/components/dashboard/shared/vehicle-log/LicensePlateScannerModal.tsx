@@ -86,6 +86,17 @@ export function LicensePlateScannerModal({ open, onClose, onResult }: Props) {
         }
     }, [open]);
 
+    // Gắn stream vào <video> SAU KHI nó xuất hiện trong DOM (scanState → "scanning")
+    // Đây là fix cho màn đen: videoRef.current = null khi startCamera() chạy vì <video> chưa render
+    useEffect(() => {
+        if (scanState !== "scanning") return;
+        const video = videoRef.current;
+        const stream = streamRef.current;
+        if (!video || !stream) return;
+        video.srcObject = stream;
+        video.play().catch(() => {});
+    }, [scanState]);
+
     // Run auto-scan loop when enabled and scanning
     useEffect(() => {
         if (autoScanMode && scanState === "scanning") {
@@ -181,44 +192,53 @@ export function LicensePlateScannerModal({ open, onClose, onResult }: Props) {
 
     const startCamera = useCallback(async () => {
         setErrorMsg("");
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
-            });
 
-            if (!isMountedRef.current) {
-                stream.getTracks().forEach((t) => t.stop());
-                return;
-            }
-
+        const tryGetCamera = async (constraints: MediaStreamConstraints) => {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (!isMountedRef.current) { stream.getTracks().forEach((t) => t.stop()); return; }
             streamRef.current = stream;
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                await videoRef.current.play();
-            }
+            // Lưu stream trước, setScanState sau → useEffect sẽ gắn vào <video> sau khi nó render
             setScanState("scanning");
             consecutiveHitsRef.current = 0;
+        };
+
+        try {
+            // Ưu tiên camera sau (mobile), nhưng KHÔNG bắt buộc → máy tính vẫn dùng webcam trước được
+            await tryGetCamera({
+                video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+            });
         } catch (err: unknown) {
             if (!isMountedRef.current) return;
             const name = (err as { name?: string }).name;
             if (name === "NotAllowedError") {
-                setErrorMsg("Quyền camera bị từ chối. Vui lòng cho phép truy cập camera.");
-            } else if (name === "NotFoundError") {
-                setErrorMsg("Không tìm thấy camera. Vui lòng kiểm tra thiết bị.");
-            } else {
-                setErrorMsg("Không thể mở camera. Vui lòng thử lại.");
+                setErrorMsg("Quyền camera bị từ chối. Vui lòng cho phép truy cập camera trong cài đặt trình duyệt.");
+                setScanState("error");
+                return;
             }
-            setScanState("error");
+            if (name === "NotFoundError") {
+                setErrorMsg("Không tìm thấy camera. Vui lòng kiểm tra thiết bị.");
+                setScanState("error");
+                return;
+            }
+            // OverconstrainedError hoặc lỗi khác — thử lại không có ràng buộc facing
+            try {
+                await tryGetCamera({ video: true });
+            } catch {
+                if (!isMountedRef.current) return;
+                setErrorMsg("Không thể mở camera. Vui lòng kiểm tra trình duyệt đang dùng HTTPS và thiết bị có camera.");
+                setScanState("error");
+            }
         }
     }, []);
 
     const captureAndOcr = useCallback(async () => {
         if (!videoRef.current || !canvasRef.current) return;
 
+        // Capture TRƯỚC khi dừng camera — nếu stop trước, srcObject = null → canvas vẽ khung đen
+        const blob = await captureBlob();
         stopCamera();
         setScanState("loading");
 
-        const blob = await captureBlob();
         if (!blob || !isMountedRef.current) return;
 
         const objectUrl = URL.createObjectURL(blob);
@@ -337,6 +357,7 @@ export function LicensePlateScannerModal({ open, onClose, onResult }: Props) {
                                     ref={videoRef}
                                     className="w-full h-full object-cover"
                                     playsInline
+                                    autoPlay
                                     muted
                                 />
                                 {/* Targeting frame */}
