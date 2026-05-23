@@ -62,10 +62,28 @@ export class GpsService {
       throw new BadRequestException('Phiên GPS đã hết hạn');
     }
 
+    let delivery: {
+      address: string | null;
+      partner_name: string | null;
+      export_code: string | null;
+    } | null = null;
+
+    if (session.export_id) {
+      const exportInfo = await this.repo.findExportDeliveryInfo(session.export_id);
+      if (exportInfo) {
+        delivery = {
+          address: exportInfo.delivery_address ?? null,
+          partner_name: exportInfo.partner?.name ?? null,
+          export_code: exportInfo.code ?? null,
+        };
+      }
+    }
+
     return {
       license_plate: session.license_plate,
       status: session.status,
       expires_at: session.expires_at,
+      export_id: session.export_id ?? null,
       warehouse: session.warehouse_template
         ? {
             name: session.warehouse_template.name,
@@ -78,6 +96,7 @@ export class GpsService {
               : null,
           }
         : null,
+      delivery,
     };
   }
 
@@ -112,6 +131,18 @@ export class GpsService {
 
     // Set rate limit AFTER successful track insertion
     await this.redis.set(rateKey, '1', RATE_LIMIT_TTL_S);
+
+    // Emit realtime driver position to outbound detail page listeners
+    if (session.export_id) {
+      this.websocket.server.emit(`outbound:${session.export_id}:driver-location`, {
+        session_id: session.id,
+        license_plate: session.license_plate,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        speed_kmh: dto.speed != null ? Math.round(dto.speed * 3.6) : null,
+        recorded_at: new Date().toISOString(),
+      });
+    }
 
     const wt = session.warehouse_template;
     const result: Record<string, unknown> = { recorded: true };

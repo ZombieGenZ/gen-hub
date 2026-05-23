@@ -103,6 +103,7 @@ export interface IOutboundRequest {
   delivery_address?: string | null;
   vehicle_info?: string | null;
   required_date?: Date | null;
+  picking_strategy?: string | null;
   status: ExportStatus;
   is_active: boolean;
   created_at: Date;
@@ -112,6 +113,8 @@ export interface IOutboundRequest {
   warehouse?: {
     id: string;
     name: string;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   partner?: {
     id: string;

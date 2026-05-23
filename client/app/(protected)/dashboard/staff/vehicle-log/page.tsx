@@ -365,8 +365,16 @@ export default function VehicleLogPage() {
         <LicensePlateScannerModal
             open={scannerOpen}
             onClose={() => setScannerOpen(false)}
-            onResult={(plate, imgUrl) => {
-                setForm((f) => ({ ...f, license_plate: plate }));
+            onResult={(plate, imgUrl, vehicleInfo) => {
+                const vtRemap: Record<string, string> = { MOTORCYCLE: 'MOTORBIKE', CONTAINER: 'OTHER' };
+                const vt = vehicleInfo?.vehicle_type
+                    ? (vtRemap[vehicleInfo.vehicle_type] ?? vehicleInfo.vehicle_type)
+                    : undefined;
+                setForm((f) => ({
+                    ...f,
+                    license_plate: plate,
+                    ...(vt ? { vehicle_type: vt as 'TRUCK' | 'VAN' | 'MOTORBIKE' | 'CAR' | 'OTHER' } : {}),
+                }));
                 setLookupPlate(plate);
                 setPlateImageUrl(imgUrl);
                 setScannerOpen(false);
@@ -442,10 +450,13 @@ export default function VehicleLogPage() {
 
             {/* GPS Live Map */}
             {showMap && filterWarehouseId && (
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-muted-foreground">
-                            GPS Live — {vehiclePositionsList.length === 0 ? "Không có xe đang tracking" : `${vehiclePositionsList.length} xe`}
+                <div className="-mx-6">
+                    <div className="px-6 py-2.5 flex items-center justify-between border-y bg-muted/20">
+                        <p className="text-sm font-medium">
+                            🗺️ GPS Live
+                            {vehiclePositionsList.length > 0
+                                ? ` — ${vehiclePositionsList.length} xe đang theo dõi`
+                                : " — Chưa có xe nào đang tracking"}
                         </p>
                         <button
                             onClick={() => void fetchGpsSessions()}
@@ -458,6 +469,7 @@ export default function VehicleLogPage() {
                         warehouseCoords={warehouseCoords}
                         warehouseName={selectedWarehouseName}
                         vehiclePositions={vehiclePositionsList}
+                        className="h-[60vh] min-h-[440px] rounded-none border-b"
                     />
                 </div>
             )}

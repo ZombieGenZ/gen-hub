@@ -48,6 +48,15 @@ export interface OcrPlateResult {
     license_plate: string;
     confidence: number;
     image_url: string;
+    vehicle_type?: string;
+    vehicle_color?: string;
+    plate_format?: string;
+    condition_flags?: string[];
+}
+
+export interface OcrPlateQuickResult {
+    license_plate: string;
+    confidence: number;
 }
 
 export interface VehicleLookupResult {

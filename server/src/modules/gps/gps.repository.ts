@@ -35,6 +35,18 @@ export class GpsRepository {
     });
   }
 
+  async findExportDeliveryInfo(exportId: string) {
+    return this.prisma.export.findUnique({
+      where: { id: exportId },
+      select: {
+        id: true,
+        code: true,
+        delivery_address: true,
+        partner: { select: { id: true, name: true } },
+      },
+    });
+  }
+
   async addTrack(data: {
     session_id: string;
     latitude: number;

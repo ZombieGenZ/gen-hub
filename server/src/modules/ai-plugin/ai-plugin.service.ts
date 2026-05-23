@@ -3,11 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 import { RedisService } from '../redis/redis.service';
 import { WarehouseVisitService } from '../warehouse-visit/warehouse-visit.service';
 import { ConsultationRequestService } from '../consultation-request/consultation-request.service';
 import { CreateWarehouseVisitBookingDto } from '../warehouse-visit/dto';
+import { GeminiService } from '../ai-hub/services/gemini.service';
 import { AiPluginRepository } from './ai-plugin.repository';
 import {
   GetWarehousePricingDto,
@@ -21,6 +23,7 @@ import {
   IRentalContractTermsResponse,
   IFaqForAiResponse,
   ITermsSection,
+  IWarehouseRecommendationResponse,
 } from './interfaces';
 
 @Injectable()
@@ -37,6 +40,7 @@ export class AiPluginService {
     private readonly i18n: I18nService,
     private readonly consultationRequestService: ConsultationRequestService,
     private readonly warehouseVisitService: WarehouseVisitService,
+    private readonly gemini: GeminiService,
   ) {
     this.pricingCacheTTL = this.configService.get<number>(
       'REDIS_COZE_PRICING_TTL',
@@ -159,6 +163,96 @@ export class AiPluginService {
       },
       null,
     );
+  }
+
+  async recommendWarehouses(
+    query: string,
+  ): Promise<IWarehouseRecommendationResponse> {
+    const appBaseUrl = this.configService.get<string>(
+      'CLIENT_URL',
+      'http://localhost:3000',
+    );
+    const cacheKey = `ai-plugin:recommend:${crypto.createHash('md5').update(query).digest('hex')}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const filters = await this.gemini.extractWarehouseFilters(query);
+
+    const pricingDto: GetWarehousePricingDto = {
+      keywords: filters.keywords ?? undefined,
+      province_name: filters.province_name ?? undefined,
+      min_area: filters.area_min ?? undefined,
+      max_area: filters.area_max ?? undefined,
+      max_price: filters.budget_max_monthly ?? undefined,
+      is_cold_storage: filters.is_cold_storage ?? undefined,
+      is_shared_warehouse: filters.is_shared ?? undefined,
+      limit: 20,
+    };
+
+    const { items } = await this.repository.getWarehousePricing(pricingDto);
+
+    if (items.length === 0) {
+      return {
+        extracted_filters: filters,
+        recommendations: [],
+        ai_note:
+          'Không tìm thấy kho phù hợp. Bạn có muốn nới lỏng điều kiện tìm kiếm?',
+      };
+    }
+
+    const warehousesForRanking = items.map((w) => ({
+      id: w.id,
+      name: w.name,
+      address: w.address,
+      area: w.area,
+      price_per_month: w.base_price_per_month,
+      is_cold_storage: w.is_cold_storage,
+      is_shared_warehouse: w.is_shared_warehouse,
+      amenities: w.amenities.map((a) => a.name),
+    }));
+
+    const ranked = await this.gemini.rankWarehouses(
+      query,
+      warehousesForRanking,
+    );
+
+    const itemMap = new Map(items.map((w) => [w.id, w]));
+    const recommendations = ranked
+      .filter((r) => itemMap.has(r.warehouse_id))
+      .map((r) => {
+        const w = itemMap.get(r.warehouse_id)!;
+        return {
+          warehouse_id: w.id,
+          name: w.name,
+          address: w.address,
+          area: w.area,
+          base_price_per_month: w.base_price_per_month,
+          is_cold_storage: w.is_cold_storage,
+          is_shared_warehouse: w.is_shared_warehouse,
+          images: w.images,
+          match_score: r.match_score,
+          match_reason: r.match_reason,
+          highlights: r.highlights,
+          checkout_url: `${appBaseUrl}/warehouse/${w.id}`,
+        };
+      });
+
+    let ai_note = '';
+    if (recommendations.length === 0) {
+      ai_note =
+        'Không tìm thấy kho phù hợp cao. Bạn có muốn nới lỏng điều kiện?';
+    } else if (recommendations.length < 3) {
+      ai_note = `Chỉ tìm được ${recommendations.length} kho phù hợp. Bạn có muốn mở rộng khu vực tìm kiếm?`;
+    }
+
+    const result: IWarehouseRecommendationResponse = {
+      extracted_filters: filters,
+      recommendations,
+      ai_note,
+    };
+
+    await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+    return result;
   }
 
   async createVisitBooking(dto: CreateAiVisitBookingDto) {

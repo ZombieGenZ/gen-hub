@@ -7,6 +7,7 @@ import type {
     VehicleLogStatus,
     VehiclePurpose,
     OcrPlateResult,
+    OcrPlateQuickResult,
 } from './vehicle-log.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -104,5 +105,15 @@ export class VehicleLogService {
         });
         if (!res.ok) throw new Error(await res.text());
         return res.json() as Promise<OcrPlateResult>;
+    }
+
+    async ocrPlateQuick(token: string, formData: FormData): Promise<OcrPlateQuickResult> {
+        const res = await fetch(`${API}/warehouse-manager/vehicle-log/ocr-plate/quick`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json() as Promise<OcrPlateQuickResult>;
     }
 }

@@ -84,7 +84,8 @@ export class InventoryRequestRepository {
     updated_at: true,
     created_by: true,
     updated_by: true,
-    warehouse: { select: { id: true, name: true } },
+    picking_strategy: true,
+    warehouse: { select: { id: true, name: true, latitude: true, longitude: true } },
     partner: { select: { id: true, name: true, code: true } },
   } satisfies Prisma.ExportSelect;
 

@@ -205,6 +205,53 @@ export class AiPluginService {
 
         return response.json();
     }
+
+    /** Gợi ý kho bằng ngôn ngữ tự nhiên (không cần API key) */
+    async recommendWarehouses(query: string): Promise<WarehouseRecommendationResponse> {
+        const response = await fetch(`${API}/warehouse/ai/recommend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể gợi ý kho');
+        }
+
+        return response.json();
+    }
+}
+
+export interface WarehouseRecommendationItem {
+    warehouse_id: string;
+    name: string;
+    address: string | null;
+    area: number;
+    base_price_per_month: number;
+    is_cold_storage: boolean;
+    is_shared_warehouse: boolean;
+    images: string[];
+    match_score: number;
+    match_reason: string;
+    highlights: string[];
+    checkout_url: string;
+}
+
+export interface WarehouseRecommendationResponse {
+    extracted_filters: {
+        province_name?: string | null;
+        area_min?: number | null;
+        area_max?: number | null;
+        budget_max_monthly?: number | null;
+        is_cold_storage?: boolean | null;
+        is_shared?: boolean | null;
+        keywords?: string | null;
+        industry?: string | null;
+        location_hints?: string[];
+    };
+    recommendations: WarehouseRecommendationItem[];
+    ai_note: string;
 }
 
 export const aiPluginService = new AiPluginService();

@@ -167,6 +167,7 @@ export interface OutboundRequest {
     vehicle_info?: string | null;
     required_date?: string | null;
     status: ExportStatus;
+    picking_strategy?: PickingStrategy | null;
     approved_by?: string | null;
     approved_at?: string | null;
     picker_id?: string | null;
@@ -185,6 +186,8 @@ export interface OutboundRequest {
     warehouse?: {
         id: string;
         name: string;
+        latitude?: number | null;
+        longitude?: number | null;
     };
     partner?: {
         id: string;

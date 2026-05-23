@@ -64,6 +64,73 @@ Thông tin yêu cầu liên hệ:
 JSON Response:`;
 
 /**
+ * Prompt phân tích toàn diện xe từ ảnh camera cổng kho
+ * Input: ảnh base64, trả về JSON đầy đủ về xe và biển số
+ */
+export const VEHICLE_ANALYSIS_PROMPT = `Analyze this vehicle image captured at a warehouse gate in Vietnam.
+Return ONLY valid JSON with no markdown, no backticks, in this exact format:
+{"license_plate":"","plate_confidence":0.0,"vehicle_type":"TRUCK","vehicle_color":"","plate_format":"standard","condition_flags":[]}
+
+Fields:
+- license_plate: exact plate text (e.g. "51A-12345", "79B-456.78") or empty string if unreadable
+- plate_confidence: 0.0 to 1.0
+- vehicle_type: one of TRUCK|CAR|MOTORCYCLE|CONTAINER|VAN|OTHER
+- vehicle_color: primary vehicle color in Vietnamese (e.g. "Trắng", "Xanh", "Đỏ", "Bạc")
+- plate_format: one of standard|motorcycle_2row|special_blue|military|foreign|unknown
+- condition_flags: array of applicable tags: "dirty_plate"|"low_light"|"partial_occlusion"|"blurry"|"damage_visible"|"no_vehicle"
+
+Vietnamese plate formats:
+- standard: XX[A-Z]-XXXXX (e.g. 51A-12345, 79B-456.78, 30G-888.88)
+- motorcycle_2row: 2-row format, province code on top row
+- special_blue: blue background for government/public service vehicles
+- military: army green plate
+
+JSON Response:`;
+
+/**
+ * Prompt extract yêu cầu tìm kho từ văn bản tự nhiên tiếng Việt
+ * Placeholder: {{query}}
+ */
+export const WAREHOUSE_FILTER_EXTRACT_PROMPT = `Extract warehouse search requirements from this Vietnamese customer query.
+Return ONLY valid JSON with no markdown, no backticks:
+{"province_name":null,"area_min":null,"area_max":null,"budget_max_monthly":null,"is_cold_storage":null,"is_shared":null,"keywords":null,"industry":null,"location_hints":[]}
+
+Rules:
+- area in m² (convert "500 mét vuông"→500, "1000m2"→1000, "nửa ha"→5000)
+- budget in VND (convert "15 triệu"→15000000, "20tr/tháng"→20000000)
+- is_cold_storage: true only if cold/frozen storage is explicitly mentioned
+- is_shared: true=shared slots, false=full warehouse, null=not mentioned
+- location_hints: tags from ["near_port","near_airport","industrial_zone","city_center","near_highway"]
+- industry: detect context ("thực phẩm đông lạnh"→"food_frozen","điện tử"→"electronics","nội thất"→"furniture","dược phẩm"→"pharma","may mặc"→"textile")
+- keywords: any warehouse-specific keywords not covered by other fields
+
+Customer query: {{query}}
+
+JSON Response:`;
+
+/**
+ * Prompt ranking và giải thích kho phù hợp nhất
+ * Placeholders: {{query}}, {{warehouses}}
+ */
+export const WAREHOUSE_RANKING_PROMPT = `You are a Vietnamese warehouse rental expert. Rank the best matching warehouses for this customer.
+
+Customer need: {{query}}
+
+Available warehouses:
+{{warehouses}}
+
+Return ONLY valid JSON array (max 5 items, sorted best first, no markdown, no backticks):
+[{"warehouse_id":"","match_score":0,"match_reason":"","highlights":[]}]
+
+Rules:
+- match_score: 0-100 (be honest — only recommend if genuinely suitable, score below 50 means poor match)
+- match_reason: 1-2 sentences in Vietnamese explaining WHY this warehouse fits
+- highlights: 2-4 short Vietnamese bullet points about key features (e.g. "Kho lạnh -18°C", "Cách cảng 2km", "PCCC 4 lớp")
+- Exclude warehouses with match_score < 40
+
+JSON Response:`;
+
+/**
  * Hàm build prompt từ template
  */
 export function buildEmailClassificationPrompt(
@@ -76,6 +143,23 @@ export function buildEmailClassificationPrompt(
     .replace('{{senderEmail}}', senderEmail)
     .replace('{{subject}}', subject)
     .replace('{{content}}', content.substring(0, 1000));
+}
+
+export function buildWarehouseFilterExtractPrompt(query: string): string {
+  return WAREHOUSE_FILTER_EXTRACT_PROMPT.replace(
+    '{{query}}',
+    query.substring(0, 500),
+  );
+}
+
+export function buildWarehouseRankingPrompt(
+  query: string,
+  warehouses: object[],
+): string {
+  return WAREHOUSE_RANKING_PROMPT.replace(
+    '{{query}}',
+    query.substring(0, 300),
+  ).replace('{{warehouses}}', JSON.stringify(warehouses).substring(0, 8000));
 }
 
 /**

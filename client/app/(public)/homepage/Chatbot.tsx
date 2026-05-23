@@ -27,6 +27,7 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import type { WarehouseVisitBooking } from "@/services/warehouse-visit/warehouse-visit.service";
 import { CozeChatbot } from "./CozeChatbot";
 import { DifyChatbot } from "./DifyChatbot";
+import { aiPluginService, type WarehouseRecommendationItem } from '@/services/ai-plugin/ai-plugin.service';
 
 interface QuickReply {
     id: string;
@@ -102,6 +103,10 @@ const quickReplies: QuickReply[] = [
 
 const API = process.env.NEXT_PUBLIC_API_URL || "";
 const PREFERRED_RESCHEDULE_SLOTS = ["09:00", "10:30", "14:00", "15:30"];
+
+function detectWarehouseIntent(text: string): boolean {
+    return /(cần kho|thuê kho|tìm kho|muốn kho|kho lạnh|kho tại|warehouse|tìm thuê|diện tích kho|ngân sách.*kho|kho.*ngân sách)/i.test(text);
+}
 
 function detectVisitIntent(text: string): VisitIntent {
     const normalized = text.toLowerCase();
@@ -318,6 +323,11 @@ function ApiChatbot() {
     const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // AI warehouse recommendation state
+    const [aiRecLoading, setAiRecLoading] = useState(false);
+    const [aiRecommendations, setAiRecommendations] = useState<WarehouseRecommendationItem[] | null>(null);
+    const [aiRecNote, setAiRecNote] = useState('');
 
     // Hiển thị tooltip khi có tin nhắn mới và chat đang đóng
     useEffect(() => {
@@ -717,6 +727,19 @@ function ApiChatbot() {
         const content = inputValue.trim();
         const visitIntent = detectVisitIntent(content);
         setInputValue("");
+
+        // Parallel AI warehouse recommendation if user describes warehouse need
+        if (detectWarehouseIntent(content)) {
+            setAiRecLoading(true);
+            setAiRecommendations(null);
+            aiPluginService.recommendWarehouses(content)
+                .then((result) => {
+                    setAiRecommendations(result.recommendations);
+                    setAiRecNote(result.ai_note);
+                })
+                .catch(() => setAiRecommendations([]))
+                .finally(() => setAiRecLoading(false));
+        }
 
         // Nếu chưa start session → start với initialMessage
         if (!chatStarted || !sessionId) {
@@ -1366,6 +1389,64 @@ function ApiChatbot() {
                 {isSending && renderTypingIndicator()}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* AI Warehouse Recommendation Panel */}
+            {(aiRecLoading || aiRecommendations !== null) && (
+                <div className="px-4 pb-2">
+                    <div className="border border-blue-200 rounded-xl bg-blue-50/50 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                                ✨ AI Gợi ý kho phù hợp
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => { setAiRecommendations(null); setAiRecNote(''); }}
+                                className="text-[11px] text-slate-500 hover:text-slate-700"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+
+                        {aiRecLoading && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Đang phân tích nhu cầu...
+                            </div>
+                        )}
+
+                        {!aiRecLoading && aiRecommendations && aiRecommendations.length === 0 && (
+                            <p className="text-xs text-slate-500">{aiRecNote || 'Không tìm được kho phù hợp.'}</p>
+                        )}
+
+                        {!aiRecLoading && aiRecommendations && aiRecommendations.length > 0 && (
+                            <div className="space-y-2">
+                                {aiRecommendations.slice(0, 3).map((rec: WarehouseRecommendationItem) => (
+                                    <div key={rec.warehouse_id} className="bg-white rounded-lg border border-slate-200 p-2.5 space-y-1.5">
+                                        <div className="flex items-start justify-between gap-1">
+                                            <p className="text-xs font-semibold text-slate-800 line-clamp-1">{rec.name}</p>
+                                            <span className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                rec.match_score >= 80 ? 'bg-green-100 text-green-800' :
+                                                rec.match_score >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-600'
+                                            }`}>{rec.match_score}%</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {rec.highlights.slice(0, 3).map((h, i) => (
+                                                <span key={i} className="text-[11px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">{h}</span>
+                                            ))}
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 italic line-clamp-1">{rec.match_reason}</p>
+                                        <div className="flex gap-1.5 pt-0.5">
+                                            <a href={`/warehouse/${rec.warehouse_id}`} className="flex-1 text-center text-[11px] py-1 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-slate-700">Xem kho</a>
+                                            <a href={rec.checkout_url} className="flex-1 text-center text-[11px] py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">Thuê ngay</a>
+                                        </div>
+                                    </div>
+                                ))}
+                                {aiRecNote && <p className="text-[11px] text-slate-500 italic">{aiRecNote}</p>}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Quick Replies - chỉ hiện khi chưa chat */}
             {messages.length <= 1 && !isSending && !isLoading && (

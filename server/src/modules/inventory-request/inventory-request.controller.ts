@@ -1717,7 +1717,7 @@ export class InventoryRequestController {
       actorId,
       lang,
       dto.notes,
-      dto.picking_strategy || 'FEFO',
+      dto.picking_strategy ?? undefined,
     );
     return new GetResponse(
       'inventory-request.approve_outbound',

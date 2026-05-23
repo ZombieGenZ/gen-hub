@@ -18,6 +18,7 @@ export interface ToastProps {
   message: string;
   type: ToastType;
   duration?: number;
+  action?: { label: string; onClick: () => void };
   onDismiss: (id: string) => void;
   index?: number;
   total?: number;
@@ -109,6 +110,7 @@ export const Toast: React.FC<ToastProps> = ({
   message,
   type,
   duration = 5000,
+  action,
   onDismiss,
   index = 0,
   total = 1,
@@ -182,7 +184,7 @@ export const Toast: React.FC<ToastProps> = ({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 50, scale: 0.5, rotateX: 45 }}
+      initial={{ opacity: 0, y: -20, scale: 0.9, rotateX: 20 }}
       animate={{
         opacity: opacity,
         y: isFront ? 0 : yOffset,
@@ -218,6 +220,20 @@ export const Toast: React.FC<ToastProps> = ({
         <h4 className="font-bold text-slate-900 dark:text-white capitalize">{type}</h4>
         <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{message}</p>
       </div>
+
+      {/* Action Button */}
+      {action && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            action.onClick();
+            onDismiss(id);
+          }}
+          className="shrink-0 rounded-lg bg-white/30 px-2.5 py-1 text-xs font-semibold text-slate-800 transition-colors hover:bg-white/50 dark:bg-slate-700/50 dark:text-white dark:hover:bg-slate-600/50"
+        >
+          {action.label}
+        </button>
+      )}
 
       {/* Close Button */}
       <button

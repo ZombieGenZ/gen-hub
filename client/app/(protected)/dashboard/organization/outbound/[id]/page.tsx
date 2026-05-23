@@ -29,6 +29,7 @@ import {
     BuildingStorefrontIcon,
     UserIcon,
 } from "@heroicons/react/24/outline";
+import { OutboundRouteMap } from "@/components/outbound/OutboundRouteMap";
 
 import "../outbound.css";
 
@@ -355,6 +356,10 @@ export default function OutboundDetailPage() {
                         <CubeIcon className="w-4 h-4" />
                         Đóng gói
                     </TabsTrigger>
+                    <TabsTrigger value="route" className="gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <TruckIcon className="w-4 h-4" />
+                        Lộ trình
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* ── Tab 1: Chi tiết yêu cầu ── */}
@@ -676,6 +681,22 @@ export default function OutboundDetailPage() {
                                     </p>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                {/* ── Tab 4: Lộ trình ── */}
+                <TabsContent value="route">
+                    <Card className="border-0 shadow-premium rounded-3xl">
+                        <CardContent className="p-6">
+                            <h2 className="text-[20px] font-semibold leading-[130%] mb-4">Lộ trình giao hàng</h2>
+                            <OutboundRouteMap
+                                exportId={data.id}
+                                warehouseTemplateId={data.warehouse?.id}
+                                warehouseLat={data.warehouse?.latitude}
+                                warehouseLng={data.warehouse?.longitude}
+                                warehouseName={data.warehouse?.name}
+                                deliveryAddress={data.delivery_address}
+                            />
                         </CardContent>
                     </Card>
                 </TabsContent>

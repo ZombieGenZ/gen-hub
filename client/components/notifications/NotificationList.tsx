@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { io, type Socket } from 'socket.io-client';
 import {
     CheckCircle,
@@ -62,6 +63,16 @@ export interface NotificationListProps {
 
 export function NotificationList({ className }: NotificationListProps) {
     const { showToast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const notificationPageUrl = useMemo(() => {
+        if (pathname.includes('/organization/')) return '/dashboard/organization/notifications';
+        if (pathname.includes('/admin/')) return '/dashboard/admin/notifications';
+        if (pathname.includes('/staff/')) return '/dashboard/staff/notifications';
+        if (pathname.includes('/customer/')) return '/dashboard/customer/notifications';
+        return '/dashboard/organization/notifications';
+    }, [pathname]);
     const [notifications, setNotifications] = useState<UserNotification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -201,7 +212,10 @@ export function NotificationList({ className }: NotificationListProps) {
         });
 
         socketInstance.on("userNotification:received", () => {
-            showToast("Bạn có thông báo mới", "success");
+            showToast("Bạn có thông báo mới", "info", 6000, {
+                label: "Xem ngay",
+                onClick: () => router.push(notificationPageUrl),
+            });
         });
 
         return () => {
@@ -215,7 +229,7 @@ export function NotificationList({ className }: NotificationListProps) {
             socketInstance.disconnect();
             setSocket(null);
         };
-    }, [fetchNotifications, showToast]);
+    }, [fetchNotifications, showToast, router, notificationPageUrl]);
 
 
     const markAsRead = async (id: string) => {

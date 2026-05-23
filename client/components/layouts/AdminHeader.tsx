@@ -11,6 +11,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
+import { NotificationInboxPopover } from "@/components/ui/notification-inbox-popover";
 
 interface AdminHeaderProps {
     children?: React.ReactNode;
@@ -101,6 +102,11 @@ export function AdminHeader({ children }: AdminHeaderProps) {
                         </ol>
                     )}
                 </nav>
+
+                {/* Account Actions */}
+                <div className="flex items-center gap-3 ml-auto">
+                    <NotificationInboxPopover />
+                </div>
             </div>
         </header>
     );

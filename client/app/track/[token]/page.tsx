@@ -38,6 +38,7 @@ export default function TrackingPage() {
     const [geofence, setGeofence] = useState<"APPROACHING" | "ARRIVED" | null>(null);
     const [errorMsg, setErrorMsg] = useState("");
     const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [speedKmh, setSpeedKmh] = useState<number | null>(null);
 
     const watchIdRef = useRef<number | null>(null);
@@ -46,7 +47,7 @@ export default function TrackingPage() {
     // Client-side rate limit — tránh spam server (server giới hạn 30s/request)
     const lastApiCallRef = useRef<number>(0);
 
-    // Lấy thông tin session
+    // Lấy thông tin session + geocode delivery address
     useEffect(() => {
         if (!token) return;
         gpsService
@@ -57,6 +58,19 @@ export default function TrackingPage() {
                     setStatus("expired");
                 } else {
                     setStatus("requesting_permission");
+                }
+                // Geocode delivery address if present
+                const addr = info.delivery?.address;
+                const mbToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+                if (addr && mbToken) {
+                    const encoded = encodeURIComponent(addr);
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?limit=1&language=vi&access_token=${mbToken}`)
+                        .then((r) => r.json())
+                        .then((data: { features?: { center: [number, number] }[] }) => {
+                            const center = data.features?.[0]?.center;
+                            if (center) setDeliveryCoords({ lat: center[1], lng: center[0] });
+                        })
+                        .catch(() => null);
                 }
             })
             .catch((err: Error) => {
@@ -147,158 +161,173 @@ export default function TrackingPage() {
     }, [status, token]);
 
     // ── Render ──
-    const bgColor =
-        geofence === "ARRIVED"
-            ? "bg-green-50"
-            : geofence === "APPROACHING"
-            ? "bg-yellow-50"
-            : "bg-gray-50";
-
     return (
-        <div className={`min-h-screen ${bgColor} flex flex-col items-center justify-center p-6`}>
-            <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden">
-                {/* Header */}
-                <div className="bg-teal-600 px-6 py-5 text-white text-center">
-                    <div className="text-2xl mb-1">📍</div>
-                    <h1 className="text-lg font-bold">GEN-HUB Tracking</h1>
-                    {sessionInfo?.warehouse && (
-                        <p className="text-teal-100 text-sm mt-1 truncate">
-                            {sessionInfo.warehouse.name}
-                        </p>
-                    )}
-                </div>
+        <div className="relative h-dvh w-screen overflow-hidden bg-gray-300">
+            {/* Map fullscreen */}
+            {sessionInfo?.warehouse?.latitude != null && sessionInfo?.warehouse?.longitude != null ? (
+                <DriverTrackingMap
+                    warehouseLat={sessionInfo.warehouse.latitude}
+                    warehouseLng={sessionInfo.warehouse.longitude}
+                    warehouseName={sessionInfo.warehouse.name}
+                    driverLat={driverCoords?.lat ?? null}
+                    driverLng={driverCoords?.lng ?? null}
+                    deliveryLat={deliveryCoords?.lat ?? null}
+                    deliveryLng={deliveryCoords?.lng ?? null}
+                    deliveryAddress={sessionInfo.delivery?.address}
+                    className="absolute inset-0"
+                    recenterOffset="top-20 right-3"
+                />
+            ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-teal-900" />
+            )}
 
-                <div className="px-6 py-5 space-y-4">
-                    {/* Biển số */}
-                    {sessionInfo?.license_plate && (
-                        <div className="text-center">
-                            <span className="inline-block bg-gray-100 font-mono font-bold text-xl px-4 py-2 rounded-lg tracking-widest">
-                                {sessionInfo.license_plate}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Địa chỉ kho */}
-                    {sessionInfo?.warehouse?.address && (
-                        <p className="text-xs text-center text-muted-foreground">
-                            {sessionInfo.warehouse.address}
-                        </p>
-                    )}
-
-                    {/* Bản đồ — hiển thị khi kho có tọa độ */}
-                    {sessionInfo?.warehouse?.latitude && sessionInfo.warehouse.longitude && (
-                        <DriverTrackingMap
-                            warehouseLat={sessionInfo.warehouse.latitude}
-                            warehouseLng={sessionInfo.warehouse.longitude}
-                            warehouseName={sessionInfo.warehouse.name}
-                            driverLat={driverCoords?.lat ?? null}
-                            driverLng={driverCoords?.lng ?? null}
-                        />
-                    )}
-
-                    {/* Trạng thái GPS */}
-                    <div className="rounded-xl border p-4 text-center space-y-1">
-                        {status === "loading" && (
-                            <p className="text-sm text-gray-500">Đang tải...</p>
+            {/* Top overlay */}
+            <div className="pointer-events-none absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 via-black/20 to-transparent">
+                <div className="flex items-start justify-between px-4 pt-10 pb-10">
+                    <div>
+                        <p className="text-white font-bold text-[15px] drop-shadow">📍 GEN-HUB</p>
+                        {sessionInfo?.warehouse?.name && (
+                            <p className="text-white/75 text-xs mt-0.5 max-w-[200px] truncate drop-shadow">
+                                {sessionInfo.warehouse.name}
+                            </p>
+                        )}
+                    </div>
+                    <div className="pointer-events-auto">
+                        {status === "tracking" && (
+                            <div className="flex items-center gap-1.5 bg-green-500/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full shadow">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                GPS bật
+                            </div>
                         )}
                         {status === "requesting_permission" && (
-                            <p className="text-sm text-blue-600 animate-pulse">
-                                Đang yêu cầu quyền GPS...
-                            </p>
-                        )}
-                        {status === "tracking" && (
-                            <>
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                                    <span className="text-sm font-medium text-green-700">
-                                        Đang gửi vị trí
-                                    </span>
-                                </div>
-                                {lastSent && (
-                                    <p className="text-xs text-gray-400">
-                                        Cập nhật lúc:{" "}
-                                        {lastSent.toLocaleTimeString("vi-VN", {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                            second: "2-digit",
-                                        })}
-                                    </p>
-                                )}
-                            </>
+                            <div className="bg-blue-500/80 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow animate-pulse">
+                                Kết nối GPS...
+                            </div>
                         )}
                         {status === "no_gps" && (
-                            <p className="text-sm text-red-500">
-                                Không thể truy cập GPS. Vui lòng cấp quyền vị trí cho trình duyệt.
-                            </p>
+                            <div className="bg-red-500/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow">
+                                Mất GPS
+                            </div>
                         )}
-                        {status === "expired" && (
-                            <p className="text-sm text-orange-500 font-medium">
-                                Phiên theo dõi đã hết hạn.
-                            </p>
+                        {(status === "expired" || status === "error") && (
+                            <div className="bg-orange-500/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow">
+                                {status === "expired" ? "Hết hạn" : "Lỗi"}
+                            </div>
                         )}
-                        {status === "error" && (
-                            <p className="text-sm text-red-500">{errorMsg || "Lỗi không xác định"}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom info panel */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-8">
+                <div className={[
+                    "bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border-2 transition-colors duration-500",
+                    geofence === "ARRIVED" ? "border-green-400" :
+                    geofence === "APPROACHING" ? "border-yellow-400" : "border-transparent",
+                ].join(" ")}>
+                    {/* Biển số + đếm ngược */}
+                    <div className="bg-teal-600 px-5 py-3 flex items-center justify-between gap-4">
+                        <span className="font-mono font-bold text-white text-xl tracking-widest">
+                            {sessionInfo?.license_plate ?? "—"}
+                        </span>
+                        {countdown && status !== "expired" && (
+                            <div className="text-right shrink-0">
+                                <div className="text-teal-200 text-[10px] leading-none">Còn hiệu lực</div>
+                                <div className="font-mono text-white text-sm font-semibold leading-tight mt-0.5">
+                                    {countdown}
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    {/* Khoảng cách + tốc độ */}
-                    {status === "tracking" && (
-                        <div className="grid grid-cols-2 gap-2">
-                            {distanceM !== null && (
-                                <div
-                                    className={[
-                                        "rounded-xl p-3 text-center text-sm font-medium",
-                                        speedKmh === null ? "col-span-2" : "col-span-1",
-                                        geofence === "ARRIVED"
-                                            ? "bg-green-100 text-green-700"
-                                            : geofence === "APPROACHING"
-                                            ? "bg-yellow-100 text-yellow-700"
-                                            : "bg-gray-100 text-gray-600",
-                                    ].join(" ")}
-                                >
-                                    {geofence === "ARRIVED" ? (
-                                        <div>
-                                            <div className="text-base">✅</div>
-                                            <div className="text-xs mt-0.5">Đã đến kho</div>
-                                        </div>
-                                    ) : geofence === "APPROACHING" ? (
-                                        <div>
-                                            <div className="font-bold">{distanceM}m</div>
-                                            <div className="text-xs mt-0.5">Gần kho</div>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <div className="font-bold">{(distanceM / 1000).toFixed(1)} km</div>
-                                            <div className="text-xs mt-0.5">đến kho</div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {speedKmh !== null && (
-                                <div className="rounded-xl p-3 text-center bg-blue-50 text-blue-700">
-                                    <div className="font-bold text-sm">{speedKmh.toFixed(0)} km/h</div>
-                                    <div className="text-xs mt-0.5">Tốc độ</div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Đếm ngược hết hạn */}
-                    {countdown && status !== "expired" && (
-                        <div className="text-center">
-                            <p className="text-xs text-gray-400">Còn hiệu lực</p>
-                            <p className="font-mono text-lg font-semibold text-gray-700">
-                                {countdown}
+                    <div className="px-5 py-4 space-y-3">
+                        {/* Trạng thái chờ / lỗi */}
+                        {(status === "loading" || status === "requesting_permission") && (
+                            <p className="text-sm text-gray-400 text-center animate-pulse">
+                                {status === "loading" ? "Đang tải phiên..." : "Đang yêu cầu quyền GPS..."}
                             </p>
-                        </div>
-                    )}
+                        )}
+                        {status === "no_gps" && (
+                            <p className="text-sm text-red-500 text-center">
+                                Vui lòng cấp quyền vị trí cho trình duyệt
+                            </p>
+                        )}
+                        {status === "expired" && (
+                            <p className="text-sm text-orange-500 font-medium text-center">
+                                Phiên theo dõi đã hết hạn
+                            </p>
+                        )}
+                        {status === "error" && (
+                            <p className="text-sm text-red-500 text-center">
+                                {errorMsg || "Lỗi không xác định"}
+                            </p>
+                        )}
+
+                        {/* Số liệu khi đang theo dõi */}
+                        {status === "tracking" && (
+                            <div className="flex gap-2">
+                                {distanceM !== null && (
+                                    <div className={[
+                                        "flex-1 rounded-xl py-2.5 text-center",
+                                        geofence === "ARRIVED" ? "bg-green-50" :
+                                        geofence === "APPROACHING" ? "bg-yellow-50" : "bg-gray-50",
+                                    ].join(" ")}>
+                                        {geofence === "ARRIVED" ? (
+                                            <>
+                                                <div className="text-xl">✅</div>
+                                                <div className="text-xs text-green-700 font-medium">Đến nơi</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className={`font-bold text-sm ${geofence === "APPROACHING" ? "text-yellow-700" : "text-gray-700"}`}>
+                                                    {distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)} km` : `${distanceM} m`}
+                                                </div>
+                                                <div className={`text-[11px] ${geofence === "APPROACHING" ? "text-yellow-500" : "text-gray-400"}`}>
+                                                    {geofence === "APPROACHING" ? "Gần kho" : "đến kho"}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                                {speedKmh !== null && (
+                                    <div className="flex-1 rounded-xl py-2.5 text-center bg-blue-50">
+                                        <div className="font-bold text-sm text-blue-700">
+                                            {speedKmh.toFixed(0)}<span className="text-xs font-normal"> km/h</span>
+                                        </div>
+                                        <div className="text-[11px] text-blue-400">Tốc độ</div>
+                                    </div>
+                                )}
+                                {lastSent && (
+                                    <div className="flex-1 rounded-xl py-2.5 text-center bg-gray-50">
+                                        <div className="font-medium text-xs text-gray-600">
+                                            {lastSent.toLocaleTimeString("vi-VN", {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                                second: "2-digit",
+                                            })}
+                                        </div>
+                                        <div className="text-[11px] text-gray-400">Gửi lúc</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {sessionInfo?.warehouse?.address && (
+                            <p className="text-[11px] text-gray-400 text-center truncate">
+                                📦 {sessionInfo.warehouse.address}
+                            </p>
+                        )}
+                        {sessionInfo?.delivery?.address && (
+                            <p className="text-[11px] text-orange-500 text-center truncate font-medium">
+                                📍 {sessionInfo.delivery.address}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
-                <div className="px-6 pb-5 text-center">
-                    <p className="text-xs text-gray-300">
-                        Giữ trang này mở để tiếp tục gửi vị trí
-                    </p>
-                </div>
+                <p className="text-center text-white/50 text-[10px] mt-3 drop-shadow">
+                    Giữ trang mở để tiếp tục gửi vị trí
+                </p>
             </div>
         </div>
     );

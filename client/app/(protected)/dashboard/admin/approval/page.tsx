@@ -373,7 +373,10 @@ export default function ApprovalQueuePage() {
                     if (ticket.type === "inbound") {
                         await inventoryService.approveInbound(token, ticket.id);
                     } else {
-                        await inventoryService.approveOutbound(token, ticket.id, {});
+                        const outbound = ticket.raw as OutboundRequest;
+                        await inventoryService.approveOutbound(token, ticket.id, {
+                            picking_strategy: outbound.picking_strategy ?? undefined,
+                        });
                     }
                     successCount++;
                 } catch {

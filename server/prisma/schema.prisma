@@ -2605,6 +2605,7 @@ model Export {
   delivery_address      String?
   vehicle_info          String?
   required_date         DateTime?
+  picking_strategy      String?
   is_active             Boolean      @default(true)
   created_at            DateTime     @default(now())
   updated_at            DateTime     @updatedAt

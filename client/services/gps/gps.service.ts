@@ -4,11 +4,17 @@ export interface GpsSessionInfo {
     license_plate: string;
     status: 'ACTIVE' | 'EXPIRED' | 'COMPLETED';
     expires_at: string;
+    export_id?: string | null;
     warehouse: {
         name: string;
         address: string | null;
         latitude: number | null;
         longitude: number | null;
+    } | null;
+    delivery?: {
+        address: string | null;
+        partner_name: string | null;
+        export_code: string | null;
     } | null;
 }
 

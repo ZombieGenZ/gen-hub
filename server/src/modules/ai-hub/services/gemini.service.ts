@@ -10,10 +10,16 @@ import {
   IEmailClassification,
   IAILogData,
   IWebformClassification,
+  IVehicleAnalysisResult,
+  IExtractedWarehouseFilters,
+  IWarehouseRankItem,
 } from '../interfaces/ai.interface';
 import {
   buildEmailClassificationPrompt,
   buildWebformClassificationPrompt,
+  VEHICLE_ANALYSIS_PROMPT,
+  buildWarehouseFilterExtractPrompt,
+  buildWarehouseRankingPrompt,
 } from '../prompts/ai.prompts';
 
 /**
@@ -478,7 +484,11 @@ export class GeminiService implements OnModuleInit {
         return text;
       } catch (error) {
         const msg = (error as Error).message.toLowerCase();
-        if (msg.includes('quota') || msg.includes('rate') || msg.includes('429')) {
+        if (
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('429')
+        ) {
           this.rotateToNextKey();
           continue;
         }
@@ -563,6 +573,218 @@ export class GeminiService implements OnModuleInit {
 
     this.logger.error('All Gemini API keys exhausted in recognizeLicensePlate');
     return { plate: '', confidence: 0 };
+  }
+
+  /**
+   * Phân tích toàn diện xe từ ảnh: biển số, loại xe, màu, tình trạng
+   */
+  async analyzeVehicle(
+    base64: string,
+    mimeType: string,
+  ): Promise<IVehicleAnalysisResult> {
+    const defaultResult: IVehicleAnalysisResult = {
+      license_plate: '',
+      plate_confidence: 0,
+      vehicle_type: 'OTHER',
+      vehicle_color: '',
+      plate_format: 'unknown',
+      condition_flags: ['no_vehicle'],
+    };
+
+    if (!this.isEnabled) return defaultResult;
+
+    const startTime = Date.now();
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent([
+          { inlineData: { data: base64, mimeType } },
+          VEHICLE_ANALYSIS_PROMPT,
+        ]);
+        const text = response.response.text().trim();
+        const durationMs = Date.now() - startTime;
+
+        const jsonText = text
+          .replace(/```json?\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        const parsed = JSON.parse(jsonText);
+
+        const result: IVehicleAnalysisResult = {
+          license_plate: String(parsed.license_plate || ''),
+          plate_confidence: Number(parsed.plate_confidence) || 0,
+          vehicle_type: parsed.vehicle_type || 'OTHER',
+          vehicle_color: String(parsed.vehicle_color || ''),
+          plate_format: parsed.plate_format || 'unknown',
+          condition_flags: Array.isArray(parsed.condition_flags)
+            ? parsed.condition_flags
+            : [],
+        };
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose: 'vehicle_analysis',
+            inputText: '[image data]',
+            outputText: text.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+          });
+        });
+
+        return result;
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('exceeded') ||
+          msg.includes('429')
+        ) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(`analyzeVehicle error: ${(error as Error).message}`);
+        return defaultResult;
+      }
+    }
+
+    this.logger.error('All Gemini API keys exhausted in analyzeVehicle');
+    return defaultResult;
+  }
+
+  /**
+   * Trích xuất bộ lọc kho từ câu mô tả nhu cầu tự nhiên tiếng Việt
+   */
+  async extractWarehouseFilters(
+    query: string,
+  ): Promise<IExtractedWarehouseFilters> {
+    if (!this.isEnabled) return {};
+
+    const startTime = Date.now();
+    const prompt = buildWarehouseFilterExtractPrompt(query);
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent(prompt);
+        const text = response.response.text().trim();
+        const durationMs = Date.now() - startTime;
+
+        const jsonText = text
+          .replace(/```json?\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        const parsed: IExtractedWarehouseFilters = JSON.parse(jsonText);
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose: 'warehouse_filter_extract',
+            inputText: query.substring(0, 300),
+            outputText: text.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+          });
+        });
+
+        return parsed;
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('exceeded') ||
+          msg.includes('429')
+        ) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(
+          `extractWarehouseFilters error: ${(error as Error).message}`,
+        );
+        return {};
+      }
+    }
+
+    this.logger.error(
+      'All Gemini API keys exhausted in extractWarehouseFilters',
+    );
+    return {};
+  }
+
+  /**
+   * Xếp hạng kho theo mức độ phù hợp với nhu cầu của khách hàng
+   */
+  async rankWarehouses(
+    query: string,
+    warehouses: object[],
+  ): Promise<IWarehouseRankItem[]> {
+    if (!this.isEnabled || warehouses.length === 0) return [];
+
+    const startTime = Date.now();
+    const prompt = buildWarehouseRankingPrompt(query, warehouses);
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent(prompt);
+        const text = response.response.text().trim();
+        const durationMs = Date.now() - startTime;
+
+        const jsonText = text
+          .replace(/```json?\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        const parsed: IWarehouseRankItem[] = JSON.parse(jsonText);
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose: 'warehouse_ranking',
+            inputText: query.substring(0, 300),
+            outputText: text.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+            metadata: { warehouse_count: warehouses.length },
+          });
+        });
+
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('exceeded') ||
+          msg.includes('429')
+        ) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(`rankWarehouses error: ${(error as Error).message}`);
+        return [];
+      }
+    }
+
+    this.logger.error('All Gemini API keys exhausted in rankWarehouses');
+    return [];
   }
 
   /**

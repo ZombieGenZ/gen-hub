@@ -34,6 +34,7 @@ import {
 import Link from 'next/link';
 import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
 import { UserService } from "@/services/user/user.service";
+import { aiPluginService, type WarehouseRecommendationItem, type WarehouseRecommendationResponse } from '@/services/ai-plugin/ai-plugin.service';
 
 const HEADER_HEIGHT = 80;
 const userService = new UserService();
@@ -190,6 +191,26 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     // Track if search has been performed
     const [hasSearched, setHasSearched] = useState(false);
     const [searchTrigger, setSearchTrigger] = useState(0);
+
+    // AI Recommendation state
+    const [aiQuery, setAiQuery] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiResult, setAiResult] = useState<WarehouseRecommendationResponse | null>(null);
+    const [aiPanelOpen, setAiPanelOpen] = useState(false);
+
+    const handleAiRecommend = useCallback(async () => {
+        if (!aiQuery.trim() || aiQuery.trim().length < 5) return;
+        setAiLoading(true);
+        setAiResult(null);
+        try {
+            const result = await aiPluginService.recommendWarehouses(aiQuery.trim());
+            setAiResult(result);
+        } catch {
+            setAiResult({ extracted_filters: {}, recommendations: [], ai_note: 'Không thể kết nối AI. Vui lòng thử lại.' });
+        } finally {
+            setAiLoading(false);
+        }
+    }, [aiQuery]);
 
     // ─────────────────────────────────────────────
     // Hero Search Handler — writes to URL + re-fetches API
@@ -649,6 +670,114 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                             showMapMobile ? "search-page__list-column--hidden-mobile" : ""
                         )}
                     >
+                        {/* AI Recommendation Panel */}
+                        <div className="mx-4 mt-4 mb-2">
+                            <button
+                                onClick={() => setAiPanelOpen((v) => !v)}
+                                className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                            >
+                                <SparklesIcon className="w-4 h-4" />
+                                AI Gợi ý kho phù hợp
+                                <svg className={`w-3.5 h-3.5 transition-transform ${aiPanelOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {aiPanelOpen && (
+                                <div className="mt-3 border rounded-xl p-4 bg-gradient-to-br from-primary/5 to-background space-y-3">
+                                    <p className="text-xs text-muted-foreground">Mô tả nhu cầu của bạn bằng ngôn ngữ tự nhiên, AI sẽ phân tích và gợi ý kho phù hợp nhất.</p>
+                                    <div className="flex gap-2">
+                                        <textarea
+                                            value={aiQuery}
+                                            onChange={(e) => setAiQuery(e.target.value)}
+                                            placeholder="Ví dụ: Tôi cần kho lạnh khoảng 500m² gần cảng, ngân sách 15 triệu/tháng, hàng thực phẩm đông lạnh..."
+                                            rows={2}
+                                            className="flex-1 text-sm border rounded-lg px-3 py-2 resize-none bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleAiRecommend(); }}
+                                        />
+                                        <button
+                                            onClick={handleAiRecommend}
+                                            disabled={aiLoading || aiQuery.trim().length < 5}
+                                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-end"
+                                        >
+                                            {aiLoading ? (
+                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                            ) : 'Gợi ý'}
+                                        </button>
+                                    </div>
+
+                                    {/* Extracted filter chips */}
+                                    {aiResult && Object.values(aiResult.extracted_filters).some(Boolean) && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {aiResult.extracted_filters.province_name && (
+                                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-200">📍 {aiResult.extracted_filters.province_name}</span>
+                                            )}
+                                            {(aiResult.extracted_filters.area_min || aiResult.extracted_filters.area_max) && (
+                                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-200">
+                                                    📐 {aiResult.extracted_filters.area_min ?? '?'}–{aiResult.extracted_filters.area_max ?? '?'} m²
+                                                </span>
+                                            )}
+                                            {aiResult.extracted_filters.budget_max_monthly && (
+                                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-200">
+                                                    💰 ≤ {(aiResult.extracted_filters.budget_max_monthly / 1_000_000).toFixed(0)} tr/tháng
+                                                </span>
+                                            )}
+                                            {aiResult.extracted_filters.is_cold_storage && (
+                                                <span className="text-xs px-2 py-0.5 bg-cyan-100 text-cyan-800 rounded-full border border-cyan-200">❄️ Kho lạnh</span>
+                                            )}
+                                            {aiResult.extracted_filters.industry && (
+                                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full border border-green-200">🏭 {aiResult.extracted_filters.industry}</span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Recommendations */}
+                                    {aiResult && aiResult.recommendations.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">AI đề xuất cho bạn</p>
+                                            {aiResult.recommendations.map((rec: WarehouseRecommendationItem) => (
+                                                <div key={rec.warehouse_id} className="border rounded-xl p-3 bg-background shadow-sm space-y-2">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-sm font-semibold line-clamp-1">{rec.name}</p>
+                                                            {rec.address && <p className="text-xs text-muted-foreground line-clamp-1">📍 {rec.address}</p>}
+                                                        </div>
+                                                        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                                                            rec.match_score >= 80 ? 'bg-green-100 text-green-800' :
+                                                            rec.match_score >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-muted text-muted-foreground'
+                                                        }`}>
+                                                            {rec.match_score}/100
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {rec.highlights.map((h, i) => (
+                                                            <span key={i} className="text-xs px-1.5 py-0.5 bg-muted rounded text-muted-foreground">{h}</span>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground italic line-clamp-2">{rec.match_reason}</p>
+                                                    <div className="flex gap-2 pt-0.5">
+                                                        <Link href={`/warehouse/${rec.warehouse_id}`} className="flex-1 text-center text-xs py-1.5 border rounded-lg hover:bg-muted/50 transition-colors">Xem chi tiết</Link>
+                                                        <a href={rec.checkout_url} className="flex-1 text-center text-xs py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Thuê ngay</a>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {aiResult && aiResult.ai_note && (
+                                        <p className="text-xs text-muted-foreground italic">{aiResult.ai_note}</p>
+                                    )}
+
+                                    {aiResult && aiResult.recommendations.length === 0 && !aiResult.ai_note && (
+                                        <p className="text-xs text-muted-foreground text-center py-2">Không tìm được kho phù hợp với mô tả trên.</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         {/* Header info */}
                         <div className="search-page__list-header">
                             {filteredProperties.length > 0 ? (

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
+import { NotificationInboxPopover } from "@/components/ui/notification-inbox-popover";
 
 interface StaffHeaderProps {
     children?: React.ReactNode;
@@ -97,6 +98,11 @@ export function StaffHeader({ children }: StaffHeaderProps) {
                         </ol>
                     )}
                 </nav>
+
+                {/* Account Actions */}
+                <div className="flex items-center gap-3 ml-auto">
+                    <NotificationInboxPopover />
+                </div>
             </div>
         </header>
     );

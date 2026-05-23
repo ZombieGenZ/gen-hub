@@ -77,6 +77,16 @@ export class VehicleLogController {
     return this.service.ocrPlate(file);
   }
 
+  @Post('ocr-plate/quick')
+  @ApiOperation({ summary: 'OCR nhanh biển số (không upload ảnh, dùng cho auto-scan)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  ocrPlateQuick(@UploadedFile() file: Express.Multer.File) {
+    return this.service.ocrPlateQuick(file);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết nhật ký xe' })
   findById(@Param('id', ParseUUIDPipe) id: string) {

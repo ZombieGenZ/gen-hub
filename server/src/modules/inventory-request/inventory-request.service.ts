@@ -1194,6 +1194,7 @@ export class InventoryRequestService {
           delivery_address: dto.delivery_address,
           vehicle_info: dto.vehicle_info,
           required_date: dto.required_date ? new Date(dto.required_date) : null,
+          picking_strategy: dto.picking_strategy ?? null,
           organization_id: orgId,
           warehouse: { connect: { id: dto.warehouse_id } },
           ...(dto.partner_id && {
@@ -1915,7 +1916,7 @@ export class InventoryRequestService {
     actorId: string,
     lang: string,
     notes?: string,
-    pickingStrategy: 'FEFO' | 'FIFO' = 'FEFO',
+    pickingStrategy?: 'FEFO' | 'FIFO',
   ): Promise<IOutboundRequest> {
     const exportRecord = await this.prisma.export.findFirst({
       where: { id, organization_id: orgId, is_deleted: false },
@@ -1945,6 +1946,12 @@ export class InventoryRequestService {
         }),
       );
     }
+
+    // Ưu tiên strategy từ request; fallback sang strategy người tạo phiếu đã chọn; sau cùng dùng FEFO
+    const effectiveStrategy: 'FEFO' | 'FIFO' =
+      pickingStrategy ??
+      (exportRecord.picking_strategy as 'FEFO' | 'FIFO' | null) ??
+      'FEFO';
 
     // Transaction: Reserve inventory + tạo ExportPickList + cập nhật status
     const result = await this.prisma.$transaction(async (tx) => {
@@ -1991,7 +1998,7 @@ export class InventoryRequestService {
             },
             include: { batch: true },
             orderBy:
-              pickingStrategy === 'FEFO'
+              effectiveStrategy === 'FEFO'
                 ? [{ batch: { expiry_date: 'asc' } }, { created_at: 'asc' }]
                 : [{ created_at: 'asc' }],
           });
@@ -2124,7 +2131,7 @@ export class InventoryRequestService {
       exportId: id,
       code: result.code,
       approvedBy: actorId,
-      pickingStrategy,
+      pickingStrategy: effectiveStrategy,
       timestamp: new Date().toISOString(),
     });
 

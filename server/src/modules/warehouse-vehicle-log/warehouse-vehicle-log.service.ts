@@ -55,7 +55,9 @@ export class VehicleLogService {
       },
     );
 
-    this.logger.log(`Xe ${log.license_plate} vào kho ${dto.warehouse_template_id}`);
+    this.logger.log(
+      `Xe ${log.license_plate} vào kho ${dto.warehouse_template_id}`,
+    );
     return log;
   }
 
@@ -97,7 +99,9 @@ export class VehicleLogService {
       },
     );
 
-    this.logger.log(`Xe ${updated.license_plate} ra khỏi kho ${log.warehouse_template_id}`);
+    this.logger.log(
+      `Xe ${updated.license_plate} ra khỏi kho ${log.warehouse_template_id}`,
+    );
     return updated;
   }
 
@@ -123,25 +127,45 @@ export class VehicleLogService {
     return { inside_count: insideCount };
   }
 
-  async ocrPlate(
-    file: Express.Multer.File,
-  ): Promise<{ license_plate: string; confidence: number; image_url: string }> {
-    const uploadResult = await this.imageUpload.processAndUpload(
-      file.buffer,
-      file.originalname,
-      '/vehicle-log/plates',
-    );
-
+  async ocrPlate(file: Express.Multer.File): Promise<{
+    license_plate: string;
+    confidence: number;
+    image_url: string;
+    vehicle_type?: string;
+    vehicle_color?: string;
+    plate_format?: string;
+    condition_flags?: string[];
+  }> {
     const base64 = file.buffer.toString('base64');
-    const { plate, confidence } = await this.gemini.recognizeLicensePlate(
-      base64,
-      file.mimetype,
-    );
+
+    const [uploadResult, analysis] = await Promise.all([
+      this.imageUpload.processAndUpload(
+        file.buffer,
+        file.originalname,
+        '/vehicle-log/plates',
+      ),
+      this.gemini.analyzeVehicle(base64, file.mimetype),
+    ]);
 
     return {
-      license_plate: plate.toUpperCase().replace(/\s+/g, ''),
-      confidence,
+      license_plate: analysis.license_plate.toUpperCase().replace(/\s+/g, ''),
+      confidence: analysis.plate_confidence,
       image_url: uploadResult.url,
+      vehicle_type: analysis.vehicle_type,
+      vehicle_color: analysis.vehicle_color,
+      plate_format: analysis.plate_format,
+      condition_flags: analysis.condition_flags,
+    };
+  }
+
+  async ocrPlateQuick(
+    file: Express.Multer.File,
+  ): Promise<{ license_plate: string; confidence: number }> {
+    const base64 = file.buffer.toString('base64');
+    const analysis = await this.gemini.analyzeVehicle(base64, file.mimetype);
+    return {
+      license_plate: analysis.license_plate.toUpperCase().replace(/\s+/g, ''),
+      confidence: analysis.plate_confidence,
     };
   }
 

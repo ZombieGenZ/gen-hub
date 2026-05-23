@@ -116,3 +116,34 @@ export interface IFaqForAiResponse {
   items: IFaqItem[];
   total: number;
 }
+
+export interface IWarehouseRecommendationItem {
+  warehouse_id: string;
+  name: string;
+  address: string | null;
+  area: number;
+  base_price_per_month: number;
+  is_cold_storage: boolean;
+  is_shared_warehouse: boolean;
+  images: string[];
+  match_score: number;
+  match_reason: string;
+  highlights: string[];
+  checkout_url: string;
+}
+
+export interface IWarehouseRecommendationResponse {
+  extracted_filters: {
+    province_name?: string | null;
+    area_min?: number | null;
+    area_max?: number | null;
+    budget_max_monthly?: number | null;
+    is_cold_storage?: boolean | null;
+    is_shared?: boolean | null;
+    keywords?: string | null;
+    industry?: string | null;
+    location_hints?: string[];
+  };
+  recommendations: IWarehouseRecommendationItem[];
+  ai_note: string;
+}

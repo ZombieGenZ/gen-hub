@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { useBreadcrumb } from "@/components/providers/breadcrumb-provider";
 import UserDropdown from "@/components/ui/UserDropdown";
+import { NotificationInboxPopover } from "@/components/ui/notification-inbox-popover";
 
 interface OrganizationHeaderProps {
     children?: React.ReactNode;
@@ -104,7 +105,8 @@ export function OrganizationHeader({ children }: OrganizationHeaderProps) {
                 </nav>
 
                 {/* Account Actions */}
-                <div className="flex items-center gap-4 ml-auto">
+                <div className="flex items-center gap-3 ml-auto">
+                    <NotificationInboxPopover />
                     <UserDropdown />
                 </div>
             </div>

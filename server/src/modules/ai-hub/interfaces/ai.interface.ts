@@ -132,3 +132,31 @@ export interface IAiChatOptions {
   discordChannelId?: string;
   discordUserId?: string;
 }
+
+export interface IVehicleAnalysisResult {
+  license_plate: string;
+  plate_confidence: number;
+  vehicle_type: 'TRUCK' | 'CAR' | 'MOTORCYCLE' | 'CONTAINER' | 'VAN' | 'OTHER';
+  vehicle_color: string;
+  plate_format: 'standard' | 'motorcycle_2row' | 'special_blue' | 'military' | 'foreign' | 'unknown';
+  condition_flags: string[];
+}
+
+export interface IExtractedWarehouseFilters {
+  province_name?: string | null;
+  area_min?: number | null;
+  area_max?: number | null;
+  budget_max_monthly?: number | null;
+  is_cold_storage?: boolean | null;
+  is_shared?: boolean | null;
+  keywords?: string | null;
+  industry?: string | null;
+  location_hints?: string[];
+}
+
+export interface IWarehouseRankItem {
+  warehouse_id: string;
+  match_score: number;
+  match_reason: string;
+  highlights: string[];
+}

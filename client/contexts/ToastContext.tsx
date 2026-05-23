@@ -4,15 +4,21 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Toast, ToastType } from "@/components/ui/Toast";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastData {
   id: string;
   message: string;
   type: ToastType;
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, action?: ToastAction) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -32,10 +38,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
   const showToast = useCallback(
-    (message: string, type: ToastType = "info", duration = 5000) => {
+    (message: string, type: ToastType = "info", duration = 5000, action?: ToastAction) => {
       const id = Math.random().toString(36).substring(2, 9);
       setToasts((prev) => {
-        const newToast = { id, message, type, duration };
+        const newToast = { id, message, type, duration, action };
         // Keep max 5 toasts for the stack effect
         const updatedToasts = [...prev, newToast];
         if (updatedToasts.length > 5) {
@@ -54,13 +60,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ToastContext.Provider value={{ showToast, dismissToast }}>
       {children}
-      {/* Toast Container - Bottom Center with Perspective */}
-      <div className="pointer-events-none fixed bottom-8 left-1/2 z-[9999] flex w-full max-w-[420px] -translate-x-1/2 flex-col items-center gap-2 p-4" style={{ perspective: "1000px" }}>
+      {/* Toast Container - Top Right */}
+      <div className="pointer-events-none fixed top-4 right-4 z-[9999] flex w-full max-w-[420px] flex-col items-end gap-2 p-0" style={{ perspective: "1000px" }}>
         <AnimatePresence mode="popLayout">
           {toasts.map((toast, index) => (
             <Toast
               key={toast.id}
               {...toast}
+              action={toast.action}
               index={index}
               total={toasts.length}
               onDismiss={dismissToast}
