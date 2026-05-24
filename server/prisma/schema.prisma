@@ -568,6 +568,8 @@ model WarehouseTemplate {
   min_humidity    Decimal? @db.Decimal(5, 2)
   max_humidity    Decimal? @db.Decimal(5, 2)
 
+  dock_count Int @default(1)
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -595,6 +597,7 @@ model WarehouseTemplate {
   generated_warehouses  Warehouse[]                @relation("GeneratedWarehouses")
   vehicle_logs          VehicleLog[]
   gps_sessions          GpsSession[]
+  dock_schedules        DockSchedule[]
 
   @@map("warehouse_templates")
 }
@@ -1741,6 +1744,8 @@ model Organization {
 
   inventory_alert_configs InventoryAlertConfig[]
   inventory_alerts        InventoryAlert[]
+
+  dock_schedules DockSchedule[]
 
   @@map("organizations")
 }
@@ -4642,6 +4647,70 @@ model VehicleLog {
   @@index([entry_time])
   @@index([purpose])
   @@map("vehicle_logs")
+}
+
+// ─── Dock Schedule (Đặt lịch dock xe ra vào) ─────────────────────────────
+
+enum DockScheduleStatus {
+  PENDING
+  CONFIRMED
+  ARRIVED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model DockSchedule {
+  id                    String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code                  String             @unique
+  warehouse_template_id String             @db.Uuid
+  organization_id       String?            @db.Uuid
+
+  dock_number          Int
+  scheduled_date       DateTime           @db.Date
+  scheduled_time_start String
+  scheduled_time_end   String
+
+  license_plate String
+  vehicle_type  VehicleType    @default(OTHER)
+  driver_name   String?
+  driver_phone  String?
+  carrier_name  String?
+
+  purpose           VehiclePurpose @default(OTHER)
+  linked_receipt_id String?        @db.Uuid
+  linked_export_id  String?        @db.Uuid
+
+  status             DockScheduleStatus @default(PENDING)
+  notes              String?            @db.Text
+
+  confirmed_by        String?
+  confirmed_at        DateTime?
+  cancelled_by        String?
+  cancellation_reason String?   @db.Text
+  reminder_sent_at    DateTime?
+
+  vehicle_log_id String? @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  organization       Organization?     @relation(fields: [organization_id], references: [id])
+
+  @@index([warehouse_template_id])
+  @@index([organization_id])
+  @@index([scheduled_date])
+  @@index([status])
+  @@index([license_plate])
+  @@map("dock_schedules")
 }
 
 model OrganizationChatCall {
