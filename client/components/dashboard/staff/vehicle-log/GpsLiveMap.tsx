@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useMemo, useRef, useEffect, useCallback, useState } from "react";
 import Map, { Marker, Source, Layer, NavigationControl } from "react-map-gl/mapbox";
 import type { MapRef, FillLayerSpecification, LineLayerSpecification } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -61,6 +61,7 @@ const FALLBACK_CLS = "h-[58vh] min-h-[420px] rounded-xl border shadow-sm";
 
 export function GpsLiveMap({ warehouseCoords, warehouseName, vehiclePositions, className }: GpsLiveMapProps) {
     const mapRef = useRef<MapRef>(null);
+    const [showTraffic, setShowTraffic] = useState(false);
 
     const geofenceData = useMemo(
         () =>
@@ -130,6 +131,29 @@ export function GpsLiveMap({ warehouseCoords, warehouseName, vehiclePositions, c
             >
                 <NavigationControl position="bottom-right" />
 
+                {/* Traffic layer */}
+                {showTraffic && (
+                    <Source id="mapbox-traffic" type="vector" url="mapbox://mapbox.mapbox-traffic-v1">
+                        <Layer
+                            id="traffic-layer"
+                            type="line"
+                            source-layer="traffic"
+                            paint={{
+                                "line-color": [
+                                    "match", ["get", "congestion"],
+                                    "severe",   "#c0392b",
+                                    "heavy",    "#e67e22",
+                                    "moderate", "#f1c40f",
+                                    "#27ae60",
+                                ],
+                                "line-width": 3,
+                                "line-opacity": 0.75,
+                            }}
+                            layout={{ "line-cap": "round", "line-join": "round" }}
+                        />
+                    </Source>
+                )}
+
                 {/* Geofence circle 500m */}
                 <Source id="geofence" type="geojson" data={geofenceData}>
                     <Layer {...geofenceFillLayer} />
@@ -179,13 +203,25 @@ export function GpsLiveMap({ warehouseCoords, warehouseName, vehiclePositions, c
                 ))}
             </Map>
 
-            {/* Fit-all button — top left */}
-            <button
-                onClick={fitAll}
-                className="absolute top-2 left-2 z-20 bg-white/92 backdrop-blur-sm text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow border border-gray-200 hover:bg-white transition-colors"
-            >
-                🎯 Xem tất cả
-            </button>
+            {/* Top-left controls */}
+            <div className="absolute top-2 left-2 z-20 flex gap-1.5">
+                <button
+                    onClick={fitAll}
+                    className="bg-white/92 backdrop-blur-sm text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow border border-gray-200 hover:bg-white transition-colors"
+                >
+                    🎯 Xem tất cả
+                </button>
+                <button
+                    onClick={() => setShowTraffic((v) => !v)}
+                    className={`text-xs font-medium px-2.5 py-1.5 rounded-lg shadow border transition-colors ${
+                        showTraffic
+                            ? "bg-orange-500 text-white border-orange-400"
+                            : "bg-white/92 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-white"
+                    }`}
+                >
+                    🚦 Traffic
+                </button>
+            </div>
 
             {/* Vehicle legend overlay — bottom left, above nav controls */}
             {vehiclePositions.length > 0 && (

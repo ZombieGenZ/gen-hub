@@ -63,6 +63,16 @@ export class GpsController {
   }
 
   /**
+   * Public — trang /track/[token] gọi để lấy phân tích AI (cached 60s)
+   */
+  @Get('gps/session/:token/analysis')
+  @Public()
+  @ApiOperation({ summary: 'Phân tích AI hành trình GPS (public, cached 60s)' })
+  analyzeSession(@Param('token') token: string) {
+    return this.service.analyzeSession(token);
+  }
+
+  /**
    * Staff xem danh sách phiên GPS đang hoạt động tại kho
    */
   @Get('warehouse-manager/gps/active-sessions')

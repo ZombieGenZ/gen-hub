@@ -67,6 +67,14 @@ export interface GpsActiveSession {
     }[];
 }
 
+export interface GpsAiAnalysis {
+    risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+    summary: string;
+    warnings: string[];
+    eta_note: string;
+    analyzed_at: string;
+}
+
 export class GpsService {
     async getSessionInfo(token: string): Promise<GpsSessionInfo> {
         const res = await fetch(`${API}/gps/session/${token}`);
@@ -107,6 +115,12 @@ export class GpsService {
             throw new Error((err as any).message ?? 'Không thể tạo phiên GPS');
         }
         return res.json() as Promise<GpsSessionCreated>;
+    }
+
+    async getAiAnalysis(token: string): Promise<GpsAiAnalysis> {
+        const res = await fetch(`${API}/gps/session/${token}/analysis`);
+        if (!res.ok) throw new Error('Không thể lấy phân tích AI');
+        return res.json() as Promise<GpsAiAnalysis>;
     }
 
     async listActiveSessions(

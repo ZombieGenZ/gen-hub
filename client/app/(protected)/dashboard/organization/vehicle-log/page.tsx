@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { VehicleLogService } from "@/services/vehicle-log/vehicle-log.service";
 import { GpsService } from "@/services/gps/gps.service";
-import type { GpsSessionCreated } from "@/services/gps/gps.service";
+import { GpsSessionCreateDialog } from "@/components/gps/GpsSessionCreateDialog";
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { warehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { orgHelper } from "@/lib/organization.utils";
@@ -73,11 +73,8 @@ export default function OrgVehicleLogPage() {
     const [lookupResult, setLookupResult] = useState<{ active_log: VehicleLog | null } | null>(null);
     const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // GPS Session form
+    // GPS Session dialog
     const [showGpsForm, setShowGpsForm] = useState(false);
-    const [gpsForm, setGpsForm] = useState({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" });
-    const [gpsSubmitting, setGpsSubmitting] = useState(false);
-    const [gpsCreated, setGpsCreated] = useState<GpsSessionCreated | null>(null);
 
     // GPS Live Map state
     const [vehiclePositions, setVehiclePositions] = useState<Map<string, VehiclePosition>>(new Map());
@@ -92,6 +89,7 @@ export default function OrgVehicleLogPage() {
     const [filterDate, setFilterDate] = useState("");
     const [filterStatus, setFilterStatus] = useState<VehicleLogStatus | "">("");
     const [filterPurpose, setFilterPurpose] = useState<VehiclePurpose | "">("");
+    const [historyView, setHistoryView] = useState<"table" | "timeline">("table");
 
     // Fetch warehouses from active contracts, then enrich with full data (including coords)
     useEffect(() => {
@@ -330,32 +328,6 @@ export default function OrgVehicleLogPage() {
         }
     };
 
-    const handleCreateGpsSession = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!gpsForm.license_plate || !filterWarehouseId) {
-            showToast("Vui lòng nhập biển số và chọn kho.", "error");
-            return;
-        }
-        try {
-            setGpsSubmitting(true);
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-            const result = await gpsService.createSession(token, {
-                license_plate: gpsForm.license_plate,
-                warehouse_template_id: filterWarehouseId,
-                driver_phone: gpsForm.driver_phone || undefined,
-                receipt_id: gpsForm.receipt_id || undefined,
-                export_id: gpsForm.export_id || undefined,
-            });
-            setGpsCreated(result);
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : "Lỗi không xác định";
-            showToast(`Không thể tạo link GPS: ${msg}`, "error");
-        } finally {
-            setGpsSubmitting(false);
-        }
-    };
-
     const handleExit = async (id: string, plate: string) => {
         try {
             setExitingId(id);
@@ -387,6 +359,34 @@ export default function OrgVehicleLogPage() {
         () => Array.from(vehiclePositions.values()),
         [vehiclePositions]
     );
+
+    const historyStats = useMemo(() => {
+        if (allLogs.length === 0) return null;
+        const byPurpose: Partial<Record<VehiclePurpose, number>> = {};
+        let totalDurMs = 0, exitedCount = 0;
+        for (const log of allLogs) {
+            byPurpose[log.purpose] = (byPurpose[log.purpose] ?? 0) + 1;
+            if (log.exit_time) {
+                totalDurMs += new Date(log.exit_time).getTime() - new Date(log.entry_time).getTime();
+                exitedCount++;
+            }
+        }
+        const avgMs = exitedCount > 0 ? totalDurMs / exitedCount : 0;
+        const avgH = Math.floor(avgMs / 3_600_000);
+        const avgM = Math.floor((avgMs % 3_600_000) / 60_000);
+        const avgStr = avgH > 0 ? `${avgH}g ${avgM}p` : `${avgM}p`;
+        return { total: allLogs.length, byPurpose, avgDuration: exitedCount > 0 ? avgStr : null };
+    }, [allLogs]);
+
+    const timelineByDate = useMemo(() => {
+        const map = new Map<string, VehicleLog[]>();
+        for (const log of allLogs) {
+            const day = log.entry_time.slice(0, 10);
+            if (!map.has(day)) map.set(day, []);
+            map.get(day)!.push(log);
+        }
+        return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+    }, [allLogs]);
 
     return (
         <>
@@ -425,11 +425,12 @@ export default function OrgVehicleLogPage() {
                         </div>
                     )}
                     <button
-                        onClick={() => { setShowGpsForm(true); setGpsCreated(null); setGpsForm({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" }); }}
-                        className="px-4 py-2 border border-input bg-background rounded-lg text-sm font-medium hover:bg-muted/50 transition-colors"
-                        title="Tạo link GPS gửi cho tài xế"
+                        onClick={() => setShowGpsForm(true)}
+                        disabled={!filterWarehouseId}
+                        className="px-4 py-2 border border-input bg-background rounded-lg text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={filterWarehouseId ? "Tạo link GPS gửi cho tài xế" : "Chọn kho trước khi tạo link GPS"}
                     >
-                        Link GPS
+                        🔗 Link GPS
                     </button>
                     <button
                         onClick={() => setShowForm(true)}
@@ -738,7 +739,7 @@ export default function OrgVehicleLogPage() {
             {/* Tab: Lịch sử */}
             {activeTab === "all" && (
                 <div className="space-y-4">
-                    <div className="flex gap-3 flex-wrap">
+                    <div className="flex gap-3 flex-wrap items-center">
                         <input
                             type="date"
                             className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -764,11 +765,31 @@ export default function OrgVehicleLogPage() {
                                 <option key={k} value={k}>{v}</option>
                             ))}
                         </select>
+                        <div className="ml-auto flex rounded-lg border overflow-hidden text-sm">
+                            <button onClick={() => setHistoryView("table")} className={`px-3 py-1.5 transition-colors ${historyView === "table" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/50"}`}>
+                                📋 Bảng
+                            </button>
+                            <button onClick={() => setHistoryView("timeline")} className={`px-3 py-1.5 border-l transition-colors ${historyView === "timeline" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/50"}`}>
+                                📅 Timeline
+                            </button>
+                        </div>
                     </div>
+
+                    {historyStats && (
+                        <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl border text-sm">
+                            <div className="flex items-center gap-1.5"><span className="text-muted-foreground">Tổng:</span><span className="font-bold">{historyStats.total} lượt</span></div>
+                            {(Object.entries(historyStats.byPurpose) as [VehiclePurpose, number][]).map(([p, cnt]) => (
+                                <div key={p} className="flex items-center gap-1"><span className="text-muted-foreground text-xs">{VEHICLE_PURPOSE_LABELS[p]}:</span><span className="font-semibold text-xs">{cnt}</span></div>
+                            ))}
+                            {historyStats.avgDuration && (
+                                <div className="flex items-center gap-1.5 ml-auto"><span className="text-muted-foreground text-xs">TB trong kho:</span><span className="font-semibold text-xs">{historyStats.avgDuration}</span></div>
+                            )}
+                        </div>
+                    )}
 
                     {allLogs.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">Không có dữ liệu lịch sử</div>
-                    ) : (
+                    ) : historyView === "table" ? (
                         <div className="border rounded-xl overflow-hidden">
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/40 border-b">
@@ -783,153 +804,114 @@ export default function OrgVehicleLogPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {allLogs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-4 py-3 font-mono font-semibold">{log.license_plate}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs">{VEHICLE_TYPE_LABELS[log.vehicle_type]}</span>
-                                                    <span className="text-xs text-muted-foreground">{VEHICLE_PURPOSE_LABELS[log.purpose]}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">{log.driver_name ?? "—"}</td>
-                                            <td className="px-4 py-3 text-xs">{formatTime(log.entry_time)}</td>
-                                            <td className="px-4 py-3 text-xs">{log.exit_time ? formatTime(log.exit_time) : "—"}</td>
-                                            <td className="px-4 py-3 text-xs">{calcDuration(log.entry_time, log.exit_time)}</td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[log.status]}`}>
-                                                    {STATUS_LABELS[log.status]}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {allLogs.map((log) => {
+                                        const durMs = new Date(log.exit_time ?? new Date()).getTime() - new Date(log.entry_time).getTime();
+                                        const isLong = log.exit_time && durMs > 8 * 3_600_000;
+                                        return (
+                                            <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="font-mono font-semibold">{log.license_plate}</span>
+                                                        {log.plate_image_url && (
+                                                            <a href={log.plate_image_url} target="_blank" rel="noopener noreferrer">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img src={log.plate_image_url} alt="biển số" className="h-5 w-8 object-cover rounded border" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-xs">{VEHICLE_TYPE_LABELS[log.vehicle_type]}</span>
+                                                        <span className="text-xs text-muted-foreground">{VEHICLE_PURPOSE_LABELS[log.purpose]}</span>
+                                                        {(log.linked_receipt_id || log.linked_export_id) && (
+                                                            <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded w-fit font-mono">
+                                                                {log.linked_receipt_id ? "📥 Phiếu NK" : "📤 Phiếu XK"}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground text-xs">{log.driver_name ?? "—"}</td>
+                                                <td className="px-4 py-3 text-xs">{formatTime(log.entry_time)}</td>
+                                                <td className="px-4 py-3 text-xs">{log.exit_time ? formatTime(log.exit_time) : "—"}</td>
+                                                <td className="px-4 py-3 text-xs">
+                                                    <span className={isLong ? "text-red-600 font-semibold" : ""}>{calcDuration(log.entry_time, log.exit_time)}</span>
+                                                    {isLong && <span className="ml-1 text-[10px] text-red-500">⚠️ Lâu</span>}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[log.status]}`}>{STATUS_LABELS[log.status]}</span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {timelineByDate.map(([date, logs]) => (
+                                <div key={date}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                            {new Date(date + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+                                        </span>
+                                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{logs.length} lượt</span>
+                                        <div className="flex-1 border-t border-dashed border-muted-foreground/20" />
+                                    </div>
+                                    <div className="space-y-1.5 pl-3 border-l-2 border-muted/60">
+                                        {logs.map((log) => {
+                                            const durMs = log.exit_time ? new Date(log.exit_time).getTime() - new Date(log.entry_time).getTime() : null;
+                                            const isLong = durMs !== null && durMs > 8 * 3_600_000;
+                                            const purposeColors: Record<VehiclePurpose, string> = {
+                                                INBOUND: "bg-blue-100 text-blue-700",
+                                                OUTBOUND: "bg-orange-100 text-orange-700",
+                                                DELIVERY: "bg-green-100 text-green-700",
+                                                VISIT: "bg-purple-100 text-purple-700",
+                                                OTHER: "bg-gray-100 text-gray-600",
+                                            };
+                                            return (
+                                                <div key={log.id} className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors -ml-3">
+                                                    <div className="text-xs text-muted-foreground w-10 shrink-0 pt-0.5 font-mono">
+                                                        {new Date(log.entry_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                                    </div>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-mono font-semibold text-sm">{log.license_plate}</span>
+                                                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${purposeColors[log.purpose]}`}>{VEHICLE_PURPOSE_LABELS[log.purpose]}</span>
+                                                            {log.exit_time && (
+                                                                <span className={`text-xs ${isLong ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                                                    · {calcDuration(log.entry_time, log.exit_time)}{isLong && " ⚠️"}
+                                                                </span>
+                                                            )}
+                                                            {!log.exit_time && <span className="text-xs text-green-600 font-medium">· Đang trong kho</span>}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                            {log.driver_name && <span className="text-xs text-muted-foreground">{log.driver_name}</span>}
+                                                            {log.exit_time && <span className="text-xs text-muted-foreground">→ Ra {new Date(log.exit_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>}
+                                                            {(log.linked_receipt_id || log.linked_export_id) && (
+                                                                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">{log.linked_receipt_id ? "📥 NK" : "📤 XK"}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
             )}
         </div>
 
-        {/* GPS Session Modal */}
-        {showGpsForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                <div className="bg-background rounded-2xl shadow-xl w-full max-w-md">
-                    <div className="flex items-center justify-between px-6 py-4 border-b">
-                        <div>
-                            <h2 className="font-semibold text-base">Tạo link GPS cho tài xế</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">Tài xế mở link → browser gửi vị trí tự động mỗi 30 giây</p>
-                        </div>
-                        <button onClick={() => { setShowGpsForm(false); setGpsCreated(null); }} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
-                    </div>
-
-                    {gpsCreated ? (
-                        <div className="px-6 py-5 space-y-4">
-                            <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
-                                <p className="text-sm font-medium text-green-800">Link GPS đã tạo thành công!</p>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-green-700">Biển số: <strong>{gpsCreated.license_plate}</strong></p>
-                                    <p className="text-xs text-green-700">Hết hạn: {new Date(gpsCreated.expires_at).toLocaleString("vi-VN")}</p>
-                                </div>
-                                <div className="bg-white rounded-lg border border-green-200 p-3">
-                                    <p className="text-xs text-muted-foreground mb-1">Link gửi cho tài xế:</p>
-                                    <p className="text-xs font-mono break-all text-gray-700">{gpsCreated.tracking_url}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => { void navigator.clipboard.writeText(gpsCreated.tracking_url); showToast("Đã copy link!", "success"); }}
-                                        className="flex-1 px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                                    >
-                                        Copy link
-                                    </button>
-                                    <button
-                                        onClick={() => { setGpsCreated(null); setGpsForm({ license_plate: "", driver_phone: "", receipt_id: "", export_id: "" }); }}
-                                        className="flex-1 px-3 py-2 text-xs border border-input rounded-lg hover:bg-muted/50 transition-colors"
-                                    >
-                                        Tạo link khác
-                                    </button>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowGpsForm(false)}
-                                className="w-full px-4 py-2 text-sm border border-input rounded-lg hover:bg-muted/50 transition-colors"
-                            >
-                                Đóng
-                            </button>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleCreateGpsSession} className="px-6 py-5 space-y-4">
-                            {!filterWarehouseId && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-700">
-                                    Vui lòng chọn kho ở phần lọc trước khi tạo link GPS.
-                                </div>
-                            )}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Biển số xe <span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    placeholder="VD: 51A-12345"
-                                    value={gpsForm.license_plate}
-                                    onChange={(e) => setGpsForm((f) => ({ ...f, license_plate: e.target.value }))}
-                                    required
-                                    className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring font-mono uppercase"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">SĐT tài xế</label>
-                                <input
-                                    type="tel"
-                                    placeholder="VD: 0901234567"
-                                    value={gpsForm.driver_phone}
-                                    onChange={(e) => setGpsForm((f) => ({ ...f, driver_phone: e.target.value }))}
-                                    className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium">Mã phiếu nhập</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Receipt ID"
-                                        value={gpsForm.receipt_id}
-                                        onChange={(e) => setGpsForm((f) => ({ ...f, receipt_id: e.target.value }))}
-                                        className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium">Mã phiếu xuất</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Export ID"
-                                        value={gpsForm.export_id}
-                                        onChange={(e) => setGpsForm((f) => ({ ...f, export_id: e.target.value }))}
-                                        className="w-full text-sm border border-input rounded-lg px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                                    />
-                                </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3">
-                                Link có hiệu lực <strong>24 giờ</strong>. Tài xế mở link trên điện thoại → click đồng ý cấp quyền vị trí → hệ thống tự động theo dõi.
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowGpsForm(false)}
-                                    className="flex-1 px-4 py-2 text-sm border border-input rounded-lg hover:bg-muted/50 transition-colors"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={gpsSubmitting || !filterWarehouseId}
-                                    className="flex-1 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
-                                >
-                                    {gpsSubmitting ? "Đang tạo..." : "Tạo link GPS"}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </div>
-            </div>
+        {filterWarehouseId && (
+            <GpsSessionCreateDialog
+                open={showGpsForm}
+                onOpenChange={setShowGpsForm}
+                warehouseId={filterWarehouseId}
+            />
         )}
         </>
     );

@@ -71,6 +71,20 @@ export class GpsRepository {
     });
   }
 
+  async findRecentTracks(sessionId: string, count = 20) {
+    return this.prisma.gpsTrack.findMany({
+      where: { session_id: sessionId },
+      orderBy: { recorded_at: 'desc' },
+      take: count,
+      select: {
+        latitude: true,
+        longitude: true,
+        speed: true,
+        recorded_at: true,
+      },
+    });
+  }
+
   async listSessionsByWarehouse(warehouseTemplateId: string) {
     return this.prisma.gpsSession.findMany({
       where: {

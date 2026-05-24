@@ -6,6 +6,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
+export interface RouteGeometry {
+    type: "LineString";
+    coordinates: [number, number][];
+}
+
 interface DriverTrackingMapProps {
     warehouseLat: number;
     warehouseLng: number;
@@ -17,11 +22,13 @@ interface DriverTrackingMapProps {
     deliveryAddress?: string | null;
     className?: string;
     recenterOffset?: string;
+    onRouteUpdate?: (distanceM: number, durationSec: number, geometry: RouteGeometry) => void;
 }
 
-interface RouteGeometry {
-    type: "LineString";
-    coordinates: [number, number][];
+interface RouteResult {
+    geometry: RouteGeometry;
+    distance: number;
+    duration: number;
 }
 
 async function fetchRoute(
@@ -30,16 +37,31 @@ async function fetchRoute(
     toLng: number,
     toLat: number,
     token: string,
-): Promise<RouteGeometry | null> {
+    profile: "driving" | "driving-traffic" = "driving",
+): Promise<RouteResult | null> {
     try {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&access_token=${token}`;
+        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&access_token=${token}`;
         const res = await fetch(url);
         if (!res.ok) return null;
-        const data = await res.json() as { routes?: { geometry: RouteGeometry }[] };
-        return data.routes?.[0]?.geometry ?? null;
+        const data = await res.json() as {
+            routes?: { geometry: RouteGeometry; distance: number; duration: number }[];
+        };
+        const route = data.routes?.[0];
+        if (!route) return null;
+        return { geometry: route.geometry, distance: route.distance, duration: route.duration };
     } catch {
         return null;
     }
+}
+
+function haversineDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6_371_000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function DriverTrackingMap({
@@ -53,17 +75,45 @@ export function DriverTrackingMap({
     deliveryAddress,
     className,
     recenterOffset,
+    onRouteUpdate,
 }: DriverTrackingMapProps) {
     const mapRef = useRef<MapRef>(null);
     const [isFollowing, setIsFollowing] = useState(false);
     const hasFittedRef = useRef(false);
     const [routeGeo, setRouteGeo] = useState<RouteGeometry | null>(null);
+    const [driverRouteGeo, setDriverRouteGeo] = useState<RouteGeometry | null>(null);
+    const lastDriverFetchRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
+    const [showTraffic, setShowTraffic] = useState(false);
+    // Keep callback ref to avoid adding it as effect dep (prevents spurious refetches)
+    const onRouteUpdateRef = useRef(onRouteUpdate);
+    useEffect(() => { onRouteUpdateRef.current = onRouteUpdate; }, [onRouteUpdate]);
 
     // Fetch route warehouse → delivery once when delivery coords available
     useEffect(() => {
         if (!MAPBOX_TOKEN || !deliveryLat || !deliveryLng) return;
-        void fetchRoute(warehouseLng, warehouseLat, deliveryLng, deliveryLat, MAPBOX_TOKEN).then(setRouteGeo);
+        void fetchRoute(warehouseLng, warehouseLat, deliveryLng, deliveryLat, MAPBOX_TOKEN).then((r) => {
+            if (r) setRouteGeo(r.geometry);
+        });
     }, [warehouseLat, warehouseLng, deliveryLat, deliveryLng]);
+
+    // Fetch route driver → warehouse (throttled: refetch only when moved >150m or 90s elapsed)
+    useEffect(() => {
+        if (!MAPBOX_TOKEN || driverLat === null || driverLng === null) return;
+
+        const lastFetch = lastDriverFetchRef.current;
+        const now = Date.now();
+        if (lastFetch) {
+            const moved = haversineDistanceM(lastFetch.lat, lastFetch.lng, driverLat, driverLng);
+            if (moved < 150 && now - lastFetch.time < 90_000) return;
+        }
+        lastDriverFetchRef.current = { lat: driverLat, lng: driverLng, time: now };
+
+        void fetchRoute(driverLng, driverLat, warehouseLng, warehouseLat, MAPBOX_TOKEN, "driving-traffic").then((r) => {
+            if (!r) return;
+            setDriverRouteGeo(r.geometry);
+            onRouteUpdateRef.current?.(r.distance, r.duration, r.geometry);
+        });
+    }, [driverLat, driverLng, warehouseLat, warehouseLng]);
 
     // First time we have driver position: fit bounds to show all markers
     useEffect(() => {
@@ -123,9 +173,63 @@ export function DriverTrackingMap({
             >
                 <NavigationControl position="top-right" visualizePitch={false} />
 
-                {/* Route line: warehouse → delivery */}
+                {/* Traffic layer từ Mapbox tileset */}
+                {showTraffic && (
+                    <Source id="mapbox-traffic" type="vector" url="mapbox://mapbox.mapbox-traffic-v1">
+                        <Layer
+                            id="traffic-layer"
+                            type="line"
+                            source-layer="traffic"
+                            paint={{
+                                "line-color": [
+                                    "match", ["get", "congestion"],
+                                    "severe",   "#c0392b",
+                                    "heavy",    "#e67e22",
+                                    "moderate", "#f1c40f",
+                                    "#27ae60",
+                                ],
+                                "line-width": 3,
+                                "line-opacity": 0.75,
+                            }}
+                            layout={{ "line-cap": "round", "line-join": "round" }}
+                        />
+                    </Source>
+                )}
+
+                {/* Route: tài xế → kho (xanh dương nét đứt, tính theo traffic) */}
+                {driverRouteGeo && (
+                    <Source
+                        id="driver-route"
+                        type="geojson"
+                        data={{ type: "Feature", geometry: driverRouteGeo, properties: {} }}
+                    >
+                        <Layer
+                            id="driver-route-casing"
+                            type="line"
+                            paint={{ "line-color": "#fff", "line-width": 6, "line-opacity": 0.6 }}
+                            layout={{ "line-cap": "butt", "line-join": "round" }}
+                        />
+                        <Layer
+                            id="driver-route-line"
+                            type="line"
+                            paint={{
+                                "line-color": "#2563EB",
+                                "line-width": 4,
+                                "line-opacity": 0.9,
+                                "line-dasharray": [2, 1.5],
+                            }}
+                            layout={{ "line-cap": "butt", "line-join": "round" }}
+                        />
+                    </Source>
+                )}
+
+                {/* Route: kho → điểm giao (teal liền) */}
                 {routeGeo && (
-                    <Source id="route" type="geojson" data={{ type: "Feature", geometry: routeGeo, properties: {} }}>
+                    <Source
+                        id="route"
+                        type="geojson"
+                        data={{ type: "Feature", geometry: routeGeo, properties: {} }}
+                    >
                         <Layer
                             id="route-line"
                             type="line"
@@ -139,7 +243,7 @@ export function DriverTrackingMap({
                     </Source>
                 )}
 
-                {/* Warehouse marker (A) */}
+                {/* Warehouse marker */}
                 <Marker latitude={warehouseLat} longitude={warehouseLng} anchor="bottom">
                     <div className="flex flex-col items-center">
                         <div className="bg-teal-600 text-white text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap shadow-md">
@@ -149,7 +253,7 @@ export function DriverTrackingMap({
                     </div>
                 </Marker>
 
-                {/* Delivery marker (B) */}
+                {/* Delivery marker */}
                 {deliveryLat != null && deliveryLng != null && (
                     <Marker latitude={deliveryLat} longitude={deliveryLng} anchor="bottom">
                         <div className="flex flex-col items-center">
@@ -173,6 +277,47 @@ export function DriverTrackingMap({
                     </Marker>
                 )}
             </Map>
+
+            {/* Traffic toggle button */}
+            <button
+                onClick={() => setShowTraffic((v) => !v)}
+                className={`absolute top-2 left-2 z-10 text-[11px] font-medium px-2.5 py-1.5 rounded-full shadow-md border transition-colors ${
+                    showTraffic
+                        ? "bg-orange-500 text-white border-orange-400"
+                        : "bg-white/92 text-gray-600 border-gray-200 hover:bg-gray-50"
+                }`}
+            >
+                🚦 Traffic
+            </button>
+
+            {/* Map legend */}
+            {(driverRouteGeo || routeGeo || showTraffic) && (
+                <div className="absolute bottom-2 left-2 z-10 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow text-[10px] space-y-0.5">
+                    {driverRouteGeo && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-5 border-t-2 border-blue-600 border-dashed" />
+                            <span className="text-gray-600">Tới kho</span>
+                        </div>
+                    )}
+                    {routeGeo && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-5 border-t-2 border-teal-600" />
+                            <span className="text-gray-600">Giao hàng</span>
+                        </div>
+                    )}
+                    {showTraffic && (
+                        <div className="flex items-center gap-1.5 pt-0.5 border-t border-gray-100">
+                            <div className="flex gap-0.5">
+                                <div className="w-2 h-2 rounded-full bg-[#27ae60]" />
+                                <div className="w-2 h-2 rounded-full bg-[#f1c40f]" />
+                                <div className="w-2 h-2 rounded-full bg-[#e67e22]" />
+                                <div className="w-2 h-2 rounded-full bg-[#c0392b]" />
+                            </div>
+                            <span className="text-gray-600">Giao thông</span>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Re-center button */}
             {!isFollowing && driverLat !== null && (

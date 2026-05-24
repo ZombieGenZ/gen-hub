@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { GpsService } from "@/services/gps/gps.service";
-import type { GpsSessionInfo } from "@/services/gps/gps.service";
+import type { GpsSessionInfo, GpsAiAnalysis } from "@/services/gps/gps.service";
 import { DriverTrackingMap } from "@/components/track/DriverTrackingMap";
+import type { RouteGeometry } from "@/components/track/DriverTrackingMap";
 
 const gpsService = new GpsService();
 
@@ -17,6 +18,32 @@ type TrackingStatus =
     | "no_gps"
     | "expired"
     | "error";
+
+// Tính khoảng cách nhỏ nhất từ điểm tài xế đến route polyline (đơn vị: mét)
+function minDistToRouteM(driverLat: number, driverLng: number, route: RouteGeometry): number {
+    const cosLat = Math.cos(driverLat * Math.PI / 180);
+    const mPerDegLng = cosLat * 111_320;
+    const mPerDegLat = 110_540;
+    let minDist = Infinity;
+    const coords = route.coordinates;
+    for (let i = 0; i < coords.length - 1; i++) {
+        const x1 = (coords[i][0] - driverLng) * mPerDegLng;
+        const y1 = (coords[i][1] - driverLat) * mPerDegLat;
+        const x2 = (coords[i + 1][0] - driverLng) * mPerDegLng;
+        const y2 = (coords[i + 1][1] - driverLat) * mPerDegLat;
+        const dx = x2 - x1, dy = y2 - y1;
+        const lenSq = dx * dx + dy * dy;
+        let dist: number;
+        if (lenSq === 0) {
+            dist = Math.sqrt(x1 * x1 + y1 * y1);
+        } else {
+            const t = Math.max(0, Math.min(1, (-x1 * dx - y1 * dy) / lenSq));
+            dist = Math.sqrt((x1 + t * dx) ** 2 + (y1 + t * dy) ** 2);
+        }
+        if (dist < minDist) minDist = dist;
+    }
+    return minDist;
+}
 
 function formatCountdown(expiresAt: string): string {
     const diff = Math.max(0, new Date(expiresAt).getTime() - Date.now());
@@ -41,12 +68,67 @@ export default function TrackingPage() {
     const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [speedKmh, setSpeedKmh] = useState<number | null>(null);
     const [panelExpanded, setPanelExpanded] = useState(false);
+    const [roadDistanceM, setRoadDistanceM] = useState<number | null>(null);
+    const [roadDurationSec, setRoadDurationSec] = useState<number | null>(null);
+    const [warnings, setWarnings] = useState<string[]>([]);
+    const [aiAnalysis, setAiAnalysis] = useState<GpsAiAnalysis | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+
+    const driverRouteGeoRef = useRef<RouteGeometry | null>(null);
+    const slowStartTimeRef = useRef<number | null>(null);
+    const gpsApiCountRef = useRef(0);
+    const lastAiCallRef = useRef(0);
+
+    const handleRouteUpdate = useCallback((distM: number, durSec: number, geometry: RouteGeometry) => {
+        setRoadDistanceM(distM);
+        setRoadDurationSec(durSec);
+        driverRouteGeoRef.current = geometry;
+    }, []);
 
     const watchIdRef = useRef<number | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastPositionRef = useRef<GeolocationPosition | null>(null);
     // Client-side rate limit — tránh spam server (server giới hạn 30s/request)
     const lastApiCallRef = useRef<number>(0);
+
+    // Phát hiện bất thường từ GPS (pure client-side)
+    useEffect(() => {
+        if (status !== "tracking" || geofence === "ARRIVED") {
+            setWarnings([]);
+            slowStartTimeRef.current = null;
+            return;
+        }
+
+        const next: string[] = [];
+
+        // Tốc độ cao
+        if (speedKmh !== null && speedKmh > 80) {
+            next.push(`Đang chạy nhanh (${Math.round(speedKmh)} km/h)`);
+        }
+
+        // Dừng lâu bất thường — chỉ tính khi speedKmh < 2 liên tục >2.5 phút
+        if (speedKmh !== null) {
+            if (speedKmh < 2) {
+                if (!slowStartTimeRef.current) {
+                    slowStartTimeRef.current = Date.now();
+                } else if (Date.now() - slowStartTimeRef.current > 150_000) {
+                    next.push("Xe dừng lâu bất thường");
+                }
+            } else {
+                slowStartTimeRef.current = null;
+            }
+        }
+
+        // Lệch tuyến đường gợi ý
+        if (driverCoords && driverRouteGeoRef.current && driverRouteGeoRef.current.coordinates.length > 1) {
+            const offDist = minDistToRouteM(driverCoords.lat, driverCoords.lng, driverRouteGeoRef.current);
+            if (offDist > 300) {
+                next.push("Đang đi lệch tuyến đường gợi ý");
+            }
+        }
+
+        setWarnings(next);
+    }, [speedKmh, driverCoords, status, geofence]);
 
     // Lấy thông tin session + geocode delivery address
     useEffect(() => {
@@ -118,6 +200,17 @@ export default function TrackingPage() {
                     setDistanceM(result.distance_to_warehouse_m);
                 }
                 if (result.geofence) setGeofence(result.geofence);
+
+                gpsApiCountRef.current += 1;
+                const now = Date.now();
+                if (gpsApiCountRef.current >= 5 && now - lastAiCallRef.current >= 300_000) {
+                    lastAiCallRef.current = now;
+                    setAiLoading(true);
+                    gpsService.getAiAnalysis(token)
+                        .then((a) => setAiAnalysis(a))
+                        .catch(() => null)
+                        .finally(() => setAiLoading(false));
+                }
             } catch {
                 // bỏ qua lỗi mạng đơn lẻ
             }
@@ -177,6 +270,7 @@ export default function TrackingPage() {
                     deliveryAddress={sessionInfo.delivery?.address}
                     className="absolute inset-0"
                     recenterOffset="top-36 right-3"
+                    onRouteUpdate={handleRouteUpdate}
                 />
             ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-teal-900" />
@@ -193,11 +287,25 @@ export default function TrackingPage() {
                             </p>
                         )}
                     </div>
-                    <div className="pointer-events-auto">
+                    <div className="pointer-events-auto flex items-center gap-2">
                         {status === "tracking" && (
                             <div className="flex items-center gap-1.5 bg-green-500/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full shadow">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                 GPS bật
+                            </div>
+                        )}
+                        {aiLoading && (
+                            <div className="bg-white/20 backdrop-blur-sm text-white text-[11px] px-2.5 py-1 rounded-full shadow animate-pulse">
+                                ✨ AI...
+                            </div>
+                        )}
+                        {aiAnalysis && !aiLoading && (
+                            <div className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shadow backdrop-blur-sm ${
+                                aiAnalysis.risk_level === "HIGH" ? "bg-red-500/90 text-white" :
+                                aiAnalysis.risk_level === "MEDIUM" ? "bg-yellow-400/90 text-yellow-900" :
+                                "bg-green-500/90 text-white"
+                            }`}>
+                                {aiAnalysis.risk_level === "HIGH" ? "🔴" : aiAnalysis.risk_level === "MEDIUM" ? "🟡" : "🟢"} AI
                             </div>
                         )}
                         {status === "requesting_permission" && (
@@ -218,6 +326,30 @@ export default function TrackingPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Warning banners — xuất hiện trên bottom panel khi có bất thường */}
+            {warnings.length > 0 && status === "tracking" && geofence !== "ARRIVED" && (
+                <div className="absolute bottom-0 left-0 right-0 z-[19] px-4 pb-8">
+                    <div className="mb-2 space-y-1.5" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 140px)" }}>
+                        {warnings.map((w) => {
+                            const isDanger = w.includes("nhanh");
+                            return (
+                                <div
+                                    key={w}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg ${
+                                        isDanger
+                                            ? "bg-red-500/92 text-white backdrop-blur-sm"
+                                            : "bg-yellow-400/95 text-yellow-900 backdrop-blur-sm"
+                                    }`}
+                                >
+                                    <span>{isDanger ? "🔴" : "⚠️"}</span>
+                                    <span className="flex-1">{w}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Bottom info panel — collapsible bottom sheet */}
             <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-8">
@@ -262,6 +394,12 @@ export default function TrackingPage() {
                                     {speedKmh.toFixed(0)} km/h
                                 </span>
                             )}
+                            {/* ETA từ Mapbox — chỉ hiện khi thu gọn */}
+                            {!panelExpanded && roadDurationSec !== null && geofence !== "ARRIVED" && (
+                                <span className="text-[11px] font-bold bg-white/20 text-white px-2.5 py-0.5 rounded-full">
+                                    ~{roadDurationSec < 60 ? "<1" : Math.round(roadDurationSec / 60)} phút
+                                </span>
+                            )}
                             {/* Đếm ngược — chỉ hiện khi thu gọn */}
                             {!panelExpanded && countdown && status !== "expired" && (
                                 <div className="text-right">
@@ -278,9 +416,72 @@ export default function TrackingPage() {
                         <div className="px-5 py-4 space-y-3">
                             {/* Đếm ngược */}
                             {countdown && status !== "expired" && (
-                                <div className="flex items-center justify-between bg-teal-50 rounded-xl px-4 py-2.5">
-                                    <span className="text-xs text-teal-600">Còn hiệu lực</span>
-                                    <span className="font-mono text-teal-800 text-sm font-bold">{countdown}</span>
+                                <div className="flex items-center justify-between bg-teal-100 rounded-xl px-4 py-2.5">
+                                    <span className="text-xs text-teal-700 font-medium">Còn hiệu lực</span>
+                                    <span className="font-mono text-teal-900 text-sm font-bold">{countdown}</span>
+                                </div>
+                            )}
+
+                            {/* Cảnh báo bất thường */}
+                            {warnings.length > 0 && status === "tracking" && geofence !== "ARRIVED" && (
+                                <div className="space-y-1.5">
+                                    {warnings.map((w) => {
+                                        const isDanger = w.includes("nhanh");
+                                        return (
+                                            <div key={w} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${
+                                                isDanger ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800"
+                                            }`}>
+                                                <span>{isDanger ? "🔴" : "⚠️"}</span>
+                                                <span>{w}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* AI phân tích hành trình */}
+                            {(aiAnalysis || aiLoading) && (
+                                <div className={`rounded-xl px-4 py-3 space-y-1.5 ${
+                                    aiLoading ? "bg-gray-100" :
+                                    aiAnalysis?.risk_level === "HIGH" ? "bg-red-100" :
+                                    aiAnalysis?.risk_level === "MEDIUM" ? "bg-yellow-100" : "bg-green-100"
+                                }`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-xs font-semibold ${
+                                            aiLoading ? "text-gray-500" :
+                                            aiAnalysis?.risk_level === "HIGH" ? "text-red-700" :
+                                            aiAnalysis?.risk_level === "MEDIUM" ? "text-yellow-700" : "text-green-700"
+                                        }`}>
+                                            ✨ AI Phân tích
+                                        </span>
+                                        {aiAnalysis && !aiLoading && (
+                                            <span className="text-[10px] text-gray-400">
+                                                {new Date(aiAnalysis.analyzed_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {aiLoading ? (
+                                        <p className="text-xs text-gray-400 animate-pulse">Đang phân tích hành trình...</p>
+                                    ) : aiAnalysis && (
+                                        <>
+                                            <p className={`text-xs font-medium ${
+                                                aiAnalysis.risk_level === "HIGH" ? "text-red-800" :
+                                                aiAnalysis.risk_level === "MEDIUM" ? "text-yellow-800" : "text-green-800"
+                                            }`}>{aiAnalysis.summary}</p>
+                                            {aiAnalysis.warnings.length > 0 && (
+                                                <ul className="space-y-0.5">
+                                                    {aiAnalysis.warnings.map((w, i) => (
+                                                        <li key={i} className="text-[11px] text-gray-700 flex items-start gap-1">
+                                                            <span className="shrink-0">•</span><span>{w}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            {aiAnalysis.eta_note && (
+                                                <p className="text-[11px] text-gray-600 italic">{aiAnalysis.eta_note}</p>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -312,8 +513,8 @@ export default function TrackingPage() {
                                     {distanceM !== null && (
                                         <div className={[
                                             "flex-1 rounded-xl py-2.5 text-center",
-                                            geofence === "ARRIVED" ? "bg-green-50" :
-                                            geofence === "APPROACHING" ? "bg-yellow-50" : "bg-gray-50",
+                                            geofence === "ARRIVED" ? "bg-green-100" :
+                                            geofence === "APPROACHING" ? "bg-yellow-100" : "bg-gray-100",
                                         ].join(" ")}>
                                             {geofence === "ARRIVED" ? (
                                                 <>
@@ -325,7 +526,7 @@ export default function TrackingPage() {
                                                     <div className={`font-bold text-sm ${geofence === "APPROACHING" ? "text-yellow-700" : "text-gray-700"}`}>
                                                         {distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)} km` : `${distanceM} m`}
                                                     </div>
-                                                    <div className={`text-[11px] ${geofence === "APPROACHING" ? "text-yellow-500" : "text-gray-400"}`}>
+                                                    <div className={`text-[11px] font-medium ${geofence === "APPROACHING" ? "text-yellow-600" : "text-gray-500"}`}>
                                                         {geofence === "APPROACHING" ? "Gần kho" : "đến kho"}
                                                     </div>
                                                 </>
@@ -333,30 +534,60 @@ export default function TrackingPage() {
                                         </div>
                                     )}
                                     {speedKmh !== null && (
-                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-blue-50">
-                                            <div className="font-bold text-sm text-blue-700">
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-blue-100">
+                                            <div className="font-bold text-sm text-blue-800">
                                                 {speedKmh.toFixed(0)}<span className="text-xs font-normal"> km/h</span>
                                             </div>
-                                            <div className="text-[11px] text-blue-400">Tốc độ</div>
+                                            <div className="text-[11px] font-medium text-blue-600">Tốc độ</div>
                                         </div>
                                     )}
                                     {lastSent && (
-                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-gray-50">
-                                            <div className="font-medium text-xs text-gray-600">
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-gray-100">
+                                            <div className="font-semibold text-xs text-gray-800">
                                                 {lastSent.toLocaleTimeString("vi-VN", {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
                                                     second: "2-digit",
                                                 })}
                                             </div>
-                                            <div className="text-[11px] text-gray-400">Gửi lúc</div>
+                                            <div className="text-[11px] font-medium text-gray-500">Gửi lúc</div>
                                         </div>
                                     )}
                                 </div>
                             )}
 
+                            {/* Khoảng cách đường bộ + ETA từ Mapbox Directions (driving-traffic) */}
+                            {status === "tracking" && (roadDistanceM !== null || roadDurationSec !== null) && geofence !== "ARRIVED" && (
+                                <div className="flex gap-2">
+                                    {roadDistanceM !== null && (
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-indigo-100">
+                                            <div className="font-bold text-sm text-indigo-800">
+                                                {roadDistanceM >= 1000
+                                                    ? `${(roadDistanceM / 1000).toFixed(1)} km`
+                                                    : `${Math.round(roadDistanceM)} m`}
+                                            </div>
+                                            <div className="text-[11px] font-medium text-indigo-600">Đường bộ</div>
+                                        </div>
+                                    )}
+                                    {roadDurationSec !== null && (
+                                        <div className="flex-1 rounded-xl py-2.5 text-center bg-violet-100">
+                                            <div className="font-bold text-sm text-violet-800">
+                                                {roadDurationSec < 60
+                                                    ? "<1 phút"
+                                                    : `~${Math.round(roadDurationSec / 60)} phút`}
+                                            </div>
+                                            <div className="text-[11px] font-medium text-violet-600">Dự kiến đến</div>
+                                        </div>
+                                    )}
+                                    <div className="flex-1 rounded-xl py-2.5 text-center bg-sky-100 flex flex-col items-center justify-center">
+                                        <div className="text-[10px] text-sky-500 font-medium leading-tight">Mapbox</div>
+                                        <div className="text-[9px] text-sky-400 leading-tight">traffic</div>
+                                    </div>
+                                </div>
+                            )}
+
                             {sessionInfo?.warehouse?.address && (
-                                <p className="text-[11px] text-gray-400 text-center truncate">
+                                <p className="text-[11px] text-gray-500 text-center truncate">
                                     📦 {sessionInfo.warehouse.address}
                                 </p>
                             )}

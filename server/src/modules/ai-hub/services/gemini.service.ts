@@ -788,6 +788,114 @@ export class GeminiService implements OnModuleInit {
   }
 
   /**
+   * Phân tích lộ trình GPS của tài xế — phát hiện bất thường và dự đoán rủi ro
+   */
+  async analyzeGpsRoute(input: {
+    tracks: { lat: number; lng: number; speed: number | null; recorded_at: string }[];
+    warehouseName: string;
+    licensePlate: string;
+    currentDistanceM: number;
+  }): Promise<{
+    risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+    summary: string;
+    warnings: string[];
+    eta_note: string;
+  }> {
+    const defaultResult = {
+      risk_level: 'LOW' as const,
+      summary: 'Hành trình bình thường.',
+      warnings: [],
+      eta_note: '',
+    };
+
+    if (!this.isEnabled || input.tracks.length < 3) return defaultResult;
+
+    const validSpeeds = input.tracks
+      .map((t) => t.speed)
+      .filter((s): s is number => s !== null);
+    const avgSpeed = validSpeeds.length
+      ? validSpeeds.reduce((a, b) => a + b, 0) / validSpeeds.length
+      : 0;
+    const maxSpeed = validSpeeds.length ? Math.max(...validSpeeds) : 0;
+
+    // Đếm số lần dừng (speed < 1 km/h) liên tục > 2 phút
+    let stopCount = 0;
+    let consecutiveSlow = 0;
+    for (const t of input.tracks) {
+      const kmh = t.speed !== null ? t.speed * 3.6 : null;
+      if (kmh !== null && kmh < 1) {
+        consecutiveSlow++;
+        if (consecutiveSlow >= 4) stopCount++;
+      } else {
+        consecutiveSlow = 0;
+      }
+    }
+
+    const durationMin =
+      input.tracks.length >= 2
+        ? Math.round(
+            (new Date(input.tracks[input.tracks.length - 1].recorded_at).getTime() -
+              new Date(input.tracks[0].recorded_at).getTime()) /
+              60_000,
+          )
+        : 0;
+
+    const distText =
+      input.currentDistanceM >= 1000
+        ? `${(input.currentDistanceM / 1000).toFixed(1)} km`
+        : `${input.currentDistanceM} m`;
+
+    const prompt = `Bạn là hệ thống giám sát vận tải. Phân tích dữ liệu GPS sau và trả về JSON.
+
+Xe: ${input.licensePlate}
+Kho đến: ${input.warehouseName}
+Số điểm GPS: ${input.tracks.length} điểm trong ${durationMin} phút
+Tốc độ trung bình: ${(avgSpeed * 3.6).toFixed(1)} km/h
+Tốc độ tối đa: ${(maxSpeed * 3.6).toFixed(1)} km/h
+Số lần dừng bất thường: ${stopCount}
+Khoảng cách còn lại đến kho: ${distText}
+
+Trả về JSON hợp lệ (không có markdown, không có backtick):
+{
+  "risk_level": "LOW" | "MEDIUM" | "HIGH",
+  "summary": "1 câu tóm tắt tình trạng bằng tiếng Việt",
+  "warnings": ["cảnh báo 1 nếu có", "cảnh báo 2 nếu có"],
+  "eta_note": "nhận xét về thời gian đến nếu có"
+}`;
+
+    try {
+      const raw = await this.generateText(prompt, 'gps_route_analysis');
+      if (!raw) return defaultResult;
+
+      const clean = raw
+        .replace(/```json?\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+      const parsed = JSON.parse(clean) as {
+        risk_level?: string;
+        summary?: string;
+        warnings?: string[];
+        eta_note?: string;
+      };
+
+      return {
+        risk_level:
+          parsed.risk_level === 'HIGH'
+            ? 'HIGH'
+            : parsed.risk_level === 'MEDIUM'
+            ? 'MEDIUM'
+            : 'LOW',
+        summary: typeof parsed.summary === 'string' ? parsed.summary : defaultResult.summary,
+        warnings: Array.isArray(parsed.warnings) ? parsed.warnings.slice(0, 4) : [],
+        eta_note: typeof parsed.eta_note === 'string' ? parsed.eta_note : '',
+      };
+    } catch {
+      this.logger.warn('analyzeGpsRoute: failed to parse Gemini response');
+      return defaultResult;
+    }
+  }
+
+  /**
    * Lưu log AI call vào database (bất đồng bộ)
    */
   private async logAICall(data: IAILogData): Promise<void> {

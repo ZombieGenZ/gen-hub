@@ -1,27 +1,15 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog";
-import { TruckIcon, LinkIcon, CheckIcon } from "@heroicons/react/24/outline";
-import { authStorage } from "@/services/auth/auth-storage.service";
-import { GpsService } from "@/services/gps/gps.service";
+import { TruckIcon } from "@heroicons/react/24/outline";
+import { GpsSessionCreateDialog } from "@/components/gps/GpsSessionCreateDialog";
 import { io, Socket } from "socket.io-client";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-const gpsService = new GpsService();
 
 interface RouteGeometry {
     type: "LineString";
@@ -94,13 +82,7 @@ export function OutboundRouteMap({
     const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
 
-    // Create GPS session dialog
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [licensePlate, setLicensePlate] = useState("");
-    const [driverPhone, setDriverPhone] = useState("");
-    const [creating, setCreating] = useState(false);
-    const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
 
     // Geocode delivery address
     useEffect(() => {
@@ -153,34 +135,6 @@ export function OutboundRouteMap({
 
         return () => { socket.disconnect(); };
     }, [exportId]);
-
-    const handleCreateSession = async () => {
-        if (!licensePlate.trim() || !warehouseTemplateId) return;
-        setCreating(true);
-        try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-            const result = await gpsService.createSession(token, {
-                license_plate: licensePlate,
-                warehouse_template_id: warehouseTemplateId,
-                export_id: exportId,
-                driver_phone: driverPhone || undefined,
-            });
-            setTrackingUrl(result.tracking_url);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setCreating(false);
-        }
-    };
-
-    const handleCopy = () => {
-        if (!trackingUrl) return;
-        void navigator.clipboard.writeText(trackingUrl).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    };
 
     if (!MAPBOX_TOKEN) {
         return (
@@ -287,7 +241,7 @@ export function OutboundRouteMap({
 
                 {warehouseTemplateId && (
                     <Button
-                        onClick={() => { setDialogOpen(true); setTrackingUrl(null); }}
+                        onClick={() => setDialogOpen(true)}
                         size="sm"
                         className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl"
                     >
@@ -297,81 +251,14 @@ export function OutboundRouteMap({
                 )}
             </div>
 
-            {/* Create GPS session dialog */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="rounded-2xl max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Tạo link GPS cho tài xế</DialogTitle>
-                        <DialogDescription>
-                            Tài xế mở link trên điện thoại để chia sẻ vị trí realtime
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {!trackingUrl ? (
-                        <div className="space-y-4 py-2">
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Biển số xe *</Label>
-                                <Input
-                                    value={licensePlate}
-                                    onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
-                                    placeholder="51A-12345"
-                                    className="rounded-xl font-mono uppercase"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Số điện thoại tài xế</Label>
-                                <Input
-                                    value={driverPhone}
-                                    onChange={(e) => setDriverPhone(e.target.value)}
-                                    placeholder="0901234567"
-                                    className="rounded-xl"
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-3 py-2">
-                            <p className="text-sm text-muted-foreground">Link GPS đã tạo. Gửi cho tài xế:</p>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={trackingUrl}
-                                    readOnly
-                                    className="rounded-xl text-xs font-mono"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="shrink-0 rounded-xl"
-                                    onClick={handleCopy}
-                                >
-                                    {copied ? <CheckIcon className="w-4 h-4 text-green-600" /> : <LinkIcon className="w-4 h-4" />}
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">Link có hiệu lực 24 giờ</p>
-                        </div>
-                    )}
-
-                    <DialogFooter>
-                        {!trackingUrl ? (
-                            <>
-                                <Button variant="outline" className="rounded-xl" onClick={() => setDialogOpen(false)}>
-                                    Hủy
-                                </Button>
-                                <Button
-                                    onClick={handleCreateSession}
-                                    disabled={creating || !licensePlate.trim()}
-                                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl"
-                                >
-                                    {creating ? "Đang tạo..." : "Tạo link"}
-                                </Button>
-                            </>
-                        ) : (
-                            <Button className="rounded-xl" onClick={() => setDialogOpen(false)}>
-                                Đóng
-                            </Button>
-                        )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {warehouseTemplateId && (
+                <GpsSessionCreateDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    warehouseId={warehouseTemplateId}
+                    defaultExportId={exportId}
+                />
+            )}
         </div>
     );
 }

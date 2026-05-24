@@ -15,6 +15,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RedisService } from '../redis/redis.service';
 import { VehicleLogService } from '../warehouse-vehicle-log/warehouse-vehicle-log.service';
 import { CreateVehicleLogDto } from '../warehouse-vehicle-log/dto/create-vehicle-log.dto';
+import { GeminiService } from '../ai-hub/services/gemini.service';
 
 const GPS_SESSION_HOURS = 24;
 const APPROACHING_DISTANCE_M = 500;
@@ -30,6 +31,7 @@ export class GpsService {
     private readonly websocket: WebsocketGateway,
     private readonly redis: RedisService,
     private readonly vehicleLogService: VehicleLogService,
+    private readonly gemini: GeminiService,
   ) {}
 
   async createSession(dto: CreateGpsSessionDto, userId: string) {
@@ -232,6 +234,51 @@ export class GpsService {
         event: 'ARRIVED',
       },
     );
+  }
+
+  async analyzeSession(token: string) {
+    const session = await this.repo.findSessionByToken(token);
+    if (!session) throw new NotFoundException('Phiên GPS không tồn tại');
+
+    const cacheKey = `gps-analysis:${session.id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as {
+        risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+        summary: string;
+        warnings: string[];
+        eta_note: string;
+        analyzed_at: string;
+      };
+    }
+
+    const tracks = await this.repo.findRecentTracks(session.id, 20);
+    if (tracks.length === 0) {
+      return {
+        risk_level: 'LOW' as const,
+        summary: 'Chưa có dữ liệu GPS.',
+        warnings: [],
+        eta_note: '',
+        analyzed_at: new Date().toISOString(),
+      };
+    }
+
+    const warehouseName = session.warehouse_template?.name ?? 'kho';
+    const analysis = await this.gemini.analyzeGpsRoute({
+      tracks: tracks.map((t) => ({
+        lat: Number(t.latitude),
+        lng: Number(t.longitude),
+        speed: t.speed,
+        recorded_at: t.recorded_at.toISOString(),
+      })),
+      warehouseName,
+      licensePlate: session.license_plate,
+      currentDistanceM: 0,
+    });
+
+    const result = { ...analysis, analyzed_at: new Date().toISOString() };
+    await this.redis.set(cacheKey, JSON.stringify(result), 60);
+    return result;
   }
 
   async listActiveSessions(warehouseTemplateId: string) {

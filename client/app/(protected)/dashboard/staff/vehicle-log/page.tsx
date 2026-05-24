@@ -89,6 +89,7 @@ export default function VehicleLogPage() {
     const [filterDate, setFilterDate] = useState("");
     const [filterStatus, setFilterStatus] = useState<VehicleLogStatus | "">("");
     const [filterPurpose, setFilterPurpose] = useState<VehiclePurpose | "">("");
+    const [historyView, setHistoryView] = useState<"table" | "timeline">("table");
 
     // ── Fetch warehouse templates on mount ──
     useEffect(() => {
@@ -359,6 +360,37 @@ export default function VehicleLogPage() {
         () => Array.from(vehiclePositions.values()),
         [vehiclePositions]
     );
+
+    // Thống kê từ allLogs (hiển thị trong banner)
+    const historyStats = useMemo(() => {
+        if (allLogs.length === 0) return null;
+        const byPurpose: Partial<Record<VehiclePurpose, number>> = {};
+        let totalDurMs = 0;
+        let exitedCount = 0;
+        for (const log of allLogs) {
+            byPurpose[log.purpose] = (byPurpose[log.purpose] ?? 0) + 1;
+            if (log.exit_time) {
+                totalDurMs += new Date(log.exit_time).getTime() - new Date(log.entry_time).getTime();
+                exitedCount++;
+            }
+        }
+        const avgMs = exitedCount > 0 ? totalDurMs / exitedCount : 0;
+        const avgH = Math.floor(avgMs / 3_600_000);
+        const avgM = Math.floor((avgMs % 3_600_000) / 60_000);
+        const avgStr = avgH > 0 ? `${avgH}g ${avgM}p` : `${avgM}p`;
+        return { total: allLogs.length, byPurpose, avgDuration: exitedCount > 0 ? avgStr : null };
+    }, [allLogs]);
+
+    // Timeline: nhóm allLogs theo ngày entry_time
+    const timelineByDate = useMemo(() => {
+        const map = new Map<string, VehicleLog[]>();
+        for (const log of allLogs) {
+            const day = log.entry_time.slice(0, 10);
+            if (!map.has(day)) map.set(day, []);
+            map.get(day)!.push(log);
+        }
+        return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+    }, [allLogs]);
 
     return (
         <>
@@ -702,8 +734,8 @@ export default function VehicleLogPage() {
             {/* Tab: Lịch sử */}
             {activeTab === "all" && (
                 <div className="space-y-4">
-                    {/* Filters */}
-                    <div className="flex gap-3 flex-wrap">
+                    {/* Filters + view toggle */}
+                    <div className="flex gap-3 flex-wrap items-center">
                         <input
                             type="date"
                             className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -729,11 +761,48 @@ export default function VehicleLogPage() {
                                 <option key={k} value={k}>{v}</option>
                             ))}
                         </select>
+                        <div className="ml-auto flex rounded-lg border overflow-hidden text-sm">
+                            <button
+                                onClick={() => setHistoryView("table")}
+                                className={`px-3 py-1.5 transition-colors ${historyView === "table" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/50"}`}
+                            >
+                                📋 Bảng
+                            </button>
+                            <button
+                                onClick={() => setHistoryView("timeline")}
+                                className={`px-3 py-1.5 border-l transition-colors ${historyView === "timeline" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/50"}`}
+                            >
+                                📅 Timeline
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Stats banner */}
+                    {historyStats && (
+                        <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl border text-sm">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Tổng:</span>
+                                <span className="font-bold">{historyStats.total} lượt</span>
+                            </div>
+                            {(Object.entries(historyStats.byPurpose) as [VehiclePurpose, number][]).map(([p, cnt]) => (
+                                <div key={p} className="flex items-center gap-1">
+                                    <span className="text-muted-foreground text-xs">{VEHICLE_PURPOSE_LABELS[p]}:</span>
+                                    <span className="font-semibold text-xs">{cnt}</span>
+                                </div>
+                            ))}
+                            {historyStats.avgDuration && (
+                                <div className="flex items-center gap-1.5 ml-auto">
+                                    <span className="text-muted-foreground text-xs">TB trong kho:</span>
+                                    <span className="font-semibold text-xs">{historyStats.avgDuration}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {allLogs.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">Không có dữ liệu lịch sử</div>
-                    ) : (
+                    ) : historyView === "table" ? (
+                        /* ── Table view ── */
                         <div className="border rounded-xl overflow-hidden">
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/40 border-b">
@@ -748,28 +817,122 @@ export default function VehicleLogPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {allLogs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-4 py-3 font-mono font-semibold">{log.license_plate}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs">{VEHICLE_TYPE_LABELS[log.vehicle_type]}</span>
-                                                    <span className="text-xs text-muted-foreground">{VEHICLE_PURPOSE_LABELS[log.purpose]}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">{log.driver_name ?? "—"}</td>
-                                            <td className="px-4 py-3 text-xs">{formatTime(log.entry_time)}</td>
-                                            <td className="px-4 py-3 text-xs">{log.exit_time ? formatTime(log.exit_time) : "—"}</td>
-                                            <td className="px-4 py-3 text-xs">{calcDuration(log.entry_time, log.exit_time)}</td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[log.status]}`}>
-                                                    {STATUS_LABELS[log.status]}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {allLogs.map((log) => {
+                                        const durMs = new Date(log.exit_time ?? new Date()).getTime() - new Date(log.entry_time).getTime();
+                                        const isLong = log.exit_time && durMs > 8 * 3_600_000;
+                                        return (
+                                            <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="font-mono font-semibold">{log.license_plate}</span>
+                                                        {log.plate_image_url && (
+                                                            <a href={log.plate_image_url} target="_blank" rel="noopener noreferrer">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img src={log.plate_image_url} alt="biển số" className="h-5 w-8 object-cover rounded border" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-xs">{VEHICLE_TYPE_LABELS[log.vehicle_type]}</span>
+                                                        <span className="text-xs text-muted-foreground">{VEHICLE_PURPOSE_LABELS[log.purpose]}</span>
+                                                        {(log.linked_receipt_id || log.linked_export_id) && (
+                                                            <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded w-fit font-mono">
+                                                                {log.linked_receipt_id ? "📥 Phiếu NK" : "📤 Phiếu XK"}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground text-xs">{log.driver_name ?? "—"}</td>
+                                                <td className="px-4 py-3 text-xs">{formatTime(log.entry_time)}</td>
+                                                <td className="px-4 py-3 text-xs">{log.exit_time ? formatTime(log.exit_time) : "—"}</td>
+                                                <td className="px-4 py-3 text-xs">
+                                                    <span className={isLong ? "text-red-600 font-semibold" : ""}>
+                                                        {calcDuration(log.entry_time, log.exit_time)}
+                                                    </span>
+                                                    {isLong && <span className="ml-1 text-[10px] text-red-500">⚠️ Lâu</span>}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[log.status]}`}>
+                                                        {STATUS_LABELS[log.status]}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
+                        </div>
+                    ) : (
+                        /* ── Timeline view ── */
+                        <div className="space-y-6">
+                            {timelineByDate.map(([date, logs]) => (
+                                <div key={date}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                            {new Date(date + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+                                        </span>
+                                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{logs.length} lượt</span>
+                                        <div className="flex-1 border-t border-dashed border-muted-foreground/20" />
+                                    </div>
+                                    <div className="space-y-1.5 pl-3 border-l-2 border-muted/60">
+                                        {logs.map((log) => {
+                                            const durMs = log.exit_time
+                                                ? new Date(log.exit_time).getTime() - new Date(log.entry_time).getTime()
+                                                : null;
+                                            const isLong = durMs !== null && durMs > 8 * 3_600_000;
+                                            const purposeColors: Record<VehiclePurpose, string> = {
+                                                INBOUND: "bg-blue-100 text-blue-700",
+                                                OUTBOUND: "bg-orange-100 text-orange-700",
+                                                DELIVERY: "bg-green-100 text-green-700",
+                                                VISIT: "bg-purple-100 text-purple-700",
+                                                OTHER: "bg-gray-100 text-gray-600",
+                                            };
+                                            return (
+                                                <div key={log.id} className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors -ml-3">
+                                                    <div className="text-xs text-muted-foreground w-10 shrink-0 pt-0.5 font-mono">
+                                                        {new Date(log.entry_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                                    </div>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-mono font-semibold text-sm">{log.license_plate}</span>
+                                                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${purposeColors[log.purpose]}`}>
+                                                                {VEHICLE_PURPOSE_LABELS[log.purpose]}
+                                                            </span>
+                                                            {log.exit_time && (
+                                                                <span className={`text-xs ${isLong ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                                                    · {calcDuration(log.entry_time, log.exit_time)}
+                                                                    {isLong && " ⚠️"}
+                                                                </span>
+                                                            )}
+                                                            {!log.exit_time && (
+                                                                <span className="text-xs text-green-600 font-medium">· Đang trong kho</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                            {log.driver_name && (
+                                                                <span className="text-xs text-muted-foreground">{log.driver_name}</span>
+                                                            )}
+                                                            {log.exit_time && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    → Ra {new Date(log.exit_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                                                </span>
+                                                            )}
+                                                            {(log.linked_receipt_id || log.linked_export_id) && (
+                                                                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">
+                                                                    {log.linked_receipt_id ? "📥 NK" : "📤 XK"}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
