@@ -49,6 +49,7 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/dashboard/organization/purchase-order", icon: ArrowDownTrayIcon, label: "Phiếu PO" },
             { href: "/dashboard/organization/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
             { href: "/dashboard/organization/vehicle-log", icon: TruckIcon, label: "Xe ra vào kho" },
+            { href: "/dashboard/organization/dock-schedule", icon: CalendarDaysIcon, label: "Lịch dock" },
         ]
     },
     {

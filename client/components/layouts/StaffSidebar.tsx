@@ -9,6 +9,7 @@ import {
     BellIcon,
     CreditCardIcon,
     TruckIcon,
+    CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -27,6 +28,7 @@ const staffNavGroups: SidebarGroup[] = [
             { href: "/dashboard/staff/inbound", icon: ArrowDownTrayIcon, label: "Phiếu PO" },
             { href: "/dashboard/staff/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
             { href: "/dashboard/staff/vehicle-log", icon: TruckIcon, label: "Xe ra vào" },
+            { href: "/dashboard/staff/dock-schedule", icon: CalendarDaysIcon, label: "Lịch dock" },
         ],
     },
     {

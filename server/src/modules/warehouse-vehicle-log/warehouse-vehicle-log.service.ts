@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VehicleLogRepository } from './warehouse-vehicle-log.repository';
 import { CreateVehicleLogDto } from './dto/create-vehicle-log.dto';
@@ -7,6 +7,7 @@ import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { GeminiService } from '../ai-hub/services/gemini.service';
 import { ImageUploadService } from '../../common/services/image-upload.service';
+import { DockScheduleService } from '../dock-schedule/dock-schedule.service';
 
 @Injectable()
 export class VehicleLogService {
@@ -19,6 +20,8 @@ export class VehicleLogService {
     private readonly config: ConfigService,
     private readonly gemini: GeminiService,
     private readonly imageUpload: ImageUploadService,
+    @Inject(forwardRef(() => DockScheduleService))
+    private readonly dockScheduleService: DockScheduleService,
   ) {}
 
   async create(dto: CreateVehicleLogDto, userId: string) {
@@ -58,6 +61,14 @@ export class VehicleLogService {
     this.logger.log(
       `Xe ${log.license_plate} vào kho ${dto.warehouse_template_id}`,
     );
+
+    // Auto-link với DockSchedule nếu có lịch đặt trước khớp biển số hôm nay
+    this.dockScheduleService
+      .linkFromVehicleLog(log.license_plate, dto.warehouse_template_id, log.id)
+      .catch(() => {
+        // Silent — xe không hẹn trước vẫn được vào bình thường
+      });
+
     return log;
   }
 

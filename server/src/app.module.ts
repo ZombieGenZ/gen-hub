@@ -24,6 +24,7 @@ import { WarehouseManagerRoleModule } from './modules/warehouse-manager-role/war
 import { WarehouseVisitModule } from './modules/warehouse-visit/warehouse-visit.module';
 import { InventoryAlertModule } from './modules/inventory-alert/inventory-alert.module';
 import { WarehouseVehicleLogModule } from './modules/warehouse-vehicle-log/warehouse-vehicle-log.module';
+import { DockScheduleModule } from './modules/dock-schedule/dock-schedule.module';
 import { GpsModule } from './modules/gps/gps.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { OrganizationRoleModule } from './modules/organization-role/organization-role.module';
@@ -219,6 +220,7 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
 
     // Vehicle Logistics
     WarehouseVehicleLogModule,
+    DockScheduleModule,
     GpsModule,
 
     // Organization Update Request
