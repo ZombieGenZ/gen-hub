@@ -292,24 +292,24 @@ export default function OrgDockSchedulePage() {
               {filterWarehouseId && filterDate && slots && (
                 <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm">
                   <span className="font-semibold text-gray-800">{selectedWarehouseName}</span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-500">•</span>
                   <span className="text-gray-700">
                     {new Date(filterDate + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                   </span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-500">•</span>
                   <span className="text-gray-700"><span className="font-semibold text-gray-800">{slots.dock_count}</span> dock</span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-500">•</span>
                   <span className="text-gray-700">
                     <span className="font-semibold text-teal-700">{timelineSchedules.filter((s) => s.organization_id === orgId).length}</span> lịch của bạn
                   </span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-500">•</span>
                   <span className="text-gray-700">
                     Tổng <span className="font-semibold text-gray-800">{timelineSchedules.filter((s) => !["CANCELLED", "NO_SHOW"].includes(s.status)).length}</span> lịch hôm nay
                   </span>
                 </div>
               )}
               {!slots ? (
-                <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+                <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-600">
                   Không có dữ liệu dock cho ngày này
                 </div>
               ) : (
@@ -331,7 +331,7 @@ export default function OrgDockSchedulePage() {
                   <div key={g.id}>
                     <div className="flex items-center gap-2 mb-2 px-1">
                       <span className="text-sm font-semibold text-gray-800">{g.name}</span>
-                      <span className="text-xs text-gray-400">{g.schedules.length} lịch của bạn · {g.dockCount} dock</span>
+                      <span className="text-xs text-gray-600">{g.schedules.length} lịch của bạn · {g.dockCount} dock</span>
                     </div>
                     <DockTimelineView
                       dockCount={g.dockCount}
@@ -345,7 +345,7 @@ export default function OrgDockSchedulePage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-600">
                 <div className="text-center">
                   <div className="text-4xl mb-3">📅</div>
                   Chưa có lịch dock nào
@@ -357,7 +357,7 @@ export default function OrgDockSchedulePage() {
           /* ── List view (own schedules) ── */
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {schedules.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 text-sm">
+              <div className="text-center py-16 text-gray-600 text-sm">
                 <div className="text-4xl mb-3">📅</div>
                 Chưa có lịch dock nào
               </div>
@@ -437,7 +437,7 @@ export default function OrgDockSchedulePage() {
                   </tbody>
                 </table>
                 {total > schedules.length && (
-                  <div className="px-4 py-3 text-xs text-gray-400 border-t border-gray-100">
+                  <div className="px-4 py-3 text-xs text-gray-600 border-t border-gray-100">
                     Hiển thị {schedules.length}/{total} lịch
                   </div>
                 )}

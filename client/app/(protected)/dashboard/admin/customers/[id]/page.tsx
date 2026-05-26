@@ -341,12 +341,12 @@ export default function CustomerDetailPage() {
                             <CardContent className="p-5 space-y-3">
                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Lịch sử cảnh cáo</p>
                                 {warnings.length === 0 ? (
-                                    <p className="text-sm text-slate-400">Không có cảnh cáo nào</p>
+                                    <p className="text-sm text-slate-600">Không có cảnh cáo nào</p>
                                 ) : warnings.slice(0, 4).map((w) => (
                                     <div key={w.id} className="flex items-start justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
                                         <div>
                                             <p className="text-sm text-slate-700 leading-snug">{w.reason}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{fmtDate(w.created_at)}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{fmtDate(w.created_at)}</p>
                                         </div>
                                         <Badge variant="outline" className={`text-xs shrink-0 ${w.is_active ? "bg-orange-50 text-orange-700 border-orange-200" : w.removed_by ? "bg-slate-50 text-slate-500 border-slate-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
                                             {w.is_active ? "Hiệu lực" : w.removed_by ? "Đã gỡ" : "Hết hạn"}
@@ -531,7 +531,7 @@ export default function CustomerDetailPage() {
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
     return (
         <div className="flex items-center gap-3">
-            <span className="text-slate-400 shrink-0">{icon}</span>
+            <span className="text-slate-500 shrink-0">{icon}</span>
             <span className="text-xs text-slate-500 w-24 shrink-0">{label}</span>
             <span className="text-sm font-medium text-slate-800">{value}</span>
         </div>

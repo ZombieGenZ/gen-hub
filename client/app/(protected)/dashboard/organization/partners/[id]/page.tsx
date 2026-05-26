@@ -193,7 +193,7 @@ export default function PartnerDetailPage() {
         return (
             <div className="flex-1 overflow-auto bg-slate-50/50">
                 <main className="pt-0 py-4 px-4">
-                    <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-600">
                         <UserGroupIcon className="w-16 h-16 mb-4 opacity-30" />
                         <p className="text-lg font-medium">Không tìm thấy đối tác</p>
                         <Button
@@ -443,7 +443,7 @@ export default function PartnerDetailPage() {
                                                     ) : inbounds.length === 0 ? (
                                                         <TableRow>
                                                             <TableCell colSpan={5}>
-                                                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                                                <div className="flex flex-col items-center justify-center py-12 text-slate-600">
                                                                     <PackageCheck className="w-10 h-10 mb-2 opacity-30" />
                                                                     <p className="text-sm">Chưa có phiếu PO nào</p>
                                                                 </div>
@@ -519,7 +519,7 @@ export default function PartnerDetailPage() {
                                                     ) : outbounds.length === 0 ? (
                                                         <TableRow>
                                                             <TableCell colSpan={5}>
-                                                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                                                <div className="flex flex-col items-center justify-center py-12 text-slate-600">
                                                                     <Truck className="w-10 h-10 mb-2 opacity-30" />
                                                                     <p className="text-sm">Chưa có phiếu xuất nào</p>
                                                                 </div>

@@ -360,7 +360,7 @@ export default function AddonsPage() {
                                                 size="sm"
                                                 className="rounded-full gap-1.5"
                                             >
-                                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Không hoạt động
+                                                <XCircleIcon className="w-4 h-4 text-gray-500" /> Không hoạt động
                                                 <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{s.inactive}</Badge>
                                             </Button>
                                         </>

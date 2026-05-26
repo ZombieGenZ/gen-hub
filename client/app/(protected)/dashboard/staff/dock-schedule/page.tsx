@@ -265,7 +265,7 @@ export default function StaffDockSchedulePage() {
                 date={filterDate}
               />
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-600">
                 Không có dữ liệu dock cho ngày này
               </div>
             )
@@ -277,7 +277,7 @@ export default function StaffDockSchedulePage() {
                   <div key={g.id}>
                     <div className="flex items-center gap-2 mb-2 px-1">
                       <span className="text-sm font-semibold text-gray-800">{g.name}</span>
-                      <span className="text-xs text-gray-400">{g.schedules.length} lịch · {g.dockCount} dock</span>
+                      <span className="text-xs text-gray-600">{g.schedules.length} lịch · {g.dockCount} dock</span>
                     </div>
                     <DockTimelineView
                       dockCount={g.dockCount}
@@ -289,7 +289,7 @@ export default function StaffDockSchedulePage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-600">
                 Không có lịch dock nào
               </div>
             )
@@ -308,7 +308,7 @@ export default function StaffDockSchedulePage() {
               <tbody className="divide-y divide-gray-100">
                 {schedules.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-12 text-gray-400 text-sm">Không có lịch dock nào</td>
+                    <td colSpan={9} className="text-center py-12 text-gray-600 text-sm">Không có lịch dock nào</td>
                   </tr>
                 ) : (
                   schedules.map((s) => (
@@ -373,7 +373,7 @@ export default function StaffDockSchedulePage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-lg font-bold text-gray-900">Chi tiết lịch dock</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-gray-700 text-xl leading-none">&times;</button>
             </div>
             <div className="space-y-2.5 text-sm divide-y divide-gray-50">
               <Row label="Mã lịch"><span className="font-mono text-xs text-gray-700">{selected.code}</span></Row>

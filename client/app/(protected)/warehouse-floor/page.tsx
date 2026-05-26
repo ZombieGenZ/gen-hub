@@ -104,7 +104,7 @@ export default function WarehouseFloorPage() {
                     <ScanBarcode className="w-8 h-8 text-slate-400 animate-pulse" />
                     <div className="flex-1">
                         <p className="text-sm font-bold text-slate-700">Quét mã phiếu để bắt đầu nhanh</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                             Bóp cò súng quét mã ▸ Hệ thống tự nhận diện loại phiếu
                         </p>
                     </div>
@@ -118,7 +118,7 @@ export default function WarehouseFloorPage() {
 
             {/* Mode selection */}
             <div className="flex-1 px-4 py-4 space-y-3 overflow-y-auto">
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
                     Hoặc chọn chế độ
                 </p>
                 {MODES.map((mode) => {
@@ -136,7 +136,7 @@ export default function WarehouseFloorPage() {
                                 <p className={`text-lg font-bold ${mode.color}`}>{mode.label}</p>
                                 <p className="text-sm text-slate-500">{mode.description}</p>
                             </div>
-                            <ChevronDown className="w-5 h-5 text-slate-300 -rotate-90" />
+                            <ChevronDown className="w-5 h-5 text-slate-400 -rotate-90" />
                         </button>
                     );
                 })}

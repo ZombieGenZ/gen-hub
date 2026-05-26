@@ -265,7 +265,7 @@ export default function ProductDetailPage() {
             <div className="flex-1 overflow-auto bg-slate-50/50">
                 <main className="pt-0 py-4 px-4">
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <CubeIcon className="w-16 h-16 text-slate-300" />
+                        <CubeIcon className="w-16 h-16 text-slate-500" />
                         <p className="text-lg font-medium text-slate-700">
                             Không tìm thấy sản phẩm
                         </p>
@@ -314,7 +314,7 @@ export default function ProductDetailPage() {
                                         sizes="56px"
                                     />
                                 ) : (
-                                    <CubeIcon className="w-7 h-7 text-slate-400" />
+                                    <CubeIcon className="w-7 h-7 text-slate-600" />
                                 )}
                             </div>
 

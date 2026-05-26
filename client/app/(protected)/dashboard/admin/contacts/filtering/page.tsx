@@ -198,7 +198,7 @@ export default function ContactFilteringPage() {
             <div className="bg-white p-4 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between" style={{ borderRadius: "16px" }}>
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <div className="relative w-full md:w-64">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
                             placeholder="Tìm kiếm giá trị, lý do..."
                             className="pl-9"

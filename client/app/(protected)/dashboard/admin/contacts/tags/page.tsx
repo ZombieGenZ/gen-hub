@@ -98,7 +98,7 @@ export default function ContactTagsPage() {
             {/* Search */}
             <div className="bg-white p-4 shadow-sm border border-slate-100 rounded-2xl">
                 <div className="relative max-w-md">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input
                         placeholder="Tìm kiếm tags..."
                         className="pl-9"
@@ -117,7 +117,7 @@ export default function ContactTagsPage() {
                     ))
                 ) : tags.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-slate-500 bg-white rounded-3xl shadow-premium border border-dashed border-slate-200">
-                        <TagIcon className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                        <TagIcon className="w-12 h-12 mx-auto text-slate-400 mb-2" />
                         <p>Chưa có tag nào. Hãy tạo tag mới ngay!</p>
                     </div>
                 ) : (
@@ -136,7 +136,7 @@ export default function ContactTagsPage() {
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <EllipsisHorizontalIcon className="w-5 h-5 text-slate-400" />
+                                                <EllipsisHorizontalIcon className="w-5 h-5 text-slate-500" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">

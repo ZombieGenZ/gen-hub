@@ -61,7 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     OVERDUE_LEVEL_1: { label: "Quá hạn", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800" },
     OVERDUE_LEVEL_2: { label: "Quá hạn L2", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800" },
     OVERDUE_LEVEL_3: { label: "Quá hạn L3", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800" },
-    SEALED: { label: "Niêm phong", className: "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-400 dark:border-gray-800" },
+    SEALED: { label: "Niêm phong", className: "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-700" },
     LIQUIDATED: { label: "Thanh lý", className: "bg-gray-50 text-gray-700 border-gray-200" },
     CANCELLED: { label: "Đã hủy", className: "bg-gray-50 text-gray-500 border-gray-200" },
     COMPLETED: { label: "Hoàn thành", className: "bg-green-50 text-green-700 border-green-200" },

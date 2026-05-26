@@ -137,10 +137,10 @@ export default function WarehouseDocumentsPage() {
                                 </p>
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400">Chưa có dữ liệu xác minh</p>
+                            <p className="text-sm text-gray-600">Chưa có dữ liệu xác minh</p>
                         )}
                     </div>
-                    <div className="text-right text-xs text-gray-400">
+                    <div className="text-right text-xs text-gray-600">
                         <p className="font-medium text-gray-700 mb-1">Cần đạt để lên badge</p>
                         <p>• VERIFIED: ≥1 tài liệu được duyệt</p>
                         <p>• PREMIUM: ≥1 tài liệu + điểm ≥45</p>
@@ -180,15 +180,15 @@ export default function WarehouseDocumentsPage() {
                             className="hidden"
                         />
                     </label>
-                    <p className="text-xs text-gray-400">Hỗ trợ: JPG, PNG, WEBP, PDF (max 10MB)</p>
+                    <p className="text-xs text-gray-500">Hỗ trợ: JPG, PNG, WEBP, PDF (max 10MB)</p>
                 </div>
             </div>
 
             {/* Document list */}
             {isLoading ? (
-                <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                <div className="text-center py-12 text-gray-600">Đang tải...</div>
             ) : documents.length === 0 ? (
-                <div className="text-center py-12 text-gray-300">
+                <div className="text-center py-12 text-gray-500">
                     <ShieldCheckIcon className="h-12 w-12 mx-auto mb-2 opacity-40" />
                     <p className="text-gray-500">Chưa có tài liệu nào. Hãy upload tài liệu pháp lý để xác minh kho.</p>
                 </div>
@@ -215,7 +215,7 @@ export default function WarehouseDocumentsPage() {
                                             {reviewConfig.label}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-400 truncate">{doc.file_name}</p>
+                                    <p className="text-xs text-gray-600 truncate">{doc.file_name}</p>
 
                                     {/* AI Analysis summary */}
                                     {doc.ai_status === "DONE" && doc.ai_extracted_data && (
@@ -241,7 +241,7 @@ export default function WarehouseDocumentsPage() {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <button
                                         onClick={() => void handleView(doc.id)}
-                                        className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                        className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                         title="Xem file"
                                     >
                                         <EyeIcon className="h-4 w-4" />
@@ -249,7 +249,7 @@ export default function WarehouseDocumentsPage() {
                                     {doc.review_status !== "APPROVED" && (
                                         <button
                                             onClick={() => void handleDelete(doc.id)}
-                                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                                             title="Xóa"
                                         >
                                             <TrashIcon className="h-4 w-4" />

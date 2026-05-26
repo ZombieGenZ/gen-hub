@@ -242,7 +242,7 @@ export default function ContactsInboxPage() {
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="relative min-w-[280px] max-w-[400px] flex-1 md:w-[360px] md:flex-none">
-                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                                 <Input
                                     placeholder="Tìm theo email, tên, mã ticket..."
                                     className="pl-9"
@@ -336,8 +336,8 @@ export default function ContactsInboxPage() {
 
                     <div className="divide-y divide-slate-50">
                         {visibleContacts.length === 0 ? (
-                            <div className="p-12 text-center text-slate-400">
-                                <FunnelIcon className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+                            <div className="p-12 text-center text-slate-600">
+                                <FunnelIcon className="mx-auto mb-3 h-10 w-10 text-slate-400" />
                                 <p className="text-sm font-medium">Không tìm thấy ticket nào</p>
                                 <p className="mt-1 text-xs">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
                             </div>
@@ -393,11 +393,11 @@ export default function ContactsInboxPage() {
                                                 </span>
                                             ))}
                                             {!!ticket.tags?.length && ticket.tags.length > 2 && (
-                                                <span className="text-[10px] text-slate-400">+{ticket.tags.length - 2}</span>
+                                                <span className="text-[10px] text-slate-600">+{ticket.tags.length - 2}</span>
                                             )}
                                         </TicketCellButton>
 
-                                        <TicketCellButton onClick={openTicketDetail} className="text-left text-xs text-slate-400">
+                                        <TicketCellButton onClick={openTicketDetail} className="text-left text-xs text-slate-600">
                                             {getRelativeTime(ticket.last_activity_at || ticket.created_at)}
                                         </TicketCellButton>
 
@@ -409,7 +409,7 @@ export default function ContactsInboxPage() {
                                             <button
                                                 onClick={() => handleDeleteOne(ticket)}
                                                 disabled={deleteMutation.isPending}
-                                                className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                                                 aria-label={`Xóa ticket ${ticket.code}`}
                                             >
                                                 <TrashIcon className="h-4 w-4" />

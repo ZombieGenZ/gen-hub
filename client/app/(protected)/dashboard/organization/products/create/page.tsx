@@ -492,13 +492,13 @@ export default function CreateProductPage() {
                                     </div>
 
                                     {!baseUnitId && (
-                                        <p className="text-sm text-slate-400 text-center py-4">
+                                        <p className="text-sm text-slate-600 text-center py-4">
                                             Chọn đơn vị cơ bản trước để thêm đơn vị quy đổi
                                         </p>
                                     )}
 
                                     {unitRows.length === 0 && baseUnitId && (
-                                        <p className="text-sm text-slate-400 text-center py-4">
+                                        <p className="text-sm text-slate-600 text-center py-4">
                                             Chưa có đơn vị quy đổi. Nhấn &quot;Thêm đơn vị&quot; để bắt đầu.
                                         </p>
                                     )}
@@ -638,7 +638,7 @@ export default function CreateProductPage() {
                                             }}
                                             className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                         />
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Giá nhập kho bình quân của sản phẩm
                                         </p>
                                     </div>
@@ -696,7 +696,7 @@ export default function CreateProductPage() {
                                                 {errors.baseUnitId}
                                             </p>
                                         )}
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Đơn vị nhỏ nhất trong hệ thống quy đổi
                                         </p>
                                     </div>

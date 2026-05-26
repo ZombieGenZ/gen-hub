@@ -132,7 +132,7 @@ function WarnDialog({ userId, categories, open, onClose, onSuccess }: {
     open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const [categoryId, setCategoryId] = useState("");
-    const { showToast } = useToast();
+    const { showToast } = useToast();
     const [reason, setReason] = useState("");
     const [isPermanent, setIsPermanent] = useState(false);
     const [durationValue, setDurationValue] = useState("7");
@@ -247,7 +247,7 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
     open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const { showToast } = useToast();
-    const [selected, setSelected] = useState<string[]>(currentRoleIds);
+    const [selected, setSelected] = useState<string[]>(currentRoleIds);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => { if (open) setSelected(currentRoleIds); }, [open, currentRoleIds]);
@@ -278,7 +278,7 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
                     <DialogDescription>Chọn vai trò cho người dùng này.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {allRoles.length === 0 && <p className="text-sm text-slate-400 text-center py-4">Không có vai trò nào</p>}
+                    {allRoles.length === 0 && <p className="text-sm text-slate-600 text-center py-4">Không có vai trò nào</p>}
                     {allRoles.map((role) => (
                         <label key={role.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                             selected.includes(role.id) ? "border-brand bg-brand/5" : "border-slate-200 hover:border-slate-300"
@@ -315,7 +315,7 @@ function AssignRolesDialog({ userId, allRoles, currentRoleIds, open, onClose, on
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function UserDetailPage() {
     const { showToast } = useToast();
-    const router = useRouter();
+    const router = useRouter();
     const params = useParams();
     const userId = params?.id as string;
 
@@ -543,7 +543,7 @@ export default function UserDetailPage() {
                             <div className="border-t border-slate-100 pt-3">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
-                                        <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                                        <KeyRound className="w-3.5 h-3.5 text-slate-500" />
                                         <span className="text-xs font-medium text-slate-500">Vai trò</span>
                                     </div>
                                     <Button
@@ -557,7 +557,7 @@ export default function UserDetailPage() {
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {displayRoles.length === 0 ? (
-                                        <span className="text-sm text-slate-400">Người dùng thông thường</span>
+                                        <span className="text-sm text-slate-600">Người dùng thông thường</span>
                                     ) : displayRoles.map((r) => (
                                         <Badge key={r.id} variant="outline" className={`text-xs ${roleStyle(r.name)}`}>{r.name}</Badge>
                                     ))}
@@ -593,7 +593,7 @@ export default function UserDetailPage() {
                             <TableBody>
                                 {warnings.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Không có cảnh cáo nào</TableCell>
+                                        <TableCell colSpan={5} className="text-center py-10 text-slate-600 text-sm">Không có cảnh cáo nào</TableCell>
                                     </TableRow>
                                 ) : warnings.map((w) => {
                                     const isExpired = !w.is_active && !w.removed_by && !!w.expires_at;
@@ -616,7 +616,7 @@ export default function UserDetailPage() {
                                                         {w.category?.name ?? "—"}
                                                     </p>
                                                     {w.category && (
-                                                        <p className="text-xs text-slate-400">Mức {w.category.severity}</p>
+                                                        <p className="text-xs text-slate-600">Mức {w.category.severity}</p>
                                                     )}
                                                 </div>
                                             </TableCell>
@@ -630,7 +630,7 @@ export default function UserDetailPage() {
                                             </TableCell>
                                             <TableCell className="text-xs text-slate-500 whitespace-nowrap">
                                                 <p>{w.is_permanent ? "Vĩnh viễn" : w.expires_at ? formatDate(w.expires_at) : "—"}</p>
-                                                <p className="text-slate-400">{formatDate(w.created_at)}</p>
+                                                <p className="text-slate-500">{formatDate(w.created_at)}</p>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 {w.is_active && (
@@ -684,7 +684,7 @@ export default function UserDetailPage() {
                             <TableBody>
                                 {sessions.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-10 text-slate-400 text-sm">Không có phiên nào</TableCell>
+                                        <TableCell colSpan={4} className="text-center py-10 text-slate-600 text-sm">Không có phiên nào</TableCell>
                                     </TableRow>
                                 ) : sessions.map((s) => {
                                     const browser = parseBrowser(s.device);
@@ -694,10 +694,10 @@ export default function UserDetailPage() {
                                         <TableRow key={s.id} className="hover:bg-slate-50/50">
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <ComputerDesktopIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                                                    <ComputerDesktopIcon className="w-4 h-4 text-slate-500 shrink-0" />
                                                     <div>
                                                         <p className="text-sm text-slate-700">{browser}</p>
-                                                        <p className="text-xs text-slate-400">{osName}</p>
+                                                        <p className="text-xs text-slate-600">{osName}</p>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -769,7 +769,7 @@ function ChangePasswordDialog({ userId, open, onClose, onSuccess }: {
     userId: string; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const { showToast } = useToast();
-    const [newPassword, setNewPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
     const [adminPassword, setAdminPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -848,7 +848,7 @@ function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
     user: User | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const { showToast } = useToast();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
         if (!user) return;
@@ -905,7 +905,7 @@ function parseOs(os?: string): string {
 function InfoField({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-0.5">
-            <dt className="text-xs text-slate-400">{label}</dt>
+            <dt className="text-xs text-slate-500">{label}</dt>
             <dd className="text-sm font-medium text-slate-800">{value}</dd>
         </div>
     );

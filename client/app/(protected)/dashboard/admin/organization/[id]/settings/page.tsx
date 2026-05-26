@@ -240,7 +240,7 @@ export default function AdminOrganizationSettingsPage() {
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center py-24">
-                <div className="flex flex-col items-center gap-3 text-slate-400">
+                <div className="flex flex-col items-center gap-3 text-slate-600">
                     <Loader2 className="w-8 h-8 animate-spin" />
                     <span className="text-sm">Đang tải thông tin tổ chức...</span>
                 </div>
@@ -287,7 +287,7 @@ export default function AdminOrganizationSettingsPage() {
         <div className="flex-1 bg-slate-50/50">
             <main className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-sm text-slate-400">
+                <nav className="flex items-center gap-1.5 text-sm text-slate-500">
                     <Link href="/dashboard/admin/organization" className="hover:text-slate-700 transition-colors">
                         Tổ chức
                     </Link>
@@ -315,7 +315,7 @@ export default function AdminOrganizationSettingsPage() {
                                 )}
                             </div>
                             {organization.international_name && (
-                                <p className="text-sm text-slate-400 mt-0.5">{organization.international_name}</p>
+                                <p className="text-sm text-slate-600 mt-0.5">{organization.international_name}</p>
                             )}
 
                             {/* Key info row */}
@@ -330,7 +330,7 @@ export default function AdminOrganizationSettingsPage() {
                                         <User className="w-3.5 h-3.5" />
                                         <span>Chủ sở hữu:</span>
                                         <span className="font-medium text-slate-700">{organization.owner.name}</span>
-                                        <span className="text-slate-400">({organization.owner.email})</span>
+                                        <span className="text-slate-500">({organization.owner.email})</span>
                                     </div>
                                 )}
                                 {organization.representative_name && (
@@ -339,7 +339,7 @@ export default function AdminOrganizationSettingsPage() {
                                         <span>Đại diện:</span>
                                         <span className="font-medium text-slate-700">{organization.representative_name}</span>
                                         {organization.representative_title && (
-                                            <span className="text-slate-400">({organization.representative_title})</span>
+                                            <span className="text-slate-500">({organization.representative_title})</span>
                                         )}
                                     </div>
                                 )}
@@ -355,7 +355,7 @@ export default function AdminOrganizationSettingsPage() {
                                         <span className="font-medium text-slate-700">{organization.representative_email}</span>
                                     </div>
                                 )}
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs text-slate-500">
                                     Tạo ngày {new Date(organization.created_at).toLocaleDateString("vi-VN", {
                                         year: "numeric", month: "long", day: "numeric",
                                     })}
@@ -373,7 +373,7 @@ export default function AdminOrganizationSettingsPage() {
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold text-slate-900 leading-none">{s.value}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+                                    <p className="text-xs text-slate-600 mt-0.5">{s.label}</p>
                                 </div>
                             </div>
                         ))}

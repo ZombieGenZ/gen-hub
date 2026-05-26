@@ -117,7 +117,7 @@ export default function OrganizationPage() {
                     {/* Toolbar */}
                     <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <Input
                                 placeholder="Tìm theo tên tổ chức..."
                                 value={search}
@@ -159,7 +159,7 @@ export default function OrganizationPage() {
                             {loading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="py-16 text-center">
-                                        <div className="flex flex-col items-center gap-3 text-slate-400">
+                                        <div className="flex flex-col items-center gap-3 text-slate-600">
                                             <Loader2 className="w-7 h-7 animate-spin" />
                                             <span className="text-sm">Đang tải...</span>
                                         </div>
@@ -169,7 +169,7 @@ export default function OrganizationPage() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="py-16 text-center">
                                         <Building2 className="w-10 h-10 mx-auto text-slate-200 mb-3" />
-                                        <p className="text-sm text-slate-400 font-medium">Không tìm thấy tổ chức nào</p>
+                                        <p className="text-sm text-slate-600 font-medium">Không tìm thấy tổ chức nào</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -187,7 +187,7 @@ export default function OrganizationPage() {
                                                 <div>
                                                     <p className="font-medium text-slate-900 text-sm">{org.name}</p>
                                                     {org.international_name && (
-                                                        <p className="text-xs text-slate-400 mt-0.5">{org.international_name}</p>
+                                                        <p className="text-xs text-slate-600 mt-0.5">{org.international_name}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -195,12 +195,12 @@ export default function OrganizationPage() {
                                         <TableCell>
                                             <div>
                                                 <p className="text-sm text-slate-700">{org.owner?.name || "—"}</p>
-                                                <p className="text-xs text-slate-400 mt-0.5">{org.owner?.email || ""}</p>
+                                                <p className="text-xs text-slate-600 mt-0.5">{org.owner?.email || ""}</p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                                                <Users className="w-3.5 h-3.5 text-slate-400" />
+                                                <Users className="w-3.5 h-3.5 text-slate-500" />
                                                 {org._count?.members ?? 0}
                                             </div>
                                         </TableCell>
@@ -221,7 +221,7 @@ export default function OrganizationPage() {
                                             })}
                                         </TableCell>
                                         <TableCell>
-                                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 ml-auto" />
+                                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-500 ml-auto" />
                                         </TableCell>
                                     </TableRow>
                                 ))

@@ -184,7 +184,7 @@ export default function PutawayPage() {
                 <p className="text-slate-500 text-center max-w-xs">
                     Quét phiếu đã hoàn thành kiểm đếm để bắt đầu cất hàng vào kệ
                 </p>
-                <div className="flex items-center gap-3 text-slate-400">
+                <div className="flex items-center gap-3 text-slate-600">
                     <ScanBarcode className="w-8 h-8 animate-pulse" />
                     <span className="text-sm font-medium">Đang chờ quét...</span>
                 </div>

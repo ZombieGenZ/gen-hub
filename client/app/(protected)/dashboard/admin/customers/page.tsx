@@ -95,7 +95,7 @@ export default function CustomersPage() {
                 {/* Search + Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-5">
                     <div className="relative w-full max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <Input
                             placeholder="Tìm kiếm theo tên, email..."
                             className="pl-9 h-9 bg-white border-slate-200 rounded-xl text-sm"
@@ -135,11 +135,11 @@ export default function CustomersPage() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Đang tải dữ liệu...</TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-600 text-sm">Đang tải dữ liệu...</TableCell>
                                 </TableRow>
                             ) : users.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Không tìm thấy khách hàng nào</TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-600 text-sm">Không tìm thấy khách hàng nào</TableCell>
                                 </TableRow>
                             ) : users.map((user) => (
                                 <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
@@ -160,14 +160,14 @@ export default function CustomersPage() {
                                             <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs gap-1">
                                                 <AlertTriangle className="w-3 h-3" />{user.warning_count}
                                             </Badge>
-                                        ) : <span className="text-xs text-slate-400">—</span>}
+                                        ) : <span className="text-xs text-slate-600">—</span>}
                                     </TableCell>
                                     <TableCell><StatusBadge user={user} /></TableCell>
                                     <TableCell className="text-right">
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-xl"
+                                            className="h-8 w-8 text-slate-500 hover:text-slate-900 rounded-xl"
                                             onClick={() => router.push(`/dashboard/admin/customers/${user.id}`)}
                                         >
                                             <Eye className="w-4 h-4" />

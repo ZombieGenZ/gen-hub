@@ -263,7 +263,7 @@ export default function ContactsDashboardPage() {
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-[280px] flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                            <p className="text-slate-400 text-sm">Chưa có dữ liệu ticket</p>
+                            <p className="text-slate-600 text-sm">Chưa có dữ liệu ticket</p>
                         </div>
                     )}
                 </div>
@@ -307,7 +307,7 @@ export default function ContactsDashboardPage() {
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-[280px] flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                            <p className="text-slate-400 text-sm">Chưa có dữ liệu</p>
+                            <p className="text-slate-600 text-sm">Chưa có dữ liệu</p>
                         </div>
                     )}
                 </div>
@@ -329,7 +329,7 @@ export default function ContactsDashboardPage() {
                 </div>
                 <div className="divide-y divide-slate-100">
                     {recentTickets.length === 0 ? (
-                        <div className="p-8 text-center text-slate-400 text-sm">
+                        <div className="p-8 text-center text-slate-600 text-sm">
                             Chưa có ticket nào
                         </div>
                     ) : (
@@ -359,7 +359,7 @@ export default function ContactsDashboardPage() {
                                         }`}>
                                         {ticket.status}
                                     </span>
-                                    <span className="text-xs text-slate-400">{getRelativeTime(ticket.created_at)}</span>
+                                    <span className="text-xs text-slate-600">{getRelativeTime(ticket.created_at)}</span>
                                 </div>
                             </Link>
                         ))

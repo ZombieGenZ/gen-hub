@@ -88,7 +88,7 @@ function KpiCard({
                 <span className="text-xs text-gray-500">{label}</span>
             </div>
             <p className="text-xl font-bold text-gray-900">{value}</p>
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
         </div>
     );
 }
@@ -195,7 +195,7 @@ export default function MyWarehouseDetailPage() {
                     <h1 className="text-xl font-bold text-gray-900 line-clamp-1">
                         {t?.name ?? "Đang tải..."}
                     </h1>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-600">
                         {t?.ward ? `${t.ward.name}, ${t.ward.province.name}` : ""}
                     </p>
                 </div>
@@ -228,7 +228,7 @@ export default function MyWarehouseDetailPage() {
             {activeTab === "overview" && (
                 <div className="space-y-6">
                     {loading.overview ? (
-                        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                        <div className="text-center py-12 text-gray-600">Đang tải...</div>
                     ) : s ? (
                         <>
                             {/* KPI grid */}
@@ -259,19 +259,19 @@ export default function MyWarehouseDetailPage() {
                                     <h3 className="font-semibold text-gray-800 mb-3">Thông tin kho</h3>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div>
-                                            <span className="text-gray-400">Diện tích:</span>{" "}
+                                            <span className="text-gray-600">Diện tích:</span>{" "}
                                             <span className="font-medium">{t.length * t.width} m²</span>
                                         </div>
                                         <div>
-                                            <span className="text-gray-400">Giá thuê:</span>{" "}
+                                            <span className="text-gray-600">Giá thuê:</span>{" "}
                                             <span className="font-medium">{formatVND(Number(t.price_per_month))} đ/tháng</span>
                                         </div>
                                         <div>
-                                            <span className="text-gray-400">Chiều cao:</span>{" "}
+                                            <span className="text-gray-600">Chiều cao:</span>{" "}
                                             <span className="font-medium">{t.ceiling_height ?? "—"} m</span>
                                         </div>
                                         <div>
-                                            <span className="text-gray-400">Loại:</span>{" "}
+                                            <span className="text-gray-600">Loại:</span>{" "}
                                             <span className="font-medium">{t.is_cold_storage ? "Kho mát" : "Kho thường"}</span>
                                         </div>
                                     </div>
@@ -291,7 +291,7 @@ export default function MyWarehouseDetailPage() {
                                                         ? "Đã xác minh"
                                                         : "Chưa xác minh"}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-gray-600">
                                                     Điểm uy tín: {t.trust_profile.trust_score}/55
                                                 </p>
                                             </div>
@@ -308,11 +308,11 @@ export default function MyWarehouseDetailPage() {
             {activeTab === "tenants" && (
                 <div className="space-y-3">
                     {loading.tenants ? (
-                        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                        <div className="text-center py-12 text-gray-600">Đang tải...</div>
                     ) : tenants.length === 0 ? (
-                        <div className="text-center py-12 text-gray-300">
+                        <div className="text-center py-12 text-gray-500">
                             <UsersIcon className="h-12 w-12 mx-auto mb-2 opacity-40" />
-                            <p className="text-gray-400">Kho hiện không có khách thuê</p>
+                            <p className="text-gray-600">Kho hiện không có khách thuê</p>
                         </div>
                     ) : (
                         tenants.map((lease) => {
@@ -327,7 +327,7 @@ export default function MyWarehouseDetailPage() {
                                             <div>
                                                 <p className="font-semibold text-gray-900">{org.name}</p>
                                                 {org.international_name && (
-                                                    <p className="text-xs text-gray-400">{org.international_name}</p>
+                                                    <p className="text-xs text-gray-600">{org.international_name}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -340,13 +340,13 @@ export default function MyWarehouseDetailPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                         {org.tax_code && (
                                             <div className="flex items-center gap-2 text-gray-600">
-                                                <IdentificationIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                                <IdentificationIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                                 <span>MST: <strong>{org.tax_code}</strong></span>
                                             </div>
                                         )}
                                         {org.representative_name && (
                                             <div className="flex items-center gap-2 text-gray-600">
-                                                <UsersIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                                <UsersIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                                 <span>
                                                     {org.representative_name}
                                                     {org.representative_title ? ` — ${org.representative_title}` : ""}
@@ -355,7 +355,7 @@ export default function MyWarehouseDetailPage() {
                                         )}
                                         {org.representative_phone && (
                                             <div className="flex items-center gap-2 text-gray-600">
-                                                <PhoneIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                                <PhoneIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                                 <a href={`tel:${org.representative_phone}`} className="hover:text-blue-600">
                                                     {org.representative_phone}
                                                 </a>
@@ -363,7 +363,7 @@ export default function MyWarehouseDetailPage() {
                                         )}
                                         {org.representative_email && (
                                             <div className="flex items-center gap-2 text-gray-600">
-                                                <EnvelopeIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                                <EnvelopeIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                                 <a href={`mailto:${org.representative_email}`} className="hover:text-blue-600 truncate">
                                                     {org.representative_email}
                                                 </a>
@@ -371,7 +371,7 @@ export default function MyWarehouseDetailPage() {
                                         )}
                                         {org.headquarters_address && (
                                             <div className="flex items-start gap-2 text-gray-600 sm:col-span-2">
-                                                <MapPinIcon className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                <MapPinIcon className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
                                                 <span>{org.headquarters_address}</span>
                                             </div>
                                         )}
@@ -380,17 +380,17 @@ export default function MyWarehouseDetailPage() {
                                     {/* Contract & payment summary */}
                                     <div className="border-t border-gray-100 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                                         <div>
-                                            <p className="text-gray-400 text-xs">Mã HĐ</p>
+                                            <p className="text-gray-600 text-xs">Mã HĐ</p>
                                             <p className="font-mono font-medium text-gray-800">{lease.contract_code}</p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-400 text-xs">Bắt đầu</p>
+                                            <p className="text-gray-600 text-xs">Bắt đầu</p>
                                             <p className="font-medium text-gray-800">
                                                 {new Date(lease.started_at).toLocaleDateString("vi-VN")}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-400 text-xs">Hết hạn</p>
+                                            <p className="text-gray-600 text-xs">Hết hạn</p>
                                             <p className={`font-medium ${
                                                 lease.expired_at && new Date(lease.expired_at) < new Date(Date.now() + 30 * 86400_000)
                                                     ? "text-amber-600"
@@ -402,7 +402,7 @@ export default function MyWarehouseDetailPage() {
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-400 text-xs">Giá trị HĐ</p>
+                                            <p className="text-gray-600 text-xs">Giá trị HĐ</p>
                                             <p className="font-semibold text-gray-900">
                                                 {formatVND(Number(lease.final_price))} đ
                                             </p>
@@ -410,20 +410,20 @@ export default function MyWarehouseDetailPage() {
                                         {detail && (
                                             <>
                                                 <div>
-                                                    <p className="text-gray-400 text-xs">Đơn giá/tháng</p>
+                                                    <p className="text-gray-600 text-xs">Đơn giá/tháng</p>
                                                     <p className="font-medium text-gray-800">
                                                         {formatVND(Number(detail.price_per_month))} đ
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 text-xs">Thời hạn</p>
+                                                    <p className="text-gray-600 text-xs">Thời hạn</p>
                                                     <p className="font-medium text-gray-800">{detail.rental_days} ngày</p>
                                                 </div>
                                             </>
                                         )}
                                         {lease.last_payment && (
                                             <div className="sm:col-span-2">
-                                                <p className="text-gray-400 text-xs">Thanh toán gần nhất</p>
+                                                <p className="text-gray-600 text-xs">Thanh toán gần nhất</p>
                                                 <p className="font-medium text-green-700 flex items-center gap-1">
                                                     <CheckCircleIcon className="h-3.5 w-3.5" />
                                                     {formatVND(lease.last_payment.amount)} đ —{" "}
@@ -457,17 +457,17 @@ export default function MyWarehouseDetailPage() {
                                 <option key={k} value={k}>{v}</option>
                             ))}
                         </select>
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-gray-600">
                             {contracts ? `${contracts.total} hợp đồng` : ""}
                         </span>
                     </div>
 
                     {loading.contracts ? (
-                        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                        <div className="text-center py-12 text-gray-600">Đang tải...</div>
                     ) : !contracts || contracts.items.length === 0 ? (
-                        <div className="text-center py-12 text-gray-300">
+                        <div className="text-center py-12 text-gray-500">
                             <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 opacity-40" />
-                            <p className="text-gray-400">Không có hợp đồng nào</p>
+                            <p className="text-gray-600">Không có hợp đồng nào</p>
                         </div>
                     ) : (
                         <>
@@ -495,7 +495,7 @@ export default function MyWarehouseDetailPage() {
                                                     <td className="px-4 py-3">
                                                         <p className="font-medium text-gray-800 line-clamp-1">{c.organization.name}</p>
                                                         {c.organization.representative_phone && (
-                                                            <p className="text-xs text-gray-400">{c.organization.representative_phone}</p>
+                                                            <p className="text-xs text-gray-600">{c.organization.representative_phone}</p>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-xs text-gray-500">{c.organization.tax_code ?? "—"}</td>
@@ -529,7 +529,7 @@ export default function MyWarehouseDetailPage() {
                             {/* Pagination */}
                             {contracts.total_pages > 1 && (
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm text-gray-400">
+                                    <p className="text-sm text-gray-600">
                                         Trang {contracts.page}/{contracts.total_pages}
                                     </p>
                                     <div className="flex gap-2">
@@ -559,13 +559,13 @@ export default function MyWarehouseDetailPage() {
             {activeTab === "revenue" && (
                 <div className="space-y-6">
                     {loading.revenue ? (
-                        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                        <div className="text-center py-12 text-gray-600">Đang tải...</div>
                     ) : revenue ? (
                         <>
                             {/* Summary cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div className="border border-gray-200 rounded-xl p-4 bg-white">
-                                    <p className="text-xs text-gray-400 mb-1">Tổng hợp đồng</p>
+                                    <p className="text-xs text-gray-600 mb-1">Tổng hợp đồng</p>
                                     <p className="text-lg font-bold text-gray-900">
                                         {formatVND(revenue.summary.total_contracted)} đ
                                     </p>
@@ -583,7 +583,7 @@ export default function MyWarehouseDetailPage() {
                                     </p>
                                 </div>
                                 <div className={`border rounded-xl p-4 ${revenue.summary.total_overdue > 0 ? "border-red-200 bg-red-50" : "border-gray-200 bg-white"}`}>
-                                    <p className={`text-xs mb-1 ${revenue.summary.total_overdue > 0 ? "text-red-600" : "text-gray-400"}`}>
+                                    <p className={`text-xs mb-1 ${revenue.summary.total_overdue > 0 ? "text-red-600" : "text-gray-600"}`}>
                                         Còn thiếu
                                     </p>
                                     <p className={`text-lg font-bold ${revenue.summary.total_overdue > 0 ? "text-red-700" : "text-gray-900"}`}>
@@ -625,16 +625,16 @@ export default function MyWarehouseDetailPage() {
                                         <Bar dataKey="paid" name="Thực thu" fill="#4ade80" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
-                                <p className="text-xs text-gray-400 mt-2">
+                                <p className="text-xs text-gray-600 mt-2">
                                     * Doanh thu hợp đồng = tổng đơn giá/tháng của hợp đồng hoạt động trong tháng đó.
                                     Thực thu = thanh toán được xác nhận trong tháng.
                                 </p>
                             </div>
                         </>
                     ) : (
-                        <div className="text-center py-12 text-gray-300">
+                        <div className="text-center py-12 text-gray-500">
                             <CurrencyDollarIcon className="h-12 w-12 mx-auto mb-2 opacity-40" />
-                            <p className="text-gray-400">Chưa có dữ liệu doanh thu</p>
+                            <p className="text-gray-600">Chưa có dữ liệu doanh thu</p>
                         </div>
                     )}
                 </div>

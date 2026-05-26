@@ -85,7 +85,7 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
       case 'PENDING': return <span className="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-500 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-500/30">PENDING</span>;
       case 'CONFIRMED': return <span className="bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-500 px-3 py-1 rounded-full text-xs font-bold border border-green-200 dark:border-green-500/30">CONFIRMED</span>;
       case 'CANCELLED': return <span className="bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-500 px-3 py-1 rounded-full text-xs font-bold border border-red-200 dark:border-red-500/30">CANCELLED</span>;
-      case 'COMPLETED': return <span className="bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400 px-3 py-1 rounded-full text-xs font-bold border border-gray-200 dark:border-gray-500/30">COMPLETED</span>;
+      case 'COMPLETED': return <span className="bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-bold border border-gray-200 dark:border-gray-500/30">COMPLETED</span>;
       default: return <span>{status}</span>;
     }
   };

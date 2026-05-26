@@ -127,7 +127,7 @@ export default function TicketDetailPage() {
     if (!ticket) {
         return (
             <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-                <XCircleIcon className="h-12 w-12 text-slate-300" />
+                <XCircleIcon className="h-12 w-12 text-slate-400" />
                 <p className="text-slate-500">Không tìm thấy ticket</p>
                 <Link href={INBOX_BASE_PATH} className="text-sm text-primary hover:underline">Quay lại Inbox</Link>
             </div>
@@ -150,7 +150,7 @@ export default function TicketDetailPage() {
                         <div className="mb-1 flex items-center gap-2">
                             <div className={cn("h-1.5 w-1.5 rounded-full", getSidebarStatusDotClass(item.status))} />
                             <p className="flex-1 truncate text-xs font-semibold text-slate-800">{item.customer_name}</p>
-                            <span className="text-[10px] text-slate-400">{relativeTime(item.last_activity_at || item.created_at)}</span>
+                            <span className="text-[10px] text-slate-600">{relativeTime(item.last_activity_at || item.created_at)}</span>
                         </div>
                         <p className="truncate pl-3.5 text-[11px] text-slate-500">{item.subject}</p>
                     </button>
@@ -167,7 +167,7 @@ export default function TicketDetailPage() {
                 <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                     <div className="min-w-0">
                         <h2 className="truncate text-xl font-bold text-slate-900">{ticket.subject}</h2>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
                             <ChannelIcon channel={ticket.channel} showLabel />
                             <span>#{ticket.code}</span>
                         </div>
@@ -191,8 +191,8 @@ export default function TicketDetailPage() {
                         </div>
                     ))}
                     {!ticket.message && messages.length === 0 && (
-                        <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-400">
-                            <EnvelopeIcon className="h-10 w-10 text-slate-300" />
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-600">
+                            <EnvelopeIcon className="h-10 w-10 text-slate-400" />
                             <p className="text-sm">Chưa có tin nhắn nào</p>
                         </div>
                     )}
@@ -215,7 +215,7 @@ export default function TicketDetailPage() {
             <aside className="space-y-5 overflow-y-auto border-l border-slate-200 bg-slate-50/50 p-6">
                 <section className="space-y-2">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Khách hàng</h3>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><UserCircleIcon className="h-4 w-4 text-slate-400" />{ticket.customer_name}</div>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><UserCircleIcon className="h-4 w-4 text-slate-500" />{ticket.customer_name}</div>
                     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">{ticket.customer_email}</div>
                 </section>
 
@@ -230,7 +230,7 @@ export default function TicketDetailPage() {
                         </Select>
                     </div>
                     <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <div><p className="text-sm font-medium text-slate-700">AI Auto-reply</p><p className="text-xs text-slate-400">{ticket.enable_ai_reply ? "Đang bật" : "Đang tắt"}</p></div>
+                        <div><p className="text-sm font-medium text-slate-700">AI Auto-reply</p><p className="text-xs text-slate-600">{ticket.enable_ai_reply ? "Đang bật" : "Đang tắt"}</p></div>
                         <Switch checked={ticket.enable_ai_reply ?? false} onCheckedChange={(checked) => saveUpdate({ enable_ai_reply: checked }, checked ? "Đã bật AI auto-reply" : "Đã tắt AI auto-reply", "Không thể cập nhật AI auto-reply")} />
                     </div>
                     <div>
@@ -239,10 +239,10 @@ export default function TicketDetailPage() {
                             <button onClick={() => setIsEditTagsOpen(true)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><PencilSquareIcon className="h-3 w-3" />Sửa</button>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                            {ticket.tags?.length ? ticket.tags.map((tag) => <span key={tag.id} className="rounded-lg bg-slate-600 px-2 py-1 text-xs font-medium text-white">#{tag.name}</span>) : <span className="text-xs text-slate-400">Chưa có tag</span>}
+                            {ticket.tags?.length ? ticket.tags.map((tag) => <span key={tag.id} className="rounded-lg bg-slate-600 px-2 py-1 text-xs font-medium text-white">#{tag.name}</span>) : <span className="text-xs text-slate-600">Chưa có tag</span>}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400"><ClockIcon className="h-3.5 w-3.5" />{new Date(ticket.created_at).toLocaleString("vi-VN")}</div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600"><ClockIcon className="h-3.5 w-3.5" />{new Date(ticket.created_at).toLocaleString("vi-VN")}</div>
                 </section>
 
                 <section className="space-y-3">

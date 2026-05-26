@@ -411,7 +411,7 @@ export default function InboundApprovalDetail({
                                 </p>
                             </div>
                             <button
-                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"
                                 onClick={() => setMismatchModal(s => ({ ...s, open: false }))}
                                 aria-label="Đóng"
                             >

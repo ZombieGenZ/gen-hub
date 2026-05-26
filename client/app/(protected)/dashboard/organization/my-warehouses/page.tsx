@@ -95,7 +95,7 @@ export default function MyWarehousesPage() {
             </div>
 
             {isLoading ? (
-                <div className="text-center py-16 text-gray-400">Đang tải...</div>
+                <div className="text-center py-16 text-gray-600">Đang tải...</div>
             ) : error ? (
                 <div className="flex items-center gap-2 text-red-600 py-8">
                     <ExclamationCircleIcon className="h-5 w-5" />
@@ -105,7 +105,7 @@ export default function MyWarehousesPage() {
                 <div className="text-center py-16">
                     <BuildingStorefrontIcon className="h-14 w-14 mx-auto mb-3 text-gray-200" />
                     <p className="text-gray-500 font-medium">Bạn chưa sở hữu kho nào</p>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-500 text-sm mt-1">
                         Kho bãi do tổ chức của bạn sở hữu sẽ xuất hiện ở đây.
                     </p>
                 </div>
@@ -150,7 +150,7 @@ export default function MyWarehousesPage() {
                                 <div className="p-4 space-y-3">
                                     <div>
                                         <p className="font-semibold text-gray-900 line-clamp-1">{wh.name}</p>
-                                        <p className="text-xs text-gray-400 line-clamp-1">
+                                        <p className="text-xs text-gray-600 line-clamp-1">
                                             {[wh.address_detail, ward, province].filter(Boolean).join(", ")}
                                         </p>
                                     </div>
@@ -166,7 +166,7 @@ export default function MyWarehousesPage() {
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <UsersIcon className="h-4 w-4 text-blue-400" />
                                             <span className="font-medium">{wh.active_tenant_count}</span>
-                                            <span className="text-gray-400 text-xs">khách thuê</span>
+                                            <span className="text-gray-600 text-xs">khách thuê</span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-sm justify-end">
                                             <CurrencyDollarIcon className="h-4 w-4 text-green-500" />

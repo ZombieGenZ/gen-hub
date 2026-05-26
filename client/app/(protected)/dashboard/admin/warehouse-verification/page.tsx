@@ -124,9 +124,9 @@ export default function WarehouseVerificationPage() {
                 {/* Document list */}
                 <div className="space-y-3">
                     {isLoading ? (
-                        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+                        <div className="text-center py-12 text-gray-600">Đang tải...</div>
                     ) : documents.length === 0 ? (
-                        <div className="text-center py-12 text-gray-400">
+                        <div className="text-center py-12 text-gray-600">
                             <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 opacity-40" />
                             <p>Không có tài liệu nào</p>
                         </div>
@@ -149,7 +149,7 @@ export default function WarehouseVerificationPage() {
                                         <p className="text-xs text-gray-500 mt-0.5">
                                             {DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type}
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-1">
+                                        <p className="text-xs text-gray-600 mt-1">
                                             {new Date(doc.created_at).toLocaleDateString("vi-VN")}
                                         </p>
                                     </div>
@@ -162,7 +162,7 @@ export default function WarehouseVerificationPage() {
                                             AI: {doc.ai_status}
                                         </span>
                                         {doc.ai_confidence != null && (
-                                            <span className="text-xs text-gray-400">
+                                            <span className="text-xs text-gray-600">
                                                 {Math.round(doc.ai_confidence * 100)}% tin cậy
                                             </span>
                                         )}
@@ -180,7 +180,7 @@ export default function WarehouseVerificationPage() {
                             <h2 className="font-semibold text-gray-900">Chi tiết tài liệu</h2>
                             <button
                                 onClick={() => setSelectedDoc(null)}
-                                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                                className="text-gray-500 hover:text-gray-600 text-lg leading-none"
                             >
                                 ×
                             </button>
@@ -306,7 +306,7 @@ export default function WarehouseVerificationPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="border border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 min-h-[300px]">
+                    <div className="border border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-500 min-h-[300px]">
                         <div className="text-center">
                             <DocumentTextIcon className="h-10 w-10 mx-auto mb-2 opacity-40" />
                             <p className="text-sm">Chọn tài liệu để xem chi tiết</p>

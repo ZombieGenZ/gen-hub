@@ -154,7 +154,7 @@ export default function SettingsPage() {
                             <div className="space-y-2">
                                 <Label>Tên doanh nghiệp</Label>
                                 <div className="relative">
-                                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <Input
                                         value={form.name}
                                         onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                             <div className="space-y-2">
                                 <Label>Email liên hệ</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <Input
                                         value={form.representative_email}
                                         onChange={(e) => setForm((prev) => ({ ...prev, representative_email: e.target.value }))}
@@ -176,7 +176,7 @@ export default function SettingsPage() {
                             <div className="space-y-2">
                                 <Label>Số điện thoại</Label>
                                 <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <Input
                                         value={form.representative_phone}
                                         onChange={(e) => setForm((prev) => ({ ...prev, representative_phone: e.target.value }))}

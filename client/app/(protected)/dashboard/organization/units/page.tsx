@@ -331,7 +331,7 @@ export default function UnitManagementPage() {
                 <Card className="shadow-premium rounded-3xl border-0">
                     <CardContent className="p-4 md:p-6">
                         <div className="relative">
-                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                             <Input
                                 type="text"
                                 placeholder="Tìm kiếm theo tên hoặc mô tả đơn vị..."
@@ -381,7 +381,7 @@ export default function UnitManagementPage() {
                                     ) : units.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={7}>
-                                                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                                <div className="flex flex-col items-center justify-center py-16 text-slate-600">
                                                     <Ruler className="w-12 h-12 mb-3 opacity-30" />
                                                     <p className="text-base font-medium">Chưa có đơn vị tính nào</p>
                                                     <p className="text-sm mt-1">
@@ -421,7 +421,7 @@ export default function UnitManagementPage() {
                                                             Có
                                                         </Badge>
                                                     ) : (
-                                                        <span className="text-xs text-slate-400">Không</span>
+                                                        <span className="text-xs text-slate-600">Không</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-center">

@@ -120,7 +120,7 @@ function BanDialog({ user, open, onClose, onSuccess }: {
     user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const { showToast } = useToast();
-    const [reason, setReason] = useState("");
+    const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(false);
 
     const handleBan = async () => {
@@ -161,7 +161,7 @@ function BanDialog({ user, open, onClose, onSuccess }: {
                             rows={4}
                             className="rounded-xl border-slate-200 focus:border-red-300 focus:ring-red-50"
                         />
-                        <p className="text-xs text-slate-400 italic">* Mặc định khóa trong 7 ngày. Bạn có thể thay đổi thời hạn trong trang chi tiết.</p>
+                        <p className="text-xs text-slate-600 italic">* Mặc định khóa trong 7 ngày. Bạn có thể thay đổi thời hạn trong trang chi tiết.</p>
                     </div>
                 </div>
                 <DialogFooter className="mt-6 gap-2">
@@ -184,7 +184,7 @@ function BanDialog({ user, open, onClose, onSuccess }: {
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function StaffPage() {
     const { showToast } = useToast();
-    const router = useRouter();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [staffList, setStaffList] = useState<ManagedUser[]>([]);
@@ -264,7 +264,7 @@ export default function StaffPage() {
                 {/* Search + Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-5">
                     <div className="relative w-full max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <Input
                             placeholder="Tìm kiếm theo tên, email..."
                             className="pl-9 h-9 bg-white border-slate-200 focus:ring-brand/20 rounded-xl text-sm"
@@ -304,11 +304,11 @@ export default function StaffPage() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Đang tải dữ liệu...</TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-600 text-sm">Đang tải dữ liệu...</TableCell>
                                 </TableRow>
                             ) : staffList.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-slate-400 text-sm">Không tìm thấy người dùng nào</TableCell>
+                                    <TableCell colSpan={5} className="text-center py-10 text-slate-600 text-sm">Không tìm thấy người dùng nào</TableCell>
                                 </TableRow>
                             ) : staffList.map((staff) => {
                                 const status = getStatusConfig(staff);
@@ -345,7 +345,7 @@ export default function StaffPage() {
                                                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs gap-1">
                                                     <AlertTriangle className="w-3 h-3" />{staff.warning_count}
                                                 </Badge>
-                                            ) : <span className="text-xs text-slate-400">—</span>}
+                                            ) : <span className="text-xs text-slate-600">—</span>}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className={`text-xs gap-1.5 ${status.className}`}>
@@ -355,7 +355,7 @@ export default function StaffPage() {
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-xl">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900 rounded-xl">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
@@ -433,7 +433,7 @@ function ResendVerificationDialog({ user, open, onClose, onSuccess }: {
     user: ManagedUser | null; open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
     const { showToast } = useToast();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
         if (!user) return;

@@ -212,7 +212,7 @@ export default function OrganizationAddonsPage() {
         switch (status) {
             case "ACTIVE": return { label: "Đang sử dụng", icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />, cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
             case "PENDING": return { label: "Chờ thanh toán", icon: <Clock className="w-3.5 h-3.5 text-amber-500" />, cls: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
-            default: return { label: status, icon: <AlertCircle className="w-3.5 h-3.5 text-slate-400" />, cls: "bg-slate-50 text-slate-600" };
+            default: return { label: status, icon: <AlertCircle className="w-3.5 h-3.5 text-slate-500" />, cls: "bg-slate-50 text-slate-600" };
         }
     };
 
