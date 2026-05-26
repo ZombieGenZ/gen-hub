@@ -5,6 +5,7 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { DockScheduleService } from './dock-schedule.service';
 import { DockScheduleController } from './dock-schedule.controller';
 import { DockScheduleRepository } from './dock-schedule.repository';
+import { DockNoShowScheduler } from './dock-no-show.scheduler';
 import { WarehouseVehicleLogModule } from '../warehouse-vehicle-log/warehouse-vehicle-log.module';
 
 @Module({
@@ -15,7 +16,7 @@ import { WarehouseVehicleLogModule } from '../warehouse-vehicle-log/warehouse-ve
     forwardRef(() => WarehouseVehicleLogModule),
   ],
   controllers: [DockScheduleController],
-  providers: [DockScheduleService, DockScheduleRepository],
+  providers: [DockScheduleService, DockScheduleRepository, DockNoShowScheduler],
   exports: [DockScheduleService],
 })
 export class DockScheduleModule {}

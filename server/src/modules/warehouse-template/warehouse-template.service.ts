@@ -76,6 +76,7 @@ export class WarehouseTemplateService {
       longitude: dto.longitude ? new Decimal(dto.longitude) : undefined,
       block_length: new Decimal(dto.block_length),
       block_width: new Decimal(dto.block_width),
+      dock_count: dto.dock_count ?? 1,
       is_active: dto.is_active ?? true,
       created_by: userId,
       // Nested create discount configs

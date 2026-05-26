@@ -91,6 +91,7 @@ import { ConsultationRequestModule } from './modules/consultation-request/consul
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { OrgAnalyticsModule } from './modules/org-analytics/org-analytics.module';
+import { WarehouseOpsAnalyticsModule } from './modules/warehouse-ops-analytics/warehouse-ops-analytics.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
 import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
@@ -305,6 +306,7 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
     // Revenue Analytics (Admin)
     RevenueAnalyticsModule,
     OrgAnalyticsModule,
+    WarehouseOpsAnalyticsModule,
 
     // Admin Dashboard Overview
     AdminDashboardModule,

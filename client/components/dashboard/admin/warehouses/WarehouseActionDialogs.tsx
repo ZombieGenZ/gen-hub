@@ -30,8 +30,8 @@ interface WarehouseActionDialogsProps {
     createDialogOpen: boolean;
     setCreateDialogOpen: (val: boolean) => void;
     isCreating: boolean;
-    createForm: { name: string; length: number; width: number; price_per_month: number };
-    setCreateForm: React.Dispatch<React.SetStateAction<{ name: string; length: number; width: number; price_per_month: number }>>;
+    createForm: { name: string; length: number; width: number; price_per_month: number; dock_count: number };
+    setCreateForm: React.Dispatch<React.SetStateAction<{ name: string; length: number; width: number; price_per_month: number; dock_count: number }>>;
     handleCreate: () => void;
 }
 
@@ -117,7 +117,7 @@ export function WarehouseActionDialogs({
             <Dialog open={createDialogOpen} onOpenChange={(open) => {
                 if (!open && !isCreating) {
                     setCreateDialogOpen(false);
-                    setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+                    setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0, dock_count: 1 });
                 }
             }}>
                 <DialogContent className="max-w-md rounded-2xl">
@@ -165,13 +165,25 @@ export function WarehouseActionDialogs({
                                 suffix="đ"
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="create-dock-count">Số dock bốc dỡ</Label>
+                            <Input
+                                id="create-dock-count"
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={createForm.dock_count}
+                                onChange={(e) => setCreateForm(prev => ({ ...prev, dock_count: Math.max(1, Math.min(20, Number(e.target.value) || 1)) }))}
+                                className="rounded-xl"
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
                             onClick={() => {
                                 setCreateDialogOpen(false);
-                                setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+                                setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0, dock_count: 1 });
                             }}
                             disabled={isCreating}
                             className="rounded-xl"

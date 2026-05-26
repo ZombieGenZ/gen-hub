@@ -8,6 +8,7 @@ import {
   IsUUID,
   IsEmail,
   IsArray,
+  IsInt,
   Min,
   Max,
   MaxLength,
@@ -425,6 +426,18 @@ export class CreateWarehouseTemplateDto {
   })
   @Type(() => Number)
   max_humidity?: number;
+
+  @ApiPropertyOptional({
+    description: 'Số lượng dock bốc dỡ hàng của kho',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  @Type(() => Number)
+  dock_count?: number;
 
   @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
   @IsOptional()

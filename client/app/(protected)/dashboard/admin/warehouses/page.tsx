@@ -52,6 +52,7 @@ export default function WarehouseTemplatePage() {
         length: 0,
         width: 0,
         price_per_month: 0,
+        dock_count: 1,
     });
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -196,7 +197,7 @@ export default function WarehouseTemplatePage() {
             });
             showToast(`Đã tạo kho "${createForm.name}" thành công!`, "success");
             setCreateDialogOpen(false);
-            setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+            setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0, dock_count: 1 });
             const newId = result?.data?.id || result?.id;
             if (newId) {
                 router.push(`/dashboard/admin/warehouses/${newId}`);

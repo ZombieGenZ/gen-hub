@@ -330,6 +330,20 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                                 />
                             </div>
                         </div>
+
+                        {/* Dock count */}
+                        <div className="space-y-2">
+                            <Label htmlFor="dock_count">Số dock bốc dỡ hàng</Label>
+                            <Input
+                                id="dock_count"
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={data.dock_count ?? 1}
+                                onChange={(e) => handleChange("dock_count", Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                                style={{ borderRadius: "12px" }}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 

@@ -1,7 +1,13 @@
 import Link from "next/link";
-import { ClipboardList, PackageSearch, Truck, Warehouse } from "lucide-react";
+import { ClipboardList, PackageSearch, Truck, Warehouse, BarChart2 } from "lucide-react";
 
 const quickActions = [
+    {
+        title: "Dashboard Vận hành",
+        description: "Tổng quan xe ra vào, dock, GPS theo thời gian thực.",
+        href: "/dashboard/staff/analytics",
+        icon: BarChart2,
+    },
     {
         title: "Quản lý Nhập kho",
         description: "Theo dõi phiếu PO và cập nhật trạng thái xử lý.",

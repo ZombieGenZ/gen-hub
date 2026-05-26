@@ -107,6 +107,9 @@ export interface Warehouse extends BaseEntity {
     min_temperature: string;
     total_weight_capacity: number | null;
   
+  // Dock
+    dock_count: number;
+
   // Pricing
     price_per_month: string;
   
@@ -159,6 +162,7 @@ export interface WarehouseRequest {
   min_humidity: number;
   max_humidity: number;
   is_active: boolean;
+  dock_count?: number;
   addon_gifts: {
     addon_id: string;
     is_until_service_end: boolean;
