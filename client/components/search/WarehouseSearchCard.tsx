@@ -12,6 +12,7 @@ import {
     CarouselPrevious,
 } from "@/components/ui/carousel";
 import { cn, calculateDistance, HCM_CENTER } from "@/lib/utils";
+import { TrustBadge } from "@/components/marketplace/TrustBadge";
 
 interface WarehouseSearchCardProps {
     property: Property;
@@ -94,6 +95,12 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
 
             {/* Content info */}
             <div className="flex flex-col gap-1 px-0.5">
+                {/* Trust badge */}
+                {property.trust_profile && property.trust_profile.badge_level !== "NONE" && (
+                    <div>
+                        <TrustBadge level={property.trust_profile.badge_level} size="sm" />
+                    </div>
+                )}
                 {/* Primary: Property Name */}
                 <h3 className="text-base font-semibold text-foreground line-clamp-1 leading-snug">
                     {property.name}

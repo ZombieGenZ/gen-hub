@@ -442,4 +442,27 @@ export class AiPluginRepository {
       select: { id: true, question: true, answer: true, order: true },
     });
   }
+
+  async logRecommendationImpressions(
+    sessionHash: string,
+    queryText: string,
+    items: Array<{
+      warehouse_id: string;
+      match_score?: number;
+      match_reason?: string;
+      rank_position: number;
+    }>,
+  ): Promise<void> {
+    if (items.length === 0) return;
+    await this.prisma.aIRecommendationImpression.createMany({
+      data: items.map((r) => ({
+        session_hash: sessionHash,
+        query_text: queryText,
+        warehouse_template_id: r.warehouse_id,
+        match_score: r.match_score ?? null,
+        match_reason: r.match_reason ?? null,
+        rank_position: r.rank_position,
+      })),
+    });
+  }
 }

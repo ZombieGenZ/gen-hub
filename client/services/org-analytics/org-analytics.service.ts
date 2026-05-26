@@ -5,6 +5,8 @@ import type {
     TopProductData,
     StockAlertData,
     ShipmentData,
+    DockOverviewData,
+    DockTrendPoint,
 } from './org-analytics.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -59,6 +61,24 @@ class OrgAnalyticsService {
             headers: this.getHeaders(),
         });
         if (!response.ok) throw new Error('Failed to fetch Recent Shipments');
+        const json = await response.json();
+        return json.data;
+    }
+
+    async getDockOverview(orgId: string): Promise<DockOverviewData> {
+        const response = await fetch(`${API}/organizations/${orgId}/analytics/dock-overview`, {
+            headers: this.getHeaders(),
+        });
+        if (!response.ok) throw new Error('Failed to fetch Dock Overview');
+        const json = await response.json();
+        return json.data;
+    }
+
+    async getDockTrend(orgId: string, days: number = 7): Promise<DockTrendPoint[]> {
+        const response = await fetch(`${API}/organizations/${orgId}/analytics/dock-trend?days=${days}`, {
+            headers: this.getHeaders(),
+        });
+        if (!response.ok) throw new Error('Failed to fetch Dock Trend');
         const json = await response.json();
         return json.data;
     }

@@ -21,6 +21,9 @@ import {
     CalendarDaysIcon,
     SparklesIcon,
     TruckIcon,
+    ChartBarIcon,
+    KeyIcon,
+    CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -50,6 +53,7 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/dashboard/organization/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
             { href: "/dashboard/organization/vehicle-log", icon: TruckIcon, label: "Xe ra vào kho" },
             { href: "/dashboard/organization/dock-schedule", icon: CalendarDaysIcon, label: "Lịch dock" },
+            { href: "/dashboard/organization/analytics", icon: ChartBarIcon, label: "Phân tích lịch dock" },
         ]
     },
     {
@@ -64,6 +68,12 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/dashboard/organization/partners", icon: UserGroupIcon, label: "Đối tác" },
             { href: "/dashboard/organization/roles", icon: ShieldCheckIcon, label: "Vai trò" },
             { href: "/dashboard/organization/units", icon: ScaleIcon, label: "Đơn vị tính" },
+        ]
+    },
+    {
+        title: "Chủ kho",
+        items: [
+            { href: "/dashboard/organization/my-warehouses", icon: KeyIcon, label: "Kho tôi sở hữu" },
         ]
     },
     {

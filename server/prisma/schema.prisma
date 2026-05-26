@@ -598,6 +598,9 @@ model WarehouseTemplate {
   vehicle_logs          VehicleLog[]
   gps_sessions          GpsSession[]
   dock_schedules        DockSchedule[]
+  ai_impressions        AIRecommendationImpression[]
+  legal_documents       WarehouseLegalDocument[]
+  trust_profile         WarehouseTrustProfile?
 
   @@map("warehouse_templates")
 }
@@ -4102,6 +4105,109 @@ model AILog {
   @@index([created_at])
   @@index([is_success])
   @@map("ai_logs")
+}
+
+model AIRecommendationImpression {
+  id                    String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  session_hash          String
+  query_text            String   @db.Text
+  warehouse_template_id String   @db.Uuid
+  match_score           Float?
+  match_reason          String?  @db.Text
+  rank_position         Int
+
+  created_at DateTime @default(now())
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@index([warehouse_template_id])
+  @@index([session_hash])
+  @@index([created_at])
+  @@map("ai_recommendation_impressions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trust / Verified Badge System
+// ─────────────────────────────────────────────────────────────
+
+enum WarehouseLegalDocType {
+  BUSINESS_LICENSE
+  WAREHOUSE_CERTIFICATE
+  FIRE_SAFETY_CERTIFICATE
+  LAND_USE_RIGHT
+  FOOD_SAFETY_CERTIFICATE
+  OTHER
+}
+
+enum AiDocAnalysisStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum DocReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_RESUBMIT
+}
+
+enum TrustBadgeLevel {
+  NONE
+  VERIFIED
+  PREMIUM
+}
+
+model WarehouseLegalDocument {
+  id                    String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  warehouse_template_id String                @db.Uuid
+  document_type         WarehouseLegalDocType
+  file_url              String
+  file_name             String
+  file_size             Int
+  mime_type             String
+
+  ai_status         AiDocAnalysisStatus @default(PENDING)
+  ai_confidence     Float?
+  ai_extracted_data Json?
+  ai_issues         String[]
+  ai_analyzed_at    DateTime?
+
+  review_status DocReviewStatus @default(PENDING)
+  reviewed_by   String?         @db.Uuid
+  review_note   String?         @db.Text
+  reviewed_at   DateTime?
+
+  is_deleted Boolean   @default(false)
+  deleted_at  DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+
+  created_by String? @db.Uuid
+  deleted_by String? @db.Uuid
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@index([warehouse_template_id])
+  @@index([review_status])
+  @@index([ai_status])
+  @@index([created_at])
+  @@map("warehouse_legal_documents")
+}
+
+model WarehouseTrustProfile {
+  id                    String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  warehouse_template_id String          @unique @db.Uuid
+  trust_score           Int             @default(0)
+  badge_level           TrustBadgeLevel @default(NONE)
+  score_breakdown       Json            @default("{}")
+  last_computed_at      DateTime        @default(now())
+  updated_at            DateTime?       @updatedAt
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@map("warehouse_trust_profiles")
 }
 
 model WarehouseManagerPermission {

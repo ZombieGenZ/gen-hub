@@ -92,6 +92,10 @@ import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { OrgAnalyticsModule } from './modules/org-analytics/org-analytics.module';
 import { WarehouseOpsAnalyticsModule } from './modules/warehouse-ops-analytics/warehouse-ops-analytics.module';
+import { WarehouseAiAnalyticsModule } from './modules/warehouse-ai-analytics/warehouse-ai-analytics.module';
+import { WarehouseLegalDocModule } from './modules/warehouse-legal-doc/warehouse-legal-doc.module';
+import { WarehouseTrustModule } from './modules/warehouse-trust/warehouse-trust.module';
+import { WarehouseOwnerViewModule } from './modules/warehouse-owner-view/warehouse-owner-view.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
 import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
@@ -307,6 +311,14 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
     RevenueAnalyticsModule,
     OrgAnalyticsModule,
     WarehouseOpsAnalyticsModule,
+    WarehouseAiAnalyticsModule,
+
+    // Warehouse Trust & Legal Document Verification
+    WarehouseLegalDocModule,
+    WarehouseTrustModule,
+
+    // Warehouse Owner (Landlord) View
+    WarehouseOwnerViewModule,
 
     // Admin Dashboard Overview
     AdminDashboardModule,

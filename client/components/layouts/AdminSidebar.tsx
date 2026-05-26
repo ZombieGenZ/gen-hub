@@ -21,7 +21,9 @@ import {
     ArrowUturnLeftIcon,
     ExclamationTriangleIcon,
     NewspaperIcon,
-    RectangleGroupIcon
+    RectangleGroupIcon,
+    CpuChipIcon,
+    StarIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -31,12 +33,14 @@ const adminNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/admin", icon: Squares2X2Icon, label: "Dashboard", exactMatch: true },
             { href: "/dashboard/admin/revenue", icon: ChartBarIcon, label: "Doanh thu" },
+            { href: "/dashboard/admin/ai-analytics", icon: CpuChipIcon, label: "AI Insights Kho" },
         ]
     },
     {
         title: "Vận hành",
         items: [
             { href: "/dashboard/admin/warehouses", icon: HomeModernIcon, label: "Kho bãi" },
+            { href: "/dashboard/admin/warehouse-verification", icon: StarIcon, label: "Xác minh kho" },
             { href: "/dashboard/admin/approval", icon: ClipboardDocumentCheckIcon, label: "Duyệt phiếu PO/Xuất" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },

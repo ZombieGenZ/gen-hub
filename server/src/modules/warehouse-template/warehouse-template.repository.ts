@@ -156,6 +156,13 @@ export class WarehouseTemplateRepository {
         images: { where: { is_deleted: false } },
       },
     },
+    trust_profile: {
+      select: {
+        trust_score: true,
+        badge_level: true,
+        last_computed_at: true,
+      },
+    },
   };
 
   /**

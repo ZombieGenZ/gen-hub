@@ -380,6 +380,34 @@ export class OrgAnalyticsController {
     );
   }
 
+  @Get('dock-overview')
+  @RequireOrgPermission('org.analytics.view', 'org.analytics.view.all')
+  @ApiOperation({ summary: 'Tổng quan lịch dock của tổ chức' })
+  @ApiParam({ name: 'orgId', required: true, type: String })
+  @ApiAuthResponses()
+  async getDockOverview(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @I18nLang() _lang: string,
+  ) {
+    const data = await this.analyticsService.getDockOverview(orgId);
+    return new GetResponse('org_analytics.dock_overview_success', data, 'Lấy tổng quan lịch dock thành công');
+  }
+
+  @Get('dock-trend')
+  @RequireOrgPermission('org.analytics.view', 'org.analytics.view.all')
+  @ApiOperation({ summary: 'Xu hướng lịch dock theo ngày của tổ chức' })
+  @ApiParam({ name: 'orgId', required: true, type: String })
+  @ApiQuery({ name: 'days', required: false, type: Number })
+  @ApiAuthResponses()
+  async getDockTrend(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Query('days') days: number = 7,
+    @I18nLang() _lang: string,
+  ) {
+    const data = await this.analyticsService.getDockTrend(orgId, Number(days) || 7);
+    return new GetResponse('org_analytics.dock_trend_success', data, 'Lấy xu hướng lịch dock thành công');
+  }
+
   @Get('recent-shipments')
   @RequireOrgPermission('org.analytics.view', 'org.analytics.view.all')
   @ApiOperation({

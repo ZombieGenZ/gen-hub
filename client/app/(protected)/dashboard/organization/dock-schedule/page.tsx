@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { orgHelper } from "@/lib/organization.utils";
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
@@ -48,14 +48,6 @@ export default function OrgDockSchedulePage() {
   const [filterDate, setFilterDate] = useState(new Date().toISOString().slice(0, 10));
   const [filterStatus, setFilterStatus] = useState<DockScheduleStatus | "">("");
   const [filterWarehouseId, setFilterWarehouseId] = useState("");
-
-  // Timeline chỉ khả dụng khi chọn 1 kho cụ thể
-  const canUseTimeline = !!filterWarehouseId;
-
-  const handleWarehouseChange = (id: string) => {
-    setFilterWarehouseId(id);
-    if (!id) setViewMode("list");
-  };
 
   const [showForm, setShowForm] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<DockSchedule | null>(null);
@@ -174,6 +166,31 @@ export default function OrgDockSchedulePage() {
   const selectedWarehouseName =
     warehouses.find((w) => w.id === filterWarehouseId)?.name ?? "";
 
+  // Khi "Tất cả kho": nhóm schedules theo warehouse để render nhiều timeline
+  const warehouseGroups = useMemo(() => {
+    if (filterWarehouseId) return null;
+    const map = new Map<string, { id: string; name: string; dockCount: number; schedules: DockSchedule[] }>();
+    for (const s of schedules) {
+      const wId = s.warehouse_template_id;
+      if (!map.has(wId)) {
+        map.set(wId, {
+          id: wId,
+          name: s.warehouse_template?.name ?? wId,
+          dockCount: s.warehouse_template?.dock_count ?? Math.max(s.dock_number, 1),
+          schedules: [],
+        });
+      }
+      const g = map.get(wId)!;
+      if (s.warehouse_template?.dock_count) {
+        g.dockCount = s.warehouse_template.dock_count;
+      } else {
+        g.dockCount = Math.max(g.dockCount, s.dock_number);
+      }
+      g.schedules.push(s);
+    }
+    return Array.from(map.values());
+  }, [schedules, filterWarehouseId]);
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-5">
@@ -207,7 +224,7 @@ export default function OrgDockSchedulePage() {
             <select
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filterWarehouseId}
-              onChange={(e) => handleWarehouseChange(e.target.value)}
+              onChange={(e) => setFilterWarehouseId(e.target.value)}
             >
               <option value="">Tất cả kho</option>
               {warehouses.map((w) => (
@@ -248,25 +265,14 @@ export default function OrgDockSchedulePage() {
           {/* View toggle */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm ml-auto">
             <button
-              onClick={() => canUseTimeline && setViewMode("timeline")}
-              title={!canUseTimeline ? "Chọn 1 kho cụ thể để xem sơ đồ dock" : undefined}
-              className={`px-4 py-2 transition-colors font-medium ${
-                viewMode === "timeline"
-                  ? "bg-primary text-primary-foreground"
-                  : canUseTimeline
-                  ? "bg-white text-gray-700 hover:bg-gray-50"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-              }`}
+              onClick={() => setViewMode("timeline")}
+              className={`px-4 py-2 transition-colors font-medium ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
               Sơ đồ dock
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`px-4 py-2 transition-colors font-medium ${
-                viewMode === "list"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
+              className={`px-4 py-2 transition-colors font-medium ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
             >
               Lịch của tôi
             </button>
@@ -278,63 +284,75 @@ export default function OrgDockSchedulePage() {
           <div className="flex justify-center items-center py-20">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : viewMode === "timeline" && canUseTimeline ? (
+        ) : viewMode === "timeline" ? (
           /* ── Timeline view ── */
-          <div className="space-y-3">
-            {/* Context bar */}
-            {filterWarehouseId && filterDate && slots && (
-              <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm">
-                <span className="font-semibold text-gray-800">{selectedWarehouseName}</span>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-700">
-                  {new Date(filterDate + "T00:00:00").toLocaleDateString("vi-VN", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-700">
-                  <span className="font-semibold text-gray-800">{slots.dock_count}</span> dock
-                </span>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-700">
-                  <span className="font-semibold text-teal-700">
-                    {timelineSchedules.filter((s) => s.organization_id === orgId).length}
-                  </span>{" "}
-                  lịch của bạn
-                </span>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-700">
-                  Tổng{" "}
-                  <span className="font-semibold text-gray-800">
-                    {timelineSchedules.filter((s) => !["CANCELLED", "NO_SHOW"].includes(s.status)).length}
-                  </span>{" "}
-                  lịch hôm nay
-                </span>
-              </div>
-            )}
-
-            {!filterWarehouseId ? (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-6 text-center text-sm text-yellow-800">
-                Vui lòng chọn kho để xem sơ đồ dock.
-              </div>
-            ) : !slots ? (
-              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
-                Không có dữ liệu dock cho ngày này
+          filterWarehouseId ? (
+            /* 1 kho cụ thể: dùng slots từ API, hiển thị tất cả org */
+            <div className="space-y-3">
+              {filterWarehouseId && filterDate && slots && (
+                <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm">
+                  <span className="font-semibold text-gray-800">{selectedWarehouseName}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-700">
+                    {new Date(filterDate + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                  </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-700"><span className="font-semibold text-gray-800">{slots.dock_count}</span> dock</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-700">
+                    <span className="font-semibold text-teal-700">{timelineSchedules.filter((s) => s.organization_id === orgId).length}</span> lịch của bạn
+                  </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-700">
+                    Tổng <span className="font-semibold text-gray-800">{timelineSchedules.filter((s) => !["CANCELLED", "NO_SHOW"].includes(s.status)).length}</span> lịch hôm nay
+                  </span>
+                </div>
+              )}
+              {!slots ? (
+                <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+                  Không có dữ liệu dock cho ngày này
+                </div>
+              ) : (
+                <DockTimelineView
+                  dockCount={slots.dock_count}
+                  schedules={timelineSchedules}
+                  onSelect={setSelectedSchedule}
+                  variant="detailed"
+                  currentOrgId={orgId ?? undefined}
+                  date={filterDate}
+                />
+              )}
+            </div>
+          ) : (
+            /* Tất cả kho: nhóm theo warehouse */
+            warehouseGroups && warehouseGroups.length > 0 ? (
+              <div className="space-y-6">
+                {warehouseGroups.map((g) => (
+                  <div key={g.id}>
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <span className="text-sm font-semibold text-gray-800">{g.name}</span>
+                      <span className="text-xs text-gray-400">{g.schedules.length} lịch của bạn · {g.dockCount} dock</span>
+                    </div>
+                    <DockTimelineView
+                      dockCount={g.dockCount}
+                      schedules={g.schedules}
+                      onSelect={setSelectedSchedule}
+                      variant="detailed"
+                      currentOrgId={orgId ?? undefined}
+                      date={filterDate}
+                    />
+                  </div>
+                ))}
               </div>
             ) : (
-              <DockTimelineView
-                dockCount={slots.dock_count}
-                schedules={timelineSchedules}
-                onSelect={setSelectedSchedule}
-                variant="detailed"
-                currentOrgId={orgId ?? undefined}
-                date={filterDate}
-              />
-            )}
-          </div>
+              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
+                <div className="text-center">
+                  <div className="text-4xl mb-3">📅</div>
+                  Chưa có lịch dock nào
+                </div>
+              </div>
+            )
+          )
         ) : (
           /* ── List view (own schedules) ── */
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

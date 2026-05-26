@@ -81,6 +81,13 @@ export interface Property {
     manager_phone?: string;
     manager_email?: string;
 
+    // Trust / Verified Badge
+    trust_profile?: {
+        trust_score: number;
+        badge_level: 'NONE' | 'VERIFIED' | 'PREMIUM';
+        last_computed_at: string;
+    } | null;
+
     // Rows (for partial rental)
     rows?: {
         id: string;
@@ -156,6 +163,9 @@ export function mapWarehouseToProperty(w: any): Property {
         manager_phone: w.manager_phone,
         manager_email: w.manager_email,
 
+
+        // Trust profile
+        trust_profile: w.trust_profile ?? null,
 
         // Rows
         rows: (w.rows || []).filter((r: any) => !r.is_deleted).map((r: any) => ({

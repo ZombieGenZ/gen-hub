@@ -232,6 +232,50 @@ export class BackblazeB2Service implements OnModuleInit {
   }
 
   /**
+   * Upload buffer trực tiếp lên Backblaze B2 (dùng cho memory-based multer)
+   */
+  async uploadBuffer(
+    buffer: Buffer,
+    fileName: string,
+    contentType: string,
+    folder?: string,
+  ): Promise<IB2UploadResult | null> {
+    if (!this.isEnabled) {
+      this.logger.warn('Backblaze B2 service is not enabled');
+      return null;
+    }
+
+    const targetFolder = folder || 'legal-documents';
+    const key = `${targetFolder}/${fileName}`;
+
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        }),
+      );
+
+      const friendlyUrlBase = this.configService.get<string>('B2_FRIENDLY_URL', '');
+      const friendlyUrl = friendlyUrlBase ? `${friendlyUrlBase}/${key}` : '';
+
+      this.logger.log(`✅ Uploaded buffer: ${fileName} (Key: ${key})`);
+
+      return {
+        key,
+        fileName,
+        fileSize: buffer.length,
+        friendlyUrl,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to upload buffer ${fileName}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Lấy thông tin file
    * @param key Key của file trên B2
    */

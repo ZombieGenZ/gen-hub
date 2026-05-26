@@ -8,6 +8,7 @@ import { CustomerStockFlow } from "@/components/dashboard/organization/CustomerS
 import { CustomerTopProducts } from "@/components/dashboard/organization/CustomerTopProducts";
 import { CustomerStockAlerts } from "@/components/dashboard/organization/CustomerStockAlerts";
 import { CustomerShipments } from "@/components/dashboard/organization/CustomerShipments";
+import { CustomerDockSummary } from "@/components/dashboard/organization/CustomerDockSummary";
 import { CustomerDashboardHeader } from "@/components/dashboard/organization/CustomerDashboardHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
@@ -128,10 +129,12 @@ export default function CustomerDashboardOverview() {
             </div>
 
             {/* Main Content Layout - Row 2 */}
-            <div className="grid grid-cols-1 gap-3">
-                {/* Shipments Timeline Table (2/3) */}
-                <div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
                     <CustomerShipments key={`shipments-${orgId}-${refreshTick}`} orgId={orgId} />
+                </div>
+                <div>
+                    <CustomerDockSummary key={`dock-summary-${orgId}-${refreshTick}`} orgId={orgId} />
                 </div>
             </div>
         </div>

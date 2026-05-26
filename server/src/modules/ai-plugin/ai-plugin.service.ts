@@ -237,6 +237,21 @@ export class AiPluginService {
         };
       });
 
+    // Fire-and-forget: log impressions without blocking response
+    const sessionHash = crypto.createHash('md5').update(query).digest('hex');
+    void this.repository
+      .logRecommendationImpressions(
+        sessionHash,
+        query,
+        recommendations.map((r, idx) => ({
+          warehouse_id: r.warehouse_id,
+          match_score: r.match_score,
+          match_reason: r.match_reason,
+          rank_position: idx + 1,
+        })),
+      )
+      .catch(() => {});
+
     let ai_note = '';
     if (recommendations.length === 0) {
       ai_note =

@@ -896,6 +896,133 @@ Trả về JSON hợp lệ (không có markdown, không có backtick):
   }
 
   /**
+   * Phân tích tài liệu pháp lý từ ảnh/PDF (base64) bằng Gemini Vision
+   */
+  async analyzeDocument(
+    base64Data: string,
+    mimeType: string,
+    docType: string,
+  ): Promise<{
+    is_valid_document: boolean;
+    document_type_detected: string;
+    issuer: string | null;
+    license_number: string | null;
+    issue_date: string | null;
+    expiry_date: string | null;
+    is_expired: boolean;
+    confidence: number;
+    issues: string[];
+    summary: string;
+  }> {
+    const defaultResult = {
+      is_valid_document: false,
+      document_type_detected: 'unknown',
+      issuer: null,
+      license_number: null,
+      issue_date: null,
+      expiry_date: null,
+      is_expired: false,
+      confidence: 0,
+      issues: ['Không thể phân tích tài liệu'],
+      summary: 'Không thể phân tích tài liệu này.',
+    };
+
+    if (!this.isEnabled) return defaultResult;
+
+    const prompt = `Bạn là hệ thống kiểm tra tài liệu pháp lý kho bãi. Phân tích ảnh tài liệu sau (loại: ${docType}) và trả về JSON.
+
+Trả về JSON hợp lệ (KHÔNG có markdown, KHÔNG có backtick):
+{
+  "is_valid_document": boolean,
+  "document_type_detected": "tên loại tài liệu phát hiện được",
+  "issuer": "cơ quan cấp hoặc null",
+  "license_number": "số giấy phép/chứng nhận hoặc null",
+  "issue_date": "YYYY-MM-DD hoặc null",
+  "expiry_date": "YYYY-MM-DD hoặc null",
+  "is_expired": boolean,
+  "confidence": 0.0-1.0,
+  "issues": ["vấn đề 1 nếu có", "vấn đề 2 nếu có"],
+  "summary": "tóm tắt 1 câu bằng tiếng Việt"
+}`;
+
+    const startTime = Date.now();
+
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        const model = this.getCurrentModel();
+        if (!model) throw new Error('No valid Gemini model available');
+
+        const response = await model.generateContent([
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } },
+        ]);
+
+        const raw = response.response.text().trim();
+        const clean = raw
+          .replace(/```json?\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        const parsed = JSON.parse(clean) as Record<string, unknown>;
+        const durationMs = Date.now() - startTime;
+
+        setImmediate(() => {
+          this.logAICall({
+            model: this.modelName,
+            purpose: 'legal_document_analysis',
+            inputText: `docType:${docType}`,
+            outputText: clean.substring(0, 500),
+            inputTokens: response.response.usageMetadata?.promptTokenCount,
+            outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.response.usageMetadata?.totalTokenCount,
+            durationMs,
+            isSuccess: true,
+          });
+        });
+
+        const today = new Date().toISOString().split('T')[0];
+        const expiryDate =
+          typeof parsed.expiry_date === 'string' ? parsed.expiry_date : null;
+
+        return {
+          is_valid_document: Boolean(parsed.is_valid_document),
+          document_type_detected:
+            typeof parsed.document_type_detected === 'string'
+              ? parsed.document_type_detected
+              : 'unknown',
+          issuer: typeof parsed.issuer === 'string' ? parsed.issuer : null,
+          license_number:
+            typeof parsed.license_number === 'string'
+              ? parsed.license_number
+              : null,
+          issue_date:
+            typeof parsed.issue_date === 'string' ? parsed.issue_date : null,
+          expiry_date: expiryDate,
+          is_expired: expiryDate ? expiryDate < today : Boolean(parsed.is_expired),
+          confidence: Number(parsed.confidence) || 0,
+          issues: Array.isArray(parsed.issues)
+            ? (parsed.issues as string[]).slice(0, 5)
+            : [],
+          summary:
+            typeof parsed.summary === 'string'
+              ? parsed.summary
+              : 'Đã phân tích xong.',
+        };
+      } catch (error) {
+        const msg = (error as Error).message.toLowerCase();
+        if (msg.includes('quota') || msg.includes('rate') || msg.includes('429')) {
+          this.rotateToNextKey();
+          continue;
+        }
+        this.logger.error(`analyzeDocument error: ${(error as Error).message}`);
+        return defaultResult;
+      }
+    }
+
+    this.logger.error('All Gemini API keys exhausted in analyzeDocument');
+    return defaultResult;
+  }
+
+  /**
    * Lưu log AI call vào database (bất đồng bộ)
    */
   private async logAICall(data: IAILogData): Promise<void> {

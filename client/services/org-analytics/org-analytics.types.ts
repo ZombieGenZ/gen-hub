@@ -39,3 +39,19 @@ export interface ShipmentData {
     status: string;
     timestamp: number;
 }
+
+export interface DockOverviewData {
+    total: number;
+    today: number;
+    by_status: Record<string, number>;
+    completion_rate: number;
+    no_show_rate: number;
+    top_warehouses: { id: string; name: string; count: number }[];
+}
+
+export interface DockTrendPoint {
+    date: string;
+    total: number;
+    completed: number;
+    no_show: number;
+}

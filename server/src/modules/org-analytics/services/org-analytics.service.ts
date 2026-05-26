@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { OrgAnalyticsCacheKeys } from './cache-keys.helper';
-import { ReceiptStatus, ExportStatus, ContractStatus } from '@prisma/client';
+import { ReceiptStatus, ExportStatus, ContractStatus, DockScheduleStatus } from '@prisma/client';
 
 @Injectable()
 export class OrgAnalyticsService {
@@ -444,6 +444,121 @@ export class OrgAnalyticsService {
       default:
         return 'Khác';
     }
+  }
+
+  /**
+   * Tổng quan lịch dock của tổ chức (theo org)
+   */
+  async getDockOverview(orgId: string) {
+    const cacheKey = this.cacheKeys.dockOverview(orgId);
+    const cached = await this.redisService.getJson<any>(cacheKey);
+    if (cached) return cached;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const [allSchedules, todaySchedules, warehouseGroups] = await Promise.all([
+      this.prisma.dockSchedule.groupBy({
+        by: ['status'],
+        where: { organization_id: orgId, is_deleted: false },
+        _count: { id: true },
+      }),
+      this.prisma.dockSchedule.count({
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          scheduled_date: new Date(todayStr),
+        },
+      }),
+      this.prisma.dockSchedule.groupBy({
+        by: ['warehouse_template_id'],
+        where: { organization_id: orgId, is_deleted: false },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 5,
+      }),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    let totalAll = 0;
+    let completedAll = 0;
+    let noShowAll = 0;
+    for (const row of allSchedules) {
+      byStatus[row.status] = row._count.id;
+      totalAll += row._count.id;
+      if (row.status === DockScheduleStatus.COMPLETED) completedAll = row._count.id;
+      if (row.status === DockScheduleStatus.NO_SHOW) noShowAll = row._count.id;
+    }
+    const completionRate =
+      totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
+    const noShowRate =
+      totalAll > 0 ? Math.round((noShowAll / totalAll) * 100) : 0;
+
+    const warehouseIds = warehouseGroups.map((g) => g.warehouse_template_id);
+    const warehouses = await this.prisma.warehouseTemplate.findMany({
+      where: { id: { in: warehouseIds } },
+      select: { id: true, name: true },
+    });
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
+
+    const topWarehouses = warehouseGroups.map((g) => ({
+      id: g.warehouse_template_id,
+      name: warehouseMap.get(g.warehouse_template_id) ?? g.warehouse_template_id,
+      count: g._count.id,
+    }));
+
+    const result = {
+      total: totalAll,
+      today: todaySchedules,
+      by_status: byStatus,
+      completion_rate: completionRate,
+      no_show_rate: noShowRate,
+      top_warehouses: topWarehouses,
+    };
+
+    await this.redisService.setJson(cacheKey, result, 300);
+    return result;
+  }
+
+  /**
+   * Xu hướng lịch dock theo ngày (N ngày gần nhất)
+   */
+  async getDockTrend(orgId: string, days: number = 7) {
+    const cacheKey = this.cacheKeys.dockTrend(orgId, days);
+    const cached = await this.redisService.getJson<any[]>(cacheKey);
+    if (cached) return cached;
+
+    const result: { date: string; total: number; completed: number; no_show: number }[] = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+
+      const rows = await this.prisma.dockSchedule.groupBy({
+        by: ['status'],
+        where: {
+          organization_id: orgId,
+          is_deleted: false,
+          scheduled_date: new Date(dateStr),
+        },
+        _count: { id: true },
+      });
+
+      let total = 0;
+      let completed = 0;
+      let no_show = 0;
+      for (const row of rows) {
+        total += row._count.id;
+        if (row.status === DockScheduleStatus.COMPLETED) completed = row._count.id;
+        if (row.status === DockScheduleStatus.NO_SHOW) no_show = row._count.id;
+      }
+
+      result.push({ date: dateStr, total, completed, no_show });
+    }
+
+    await this.redisService.setJson(cacheKey, result, 300);
+    return result;
   }
 
   private mapExportStatus(status: ExportStatus): string {

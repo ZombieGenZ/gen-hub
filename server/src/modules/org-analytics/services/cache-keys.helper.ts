@@ -41,4 +41,12 @@ export class OrgAnalyticsCacheKeys {
   shipments(orgId: string): string {
     return `${this.overview(orgId)}:shipments`;
   }
+
+  dockOverview(orgId: string): string {
+    return `${this.overview(orgId)}:dock-overview`;
+  }
+
+  dockTrend(orgId: string, days: number): string {
+    return `${this.overview(orgId)}:dock-trend:${days}`;
+  }
 }
