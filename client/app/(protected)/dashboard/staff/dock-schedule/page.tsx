@@ -164,7 +164,7 @@ export default function StaffDockSchedulePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Lịch Đặt Dock</h1>
+            <h1 className="text-xl font-bold text-slate-900">Lịch Đặt Dock</h1>
             <p className="text-sm text-gray-500 mt-0.5">Quản lý lịch xe ra vào theo từng dock</p>
           </div>
           <button
@@ -178,7 +178,7 @@ export default function StaffDockSchedulePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Tổng kết quả", value: stats.total, color: "text-gray-900" },
+            { label: "Tổng kết quả", value: stats.total, color: "text-slate-900" },
             { label: "Chờ duyệt", value: stats.pending, color: "text-yellow-700" },
             { label: "Đã xác nhận", value: stats.confirmed, color: "text-teal-700" },
             { label: "Xe đang đến", value: stats.arrived, color: "text-green-700" },
@@ -193,7 +193,7 @@ export default function StaffDockSchedulePage() {
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-36">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Kho</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Kho</label>
             <select
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filterWarehouseId}
@@ -204,7 +204,7 @@ export default function StaffDockSchedulePage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Ngày</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Ngày</label>
             <input
               type="date"
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -213,7 +213,7 @@ export default function StaffDockSchedulePage() {
             />
           </div>
           <div className="min-w-36">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Trạng thái</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Trạng thái</label>
             <select
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filterStatus}
@@ -223,7 +223,7 @@ export default function StaffDockSchedulePage() {
             </select>
           </div>
           <div className="flex-1 min-w-36">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Biển số</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Biển số</label>
             <input
               type="text"
               placeholder="Tìm biển số..."
@@ -235,13 +235,13 @@ export default function StaffDockSchedulePage() {
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
             <button
               onClick={() => setViewMode("timeline")}
-              className={`px-3 py-2 transition-colors ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+              className={`px-3 py-2 transition-colors ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700 hover:bg-gray-50"}`}
             >
               Timeline
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`px-3 py-2 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+              className={`px-3 py-2 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700 hover:bg-gray-50"}`}
             >
               Danh sách
             </button>
@@ -314,12 +314,12 @@ export default function StaffDockSchedulePage() {
                   schedules.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelected(s)}>
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.code}</td>
-                      <td className="px-4 py-3 text-gray-700">{s.warehouse_template?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-slate-700">{s.warehouse_template?.name ?? "—"}</td>
                       <td className="px-4 py-3 font-semibold text-gray-800">Dock {s.dock_number}</td>
-                      <td className="px-4 py-3 text-gray-700">{new Date(s.scheduled_date).toLocaleDateString("vi-VN")}</td>
+                      <td className="px-4 py-3 text-slate-700">{new Date(s.scheduled_date).toLocaleDateString("vi-VN")}</td>
                       <td className="px-4 py-3 font-semibold text-teal-700">{s.license_plate}</td>
-                      <td className="px-4 py-3 text-gray-700">{s.scheduled_time_start}–{s.scheduled_time_end}</td>
-                      <td className="px-4 py-3 text-gray-700">{PURPOSE_LABELS[s.purpose] ?? s.purpose}</td>
+                      <td className="px-4 py-3 text-slate-700">{s.scheduled_time_start}–{s.scheduled_time_end}</td>
+                      <td className="px-4 py-3 text-slate-700">{PURPOSE_LABELS[s.purpose] ?? s.purpose}</td>
                       <td className="px-4 py-3"><DockScheduleStatusBadge status={s.status} /></td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
@@ -356,7 +356,7 @@ export default function StaffDockSchedulePage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Tạo lịch dock mới</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Tạo lịch dock mới</h2>
             <DockScheduleForm
               token={token}
               warehouses={warehouses}
@@ -372,13 +372,13 @@ export default function StaffDockSchedulePage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Chi tiết lịch dock</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-gray-700 text-xl leading-none">&times;</button>
+              <h2 className="text-lg font-bold text-slate-900">Chi tiết lịch dock</h2>
+              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-slate-700 text-xl leading-none">&times;</button>
             </div>
             <div className="space-y-2.5 text-sm divide-y divide-gray-50">
-              <Row label="Mã lịch"><span className="font-mono text-xs text-gray-700">{selected.code}</span></Row>
-              <Row label="Kho"><span className="font-medium text-gray-900">{selected.warehouse_template?.name ?? "—"}</span></Row>
-              <Row label="Dock"><span className="font-bold text-gray-900">Dock {selected.dock_number}</span></Row>
+              <Row label="Mã lịch"><span className="font-mono text-xs text-slate-700">{selected.code}</span></Row>
+              <Row label="Kho"><span className="font-medium text-slate-900">{selected.warehouse_template?.name ?? "—"}</span></Row>
+              <Row label="Dock"><span className="font-bold text-slate-900">Dock {selected.dock_number}</span></Row>
               <Row label="Biển số"><span className="font-bold text-teal-700">{selected.license_plate}</span></Row>
               <Row label="Ngày hẹn"><span className="text-gray-800">{new Date(selected.scheduled_date).toLocaleDateString("vi-VN")}</span></Row>
               <Row label="Giờ hẹn"><span className="font-medium text-gray-800">{selected.scheduled_time_start} – {selected.scheduled_time_end}</span></Row>
@@ -397,7 +397,7 @@ export default function StaffDockSchedulePage() {
               </>)}
               {selected.status === "ARRIVED" && <button disabled={!!actionLoading} onClick={() => handleAction("complete", selected.id)} className="px-4 py-2 bg-gray-700 text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-50">Hoàn thành</button>}
               {["PENDING", "CONFIRMED"].includes(selected.status) && <button disabled={!!actionLoading} onClick={() => handleAction("cancel", selected.id)} className="px-4 py-2 bg-red-50 text-red-700 border border-red-200 text-sm rounded-lg hover:bg-red-100 disabled:opacity-50">Huỷ lịch</button>}
-              <button onClick={() => setSelected(null)} className="ml-auto px-4 py-2 border border-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-50">Đóng</button>
+              <button onClick={() => setSelected(null)} className="ml-auto px-4 py-2 border border-gray-200 text-slate-700 text-sm rounded-lg hover:bg-gray-50">Đóng</button>
             </div>
           </div>
         </div>

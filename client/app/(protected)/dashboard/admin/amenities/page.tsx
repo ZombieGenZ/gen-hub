@@ -491,7 +491,7 @@ export default function AmenitiesPage() {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="py-4 px-4 font-semibold text-base text-gray-900 dark:text-gray-100">
+                                                    <td className="py-4 px-4 font-semibold text-base text-slate-900 dark:text-gray-100">
                                                         {amenity.name}
                                                     </td>
                                                     <td className="py-4 px-4 text-sm text-muted-foreground max-w-xs truncate">

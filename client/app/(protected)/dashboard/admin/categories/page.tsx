@@ -360,7 +360,7 @@ export default function CategoriesPage() {
                                                 />
                                             </td>
                                             <td className="py-4 px-4">
-                                                <div className="font-semibold text-base text-gray-900">{cat.name}</div>
+                                                <div className="font-semibold text-base text-slate-900">{cat.name}</div>
                                             </td>
                                             <td className="py-4 px-4">
                                                 <span className="text-sm font-medium text-gray-500 bg-gray-100 rounded-md px-2 py-1">{cat.slug}</span>

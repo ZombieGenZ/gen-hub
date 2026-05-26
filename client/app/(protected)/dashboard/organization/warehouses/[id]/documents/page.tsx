@@ -104,7 +104,7 @@ export default function WarehouseDocumentsPage() {
                 <div className="flex items-center gap-3">
                     <ShieldCheckIcon className="h-7 w-7 text-blue-600" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Tài liệu pháp lý</h1>
+                        <h1 className="text-2xl font-bold text-slate-900">Tài liệu pháp lý</h1>
                         <p className="text-sm text-gray-500">
                             Upload tài liệu để nhận Trust Badge trên marketplace
                         </p>
@@ -123,7 +123,7 @@ export default function WarehouseDocumentsPage() {
             <div className="border border-gray-200 rounded-xl bg-white p-5">
                 <div className="flex items-start justify-between">
                     <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Trạng thái xác minh</p>
+                        <p className="text-sm font-medium text-slate-700 mb-1">Trạng thái xác minh</p>
                         {trustProfile ? (
                             <div className="space-y-2">
                                 <TrustBadge
@@ -133,7 +133,7 @@ export default function WarehouseDocumentsPage() {
                                 />
                                 <p className="text-sm text-gray-500">
                                     Điểm uy tín:{" "}
-                                    <span className="font-semibold text-gray-900">{trustProfile.trust_score}/55</span>
+                                    <span className="font-semibold text-slate-900">{trustProfile.trust_score}/55</span>
                                 </p>
                             </div>
                         ) : (
@@ -141,7 +141,7 @@ export default function WarehouseDocumentsPage() {
                         )}
                     </div>
                     <div className="text-right text-xs text-gray-600">
-                        <p className="font-medium text-gray-700 mb-1">Cần đạt để lên badge</p>
+                        <p className="font-medium text-slate-700 mb-1">Cần đạt để lên badge</p>
                         <p>• VERIFIED: ≥1 tài liệu được duyệt</p>
                         <p>• PREMIUM: ≥1 tài liệu + điểm ≥45</p>
                     </div>
@@ -150,7 +150,7 @@ export default function WarehouseDocumentsPage() {
 
             {/* Upload section */}
             <div className="border border-dashed border-blue-300 rounded-xl bg-blue-50/50 p-5">
-                <p className="text-sm font-medium text-gray-700 mb-3">Upload tài liệu mới</p>
+                <p className="text-sm font-medium text-slate-700 mb-3">Upload tài liệu mới</p>
                 <div className="flex items-center gap-3 flex-wrap">
                     <select
                         value={selectedType}
@@ -205,7 +205,7 @@ export default function WarehouseDocumentsPage() {
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <p className="font-medium text-sm text-gray-900">
+                                        <p className="font-medium text-sm text-slate-900">
                                             {DOC_TYPE_LABELS[doc.document_type]}
                                         </p>
                                         <span

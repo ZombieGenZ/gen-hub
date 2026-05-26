@@ -198,7 +198,7 @@ export default function OrgDockSchedulePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Lịch Đặt Dock</h1>
+            <h1 className="text-xl font-bold text-slate-900">Lịch Đặt Dock</h1>
             <p className="text-sm text-gray-500 mt-0.5">Đặt lịch xe ra vào kho và xem trạng thái theo thời gian thực</p>
           </div>
           <button
@@ -220,7 +220,7 @@ export default function OrgDockSchedulePage() {
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">
           {/* Warehouse selector */}
           <div className="flex-1 min-w-40">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Kho</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Kho</label>
             <select
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filterWarehouseId}
@@ -235,7 +235,7 @@ export default function OrgDockSchedulePage() {
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Ngày</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Ngày</label>
             <input
               type="date"
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -247,7 +247,7 @@ export default function OrgDockSchedulePage() {
           {/* Status (list only) */}
           {viewMode === "list" && (
             <div className="min-w-40">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Trạng thái</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Trạng thái</label>
               <select
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={filterStatus}
@@ -266,13 +266,13 @@ export default function OrgDockSchedulePage() {
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm ml-auto">
             <button
               onClick={() => setViewMode("timeline")}
-              className={`px-4 py-2 transition-colors font-medium ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+              className={`px-4 py-2 transition-colors font-medium ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700 hover:bg-gray-50"}`}
             >
               Sơ đồ dock
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`px-4 py-2 transition-colors font-medium ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+              className={`px-4 py-2 transition-colors font-medium ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-white text-slate-700 hover:bg-gray-50"}`}
             >
               Lịch của tôi
             </button>
@@ -293,17 +293,17 @@ export default function OrgDockSchedulePage() {
                 <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm">
                   <span className="font-semibold text-gray-800">{selectedWarehouseName}</span>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-700">
                     {new Date(filterDate + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                   </span>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-700"><span className="font-semibold text-gray-800">{slots.dock_count}</span> dock</span>
+                  <span className="text-slate-700"><span className="font-semibold text-gray-800">{slots.dock_count}</span> dock</span>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-700">
                     <span className="font-semibold text-teal-700">{timelineSchedules.filter((s) => s.organization_id === orgId).length}</span> lịch của bạn
                   </span>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-700">
                     Tổng <span className="font-semibold text-gray-800">{timelineSchedules.filter((s) => !["CANCELLED", "NO_SHOW"].includes(s.status)).length}</span> lịch hôm nay
                   </span>
                 </div>
@@ -394,26 +394,26 @@ export default function OrgDockSchedulePage() {
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => setSelectedSchedule(s)}
                       >
-                        <td className="px-4 py-3 font-mono text-xs text-gray-700">{s.code}</td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 font-mono text-xs text-slate-700">{s.code}</td>
+                        <td className="px-4 py-3 text-slate-700">
                           {s.warehouse_template?.name ?? "—"}
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-800">
                           Dock {s.dock_number}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 text-slate-700">
                           {new Date(s.scheduled_date).toLocaleDateString("vi-VN")}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 text-slate-700">
                           {s.scheduled_time_start}–{s.scheduled_time_end}
                         </td>
                         <td className="px-4 py-3 font-semibold text-teal-700">
                           {s.license_plate}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 text-slate-700">
                           {s.driver_name ?? "—"}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 text-slate-700">
                           {PURPOSE_LABELS[s.purpose] ?? s.purpose}
                         </td>
                         <td className="px-4 py-3">
@@ -451,7 +451,7 @@ export default function OrgDockSchedulePage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Đặt lịch dock mới</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Đặt lịch dock mới</h2>
             <DockScheduleForm
               token={token}
               warehouses={warehouses}
@@ -471,8 +471,8 @@ export default function OrgDockSchedulePage() {
       {cancelTarget && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-2">Huỷ lịch dock?</h2>
-            <p className="text-sm text-gray-700 mb-4">
+            <h2 className="text-base font-bold text-slate-900 mb-2">Huỷ lịch dock?</h2>
+            <p className="text-sm text-slate-700 mb-4">
               Bạn chắc chắn muốn huỷ lịch{" "}
               <span className="font-semibold">{cancelTarget.code}</span>?
             </p>
@@ -486,7 +486,7 @@ export default function OrgDockSchedulePage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setCancelTarget(null)}
-                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-slate-700"
               >
                 Không
               </button>
@@ -509,7 +509,7 @@ export default function OrgDockSchedulePage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="font-mono text-xs text-gray-500">{selectedSchedule.code}</p>
-                <h2 className="text-lg font-bold text-gray-900 mt-0.5">
+                <h2 className="text-lg font-bold text-slate-900 mt-0.5">
                   Dock {selectedSchedule.dock_number}
                 </h2>
               </div>
@@ -546,7 +546,7 @@ export default function OrgDockSchedulePage() {
                 .map(([label, value]) => (
                   <div key={label} className="flex items-start gap-4">
                     <span className="text-gray-500 w-36 shrink-0">{label}</span>
-                    <span className="text-gray-900 font-medium">{value}</span>
+                    <span className="text-slate-900 font-medium">{value}</span>
                   </div>
                 ))}
             </div>
@@ -567,7 +567,7 @@ export default function OrgDockSchedulePage() {
                 )}
               <button
                 onClick={() => setSelectedSchedule(null)}
-                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-slate-700"
               >
                 Đóng
               </button>

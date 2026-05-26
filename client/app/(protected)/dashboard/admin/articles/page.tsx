@@ -390,7 +390,7 @@ export default function ArticlesPage() {
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <Link href={`/dashboard/admin/articles/${article.id}/edit`} className="font-semibold text-base text-gray-900 hover:text-[#0F766E] transition-colors line-clamp-2 leading-tight">
+                                                        <Link href={`/dashboard/admin/articles/${article.id}/edit`} className="font-semibold text-base text-slate-900 hover:text-[#0F766E] transition-colors line-clamp-2 leading-tight">
                                                             {article.title}
                                                         </Link>
                                                         <div className="text-sm text-muted-foreground line-clamp-1 mt-1 font-normal">

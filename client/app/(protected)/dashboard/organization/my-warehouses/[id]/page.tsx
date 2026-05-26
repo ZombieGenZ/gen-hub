@@ -87,7 +87,7 @@ function KpiCard({
                 </div>
                 <span className="text-xs text-gray-500">{label}</span>
             </div>
-            <p className="text-xl font-bold text-gray-900">{value}</p>
+            <p className="text-xl font-bold text-slate-900">{value}</p>
             {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
         </div>
     );
@@ -192,7 +192,7 @@ export default function MyWarehouseDetailPage() {
                     <ChevronLeftIcon className="h-5 w-5" />
                 </Link>
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 line-clamp-1">
+                    <h1 className="text-xl font-bold text-slate-900 line-clamp-1">
                         {t?.name ?? "Đang tải..."}
                     </h1>
                     <p className="text-xs text-gray-600">
@@ -213,7 +213,7 @@ export default function MyWarehouseDetailPage() {
                                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                                     activeTab === tab.id
                                         ? "border-blue-600 text-blue-600"
-                                        : "border-transparent text-gray-500 hover:text-gray-700"
+                                        : "border-transparent text-gray-500 hover:text-slate-700"
                                 }`}
                             >
                                 <Icon className="h-4 w-4" />
@@ -325,7 +325,7 @@ export default function MyWarehouseDetailPage() {
                                         <div className="flex items-center gap-2">
                                             <BuildingOffice2Icon className="h-5 w-5 text-blue-400 flex-shrink-0" />
                                             <div>
-                                                <p className="font-semibold text-gray-900">{org.name}</p>
+                                                <p className="font-semibold text-slate-900">{org.name}</p>
                                                 {org.international_name && (
                                                     <p className="text-xs text-gray-600">{org.international_name}</p>
                                                 )}
@@ -403,7 +403,7 @@ export default function MyWarehouseDetailPage() {
                                         </div>
                                         <div>
                                             <p className="text-gray-600 text-xs">Giá trị HĐ</p>
-                                            <p className="font-semibold text-gray-900">
+                                            <p className="font-semibold text-slate-900">
                                                 {formatVND(Number(lease.final_price))} đ
                                             </p>
                                         </div>
@@ -566,7 +566,7 @@ export default function MyWarehouseDetailPage() {
                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div className="border border-gray-200 rounded-xl p-4 bg-white">
                                     <p className="text-xs text-gray-600 mb-1">Tổng hợp đồng</p>
-                                    <p className="text-lg font-bold text-gray-900">
+                                    <p className="text-lg font-bold text-slate-900">
                                         {formatVND(revenue.summary.total_contracted)} đ
                                     </p>
                                 </div>
@@ -586,7 +586,7 @@ export default function MyWarehouseDetailPage() {
                                     <p className={`text-xs mb-1 ${revenue.summary.total_overdue > 0 ? "text-red-600" : "text-gray-600"}`}>
                                         Còn thiếu
                                     </p>
-                                    <p className={`text-lg font-bold ${revenue.summary.total_overdue > 0 ? "text-red-700" : "text-gray-900"}`}>
+                                    <p className={`text-lg font-bold ${revenue.summary.total_overdue > 0 ? "text-red-700" : "text-slate-900"}`}>
                                         {formatVND(revenue.summary.total_overdue)} đ
                                     </p>
                                 </div>

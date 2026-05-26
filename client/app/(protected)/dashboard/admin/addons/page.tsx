@@ -449,7 +449,7 @@ export default function AddonsPage() {
                                                         />
                                                     </td>
                                                     <td className="py-4 px-4">
-                                                        <div className="font-semibold text-base text-gray-900">{addon.name}</div>
+                                                        <div className="font-semibold text-base text-slate-900">{addon.name}</div>
                                                         <div className="text-sm text-muted-foreground/80 line-clamp-1 mt-0.5 font-normal">{addon.description}</div>
                                                     </td>
                                                     <td className="py-4 px-4">

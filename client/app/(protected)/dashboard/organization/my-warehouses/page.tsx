@@ -81,7 +81,7 @@ export default function MyWarehousesPage() {
                 <div className="flex items-center gap-3">
                     <BuildingStorefrontIcon className="h-7 w-7 text-blue-600" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Kho của tôi (Chủ kho)</h1>
+                        <h1 className="text-2xl font-bold text-slate-900">Kho của tôi (Chủ kho)</h1>
                         <p className="text-sm text-gray-500">Quản lý kho bãi bạn sở hữu — khách thuê, hợp đồng, doanh thu</p>
                     </div>
                 </div>
@@ -149,7 +149,7 @@ export default function MyWarehousesPage() {
                                 {/* Info */}
                                 <div className="p-4 space-y-3">
                                     <div>
-                                        <p className="font-semibold text-gray-900 line-clamp-1">{wh.name}</p>
+                                        <p className="font-semibold text-slate-900 line-clamp-1">{wh.name}</p>
                                         <p className="text-xs text-gray-600 line-clamp-1">
                                             {[wh.address_detail, ward, province].filter(Boolean).join(", ")}
                                         </p>

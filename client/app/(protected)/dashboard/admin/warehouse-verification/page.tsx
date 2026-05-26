@@ -88,7 +88,7 @@ export default function WarehouseVerificationPage() {
                 <div className="flex items-center gap-3">
                     <ShieldCheckIcon className="h-7 w-7 text-blue-600" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Xác minh kho bãi</h1>
+                        <h1 className="text-2xl font-bold text-slate-900">Xác minh kho bãi</h1>
                         <p className="text-sm text-gray-500">Duyệt tài liệu pháp lý & cấp Trust Badge</p>
                     </div>
                 </div>
@@ -111,7 +111,7 @@ export default function WarehouseVerificationPage() {
                             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                                 activeTab === tab.value
                                     ? "border-blue-600 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                                    : "border-transparent text-gray-500 hover:text-slate-700"
                             }`}
                         >
                             {tab.label}
@@ -143,7 +143,7 @@ export default function WarehouseVerificationPage() {
                             >
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm text-gray-900 truncate">
+                                        <p className="font-medium text-sm text-slate-900 truncate">
                                             {doc.warehouse_template?.name ?? "Kho không tên"}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-0.5">
@@ -177,7 +177,7 @@ export default function WarehouseVerificationPage() {
                 {selectedDoc ? (
                     <div className="border border-gray-200 rounded-xl bg-white p-5 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="font-semibold text-gray-900">Chi tiết tài liệu</h2>
+                            <h2 className="font-semibold text-slate-900">Chi tiết tài liệu</h2>
                             <button
                                 onClick={() => setSelectedDoc(null)}
                                 className="text-gray-500 hover:text-gray-600 text-lg leading-none"
@@ -202,7 +202,7 @@ export default function WarehouseVerificationPage() {
                         {/* AI Analysis */}
                         {selectedDoc.ai_extracted_data && (
                             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
                                     Kết quả phân tích AI
                                 </p>
                                 <p className="text-sm text-gray-800">
@@ -257,7 +257,7 @@ export default function WarehouseVerificationPage() {
 
                         {/* Review note */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Ghi chú duyệt (tuỳ chọn)
                             </label>
                             <textarea
