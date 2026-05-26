@@ -49,6 +49,14 @@ export default function OrgDockSchedulePage() {
   const [filterStatus, setFilterStatus] = useState<DockScheduleStatus | "">("");
   const [filterWarehouseId, setFilterWarehouseId] = useState("");
 
+  // Timeline chỉ khả dụng khi chọn 1 kho cụ thể
+  const canUseTimeline = !!filterWarehouseId;
+
+  const handleWarehouseChange = (id: string) => {
+    setFilterWarehouseId(id);
+    if (!id) setViewMode("list");
+  };
+
   const [showForm, setShowForm] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<DockSchedule | null>(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -89,7 +97,7 @@ export default function OrgDockSchedulePage() {
           name,
         }));
         setWarehouses(list);
-        if (list.length > 0) setFilterWarehouseId(list[0].id);
+        // Không auto-chọn — mặc định "Tất cả kho"
       } catch {
         // fallback
       }
@@ -107,7 +115,7 @@ export default function OrgDockSchedulePage() {
         date: filterDate || undefined,
         status: filterStatus || undefined,
         warehouse_template_id: filterWarehouseId || undefined,
-        limit: 50,
+        limit: 200,
       });
 
       // Fetch slots for timeline view (all schedules by dock for selected warehouse+date)
@@ -194,20 +202,19 @@ export default function OrgDockSchedulePage() {
         {/* Filter bar */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">
           {/* Warehouse selector */}
-          {warehouses.length > 0 && (
-            <div className="flex-1 min-w-40">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Kho</label>
-              <select
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                value={filterWarehouseId}
-                onChange={(e) => setFilterWarehouseId(e.target.value)}
-              >
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="flex-1 min-w-40">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Kho</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={filterWarehouseId}
+              onChange={(e) => handleWarehouseChange(e.target.value)}
+            >
+              <option value="">Tất cả kho</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Date */}
           <div>
@@ -241,11 +248,14 @@ export default function OrgDockSchedulePage() {
           {/* View toggle */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm ml-auto">
             <button
-              onClick={() => setViewMode("timeline")}
+              onClick={() => canUseTimeline && setViewMode("timeline")}
+              title={!canUseTimeline ? "Chọn 1 kho cụ thể để xem sơ đồ dock" : undefined}
               className={`px-4 py-2 transition-colors font-medium ${
                 viewMode === "timeline"
                   ? "bg-primary text-primary-foreground"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : canUseTimeline
+                  ? "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
               Sơ đồ dock
@@ -268,7 +278,7 @@ export default function OrgDockSchedulePage() {
           <div className="flex justify-center items-center py-20">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : viewMode === "timeline" ? (
+        ) : viewMode === "timeline" && canUseTimeline ? (
           /* ── Timeline view ── */
           <div className="space-y-3">
             {/* Context bar */}

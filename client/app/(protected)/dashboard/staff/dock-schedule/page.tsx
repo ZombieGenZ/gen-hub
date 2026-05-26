@@ -41,6 +41,7 @@ export default function StaffDockSchedulePage() {
   const { showToast } = useToast();
 
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
+  // "" = tất cả kho
   const [filterWarehouseId, setFilterWarehouseId] = useState("");
   const [filterDate, setFilterDate] = useState(new Date().toISOString().slice(0, 10));
   const [filterStatus, setFilterStatus] = useState<DockScheduleStatus | "">("");
@@ -51,14 +52,15 @@ export default function StaffDockSchedulePage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
+  // Timeline chỉ khả dụng khi đã chọn 1 kho cụ thể
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<DockSchedule | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const token = authStorage.getAccessToken() ?? "";
 
-  // Load warehouses — response có thể là array hoặc { items, total }
+  // Load warehouses
   useEffect(() => {
     if (!token) return;
     warehouseTemplateService
@@ -68,26 +70,36 @@ export default function StaffDockSchedulePage() {
           ? (raw as { id: string; name: string }[])
           : ((raw as { items?: { id: string; name: string }[] })?.items ?? []);
         setWarehouses(list.map((w) => ({ id: w.id, name: w.name })));
-        if (list.length > 0) setFilterWarehouseId((prev) => prev || list[0].id);
+        // Không auto-chọn — mặc định "Tất cả kho"
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // Khi đổi sang "Tất cả" thì force về list view
+  const handleWarehouseChange = (id: string) => {
+    setFilterWarehouseId(id);
+    if (!id) setViewMode("list");
+  };
+
   const fetchData = useCallback(async () => {
-    if (!filterWarehouseId) return;
     setLoading(true);
     try {
-      const [listRes, slotsRes] = await Promise.all([
-        dockService.list(token, {
-          warehouse_template_id: filterWarehouseId,
-          date: filterDate || undefined,
-          status: filterStatus || undefined,
-          license_plate: filterPlate || undefined,
-          limit: 100,
-        }),
-        dockService.getSlots(token, filterWarehouseId, filterDate),
-      ]);
+      const listPromise = dockService.list(token, {
+        warehouse_template_id: filterWarehouseId || undefined,
+        date: filterDate || undefined,
+        status: filterStatus || undefined,
+        license_plate: filterPlate || undefined,
+        limit: 200,
+      });
+
+      // Slots chỉ fetch khi đã chọn 1 kho cụ thể
+      const slotsPromise =
+        filterWarehouseId && filterDate
+          ? dockService.getSlots(token, filterWarehouseId, filterDate)
+          : Promise.resolve(null);
+
+      const [listRes, slotsRes] = await Promise.all([listPromise, slotsPromise]);
       setSchedules(listRes.items);
       setTotal(listRes.total);
       setSlots(slotsRes);
@@ -126,13 +138,14 @@ export default function StaffDockSchedulePage() {
     })),
   ];
 
-  // Summary stats
   const stats = useMemo(() => {
     const pending = schedules.filter((s) => s.status === "PENDING").length;
     const confirmed = schedules.filter((s) => s.status === "CONFIRMED").length;
     const arrived = schedules.filter((s) => s.status === "ARRIVED").length;
     return { pending, confirmed, arrived, total: schedules.length };
   }, [schedules]);
+
+  const canUseTimeline = !!filterWarehouseId;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -155,7 +168,7 @@ export default function StaffDockSchedulePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Tổng hôm nay", value: stats.total, color: "text-gray-900" },
+            { label: "Tổng kết quả", value: stats.total, color: "text-gray-900" },
             { label: "Chờ duyệt", value: stats.pending, color: "text-yellow-700" },
             { label: "Đã xác nhận", value: stats.confirmed, color: "text-teal-700" },
             { label: "Xe đang đến", value: stats.arrived, color: "text-green-700" },
@@ -169,16 +182,20 @@ export default function StaffDockSchedulePage() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">
+          {/* Kho */}
           <div className="flex-1 min-w-36">
             <label className="block text-xs font-medium text-gray-700 mb-1">Kho</label>
             <select
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filterWarehouseId}
-              onChange={(e) => setFilterWarehouseId(e.target.value)}
+              onChange={(e) => handleWarehouseChange(e.target.value)}
             >
+              <option value="">Tất cả kho</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
+
+          {/* Ngày */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Ngày</label>
             <input
@@ -188,6 +205,8 @@ export default function StaffDockSchedulePage() {
               onChange={(e) => setFilterDate(e.target.value)}
             />
           </div>
+
+          {/* Trạng thái */}
           <div className="min-w-36">
             <label className="block text-xs font-medium text-gray-700 mb-1">Trạng thái</label>
             <select
@@ -198,6 +217,8 @@ export default function StaffDockSchedulePage() {
               {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
+
+          {/* Biển số */}
           <div className="flex-1 min-w-36">
             <label className="block text-xs font-medium text-gray-700 mb-1">Biển số</label>
             <input
@@ -208,11 +229,19 @@ export default function StaffDockSchedulePage() {
               onChange={(e) => setFilterPlate(e.target.value.toUpperCase())}
             />
           </div>
-          {/* Toggle view */}
+
+          {/* Toggle view — timeline chỉ khả dụng khi chọn 1 kho */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
             <button
-              onClick={() => setViewMode("timeline")}
-              className={`px-3 py-2 transition-colors ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+              onClick={() => canUseTimeline && setViewMode("timeline")}
+              title={!canUseTimeline ? "Chọn 1 kho cụ thể để dùng Timeline" : undefined}
+              className={`px-3 py-2 transition-colors ${
+                viewMode === "timeline"
+                  ? "bg-primary text-primary-foreground"
+                  : canUseTimeline
+                  ? "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              }`}
             >
               Timeline
             </button>
@@ -225,10 +254,10 @@ export default function StaffDockSchedulePage() {
           </div>
         </div>
 
-        {/* Cảnh báo chưa chọn kho */}
-        {!filterWarehouseId && !loading && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-sm text-yellow-800">
-            Chưa có kho nào. Vui lòng kiểm tra lại quyền quản lý kho của tài khoản.
+        {/* Gợi ý khi đang xem tất cả */}
+        {!filterWarehouseId && !loading && viewMode === "timeline" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+            Chọn 1 kho cụ thể để xem sơ đồ Timeline.
           </div>
         )}
 
@@ -237,13 +266,13 @@ export default function StaffDockSchedulePage() {
           <div className="flex justify-center items-center py-20">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : viewMode === "timeline" && slots ? (
+        ) : viewMode === "timeline" && canUseTimeline && slots ? (
           <DockTimelineView
             dockCount={slots.dock_count}
             schedules={schedules}
             onSelect={setSelected}
           />
-        ) : viewMode === "timeline" && !slots && filterWarehouseId ? (
+        ) : viewMode === "timeline" && canUseTimeline && !slots ? (
           <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center py-16 text-sm text-gray-400">
             Không có dữ liệu slot cho ngày này
           </div>
@@ -252,7 +281,7 @@ export default function StaffDockSchedulePage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {["Mã lịch", "Kho", "Dock", "Biển số", "Giờ hẹn", "Mục đích", "Trạng thái", "Thao tác"].map((h) => (
+                  {["Mã lịch", "Kho", "Dock", "Ngày hẹn", "Biển số", "Giờ hẹn", "Mục đích", "Trạng thái", "Thao tác"].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -260,7 +289,7 @@ export default function StaffDockSchedulePage() {
               <tbody className="divide-y divide-gray-100">
                 {schedules.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400 text-sm">
+                    <td colSpan={9} className="text-center py-12 text-gray-400 text-sm">
                       Không có lịch dock nào
                     </td>
                   </tr>
@@ -270,6 +299,7 @@ export default function StaffDockSchedulePage() {
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.code}</td>
                       <td className="px-4 py-3 text-gray-700">{s.warehouse_template?.name ?? "—"}</td>
                       <td className="px-4 py-3 font-semibold text-gray-800">Dock {s.dock_number}</td>
+                      <td className="px-4 py-3 text-gray-700">{new Date(s.scheduled_date).toLocaleDateString("vi-VN")}</td>
                       <td className="px-4 py-3 font-semibold text-teal-700">{s.license_plate}</td>
                       <td className="px-4 py-3 text-gray-700">{s.scheduled_time_start}–{s.scheduled_time_end}</td>
                       <td className="px-4 py-3 text-gray-700">{PURPOSE_LABELS[s.purpose] ?? s.purpose}</td>
@@ -320,7 +350,7 @@ export default function StaffDockSchedulePage() {
             </table>
             {total > 0 && (
               <div className="px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
-                Tổng {total} lịch
+                Hiển thị {schedules.length} / {total} lịch
               </div>
             )}
           </div>
