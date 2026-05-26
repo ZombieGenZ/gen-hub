@@ -961,7 +961,7 @@ export default function VehicleLogPage() {
                                 </div>
                                 <div className="bg-white rounded-lg border border-green-200 p-3">
                                     <p className="text-xs text-muted-foreground mb-1">Link gửi cho tài xế:</p>
-                                    <p className="text-xs font-mono break-all text-gray-700">{gpsCreated.tracking_url}</p>
+                                    <p className="text-xs font-mono break-all text-slate-700">{gpsCreated.tracking_url}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button
