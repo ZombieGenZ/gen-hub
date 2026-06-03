@@ -1,98 +1,150 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# GEN-HUB Server
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend của nền tảng quản lý kho bãi và cho thuê kho thương mại **GEN-HUB**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- **Framework:** NestJS 11 + TypeScript
+- **Database:** PostgreSQL + Prisma ORM
+- **Cache:** Redis
+- **Realtime:** Socket.io
+- **Port mặc định:** `4000`
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Cài đặt & Chạy
 
 ```bash
-$ npm install
+npm install
 ```
-
-## Compile and run the project
 
 ```bash
-# development
-$ npm run start
+# development (watch mode)
+npm run start:dev
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# production build
+npm run build
+npm run start:prod
 ```
 
-## Run tests
+---
+
+## Biến môi trường (`.env`)
+
+Tạo file `.env` ở thư mục `server/` dựa theo `.env.example`.
+
+### Biến bắt buộc
+
+```env
+DATABASE_URL=postgresql://user:pass@localhost:5432/genhub
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_jwt_secret
+FRONTEND_URL=http://localhost:3000
+```
+
+### AI — Gemini (legacy, vẫn dùng cho các module khác)
+
+```env
+GEMINI_API_KEYS=key1,key2,key3
+GEMINI_MODEL=gemini-1.5-flash
+```
+
+### AI — Local GPS Analyzer (tự train)
+
+```env
+# Bật local model thay Gemini cho GPS route analysis
+USE_LOCAL_AI=true
+
+# URL của FastAPI server (ai-models/gps-analyzer)
+LOCAL_GPS_AI_URL=http://localhost:8001
+```
+
+> Khi `USE_LOCAL_AI=false` hoặc không set → hệ thống vẫn dùng Gemini cho GPS (backward compatible).
+
+---
+
+## Kiến trúc module AI
+
+```
+src/modules/ai-hub/
+├── services/
+│   ├── gemini.service.ts        # Gemini API (email, document, vehicle, warehouse)
+│   ├── local-gps-ai.service.ts  # Local model (GPS route analysis) ← MỚI
+│   ├── coze.service.ts          # Coze chatbot
+│   └── dify.service.ts          # Dify chatbot
+├── ai-hub.module.ts
+└── interfaces/ai.interface.ts
+```
+
+### Luồng phân tích GPS (sau khi bật `USE_LOCAL_AI=true`)
+
+```
+GPS tracks (DB)
+    │
+    ▼
+GpsService.analyzeSession()
+    │  kiểm tra USE_LOCAL_AI
+    ├─ true  → LocalGpsAiService → FastAPI :8001 → GradientBoostingClassifier
+    └─ false → GeminiService.analyzeGpsRoute() (fallback)
+    │
+    ▼
+Redis cache 60s → API response
+```
+
+---
+
+## Các thay đổi gần đây
+
+### [2026-06-04] Tích hợp Local AI Model cho GPS Route Analysis
+
+**Lý do:** Yêu cầu cuộc thi DATN — thay thế hoàn toàn Gemini bằng model tự train.
+
+#### Files mới thêm
+
+| File | Mô tả |
+|------|-------|
+| `src/modules/ai-hub/services/local-gps-ai.service.ts` | Service gọi FastAPI GPS analyzer, dùng native `fetch` (Node 22), timeout 8s, fallback về `LOW` nếu server không phản hồi, log kết quả vào bảng `AILog` |
+
+#### Files đã sửa
+
+| File | Thay đổi |
+|------|----------|
+| `src/modules/ai-hub/ai-hub.module.ts` | Thêm `LocalGpsAiService` vào `providers` và `exports` |
+| `src/modules/gps/gps.service.ts` | Inject `LocalGpsAiService`, thêm feature flag `process.env.USE_LOCAL_AI` trong `analyzeSession()` |
+
+#### Không có thay đổi
+
+- Prisma schema — giữ nguyên 100%, không cần migration
+- API contract — response shape của `GET /gps/session/:token/analysis` không đổi
+- Frontend — không cần sửa bất kỳ file nào
+
+#### Model AI sử dụng
+
+Xem chi tiết tại [`ai-models/gps-analyzer/README.md`](../../ai-models/gps-analyzer/README.md).
+
+| Thuộc tính | Giá trị |
+|-----------|---------|
+| Thuật toán | Gradient Boosting Classifier (scikit-learn) |
+| Input | 11 features trích xuất từ GPS tracks |
+| Output | LOW / MEDIUM / HIGH + confidence score |
+| Dataset | 2.150 mẫu synthetic, 8 kịch bản lái xe |
+| Serving | FastAPI server, port 8001 |
+
+---
+
+## Chạy tests
 
 ```bash
 # unit tests
-$ npm run test
+npm run test
 
 # e2e tests
-$ npm run test:e2e
+npm run test:e2e
 
 # test coverage
-$ npm run test:cov
+npm run test:cov
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED — Đồ án tốt nghiệp TANK ZENITH GEN.
