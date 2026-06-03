@@ -16,6 +16,7 @@ import { RedisService } from '../redis/redis.service';
 import { VehicleLogService } from '../warehouse-vehicle-log/warehouse-vehicle-log.service';
 import { CreateVehicleLogDto } from '../warehouse-vehicle-log/dto/create-vehicle-log.dto';
 import { GeminiService } from '../ai-hub/services/gemini.service';
+import { LocalGpsAiService } from '../ai-hub/services/local-gps-ai.service';
 
 const GPS_SESSION_HOURS = 24;
 const APPROACHING_DISTANCE_M = 500;
@@ -32,6 +33,7 @@ export class GpsService {
     private readonly redis: RedisService,
     private readonly vehicleLogService: VehicleLogService,
     private readonly gemini: GeminiService,
+    private readonly localGpsAi: LocalGpsAiService,
   ) {}
 
   async createSession(dto: CreateGpsSessionDto, userId: string) {
@@ -71,7 +73,9 @@ export class GpsService {
     } | null = null;
 
     if (session.export_id) {
-      const exportInfo = await this.repo.findExportDeliveryInfo(session.export_id);
+      const exportInfo = await this.repo.findExportDeliveryInfo(
+        session.export_id,
+      );
       if (exportInfo) {
         delivery = {
           address: exportInfo.delivery_address ?? null,
@@ -136,14 +140,17 @@ export class GpsService {
 
     // Emit realtime driver position to outbound detail page listeners
     if (session.export_id) {
-      this.websocket.server.emit(`outbound:${session.export_id}:driver-location`, {
-        session_id: session.id,
-        license_plate: session.license_plate,
-        latitude: dto.latitude,
-        longitude: dto.longitude,
-        speed_kmh: dto.speed != null ? Math.round(dto.speed * 3.6) : null,
-        recorded_at: new Date().toISOString(),
-      });
+      this.websocket.server.emit(
+        `outbound:${session.export_id}:driver-location`,
+        {
+          session_id: session.id,
+          license_plate: session.license_plate,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          speed_kmh: dto.speed != null ? Math.round(dto.speed * 3.6) : null,
+          recorded_at: new Date().toISOString(),
+        },
+      );
     }
 
     const wt = session.warehouse_template;
@@ -160,7 +167,13 @@ export class GpsService {
 
       if (distanceM <= ARRIVED_DISTANCE_M) {
         result.geofence = 'ARRIVED';
-        await this.handleArrived(session, dto.latitude, dto.longitude, distanceM, dto.speed);
+        await this.handleArrived(
+          session,
+          dto.latitude,
+          dto.longitude,
+          distanceM,
+          dto.speed,
+        );
       } else if (distanceM <= APPROACHING_DISTANCE_M) {
         result.geofence = 'APPROACHING';
         this.websocket.server.emit(
@@ -198,8 +211,8 @@ export class GpsService {
       const purpose = session.receipt_id
         ? VehiclePurpose.INBOUND
         : session.export_id
-        ? VehiclePurpose.OUTBOUND
-        : VehiclePurpose.VISIT;
+          ? VehiclePurpose.OUTBOUND
+          : VehiclePurpose.VISIT;
 
       await this.vehicleLogService.create(
         {
@@ -264,7 +277,7 @@ export class GpsService {
     }
 
     const warehouseName = session.warehouse_template?.name ?? 'kho';
-    const analysis = await this.gemini.analyzeGpsRoute({
+    const trackPayload = {
       tracks: tracks.map((t) => ({
         lat: Number(t.latitude),
         lng: Number(t.longitude),
@@ -274,7 +287,12 @@ export class GpsService {
       warehouseName,
       licensePlate: session.license_plate,
       currentDistanceM: 0,
-    });
+    };
+
+    const useLocalAI = process.env.USE_LOCAL_AI === 'true';
+    const analysis = useLocalAI
+      ? await this.localGpsAi.analyzeGpsRoute(trackPayload)
+      : await this.gemini.analyzeGpsRoute(trackPayload);
 
     const result = { ...analysis, analyzed_at: new Date().toISOString() };
     await this.redis.set(cacheKey, JSON.stringify(result), 60);

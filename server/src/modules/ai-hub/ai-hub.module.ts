@@ -5,6 +5,7 @@ import { AiHubService } from './ai-hub.service';
 import { CozeService } from './services/coze.service';
 import { DifyService } from './services/dify.service';
 import { GeminiService } from './services/gemini.service';
+import { LocalGpsAiService } from './services/local-gps-ai.service';
 
 @Module({
   imports: [PrismaModule],
@@ -14,7 +15,8 @@ import { GeminiService } from './services/gemini.service';
     GeminiService,
     CozeService,
     DifyService,
+    LocalGpsAiService,
   ],
-  exports: [AiHubService, GeminiService],
+  exports: [AiHubService, GeminiService, LocalGpsAiService],
 })
 export class AiHubModule {}
