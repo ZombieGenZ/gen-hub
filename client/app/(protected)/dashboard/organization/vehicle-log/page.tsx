@@ -562,7 +562,16 @@ export default function OrgVehicleLogPage() {
                                 </button>
                             </div>
                             {plateImageUrl && (
-                                <p className="text-xs text-green-600 mt-1">Ảnh biển số đã chụp</p>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <a href={plateImageUrl} target="_blank" rel="noopener noreferrer">
+                                        <img
+                                            src={plateImageUrl}
+                                            alt="Ảnh biển số"
+                                            className="h-10 w-16 object-cover rounded border hover:opacity-80 transition-opacity"
+                                        />
+                                    </a>
+                                    <span className="text-xs text-green-600">Ảnh biển số đã chụp</span>
+                                </div>
                             )}
                         </div>
 
