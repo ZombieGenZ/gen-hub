@@ -2086,6 +2086,8 @@ model Warehouse {
   inventory_alert_configs InventoryAlertConfig[]
   inventory_alerts        InventoryAlert[]
 
+  fleet_vehicles FleetVehicle[]
+
   @@index([warehouse_template_id])
   @@map("warehouses")
 }
@@ -2140,6 +2142,10 @@ model Product {
   width               Decimal? @db.Decimal(10, 4)
   height              Decimal? @db.Decimal(10, 4)
   max_weight_capacity Decimal? @db.Decimal(19, 4)
+
+  packaging_method PackagingMethod @default(STANDARD)
+  is_stackable     Boolean         @default(true)
+  stack_limit      Int?
 
   cost_price Decimal? @default(0) @db.Decimal(19, 4)
 
@@ -2624,12 +2630,16 @@ model Export {
   updated_by String?
   deleted_by String?
 
-  warehouse Warehouse      @relation(fields: [warehouse_id], references: [id])
-  partner   Partner?       @relation(fields: [partner_id], references: [id])
-  details   ExportDetail[]
+  fleet_vehicle_id String? @db.Uuid
 
-  pick_lists ExportPickList[]
-  packages   Package[]
+  warehouse     Warehouse      @relation(fields: [warehouse_id], references: [id])
+  partner       Partner?       @relation(fields: [partner_id], references: [id])
+  fleet_vehicle FleetVehicle?  @relation(fields: [fleet_vehicle_id], references: [id])
+  details       ExportDetail[]
+
+  pick_lists     ExportPickList[]
+  packages       Package[]
+  packing_result BinPackingResult?
 
   @@map("exports")
 }
@@ -5058,4 +5068,111 @@ model GpsTrack {
 
   @@index([session_id, recorded_at])
   @@map("gps_tracks")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Fleet Management — Xe nội bộ của warehouse tenant
+// ─────────────────────────────────────────────────────────────
+
+enum FleetVehicleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum FleetVehicleType {
+  MOTORBIKE
+  VAN
+  TRUCK_SMALL
+  TRUCK_MEDIUM
+  TRUCK_LARGE
+  CONTAINER
+}
+
+model FleetVehicle {
+  id            String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  warehouse_id  String             @db.Uuid
+  name          String
+  license_plate String
+  vehicle_type  FleetVehicleType   @default(VAN)
+  status        FleetVehicleStatus @default(AVAILABLE)
+
+  cargo_length  Decimal  @db.Decimal(10, 2)
+  cargo_width   Decimal  @db.Decimal(10, 2)
+  cargo_height  Decimal  @db.Decimal(10, 2)
+  max_weight_kg Decimal  @db.Decimal(10, 2)
+
+  notes String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  warehouse       Warehouse          @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  packing_results BinPackingResult[]
+  exports         Export[]
+
+  @@index([warehouse_id])
+  @@index([status])
+  @@map("fleet_vehicles")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Bin Packing — 3D cargo space optimization result
+// ─────────────────────────────────────────────────────────────
+
+enum PackingStatus {
+  PENDING
+  COMPUTED
+  APPLIED
+  FAILED
+}
+
+model BinPackingResult {
+  id               String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  export_id        String        @db.Uuid @unique
+  fleet_vehicle_id String        @db.Uuid
+  status           PackingStatus @default(PENDING)
+
+  total_items       Int
+  packed_items      Int
+  unpacked_items    Int
+  space_utilization Decimal      @db.Decimal(5, 2)
+  total_weight_kg   Decimal      @db.Decimal(10, 2)
+
+  layout_json Json
+
+  algorithm_used String   @default("extreme-point")
+  computed_at    DateTime @default(now())
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+
+  export        Export       @relation(fields: [export_id], references: [id], onDelete: Cascade)
+  fleet_vehicle FleetVehicle @relation(fields: [fleet_vehicle_id], references: [id])
+
+  @@index([export_id])
+  @@index([fleet_vehicle_id])
+  @@map("bin_packing_results")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Packaging Method enum for Product
+// ─────────────────────────────────────────────────────────────
+
+enum PackagingMethod {
+  STANDARD
+  FRAGILE
+  STACKABLE
+  NON_STACKABLE
+  LIQUID
+  OVERSIZED
 }

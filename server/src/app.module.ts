@@ -110,6 +110,8 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
 import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
 import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
+import { FleetModule } from './modules/fleet/fleet.module';
+import { BinPackingModule } from './modules/bin-packing/bin-packing.module';
 
 @Module({
   imports: [
@@ -227,6 +229,10 @@ import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
     WarehouseVehicleLogModule,
     DockScheduleModule,
     GpsModule,
+
+    // Fleet Management & 3D Bin Packing
+    FleetModule,
+    BinPackingModule,
 
     // Organization Update Request
     OrganizationUpdateRequestModule,

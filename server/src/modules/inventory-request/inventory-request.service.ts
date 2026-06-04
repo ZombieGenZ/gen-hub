@@ -1200,6 +1200,9 @@ export class InventoryRequestService {
           ...(dto.partner_id && {
             partner: { connect: { id: dto.partner_id } },
           }),
+          ...(dto.fleet_vehicle_id && {
+            fleet_vehicle: { connect: { id: dto.fleet_vehicle_id } },
+          }),
           created_by: actorId,
         },
       });

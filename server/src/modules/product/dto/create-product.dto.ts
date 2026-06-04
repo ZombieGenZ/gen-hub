@@ -10,9 +10,12 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  IsEnum,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { PackagingMethod } from '@prisma/client';
 
 /**
  * DTO cho ProductUnit khi tạo/cập nhật Product
@@ -184,4 +187,21 @@ export class CreateProductDto {
     message: i18nValidationMessage('product.validation.is_active_boolean'),
   })
   is_active?: boolean;
+
+  @ApiPropertyOptional({ enum: PackagingMethod, default: PackagingMethod.STANDARD, description: 'Phương thức đóng gói' })
+  @IsOptional()
+  @IsEnum(PackagingMethod)
+  packaging_method?: PackagingMethod;
+
+  @ApiPropertyOptional({ default: true, description: 'Có thể xếp chồng lên nhau không' })
+  @IsOptional()
+  @IsBoolean()
+  is_stackable?: boolean;
+
+  @ApiPropertyOptional({ description: 'Số lớp chồng tối đa (null = không giới hạn)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  stack_limit?: number;
 }

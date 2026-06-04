@@ -29,6 +29,7 @@ const staffNavGroups: SidebarGroup[] = [
             { href: "/dashboard/staff/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
             { href: "/dashboard/staff/vehicle-log", icon: TruckIcon, label: "Xe ra vào" },
             { href: "/dashboard/staff/dock-schedule", icon: CalendarDaysIcon, label: "Lịch dock" },
+            { href: "/dashboard/staff/fleet", icon: TruckIcon, label: "Đội xe" },
         ],
     },
     {

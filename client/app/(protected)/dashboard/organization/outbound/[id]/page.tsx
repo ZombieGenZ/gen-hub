@@ -30,6 +30,7 @@ import {
     UserIcon,
 } from "@heroicons/react/24/outline";
 import { OutboundRouteMap } from "@/components/outbound/OutboundRouteMap";
+import { BinPackingPanel } from "@/components/outbound/BinPackingPanel";
 
 import "../outbound.css";
 
@@ -359,6 +360,10 @@ export default function OutboundDetailPage() {
                     <TabsTrigger value="route" className="gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <TruckIcon className="w-4 h-4" />
                         Lộ trình
+                    </TabsTrigger>
+                    <TabsTrigger value="binpacking" className="gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <CubeIcon className="w-4 h-4" />
+                        Xếp hàng 3D
                     </TabsTrigger>
                 </TabsList>
 
@@ -699,6 +704,20 @@ export default function OutboundDetailPage() {
                             />
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                {/* ── Tab 5: Xếp hàng 3D ── */}
+                <TabsContent value="binpacking">
+                    <BinPackingPanel
+                        exportId={data.id}
+                        warehouseId={data.warehouse_id ?? data.warehouse?.id ?? ""}
+                        productNames={Object.fromEntries(
+                            (data.details ?? [])
+                                .filter((d) => d.product?.id)
+                                .map((d) => [d.product!.id, d.product!.name ?? d.product!.sku ?? ""])
+                        )}
+                        onApplied={() => void fetchData(false)}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

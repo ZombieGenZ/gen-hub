@@ -71,6 +71,11 @@ export default function CreateProductPage() {
     const [maxWeightCapacity, setMaxWeightCapacity] = useState("");
     const [isActive, setIsActive] = useState(true);
 
+    // ── Packaging fields ──
+    const [packagingMethod, setPackagingMethod] = useState("STANDARD");
+    const [isStackable, setIsStackable] = useState(true);
+    const [stackLimit, setStackLimit] = useState("");
+
     // ── Unit conversions ──
     const [unitRows, setUnitRows] = useState<UnitConversionRow[]>([]);
 
@@ -152,6 +157,11 @@ export default function CreateProductPage() {
             if (height) payload.height = Number(height);
             if (maxWeightCapacity)
                 payload.max_weight_capacity = Number(maxWeightCapacity);
+
+            // Packaging fields (cast to any since types may not include them yet)
+            (payload as any).packaging_method = packagingMethod;
+            (payload as any).is_stackable = isStackable;
+            if (stackLimit) (payload as any).stack_limit = Number(stackLimit);
 
             if (unitRows.length > 0) {
                 payload.units = unitRows.map((r) => ({
@@ -463,6 +473,56 @@ export default function CreateProductPage() {
                                             }
                                             className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                         />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Packaging method */}
+                            <Card className="shadow-premium rounded-3xl border-0">
+                                <CardContent className="p-6 space-y-5">
+                                    <h2 className="text-base font-semibold text-slate-900">
+                                        Phương thức đóng gói & Xếp hàng
+                                    </h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="packagingMethod">Cách đóng gói</Label>
+                                            <Select value={packagingMethod} onValueChange={setPackagingMethod}>
+                                                <SelectTrigger id="packagingMethod" className="bg-slate-50 border-slate-200 rounded-xl">
+                                                    <SelectValue placeholder="Chọn cách đóng gói" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="STANDARD">Tiêu chuẩn</SelectItem>
+                                                    <SelectItem value="FRAGILE">Hàng dễ vỡ</SelectItem>
+                                                    <SelectItem value="STACKABLE">Có thể xếp chồng</SelectItem>
+                                                    <SelectItem value="NON_STACKABLE">Không xếp chồng</SelectItem>
+                                                    <SelectItem value="LIQUID">Chất lỏng</SelectItem>
+                                                    <SelectItem value="OVERSIZED">Hàng cồng kềnh</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="stackLimit">Giới hạn chồng (tầng)</Label>
+                                            <Input
+                                                id="stackLimit"
+                                                type="number"
+                                                min={1}
+                                                placeholder="Để trống = không giới hạn"
+                                                value={stackLimit}
+                                                onChange={(e) => setStackLimit(e.target.value)}
+                                                disabled={!isStackable}
+                                                className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Switch
+                                            id="isStackable"
+                                            checked={isStackable}
+                                            onCheckedChange={setIsStackable}
+                                        />
+                                        <Label htmlFor="isStackable" className="cursor-pointer">
+                                            Có thể xếp chồng lên hàng khác
+                                        </Label>
                                     </div>
                                 </CardContent>
                             </Card>

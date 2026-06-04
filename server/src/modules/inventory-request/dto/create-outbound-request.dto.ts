@@ -202,6 +202,14 @@ export class CreateOutboundRequestDto {
   })
   picking_strategy?: PickingStrategy;
 
+  @ApiPropertyOptional({
+    description: 'ID xe đội nội bộ (fleet vehicle)',
+    example: '550e8400-e29b-41d4-a716-446655440099',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  fleet_vehicle_id?: string;
+
   @ApiProperty({
     description: 'Danh sách chi tiết sản phẩm xuất',
     type: [OutboundDetailDto],

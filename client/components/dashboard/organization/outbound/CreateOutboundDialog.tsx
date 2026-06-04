@@ -37,10 +37,14 @@ import type {
 } from "@/services/inventory/inventory.types";
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
+import { FleetService } from "@/services/fleet/fleet.service";
+import type { FleetVehicle } from "@/services/fleet/fleet.types";
+import { FLEET_VEHICLE_TYPE_LABELS } from "@/services/fleet/fleet.types";
 
 const inventoryService = new InventoryService();
 const productService = new ProductService();
 const partnerService = new PartnerService();
+const fleetService = new FleetService();
 
 interface DrawerItem {
     product: Product;
@@ -105,9 +109,11 @@ export function CreateOutboundDialog({
     const [formDeliveryAddress, setFormDeliveryAddress] = useState("");
     const [formRequiredDate, setFormRequiredDate] = useState("");
     const [formVehicleInfo, setFormVehicleInfo] = useState("");
+    const [formFleetVehicleId, setFormFleetVehicleId] = useState("");
 
     // Data resources
     const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+    const [fleetVehicles, setFleetVehicles] = useState<FleetVehicle[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
@@ -292,9 +298,23 @@ export function CreateOutboundDialog({
         setFormDeliveryAddress("");
         setFormRequiredDate("");
         setFormVehicleInfo("");
+        setFormFleetVehicleId("");
         setPartnerSearch("");
         setPartnerPopoverOpen(false);
+        setFleetVehicles([]);
     }, []);
+
+    // Load fleet vehicles when warehouse changes
+    useEffect(() => {
+        if (!formWarehouse) {
+            setFleetVehicles([]);
+            setFormFleetVehicleId("");
+            return;
+        }
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        void fleetService.listAvailable(token, formWarehouse).then(setFleetVehicles).catch(() => setFleetVehicles([]));
+    }, [formWarehouse]);
 
     // Xóa đối tác đã chọn khi thay đổi loại người nhận
     useEffect(() => {
@@ -403,17 +423,18 @@ export function CreateOutboundDialog({
 
         setIsSubmitting(true);
         try {
-            const payload: CreateOutboundPayload = {
+            const payload: CreateOutboundPayload & { fleet_vehicle_id?: string } = {
                 warehouse_id: formWarehouse,
                 partner_id: formPartner || undefined,
                 sales_order_code: formSOCode || undefined,
-                notes: !formPartner && partnerSearch.trim() 
+                notes: !formPartner && partnerSearch.trim()
                     ? `[Người nhận: ${partnerSearch.trim()}] ${formNotes}`.trim()
                     : formNotes || undefined,
                 delivery_address: formDeliveryAddress || undefined,
                 vehicle_info: formVehicleInfo || undefined,
                 required_date: formRequiredDate || undefined,
                 picking_strategy: formStrategy !== "MANUAL" ? formStrategy : undefined,
+                fleet_vehicle_id: formFleetVehicleId || undefined,
                 details: formItems.map((item) => {
                     const detail: OutboundDetailPayload = {
                         product_id: item.product.id,
@@ -632,6 +653,31 @@ export function CreateOutboundDialog({
                                     />
                                 </div>
                             </div>
+
+                            {/* Row: Xe đội nội bộ */}
+                            {formWarehouse && (
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <TruckIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                        Xe đội vận chuyển (tùy chọn)
+                                    </Label>
+                                    <Select value={formFleetVehicleId} onValueChange={setFormFleetVehicleId}>
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder={fleetVehicles.length === 0 ? "Không có xe sẵn sàng" : "Chọn xe từ đội"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">-- Không chọn / Chọn sau --</SelectItem>
+                                            {fleetVehicles.map((v) => (
+                                                <SelectItem key={v.id} value={v.id}>
+                                                    <span className="font-medium">{v.name}</span>
+                                                    <span className="text-muted-foreground ml-2 text-xs font-mono">{v.license_plate}</span>
+                                                    <span className="text-muted-foreground ml-2 text-xs">— {FLEET_VEHICLE_TYPE_LABELS[v.vehicle_type]} · {Number(v.max_weight_kg)}kg</span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
 
                             {/* Row 3: Mã SO — Ghi chú */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
