@@ -41,6 +41,8 @@ const STATUS_TABS: { key: TabStatus; label: string }[] = [
 interface WarehouseOption {
     id: string;
     name: string;
+    organization_id: string;
+    organization?: { name: string };
 }
 
 interface FleetFormState {
@@ -242,7 +244,9 @@ export default function FleetPage() {
                     >
                         <option value="">Tất cả kho</option>
                         {warehouses.map((w) => (
-                            <option key={w.id} value={w.id}>{w.name}</option>
+                            <option key={w.id} value={w.id}>
+                                {w.name}{w.organization?.name ? ` — ${w.organization.name}` : ""}
+                            </option>
                         ))}
                     </select>
                     <button
@@ -382,7 +386,9 @@ export default function FleetPage() {
                                     >
                                         <option value="">-- Chọn kho --</option>
                                         {warehouses.map((w) => (
-                                            <option key={w.id} value={w.id}>{w.name}</option>
+                                            <option key={w.id} value={w.id}>
+                                                {w.name}{w.organization?.name ? ` — ${w.organization.name}` : ""}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>

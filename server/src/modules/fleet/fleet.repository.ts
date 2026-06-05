@@ -64,11 +64,15 @@ export class FleetRepository {
   }
 
   async findAllWarehouses() {
-    // Lấy danh sách tất cả warehouse có trong DB (dùng cho admin)
     return this.prisma.warehouse.findMany({
       where: { is_deleted: false, is_active: true },
-      select: { id: true, name: true, organization_id: true },
-      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        organization_id: true,
+        organization: { select: { name: true } },
+      },
+      orderBy: [{ name: 'asc' }, { organization_id: 'asc' }],
     });
   }
 
