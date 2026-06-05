@@ -162,7 +162,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
     const vehicleId = result?.fleet_vehicle_id;
     const vehicleInfo = result?.vehicle ?? result?.fleet_vehicle;
     const isAi = result?.algorithm_used?.includes("+ai");
-    const exportSummary: ExportSummary[] = (viewMode === "vehicle" && vehicleResult?.layout_json?.export_summary) ?? [];
+    const exportSummary: ExportSummary[] = viewMode === "vehicle" ? (vehicleResult?.layout_json?.export_summary ?? []) : [];
 
     return (
         <div className="border rounded-2xl overflow-hidden bg-card">
