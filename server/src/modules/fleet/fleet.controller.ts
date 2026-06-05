@@ -58,7 +58,7 @@ export class FleetController {
   @Get('available')
   @ApiOperation({ summary: 'Danh sách xe sẵn sàng (AVAILABLE)' })
   @ApiQuery({ name: 'warehouse_id', required: true })
-  listAvailable(@Query('warehouse_id') warehouseId: string) {
+  listAvailable(@Query('warehouse_id', new ParseUUIDPipe({ optional: false })) warehouseId: string) {
     return this.service.findAvailable(warehouseId);
   }
 
