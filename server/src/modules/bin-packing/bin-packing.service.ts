@@ -13,6 +13,17 @@ import {
 } from './engines/extreme-point.engine';
 import { BinPackingAiService } from './bin-packing-ai.service';
 
+function deriveStackable(
+  packagingMethod: string,
+  isStackable: boolean,
+): boolean {
+  if (!isStackable) return false;
+  if (['FRAGILE', 'LIQUID', 'NON_STACKABLE'].includes(packagingMethod))
+    return false;
+  if (packagingMethod === 'STACKABLE') return true;
+  return isStackable;
+}
+
 @Injectable()
 export class BinPackingService {
   private readonly logger = new Logger(BinPackingService.name);
@@ -37,6 +48,12 @@ export class BinPackingService {
 
     const packItems: PackItem[] = exportRecord.details.map((detail) => {
       const p = detail.product;
+      const method = p.packaging_method ?? 'STANDARD';
+      if (!p.length || !p.width || !p.height) {
+        this.logger.warn(
+          `Product ${p.id} "${p.name}" thiếu kích thước — dùng mặc định 30×30×30cm`,
+        );
+      }
       return {
         id: detail.id,
         product_id: p.id,
@@ -45,9 +62,9 @@ export class BinPackingService {
         height: p.height ? Number(p.height) : 30,
         weight: p.weight ? Number(p.weight) : 1,
         quantity: Math.ceil(Number(detail.quantity)),
-        stackable: p.is_stackable ?? true,
+        stackable: deriveStackable(method, p.is_stackable ?? true),
         stack_limit: p.stack_limit ?? undefined,
-        packaging_method: p.packaging_method ?? 'STANDARD',
+        packaging_method: method,
       };
     });
 
@@ -280,6 +297,12 @@ export class BinPackingService {
     for (const exp of exports) {
       for (const detail of exp.details) {
         const p = detail.product;
+        const method = p.packaging_method ?? 'STANDARD';
+        if (!p.length || !p.width || !p.height) {
+          this.logger.warn(
+            `Product ${p.id} "${p.name}" thiếu kích thước — dùng mặc định 30×30×30cm`,
+          );
+        }
         allItems.push({
           id: detail.id,
           product_id: p.id,
@@ -288,8 +311,8 @@ export class BinPackingService {
           height: p.height ? Number(p.height) : 30,
           weight: p.weight ? Number(p.weight) : 1,
           quantity: Math.ceil(Number(detail.quantity)),
-          stackable: p.is_stackable ?? true,
-          packaging_method: p.packaging_method ?? 'STANDARD',
+          stackable: deriveStackable(method, p.is_stackable ?? true),
+          packaging_method: method,
           export_id: exp.id,
           export_code: exp.code,
         });

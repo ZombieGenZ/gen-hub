@@ -20,10 +20,28 @@ function getProductColor(productId: string, colorMap: Map<string, string>): stri
     return colorMap.get(productId)!;
 }
 
+// ── Packaging method visual config ─────────────────────────────────────────
+const PACKAGING_EDGE_COLORS: Record<string, string> = {
+    FRAGILE:       "#EF4444",
+    LIQUID:        "#3B82F6",
+    OVERSIZED:     "#F59E0B",
+    NON_STACKABLE: "#8B5CF6",
+    STACKABLE:     "#10B981",
+    STANDARD:      "#1E293B",
+};
+
+const PACKAGING_LABELS: Record<string, string> = {
+    FRAGILE:       "Dễ vỡ",
+    LIQUID:        "Chất lỏng",
+    OVERSIZED:     "Cồng kềnh",
+    NON_STACKABLE: "Không xếp chồng",
+    STACKABLE:     "Xếp chồng được",
+    STANDARD:      "Tiêu chuẩn",
+};
+
 // ── Hover info types ───────────────────────────────────────────────────────
 interface HoverInfo {
     kind: "item" | "container";
-    // item fields
     productName?: string;
     productId?: string;
     color?: string;
@@ -31,9 +49,12 @@ interface HoverInfo {
     dimL?: number; dimW?: number; dimH?: number;
     posX?: number; posY?: number; posZ?: number;
     rotation?: number;
-    // container fields
+    packagingMethod?: string;
+    stackable?: boolean;
+    exportCode?: string;
+    exportId?: string;
+    isCurrentExport?: boolean;
     cL?: number; cW?: number; cH?: number;
-    // screen position
     screenX: number;
     screenY: number;
 }
@@ -45,10 +66,13 @@ interface CargoItemProps {
     containerScale: number;
     opacity: number;
     productName: string;
+    packagingMethod: string;
+    exportCode?: string;
+    isCurrentExport?: boolean;
     onHover: (info: React.SetStateAction<HoverInfo | null>) => void;
 }
 
-function CargoItem({ item, color, containerScale, opacity, productName, onHover }: CargoItemProps) {
+function CargoItem({ item, color, containerScale, opacity, productName, packagingMethod, exportCode, isCurrentExport, onHover }: CargoItemProps) {
     const s = containerScale;
     const x = (item.x + item.placed_length / 2) * s;
     const y = (item.z + item.placed_height / 2) * s;
@@ -60,7 +84,9 @@ function CargoItem({ item, color, containerScale, opacity, productName, onHover 
     const meshRef = useRef<THREE.Mesh>(null);
     const [hovered, setHovered] = useState(false);
 
-    // Smooth emissive glow on hover
+    const edgeColor = PACKAGING_EDGE_COLORS[packagingMethod] ?? PACKAGING_EDGE_COLORS.STANDARD;
+    const isSpecial = packagingMethod !== "STANDARD";
+
     useFrame(() => {
         if (!meshRef.current) return;
         const mat = meshRef.current.material as THREE.MeshStandardMaterial;
@@ -85,10 +111,15 @@ function CargoItem({ item, color, containerScale, opacity, productName, onHover 
             posY: Math.round(item.y),
             posZ: Math.round(item.z),
             rotation: item.rotation,
+            packagingMethod,
+            stackable: item.stackable,
+            exportCode,
+            exportId: item.export_id,
+            isCurrentExport,
             screenX: e.nativeEvent.clientX,
             screenY: e.nativeEvent.clientY,
         });
-    }, [item, productName, color, onHover]);
+    }, [item, productName, color, packagingMethod, exportCode, isCurrentExport, onHover]);
 
     const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
         onHover((prev) => prev ? { ...prev, screenX: e.nativeEvent.clientX, screenY: e.nativeEvent.clientY } : null);
@@ -119,10 +150,14 @@ function CargoItem({ item, color, containerScale, opacity, productName, onHover 
                     metalness={0.15}
                 />
             </mesh>
-            {/* Wireframe edges — brighter when hovered */}
+            {/* Wireframe edges — colored by packaging method */}
             <lineSegments>
                 <edgesGeometry args={[new THREE.BoxGeometry(w, h, d)]} />
-                <lineBasicMaterial color={hovered ? "#ffffff" : "#000000"} opacity={hovered ? 0.8 : 0.25} transparent />
+                <lineBasicMaterial
+                    color={hovered ? "#ffffff" : edgeColor}
+                    opacity={hovered ? 0.9 : (isSpecial ? 0.7 : 0.25)}
+                    transparent
+                />
             </lineSegments>
         </group>
     );
@@ -148,7 +183,6 @@ function ContainerBox({ length, width, height, containerScale, onHover }: Contai
                 <edgesGeometry args={[new THREE.BoxGeometry(w, h, d)]} />
                 <lineBasicMaterial color={hovered ? "#0ea5e9" : "#64748B"} opacity={hovered ? 1 : 0.8} transparent linewidth={2} />
             </lineSegments>
-            {/* Invisible mesh for hover detection */}
             <mesh
                 onPointerOver={(e) => {
                     e.stopPropagation();
@@ -183,8 +217,8 @@ function ContainerBox({ length, width, height, containerScale, onHover }: Contai
 }
 
 // ── Hover Tooltip (DOM overlay) ────────────────────────────────────────────
-const TOOLTIP_W_ITEM = 248;
-const TOOLTIP_H_ITEM = 210;
+const TOOLTIP_W_ITEM = 272;
+const TOOLTIP_H_ITEM = 280;
 const TOOLTIP_W_CTR  = 208;
 const TOOLTIP_H_CTR  = 148;
 const CURSOR_OFFSET   = 14;
@@ -199,17 +233,14 @@ function useTooltipPos(
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return { left: screenX + CURSOR_OFFSET, top: screenY + CURSOR_OFFSET };
 
-    // cursor relative to canvas
     const cx = screenX - rect.left;
     const cy = screenY - rect.top;
 
-    // Choose horizontal side: prefer right, flip left if not enough room
     const canRight = cx + CURSOR_OFFSET + tooltipW <= rect.width - 4;
     const left = canRight
         ? cx + CURSOR_OFFSET
         : Math.max(4, cx - CURSOR_OFFSET - tooltipW);
 
-    // Choose vertical: prefer below cursor, flip above if not enough room
     const canDown = cy + CURSOR_OFFSET + tooltipH <= rect.height - 4;
     const top = canDown
         ? cy + CURSOR_OFFSET
@@ -233,11 +264,7 @@ function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: R
     if (info.kind === "container") {
         const vol = ((info.cL! * info.cW! * info.cH!) / 1_000_000).toFixed(3);
         return (
-            <div
-                className={`${baseClass} z-50 p-4`}
-                style={{ left, top, width: TOOLTIP_W_CTR }}
-            >
-                {/* Header */}
+            <div className={`${baseClass} z-50 p-4`} style={{ left, top, width: TOOLTIP_W_CTR }}>
                 <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-slate-700">
                     <div className="w-7 h-7 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
                         <svg className="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,7 +276,6 @@ function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: R
                         <p className="text-[10px] text-slate-500 mt-0.5">Thùng chứa hàng</p>
                     </div>
                 </div>
-                {/* Dims */}
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                     <DimBox label="Dài" value={info.cL!} />
                     <DimBox label="Rộng" value={info.cW!} />
@@ -263,52 +289,103 @@ function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: R
         );
     }
 
-    // Item tooltip
     const vol = ((info.dimL! * info.dimW! * info.dimH!) / 1_000_000).toFixed(4);
+    const volLiters = ((info.dimL! * info.dimW! * info.dimH!) / 1000).toFixed(1);
     const rotLabel = ROTATION_LABELS[info.rotation ?? 0] ?? "—";
+    const pkgMethod = info.packagingMethod ?? "STANDARD";
+    const pkgLabel = PACKAGING_LABELS[pkgMethod] ?? pkgMethod;
+    const pkgEdgeColor = PACKAGING_EDGE_COLORS[pkgMethod] ?? PACKAGING_EDGE_COLORS.STANDARD;
+    const isOther = info.isCurrentExport === false;
 
     return (
-        <div
-            className={`${baseClass} z-50 p-4`}
-            style={{ left, top, width: TOOLTIP_W_ITEM }}
-        >
-            {/* Header: color swatch + product name */}
-            <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-700">
-                <div
-                    className="w-8 h-8 rounded-lg shrink-0 shadow-inner"
-                    style={{ backgroundColor: info.color, opacity: 0.9 }}
-                />
-                <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-white truncate leading-tight">{info.productName}</p>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{info.itemId?.slice(0, 12)}…</p>
+        <div className={`${baseClass} z-50 overflow-hidden`} style={{ left, top, width: TOOLTIP_W_ITEM }}>
+            {/* Export order badge (only in multi-order mode) */}
+            {info.exportCode && (
+                <div className={`px-3 pt-2.5 pb-2 flex items-center gap-2 border-b border-slate-700/60 ${
+                    isOther ? "bg-slate-700/40" : "bg-violet-600/20"
+                }`}>
+                    <svg className="w-3 h-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className={`text-[11px] font-mono font-bold ${isOther ? "text-slate-400" : "text-violet-300"}`}>
+                        {info.exportCode}
+                    </span>
+                    {!isOther && (
+                        <span className="ml-auto text-[9px] bg-violet-500/30 text-violet-300 px-1.5 py-0.5 rounded-full font-medium">
+                            Đơn này
+                        </span>
+                    )}
+                    {isOther && (
+                        <span className="ml-auto text-[9px] bg-slate-500/30 text-slate-400 px-1.5 py-0.5 rounded-full">
+                            Đơn khác
+                        </span>
+                    )}
                 </div>
-            </div>
+            )}
 
-            {/* Dimensions row */}
-            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Kích thước đặt</p>
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-                <DimBox label="Dài" value={info.dimL!} />
-                <DimBox label="Rộng" value={info.dimW!} />
-                <DimBox label="Cao" value={info.dimH!} />
-            </div>
-
-            {/* Position row */}
-            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Góc đặt trong xe</p>
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-                <DimBox label="X" value={info.posX!} unit="" accent="blue" />
-                <DimBox label="Y" value={info.posY!} unit="" accent="blue" />
-                <DimBox label="Z (tầng)" value={info.posZ!} unit="" accent="blue" />
-            </div>
-
-            {/* Stats */}
-            <div className="space-y-1.5 bg-slate-800/60 rounded-xl px-2.5 py-2">
-                <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400">Thể tích</span>
-                    <span className="text-[11px] font-mono font-bold text-emerald-400">{vol} m³</span>
+            <div className="p-3.5 space-y-3">
+                {/* Product header */}
+                <div className="flex items-center gap-2.5">
+                    <div
+                        className="w-8 h-8 rounded-lg shrink-0 shadow-inner ring-1 ring-white/10"
+                        style={{ backgroundColor: info.color, opacity: isOther ? 0.5 : 0.9 }}
+                    />
+                    <div className="min-w-0">
+                        <p className={`text-[12px] font-bold truncate leading-tight ${isOther ? "text-slate-400" : "text-white"}`}>
+                            {info.productName}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{info.itemId?.slice(0, 16)}…</p>
+                    </div>
                 </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400">Hướng xếp</span>
-                    <span className="text-[10px] text-amber-300 font-medium">{rotLabel}</span>
+
+                {/* Packaging method row */}
+                <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-2.5 py-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: pkgEdgeColor }} />
+                    <span className="text-[11px] font-semibold flex-1" style={{ color: pkgEdgeColor }}>{pkgLabel}</span>
+                    {info.stackable === false && (
+                        <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-medium">
+                            Không xếp chồng
+                        </span>
+                    )}
+                    {info.stackable === true && pkgMethod !== "STANDARD" && (
+                        <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-medium">
+                            Xếp được
+                        </span>
+                    )}
+                </div>
+
+                {/* Dimensions */}
+                <div>
+                    <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Kích thước đặt (cm)</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                        <DimBox label="Dài" value={info.dimL!} />
+                        <DimBox label="Rộng" value={info.dimW!} />
+                        <DimBox label="Cao" value={info.dimH!} />
+                    </div>
+                </div>
+
+                {/* Position in container */}
+                <div>
+                    <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Vị trí trong xe (cm)</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                        <DimBox label="X" value={info.posX!} unit="" accent="blue" />
+                        <DimBox label="Y" value={info.posY!} unit="" accent="blue" />
+                        <DimBox label="Z ↑" value={info.posZ!} unit="" accent="blue" />
+                    </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-1.5 bg-slate-800/60 rounded-xl px-2.5 py-2">
+                    <div>
+                        <p className="text-[9px] text-slate-500 mb-0.5">Thể tích</p>
+                        <p className="text-[11px] font-mono font-bold text-emerald-400">
+                            {volLiters} <span className="text-[9px] font-normal text-slate-500">lít</span>
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-[9px] text-slate-500 mb-0.5">Hướng xếp</p>
+                        <p className="text-[10px] text-amber-300 font-medium leading-tight">{rotLabel}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -344,7 +421,6 @@ export interface BinPackingViewerProps {
     className?: string;
 }
 
-// Export-level color palette (khi multi-order mode)
 const EXPORT_COLORS = [
     "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
     "#EC4899", "#14B8A6", "#F97316", "#06B6D4",
@@ -353,14 +429,13 @@ const EXPORT_COLORS = [
 export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed, currentExportId, className = "" }: BinPackingViewerProps) {
     const { container, placed } = layoutJson;
     const isAiOptimized = algorithmUsed?.includes("+ai") ?? false;
-    // Multi-order mode: khi các items có export_id
     const isMultiOrder = placed.some((p) => p.export_id);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const maxDim = Math.max(container.length, container.width, container.height);
     const containerScale = 4 / maxDim;
 
-    // Export color map — scoped to current placed[] to avoid cross-vehicle pollution
+    // Export color map — scoped to current placed[]
     const exportColorMap = useMemo(() => {
         const map = new Map<string, string>();
         placed.forEach((item) => {
@@ -371,7 +446,7 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
         return map;
     }, [placed]);
 
-    // Color logic: multi-order → color by export, single → color by product
+    // Color by product (single-order mode)
     const colorMap = useMemo(() => {
         const map = new Map<string, string>();
         if (!isMultiOrder) {
@@ -380,9 +455,18 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
         return map;
     }, [placed, isMultiOrder]);
 
+    // Collect packaging methods present (exclude STANDARD for legend brevity)
+    const packagingMethodsPresent = useMemo(() => {
+        const set = new Set<string>();
+        placed.forEach((item) => {
+            const m = item.packaging_method ?? "STANDARD";
+            set.add(m);
+        });
+        return set;
+    }, [placed]);
+
     const maxZ = placed.length > 0 ? Math.max(...placed.map((p) => p.z)) : 1;
 
-    // Legend: multi-order → per export, single → per product
     const legendEntries = isMultiOrder
         ? Array.from(exportColorMap.entries()).map(([exportId, color]) => {
             const summary = layoutJson.export_summary?.find((s) => s.export_id === exportId);
@@ -401,11 +485,8 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
           }));
 
     const camDist = 4 * 2.5;
-
-    // Shared hover state — lifted out of Canvas so DOM overlay can read it
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
 
-    // Stable callback so child components don't re-render on every mouse move
     const handleHover = useCallback((info: React.SetStateAction<HoverInfo | null>) => {
         setHoverInfo(info);
     }, []);
@@ -430,24 +511,26 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                     />
 
                     {placed.map((item, idx) => {
-                        // Multi-order: màu theo đơn hàng; single: màu theo sản phẩm
                         const baseColor = isMultiOrder && item.export_id
                             ? (exportColorMap.get(item.export_id) ?? "#94A3B8")
                             : (colorMap.get(item.product_id) ?? "#94A3B8");
 
-                        // Highlight logic
-                        const isOtherExport = isMultiOrder && currentExportId && item.export_id !== currentExportId;
+                        // When currentExportId is set: highlight that export, gray out all others
+                        const isOtherExport = isMultiOrder && !!currentExportId && item.export_id !== currentExportId;
+                        const isCurrentExp = !isOtherExport;
+
                         const color = isOtherExport ? "#94A3B8" : baseColor;
 
                         const layerRatio = maxZ > 0 ? item.z / maxZ : 0;
                         const baseOpacity = isAiOptimized
                             ? Math.max(0.60, 0.92 - layerRatio * 0.25)
                             : 0.85;
-                        const opacity = isOtherExport ? 0.25 : baseOpacity;
+                        const opacity = isOtherExport ? 0.22 : baseOpacity;
 
-                        const label = isMultiOrder && item.export_code
-                            ? `${item.export_code} — ${productNames[item.product_id] || item.product_id.slice(0, 8)}`
-                            : (productNames[item.product_id] || item.product_id.slice(0, 8));
+                        // productName in tooltip — only product name, export code separate
+                        const label = productNames[item.product_id] || item.product_id.slice(0, 8);
+
+                        const packagingMethod = item.packaging_method ?? "STANDARD";
 
                         return (
                             <CargoItem
@@ -457,6 +540,9 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                                 containerScale={containerScale}
                                 opacity={opacity}
                                 productName={label}
+                                packagingMethod={packagingMethod}
+                                exportCode={item.export_code}
+                                isCurrentExport={isCurrentExp}
                                 onHover={handleHover}
                             />
                         );
@@ -501,42 +587,72 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                 </div>
             )}
 
-            {/* Legend */}
-            {legendEntries.length > 0 && (
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[210px] max-h-[240px] overflow-y-auto shadow-sm">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                        {isMultiOrder ? "Phiếu xuất" : "Sản phẩm"}
-                    </p>
-                    <div className="space-y-1.5">
-                        {legendEntries.map((entry) => (
-                            <div
-                                key={entry.key}
-                                className={`flex items-center gap-2 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors ${
-                                    entry.isCurrent && isMultiOrder
-                                        ? "bg-primary/8 ring-1 ring-primary/30"
-                                        : ""
-                                }`}
-                            >
-                                <div
-                                    className="w-3 h-3 rounded-sm shrink-0"
-                                    style={{
-                                        backgroundColor: entry.color,
-                                        opacity: (!isMultiOrder || entry.isCurrent) ? 1 : 0.35,
-                                    }}
-                                />
-                                <span className={`text-xs truncate ${
-                                    entry.isCurrent && isMultiOrder
-                                        ? "text-slate-900 font-semibold"
-                                        : "text-slate-500"
-                                }`}>
-                                    {entry.name}
-                                    {entry.isCurrent && isMultiOrder && (
-                                        <span className="ml-1 text-[9px] text-primary font-medium">(đang xem)</span>
-                                    )}
-                                </span>
+            {/* Legend panel */}
+            {(legendEntries.length > 0 || packagingMethodsPresent.size > 0) && (
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[220px] max-h-[320px] overflow-y-auto shadow-sm">
+                    {/* Product / Export legend */}
+                    {legendEntries.length > 0 && (
+                        <>
+                            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                                {isMultiOrder ? "Phiếu xuất" : "Sản phẩm"}
+                            </p>
+                            <div className="space-y-1.5">
+                                {legendEntries.map((entry) => (
+                                    <div
+                                        key={entry.key}
+                                        className={`flex items-center gap-2 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors ${
+                                            entry.isCurrent && isMultiOrder
+                                                ? "bg-primary/8 ring-1 ring-primary/30"
+                                                : ""
+                                        }`}
+                                    >
+                                        <div
+                                            className="w-3 h-3 rounded-sm shrink-0"
+                                            style={{
+                                                backgroundColor: entry.color,
+                                                opacity: (!isMultiOrder || entry.isCurrent) ? 1 : 0.35,
+                                            }}
+                                        />
+                                        <span className={`text-xs truncate ${
+                                            entry.isCurrent && isMultiOrder
+                                                ? "text-slate-900 font-semibold"
+                                                : "text-slate-500"
+                                        }`}>
+                                            {entry.name}
+                                            {entry.isCurrent && isMultiOrder && (
+                                                <span className="ml-1 text-[9px] text-primary font-medium">(đang xem)</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    )}
+
+                    {/* Packaging method legend */}
+                    {packagingMethodsPresent.size > 0 && (
+                        <div className={legendEntries.length > 0 ? "mt-2.5 pt-2.5 border-t" : ""}>
+                            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Cách đóng gói</p>
+                            <div className="space-y-1.5">
+                                {Array.from(packagingMethodsPresent).map((method) => (
+                                    <div key={method} className="flex items-center gap-2">
+                                        <div
+                                            className="w-3 h-3 rounded-sm shrink-0 border"
+                                            style={{
+                                                borderColor: PACKAGING_EDGE_COLORS[method] ?? "#1E293B",
+                                                backgroundColor: `${PACKAGING_EDGE_COLORS[method] ?? "#1E293B"}22`,
+                                            }}
+                                        />
+                                        <span className="text-[11px] text-slate-600">
+                                            {PACKAGING_LABELS[method] ?? method}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* AI layer hint */}
                     {isAiOptimized && (
                         <div className="mt-2 pt-2 border-t">
                             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -560,7 +676,7 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                 </div>
             )}
 
-            {/* Interaction hint — ẩn khi đang hover để không che tooltip */}
+            {/* Interaction hint */}
             {!hoverInfo && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none">
                     Hover để xem chi tiết · Kéo để xoay · Cuộn để zoom

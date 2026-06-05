@@ -56,7 +56,6 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
 
             if (existingResult.status === "fulfilled") {
                 setResult(existingResult.value);
-                // Tự động load vehicle result nếu đã có xe
                 const vehicleId = existingResult.value.fleet_vehicle_id;
                 if (vehicleId) {
                     binPackingService.getByVehicleId(token, vehicleId)
@@ -90,7 +89,6 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                 fleet_vehicle_id: selectedVehicleId || undefined,
             });
             setResult(res);
-            // Sau khi compute xong, load vehicle result
             const vehicleId = res.fleet_vehicle_id ?? res.vehicle?.id;
             if (vehicleId) {
                 binPackingService.getByVehicleId(token, vehicleId)
@@ -119,7 +117,6 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
         setComputingVehicle(true);
         setError(null);
         try {
-            // Lấy tất cả export_ids đã gắn với xe này (bao gồm đơn hiện tại)
             const otherExportIds = vehicleResult?.export_ids ?? [];
             const allExportIds = Array.from(new Set([...otherExportIds, exportId]));
 
@@ -154,15 +151,33 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
         }
     };
 
-    // Active layout & data based on view mode
+    // ── View mode & data derivation ───────────────────────────────────────────
+
+    // Stats & info are controlled by view mode toggle
     const activeResult = viewMode === "vehicle" ? vehicleResult : result;
     const layoutJson = activeResult?.layout_json as LayoutJson | undefined;
     const utilization = activeResult ? Number(activeResult.space_utilization).toFixed(1) : null;
     const totalWeight = activeResult ? Number(activeResult.total_weight_kg).toFixed(1) : null;
-    const vehicleId = result?.fleet_vehicle_id;
     const vehicleInfo = result?.vehicle ?? result?.fleet_vehicle;
     const isAi = activeResult?.algorithm_used?.includes("+ai");
-    const exportSummary: ExportSummary[] = viewMode === "vehicle" ? (vehicleResult?.layout_json?.export_summary ?? []) : [];
+    const exportSummary: ExportSummary[] = viewMode === "vehicle"
+        ? (vehicleResult?.layout_json?.export_summary ?? [])
+        : [];
+
+    // 3D viewer ALWAYS shows the vehicle layout when available + the current export is included
+    // This gives full truck context: current export highlighted, others grayed
+    const vehicleIncludesCurrentExport = vehicleResult?.export_ids?.includes(exportId) ?? false;
+    const viewerLayoutJson: LayoutJson | undefined =
+        vehicleResult && vehicleIncludesCurrentExport
+            ? (vehicleResult.layout_json as LayoutJson)
+            : (result?.layout_json as LayoutJson | undefined);
+    const viewerCurrentExportId =
+        vehicleResult && vehicleIncludesCurrentExport ? exportId : undefined;
+
+    // Number of other exports on the same vehicle (excluding current)
+    const otherExportCount = vehicleResult && vehicleIncludesCurrentExport
+        ? (vehicleResult.export_ids.length - 1)
+        : 0;
 
     return (
         <div className="border rounded-2xl overflow-hidden bg-card">
@@ -257,7 +272,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                 {/* Result section */}
                 {result && layoutJson && (
                     <>
-                        {/* View mode toggle */}
+                        {/* View mode toggle — controls stats, NOT the 3D view */}
                         <div className="flex items-center gap-2 bg-muted/30 rounded-xl p-1 w-fit">
                             <button
                                 onClick={() => setViewMode("single")}
@@ -382,13 +397,26 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                             </button>
                         )}
 
-                        {/* 3D Viewer */}
+                        {/* 3D viewer context banner */}
+                        {otherExportCount > 0 && (
+                            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-800">
+                                <svg className="w-3.5 h-3.5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>
+                                    Mô hình 3D hiển thị toàn bộ {vehicleResult!.export_ids.length} phiếu xuất trên xe.
+                                    {" "}<span className="font-semibold text-amber-900">Màu = đơn này</span> · Xám = {otherExportCount} phiếu khác.
+                                </span>
+                            </div>
+                        )}
+
+                        {/* 3D Viewer — always shows vehicle layout if available */}
                         <div className="rounded-xl overflow-hidden border">
                             <BinPackingViewer
-                                layoutJson={layoutJson}
+                                layoutJson={viewerLayoutJson!}
                                 productNames={productNames}
-                                algorithmUsed={result.algorithm_used}
-                                currentExportId={viewMode === "vehicle" ? exportId : undefined}
+                                algorithmUsed={activeResult?.algorithm_used}
+                                currentExportId={viewerCurrentExportId}
                                 className="h-96 w-full"
                             />
                         </div>

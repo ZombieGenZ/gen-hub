@@ -78,6 +78,9 @@ export function ProductEditDialog({
     const [width, setWidth] = useState("");
     const [height, setHeight] = useState("");
     const [maxWeightCapacity, setMaxWeightCapacity] = useState("");
+    const [packagingMethod, setPackagingMethod] = useState("STANDARD");
+    const [isStackable, setIsStackable] = useState(true);
+    const [stackLimit, setStackLimit] = useState("");
     const [isActive, setIsActive] = useState(true);
 
     // ── Unit conversions ──
@@ -150,6 +153,14 @@ export function ProductEditDialog({
                 : ""
         );
 
+        setPackagingMethod((product as any).packaging_method ?? "STANDARD");
+        setIsStackable((product as any).is_stackable !== false);
+        setStackLimit(
+            (product as any).stack_limit != null
+                ? String((product as any).stack_limit)
+                : ""
+        );
+
         // Unit conversions (exclude base unit row)
         if (product.units && product.units.length > 0) {
             setUnitRows(
@@ -209,6 +220,10 @@ export function ProductEditDialog({
                     ? Number(maxWeightCapacity)
                     : undefined,
             };
+
+            (payload as any).packaging_method = packagingMethod;
+            (payload as any).is_stackable = isStackable;
+            if (stackLimit) (payload as any).stack_limit = Number(stackLimit);
 
             if (unitRows.length > 0) {
                 payload.units = unitRows.map((r) => ({
@@ -495,6 +510,57 @@ export function ProductEditDialog({
                                         }
                                         className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                     />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* ── Packaging & Stacking ── */}
+                        <Card className="shadow-sm rounded-2xl border border-slate-100">
+                            <CardContent className="p-5 space-y-4">
+                                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                                    <Package className="w-4 h-4 text-[#0F766E]" />
+                                    Đóng gói & Xếp chồng
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit-packagingMethod">Cách đóng gói</Label>
+                                        <Select value={packagingMethod} onValueChange={setPackagingMethod}>
+                                            <SelectTrigger id="edit-packagingMethod" className="bg-slate-50 border-slate-200 rounded-xl">
+                                                <SelectValue placeholder="Chọn cách đóng gói" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="STANDARD">Tiêu chuẩn</SelectItem>
+                                                <SelectItem value="FRAGILE">Hàng dễ vỡ</SelectItem>
+                                                <SelectItem value="STACKABLE">Có thể xếp chồng</SelectItem>
+                                                <SelectItem value="NON_STACKABLE">Không xếp chồng</SelectItem>
+                                                <SelectItem value="LIQUID">Chất lỏng</SelectItem>
+                                                <SelectItem value="OVERSIZED">Hàng cồng kềnh</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit-stackLimit">Giới hạn chồng (tầng)</Label>
+                                        <Input
+                                            id="edit-stackLimit"
+                                            type="number"
+                                            min={1}
+                                            placeholder="Để trống = không giới hạn"
+                                            value={stackLimit}
+                                            onChange={(e) => setStackLimit(e.target.value)}
+                                            disabled={!isStackable}
+                                            className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <Switch
+                                        id="edit-isStackable"
+                                        checked={isStackable}
+                                        onCheckedChange={setIsStackable}
+                                    />
+                                    <Label htmlFor="edit-isStackable" className="cursor-pointer text-sm">
+                                        Có thể xếp chồng lên hàng khác
+                                    </Label>
                                 </div>
                             </CardContent>
                         </Card>

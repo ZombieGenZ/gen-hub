@@ -33,6 +33,8 @@ export interface PlacedItem {
   placed_width: number;
   placed_height: number;
   rotation: number; // 0=LWH, 1=WLH, 2=LHW
+  packaging_method: string;
+  stackable: boolean;
 }
 
 export interface PackResult {
@@ -195,21 +197,26 @@ export function runExtremePointPacking(
       if (blocked) continue;
 
       for (let oriIdx = 0; oriIdx < ORIENTATIONS.length; oriIdx++) {
+        // LIQUID must stay upright — forbid rotation 2 (L×H×W = laid flat)
+        if (item.packaging_method === 'LIQUID' && oriIdx === 2) continue;
+
         const [pl, pw, ph] = ORIENTATIONS[oriIdx](
           item.length,
           item.width,
           item.height,
         );
 
-        // Non-stackable items must sit on floor or on non-stackable top
-        if (!item.stackable && ep.z !== 0) {
-          // Check if all items below are stackable (allow non-stackable on top if stacking ok below)
-          const hasNonStackableBelow = placed.some(
-            (p) =>
-              p.z + p.placed_height === ep.z &&
-              !items.find((i) => i.id === p.item_id)?.stackable,
-          );
-          if (hasNonStackableBelow) continue;
+        // Don't place anything on top of a non-stackable placed item
+        if (ep.z > 0) {
+          const blockedByNonStackable = placed.some((p) => {
+            if (p.z + p.placed_height !== ep.z) return false;
+            const ox =
+              Math.min(ep.x + pl, p.x + p.placed_length) - Math.max(ep.x, p.x);
+            const oy =
+              Math.min(ep.y + pw, p.y + p.placed_width) - Math.max(ep.y, p.y);
+            return ox > 0 && oy > 0 && !p.stackable;
+          });
+          if (blockedByNonStackable) continue;
         }
 
         if (!fitsInContainer(container, ep.x, ep.y, ep.z, pl, pw, ph)) continue;
@@ -225,8 +232,9 @@ export function runExtremePointPacking(
         }
         if (hasOverlap) continue;
 
-        // Heuristic: minimize wasted corner space (prefer lower z, then smaller x+y)
-        const score = ep.z * 1000 + ep.x + ep.y;
+        // OVERSIZED items strongly prefer floor placement
+        const zPenalty = item.packaging_method === 'OVERSIZED' ? 5000 : 1000;
+        const score = ep.z * zPenalty + ep.x + ep.y;
         if (score < bestScore) {
           bestScore = score;
           bestPoint = ep;
@@ -251,6 +259,8 @@ export function runExtremePointPacking(
             r[0] === bestOri[0] && r[1] === bestOri[1] && r[2] === bestOri[2]
           );
         }),
+        packaging_method: item.packaging_method,
+        stackable: item.stackable,
       };
 
       placed.push(pi);

@@ -10,6 +10,8 @@ export interface PlacedItem {
     placed_width: number;
     placed_height: number;
     rotation: number;
+    packaging_method?: string;
+    stackable?: boolean;
     // multi-order fields (present only in VehiclePackingResult layout_json)
     export_id?: string;
     export_code?: string;
