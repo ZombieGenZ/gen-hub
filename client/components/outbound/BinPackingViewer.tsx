@@ -183,80 +183,133 @@ function ContainerBox({ length, width, height, containerScale, onHover }: Contai
 }
 
 // ── Hover Tooltip (DOM overlay) ────────────────────────────────────────────
+const TOOLTIP_W_ITEM = 248;
+const TOOLTIP_H_ITEM = 210;
+const TOOLTIP_W_CTR  = 208;
+const TOOLTIP_H_CTR  = 148;
+const CURSOR_OFFSET   = 14;
+
+function useTooltipPos(
+    screenX: number,
+    screenY: number,
+    tooltipW: number,
+    tooltipH: number,
+    containerRef: React.RefObject<HTMLDivElement | null>,
+) {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return { left: screenX + CURSOR_OFFSET, top: screenY + CURSOR_OFFSET };
+
+    // cursor relative to canvas
+    const cx = screenX - rect.left;
+    const cy = screenY - rect.top;
+
+    // Choose horizontal side: prefer right, flip left if not enough room
+    const canRight = cx + CURSOR_OFFSET + tooltipW <= rect.width - 4;
+    const left = canRight
+        ? cx + CURSOR_OFFSET
+        : Math.max(4, cx - CURSOR_OFFSET - tooltipW);
+
+    // Choose vertical: prefer below cursor, flip above if not enough room
+    const canDown = cy + CURSOR_OFFSET + tooltipH <= rect.height - 4;
+    const top = canDown
+        ? cy + CURSOR_OFFSET
+        : Math.max(4, cy - CURSOR_OFFSET - tooltipH);
+
+    return { left, top };
+}
+
 function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: React.RefObject<HTMLDivElement | null> }) {
     const ROTATION_LABELS = ["Ngang (L×W×H)", "Xoay 90° trục Z", "Xoay ngang (L×H×W)"];
+    const isItem = info.kind === "item";
+    const { left, top } = useTooltipPos(
+        info.screenX, info.screenY,
+        isItem ? TOOLTIP_W_ITEM : TOOLTIP_W_CTR,
+        isItem ? TOOLTIP_H_ITEM : TOOLTIP_H_CTR,
+        containerRef,
+    );
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    const rawX = info.screenX - (rect?.left ?? 0);
-    const rawY = info.screenY - (rect?.top ?? 0);
-    const containerW = rect?.width ?? 600;
-    const containerH = rect?.height ?? 400;
-
-    // Flip tooltip to stay within canvas bounds
-    const flipX = rawX > containerW * 0.6;
-    const flipY = rawY > containerH * 0.6;
-    const left = flipX ? rawX - 220 : rawX + 16;
-    const top  = flipY ? rawY - (info.kind === "item" ? 200 : 130) : rawY + 16;
+    const baseClass = "absolute pointer-events-none bg-slate-900/97 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-slate-700/80 select-none";
 
     if (info.kind === "container") {
         const vol = ((info.cL! * info.cW! * info.cH!) / 1_000_000).toFixed(3);
         return (
             <div
-                className="absolute z-30 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white rounded-xl shadow-2xl p-3.5 w-52 border border-slate-700"
-                style={{ left, top }}
+                className={`${baseClass} z-50 p-4`}
+                style={{ left, top, width: TOOLTIP_W_CTR }}
             >
-                <p className="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    Khoang xe
-                </p>
-                <div className="space-y-1.5 text-[11px]">
-                    <Row label="Dài" value={`${info.cL} cm`} />
-                    <Row label="Rộng" value={`${info.cW} cm`} />
-                    <Row label="Cao" value={`${info.cH} cm`} />
-                    <div className="border-t border-slate-700 my-1.5" />
-                    <Row label="Thể tích" value={`${vol} m³`} highlight />
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-slate-700">
+                    <div className="w-7 h-7 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
+                        <svg className="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-sky-400 uppercase tracking-wider leading-none">Khoang xe</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Thùng chứa hàng</p>
+                    </div>
+                </div>
+                {/* Dims */}
+                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                    <DimBox label="Dài" value={info.cL!} />
+                    <DimBox label="Rộng" value={info.cW!} />
+                    <DimBox label="Cao" value={info.cH!} />
+                </div>
+                <div className="flex justify-between items-center bg-emerald-500/10 rounded-lg px-2.5 py-1.5">
+                    <span className="text-[11px] text-slate-400">Tổng thể tích</span>
+                    <span className="text-[12px] font-bold font-mono text-emerald-400">{vol} m³</span>
                 </div>
             </div>
         );
     }
 
+    // Item tooltip
     const vol = ((info.dimL! * info.dimW! * info.dimH!) / 1_000_000).toFixed(4);
+    const rotLabel = ROTATION_LABELS[info.rotation ?? 0] ?? "—";
+
     return (
         <div
-            className="absolute z-30 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white rounded-xl shadow-2xl p-3.5 w-60 border border-slate-700"
-            style={{ left, top }}
+            className={`${baseClass} z-50 p-4`}
+            style={{ left, top, width: TOOLTIP_W_ITEM }}
         >
-            {/* Product name header */}
-            <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: info.color }} />
-                <p className="text-[12px] font-bold truncate text-white">{info.productName}</p>
+            {/* Header: color swatch + product name */}
+            <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-700">
+                <div
+                    className="w-8 h-8 rounded-lg shrink-0 shadow-inner"
+                    style={{ backgroundColor: info.color, opacity: 0.9 }}
+                />
+                <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-white truncate leading-tight">{info.productName}</p>
+                    <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{info.itemId?.slice(0, 12)}…</p>
+                </div>
             </div>
 
-            <div className="space-y-1.5 text-[11px]">
-                {/* Dimensions */}
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Kích thước</p>
-                <div className="grid grid-cols-3 gap-1">
-                    <DimBox label="Dài" value={info.dimL!} />
-                    <DimBox label="Rộng" value={info.dimW!} />
-                    <DimBox label="Cao" value={info.dimH!} />
+            {/* Dimensions row */}
+            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Kích thước đặt</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+                <DimBox label="Dài" value={info.dimL!} />
+                <DimBox label="Rộng" value={info.dimW!} />
+                <DimBox label="Cao" value={info.dimH!} />
+            </div>
+
+            {/* Position row */}
+            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Góc đặt trong xe</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+                <DimBox label="X" value={info.posX!} unit="" accent="blue" />
+                <DimBox label="Y" value={info.posY!} unit="" accent="blue" />
+                <DimBox label="Z (tầng)" value={info.posZ!} unit="" accent="blue" />
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-1.5 bg-slate-800/60 rounded-xl px-2.5 py-2">
+                <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400">Thể tích</span>
+                    <span className="text-[11px] font-mono font-bold text-emerald-400">{vol} m³</span>
                 </div>
-
-                <div className="border-t border-slate-700 my-1.5" />
-
-                {/* Position */}
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Vị trí trong xe</p>
-                <div className="grid grid-cols-3 gap-1">
-                    <DimBox label="X" value={info.posX!} unit="" />
-                    <DimBox label="Y" value={info.posY!} unit="" />
-                    <DimBox label="Z" value={info.posZ!} unit="" />
+                <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400">Hướng xếp</span>
+                    <span className="text-[10px] text-amber-300 font-medium">{rotLabel}</span>
                 </div>
-
-                <div className="border-t border-slate-700 my-1.5" />
-
-                <Row label="Thể tích" value={`${vol} m³`} highlight />
-                <Row label="Hướng xếp" value={ROTATION_LABELS[info.rotation ?? 0] ?? "—"} />
             </div>
         </div>
     );
@@ -271,11 +324,12 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
     );
 }
 
-function DimBox({ label, value, unit = " cm" }: { label: string; value: number; unit?: string }) {
+function DimBox({ label, value, unit = " cm", accent }: { label: string; value: number; unit?: string; accent?: "blue" }) {
+    const valColor = accent === "blue" ? "text-sky-300" : "text-white";
     return (
-        <div className="bg-slate-800 rounded-lg px-2 py-1.5 text-center">
-            <p className="text-[9px] text-slate-500 uppercase">{label}</p>
-            <p className="font-mono font-bold text-white text-[11px]">{value}{unit}</p>
+        <div className="bg-slate-800/80 rounded-lg px-1.5 py-2 text-center">
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider leading-none mb-1">{label}</p>
+            <p className={`font-mono font-bold text-[12px] leading-none ${valColor}`}>{value}<span className="text-[9px] font-normal text-slate-500 ml-0.5">{unit}</span></p>
         </div>
     );
 }
@@ -428,10 +482,12 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                 </div>
             )}
 
-            {/* Interaction hint */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none">
-                Hover để xem chi tiết · Kéo để xoay · Cuộn để zoom
-            </div>
+            {/* Interaction hint — ẩn khi đang hover để không che tooltip */}
+            {!hoverInfo && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none">
+                    Hover để xem chi tiết · Kéo để xoay · Cuộn để zoom
+                </div>
+            )}
         </div>
     );
 }
