@@ -661,12 +661,15 @@ export function CreateOutboundDialog({
                                         <TruckIcon className="w-3.5 h-3.5 text-muted-foreground" />
                                         Xe đội vận chuyển (tùy chọn)
                                     </Label>
-                                    <Select value={formFleetVehicleId} onValueChange={setFormFleetVehicleId}>
+                                    <Select
+                                        value={formFleetVehicleId || "none"}
+                                        onValueChange={(v) => setFormFleetVehicleId(v === "none" ? "" : v)}
+                                    >
                                         <SelectTrigger className="rounded-xl">
                                             <SelectValue placeholder={fleetVehicles.length === 0 ? "Không có xe sẵn sàng" : "Chọn xe từ đội"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">-- Không chọn / Chọn sau --</SelectItem>
+                                            <SelectItem value="none">-- Không chọn / Chọn sau --</SelectItem>
                                             {fleetVehicles.map((v) => (
                                                 <SelectItem key={v.id} value={v.id}>
                                                     <span className="font-medium">{v.name}</span>
