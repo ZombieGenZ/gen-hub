@@ -45,7 +45,7 @@ interface CargoItemProps {
     containerScale: number;
     opacity: number;
     productName: string;
-    onHover: (info: HoverInfo | null) => void;
+    onHover: (info: React.SetStateAction<HoverInfo | null>) => void;
 }
 
 function CargoItem({ item, color, containerScale, opacity, productName, onHover }: CargoItemProps) {
@@ -132,7 +132,7 @@ function CargoItem({ item, color, containerScale, opacity, productName, onHover 
 interface ContainerBoxProps {
     length: number; width: number; height: number;
     containerScale: number;
-    onHover: (info: HoverInfo | null) => void;
+    onHover: (info: React.SetStateAction<HoverInfo | null>) => void;
 }
 
 function ContainerBox({ length, width, height, containerScale, onHover }: ContainerBoxProps) {
@@ -403,8 +403,8 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
 
     // Stable callback so child components don't re-render on every mouse move
-    const handleHover = useCallback((info: HoverInfo | null | ((prev: HoverInfo | null) => HoverInfo | null)) => {
-        setHoverInfo(typeof info === "function" ? info : info);
+    const handleHover = useCallback((info: React.SetStateAction<HoverInfo | null>) => {
+        setHoverInfo(info);
     }, []);
 
     return (
