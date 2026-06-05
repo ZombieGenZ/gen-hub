@@ -90,40 +90,38 @@ function ContainerBox({ length, width, height, containerScale }: ContainerBoxPro
 
 export interface BinPackingViewerProps {
     layoutJson: LayoutJson;
-    productNames?: Record<string, string>; // product_id -> name
+    productNames?: Record<string, string>;
+    algorithmUsed?: string;
     className?: string;
 }
 
-export function BinPackingViewer({ layoutJson, productNames = {}, className = "" }: BinPackingViewerProps) {
+export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed, className = "" }: BinPackingViewerProps) {
     const { container, placed } = layoutJson;
+    const isAiOptimized = algorithmUsed?.includes("+ai") ?? false;
 
-    // Scale everything so the largest dimension = 4 units in Three.js
     const maxDim = Math.max(container.length, container.width, container.height);
     const containerScale = 4 / maxDim;
 
-    // Build color map
+    // Build color map per product
     const colorMap = new Map<string, string>();
     placed.forEach((item) => getProductColor(item.product_id, colorMap));
 
-    // Build legend
+    // Compute placement order index (0 = placed first = AI high priority)
+    // Items placed at lower z (floor) were placed earlier → higher priority
+    const maxZ = placed.length > 0 ? Math.max(...placed.map((p) => p.z)) : 1;
+
     const legendEntries = Array.from(colorMap.entries()).map(([productId, color]) => ({
         productId,
         color,
         name: productNames[productId] || productId.slice(0, 8),
     }));
 
-    // Camera position: slightly above and to the side
     const camDist = 4 * 2.5;
 
     return (
         <div className={`relative ${className}`}>
             <Canvas
-                camera={{
-                    position: [camDist, camDist * 0.8, camDist],
-                    fov: 45,
-                    near: 0.01,
-                    far: 1000,
-                }}
+                camera={{ position: [camDist, camDist * 0.8, camDist], fov: 45, near: 0.01, far: 1000 }}
                 style={{ background: "#F8FAFC" }}
             >
                 <ambientLight intensity={0.7} />
@@ -131,7 +129,6 @@ export function BinPackingViewer({ layoutJson, productNames = {}, className = ""
                 <directionalLight position={[-5, 5, -5]} intensity={0.4} />
 
                 <Suspense fallback={null}>
-                    {/* Container wireframe */}
                     <ContainerBox
                         length={container.length}
                         width={container.width}
@@ -139,27 +136,28 @@ export function BinPackingViewer({ layoutJson, productNames = {}, className = ""
                         containerScale={containerScale}
                     />
 
-                    {/* Placed items */}
                     {placed.map((item, idx) => {
                         const color = colorMap.get(item.product_id) ?? "#94A3B8";
+                        // Items placed higher (z larger) = placed later = slightly more transparent
+                        const layerRatio = maxZ > 0 ? item.z / maxZ : 0;
+                        const opacity = isAiOptimized
+                            ? Math.max(0.60, 0.92 - layerRatio * 0.25)
+                            : 0.85;
                         return (
                             <CargoItem
                                 key={`${item.item_id}-${idx}`}
                                 item={item}
                                 color={color}
                                 containerScale={containerScale}
-                                opacity={0.85}
+                                opacity={opacity}
                             />
                         );
                     })}
 
-                    {/* Grid helper at Y=0 */}
                     <gridHelper
                         args={[
                             Math.max(container.length, container.width) * containerScale * 1.5,
-                            10,
-                            "#CBD5E1",
-                            "#E2E8F0",
+                            10, "#CBD5E1", "#E2E8F0",
                         ]}
                         position={[
                             (container.length * containerScale) / 2,
@@ -182,21 +180,48 @@ export function BinPackingViewer({ layoutJson, productNames = {}, className = ""
                 />
             </Canvas>
 
-            {/* Legend overlay */}
+            {/* AI badge top-left */}
+            {isAiOptimized && (
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-violet-600/90 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-full shadow-md">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    AI Optimized
+                </div>
+            )}
+
+            {/* Legend top-right */}
             {legendEntries.length > 0 && (
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[200px] max-h-[200px] overflow-y-auto shadow-sm">
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[200px] max-h-[220px] overflow-y-auto shadow-sm">
                     <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Sản phẩm</p>
                     <div className="space-y-1.5">
                         {legendEntries.map((entry) => (
                             <div key={entry.productId} className="flex items-center gap-2">
-                                <div
-                                    className="w-3 h-3 rounded-sm shrink-0"
-                                    style={{ backgroundColor: entry.color }}
-                                />
+                                <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: entry.color }} />
                                 <span className="text-xs text-slate-700 truncate">{entry.name}</span>
                             </div>
                         ))}
                     </div>
+                    {isAiOptimized && (
+                        <div className="mt-2 pt-2 border-t">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <div className="flex gap-0.5">
+                                    <div className="w-3 h-3 rounded-sm bg-slate-400 opacity-95" />
+                                    <div className="w-3 h-3 rounded-sm bg-slate-400 opacity-70" />
+                                    <div className="w-3 h-3 rounded-sm bg-slate-400 opacity-50" />
+                                </div>
+                                Tầng dưới → trên
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Placement layer info — bottom left */}
+            {isAiOptimized && placed.length > 0 && (
+                <div className="absolute bottom-10 left-3 bg-white/85 backdrop-blur-sm border rounded-lg px-2.5 py-1.5 text-[10px] text-slate-600 shadow-sm">
+                    <span className="font-semibold text-violet-600">AI</span>
+                    {" "}sắp xếp {placed.length} kiện · độ trong giảm = tầng cao hơn
                 </div>
             )}
 
