@@ -1,5 +1,15 @@
 export type FleetVehicleStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'INACTIVE';
 export type FleetVehicleType = 'MOTORBIKE' | 'VAN' | 'TRUCK_SMALL' | 'TRUCK_MEDIUM' | 'TRUCK_LARGE' | 'CONTAINER';
+export type ExportStatus = 'PENDING' | 'PICKING' | 'CHECKING' | 'PACKED' | 'SHIPPED' | 'CANCELLED';
+
+export interface AssignedExport {
+    id: string;
+    code: string;
+    status: ExportStatus;
+    delivery_address?: string;
+    required_date?: string;
+    partner?: { id: string; name: string };
+}
 
 export interface FleetVehicle {
     id: string;
@@ -17,6 +27,7 @@ export interface FleetVehicle {
     created_at: string;
     updated_at?: string;
     warehouse?: { id: string; name: string };
+    exports?: AssignedExport[];
 }
 
 export interface FleetVehiclePage {
@@ -71,4 +82,22 @@ export const FLEET_STATUS_COLORS: Record<FleetVehicleStatus, string> = {
     IN_USE: 'bg-blue-100 text-blue-800',
     MAINTENANCE: 'bg-yellow-100 text-yellow-800',
     INACTIVE: 'bg-gray-100 text-gray-600',
+};
+
+export const EXPORT_STATUS_LABELS: Record<ExportStatus, string> = {
+    PENDING: 'Chờ xử lý',
+    PICKING: 'Đang lấy hàng',
+    CHECKING: 'Kiểm tra',
+    PACKED: 'Đã đóng gói',
+    SHIPPED: 'Đang giao',
+    CANCELLED: 'Đã hủy',
+};
+
+export const EXPORT_STATUS_COLORS: Record<ExportStatus, string> = {
+    PENDING: 'bg-gray-100 text-gray-600',
+    PICKING: 'bg-blue-100 text-blue-700',
+    CHECKING: 'bg-yellow-100 text-yellow-700',
+    PACKED: 'bg-indigo-100 text-indigo-700',
+    SHIPPED: 'bg-green-100 text-green-700',
+    CANCELLED: 'bg-red-100 text-red-600',
 };

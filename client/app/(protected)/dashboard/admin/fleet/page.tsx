@@ -15,6 +15,8 @@ import {
     FLEET_VEHICLE_TYPE_LABELS,
     FLEET_STATUS_LABELS,
     FLEET_STATUS_COLORS,
+    EXPORT_STATUS_LABELS,
+    EXPORT_STATUS_COLORS,
 } from "@/services/fleet/fleet.types";
 
 const fleetService = new FleetService();
@@ -299,6 +301,7 @@ export default function FleetPage() {
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kích thước khoang (DxRxC cm)</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tải trọng</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Trạng thái</th>
+                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Phiếu xuất đang giao</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Thao tác</th>
                             </tr>
                         </thead>
@@ -332,6 +335,22 @@ export default function FleetPage() {
                                                 </option>
                                             ))}
                                         </select>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {v.exports && v.exports.length > 0 ? (
+                                            <div className="flex flex-col gap-1">
+                                                {v.exports.map((exp) => (
+                                                    <div key={exp.id} className="flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-semibold">{exp.code}</span>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${EXPORT_STATUS_COLORS[exp.status]}`}>
+                                                            {EXPORT_STATUS_LABELS[exp.status]}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-2">

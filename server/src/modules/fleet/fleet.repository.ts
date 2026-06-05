@@ -30,6 +30,18 @@ export class FleetRepository {
         skip: params.offset,
         include: {
           warehouse: { select: { id: true, name: true } },
+          exports: {
+            where: { is_deleted: false, status: { not: 'CANCELLED' } },
+            select: {
+              id: true,
+              code: true,
+              status: true,
+              delivery_address: true,
+              required_date: true,
+              partner: { select: { id: true, name: true } },
+            },
+            orderBy: { created_at: 'desc' },
+          },
         },
       }),
       this.prisma.fleetVehicle.count({ where }),
@@ -43,6 +55,18 @@ export class FleetRepository {
       where: { id, is_deleted: false },
       include: {
         warehouse: { select: { id: true, name: true } },
+        exports: {
+          where: { is_deleted: false, status: { not: 'CANCELLED' } },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            delivery_address: true,
+            required_date: true,
+            partner: { select: { id: true, name: true } },
+          },
+          orderBy: { created_at: 'desc' },
+        },
       },
     });
   }
@@ -56,6 +80,20 @@ export class FleetRepository {
         is_active: true,
       },
       orderBy: { name: 'asc' },
+      include: {
+        exports: {
+          where: { is_deleted: false, status: { not: 'CANCELLED' } },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            delivery_address: true,
+            required_date: true,
+            partner: { select: { id: true, name: true } },
+          },
+          orderBy: { created_at: 'desc' },
+        },
+      },
     });
   }
 

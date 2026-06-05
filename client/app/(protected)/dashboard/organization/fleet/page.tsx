@@ -9,6 +9,8 @@ import {
     FLEET_VEHICLE_TYPE_LABELS,
     FLEET_STATUS_LABELS,
     FLEET_STATUS_COLORS,
+    EXPORT_STATUS_LABELS,
+    EXPORT_STATUS_COLORS,
 } from "@/services/fleet/fleet.types";
 
 const fleetService = new FleetService();
@@ -136,6 +138,7 @@ export default function OrgFleetPage() {
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kích thước khoang (DxRxC cm)</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tải trọng</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Trạng thái</th>
+                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Phiếu xuất đang giao</th>
                                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Ghi chú</th>
                             </tr>
                         </thead>
@@ -161,6 +164,22 @@ export default function OrgFleetPage() {
                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${FLEET_STATUS_COLORS[v.status]}`}>
                                             {FLEET_STATUS_LABELS[v.status]}
                                         </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {v.exports && v.exports.length > 0 ? (
+                                            <div className="flex flex-col gap-1">
+                                                {v.exports.map((exp) => (
+                                                    <div key={exp.id} className="flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-semibold">{exp.code}</span>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${EXPORT_STATUS_COLORS[exp.status]}`}>
+                                                            {EXPORT_STATUS_LABELS[exp.status]}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground max-w-[160px] truncate">
                                         {v.notes || "—"}
