@@ -16,7 +16,7 @@ import { BinPackingService } from './bin-packing.service';
 class ComputePackingDto {
   @ApiProperty()
   @IsUUID()
-  export_id: string;
+  export_id?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -34,7 +34,7 @@ export class BinPackingController {
   @Post('compute')
   @ApiOperation({ summary: 'Tính toán xếp hàng 3D cho phiếu xuất' })
   compute(@Body() dto: ComputePackingDto) {
-    return this.service.compute(dto.export_id, dto.fleet_vehicle_id);
+    return this.service.compute(dto.export_id!, dto.fleet_vehicle_id);
   }
 
   @Get(':export_id')

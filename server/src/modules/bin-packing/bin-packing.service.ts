@@ -52,7 +52,8 @@ export class BinPackingService {
     });
 
     // ── Resolve vehicle ────────────────────────────────────────────────────
-    let vehicleId = fleetVehicleId ?? exportRecord.fleet_vehicle_id ?? undefined;
+    let vehicleId =
+      fleetVehicleId ?? exportRecord.fleet_vehicle_id ?? undefined;
     let algorithmUsed = 'extreme-point';
     let orderedItems: PackItem[] = packItems;
 
@@ -91,7 +92,9 @@ export class BinPackingService {
           });
           if (aiVehicle) {
             vehicleId = aiVehicle.id;
-            this.logger.log(`AI selected vehicle type=${suggestedType} id=${vehicleId}`);
+            this.logger.log(
+              `AI selected vehicle type=${suggestedType} id=${vehicleId}`,
+            );
           }
         }
 
@@ -106,15 +109,22 @@ export class BinPackingService {
           `AI packing order applied: conf_vehicle=${aiResult.confidence_vehicle.toFixed(2)}`,
         );
       } else {
-        this.logger.warn('BinPackingAI unavailable — falling back to deterministic engine');
+        this.logger.warn(
+          'BinPackingAI unavailable — falling back to deterministic engine',
+        );
       }
     }
 
     // Fallback: weight-based vehicle auto-select if still no vehicle
     if (!vehicleId) {
-      const vehicle = await this.autoSelectVehicle(exportRecord.warehouse_id, exportRecord.details);
+      const vehicle = await this.autoSelectVehicle(
+        exportRecord.warehouse_id,
+        exportRecord.details,
+      );
       if (!vehicle)
-        throw new BadRequestException('Không tìm thấy xe phù hợp. Vui lòng chọn xe thủ công.');
+        throw new BadRequestException(
+          'Không tìm thấy xe phù hợp. Vui lòng chọn xe thủ công.',
+        );
       vehicleId = vehicle.id;
     }
 
@@ -135,7 +145,11 @@ export class BinPackingService {
 
     const layoutJson = JSON.parse(
       JSON.stringify({
-        container: { length: container.length, width: container.width, height: container.height },
+        container: {
+          length: container.length,
+          width: container.width,
+          height: container.height,
+        },
         placed: result.packed,
         unpacked: result.unpacked,
       }),
@@ -189,7 +203,11 @@ export class BinPackingService {
 
     return {
       ...record,
-      vehicle: { id: vehicle.id, name: vehicle.name, license_plate: vehicle.license_plate },
+      vehicle: {
+        id: vehicle.id,
+        name: vehicle.name,
+        license_plate: vehicle.license_plate,
+      },
     };
   }
 
@@ -199,20 +217,28 @@ export class BinPackingService {
       include: {
         fleet_vehicle: {
           select: {
-            id: true, name: true, license_plate: true,
-            cargo_length: true, cargo_width: true,
-            cargo_height: true, max_weight_kg: true,
+            id: true,
+            name: true,
+            license_plate: true,
+            cargo_length: true,
+            cargo_width: true,
+            cargo_height: true,
+            max_weight_kg: true,
           },
         },
       },
     });
     if (!record)
-      throw new NotFoundException('Chưa có kết quả tính toán xếp hàng cho phiếu xuất này');
+      throw new NotFoundException(
+        'Chưa có kết quả tính toán xếp hàng cho phiếu xuất này',
+      );
     return record;
   }
 
   async apply(exportId: string) {
-    const record = await this.prisma.binPackingResult.findUnique({ where: { export_id: exportId } });
+    const record = await this.prisma.binPackingResult.findUnique({
+      where: { export_id: exportId },
+    });
     if (!record) throw new NotFoundException('Không tìm thấy kết quả xếp hàng');
     return this.prisma.binPackingResult.update({
       where: { export_id: exportId },
@@ -222,7 +248,10 @@ export class BinPackingService {
 
   private async autoSelectVehicle(
     warehouseId: string,
-    details: Array<{ product: { weight: any; length: any; width: any; height: any }; quantity: any }>,
+    details: Array<{
+      product: { weight: any; length: any; width: any; height: any };
+      quantity: any;
+    }>,
   ) {
     const totalWeight = details.reduce(
       (sum, d) => sum + Number(d.product.weight ?? 1) * Number(d.quantity),
