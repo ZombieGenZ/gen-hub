@@ -59,8 +59,7 @@ export const WarehouseInstancedBins: React.FC<WarehouseInstancedBinsProps> = ({ 
 
   // SOCKET.IO REAL-TIME SYNC
   useEffect(() => {
-    // Thay cổng bằng NEXT_PUBLIC_SOCKET_URL thực tế của dự án
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000");
+    const socket = io(process.env.NEXT_PUBLIC_API_URL ?? "");
 
     socket.on("INVENTORY_UPDATED", (update: { bin_uid: string, status: string, is_new_inbound?: boolean }) => {
       const idx = data.findIndex(b => b.uid === update.bin_uid);
