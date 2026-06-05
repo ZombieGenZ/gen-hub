@@ -161,7 +161,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
     const totalWeight = activeResult ? Number(activeResult.total_weight_kg).toFixed(1) : null;
     const vehicleId = result?.fleet_vehicle_id;
     const vehicleInfo = result?.vehicle ?? result?.fleet_vehicle;
-    const isAi = result?.algorithm_used?.includes("+ai");
+    const isAi = activeResult?.algorithm_used?.includes("+ai");
     const exportSummary: ExportSummary[] = viewMode === "vehicle" ? (vehicleResult?.layout_json?.export_summary ?? []) : [];
 
     return (
@@ -342,16 +342,16 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                         </div>
 
                         {/* Algorithm chip */}
-                        {result.algorithm_used && (
+                        {activeResult?.algorithm_used && (
                             <div className={`text-xs rounded-xl px-3 py-2 flex items-center gap-2 ${
-                                result.algorithm_used.includes("+ai")
+                                activeResult.algorithm_used.includes("+ai")
                                     ? "bg-violet-50 border border-violet-200 text-violet-700"
                                     : "bg-muted/30 text-muted-foreground"
                             }`}>
                                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
-                                <span className="font-mono">{result.algorithm_used}</span>
+                                <span className="font-mono">{activeResult.algorithm_used}</span>
                             </div>
                         )}
 

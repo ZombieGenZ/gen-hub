@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useRef, useState, useCallback } from "react";
+import React, { Suspense, useRef, useState, useCallback, useMemo } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -38,6 +38,9 @@ interface HoverInfo {
     screenY: number;
 }
 
+// Accepts both direct value and updater function (for screenX/Y tracking)
+type HoverSetter = (info: HoverInfo | null | ((prev: HoverInfo | null) => HoverInfo | null)) => void;
+
 // ── CargoItem with hover ───────────────────────────────────────────────────
 interface CargoItemProps {
     item: PlacedItem;
@@ -45,7 +48,7 @@ interface CargoItemProps {
     containerScale: number;
     opacity: number;
     productName: string;
-    onHover: (info: HoverInfo | null) => void;
+    onHover: HoverSetter;
 }
 
 function CargoItem({ item, color, containerScale, opacity, productName, onHover }: CargoItemProps) {
@@ -132,7 +135,7 @@ function CargoItem({ item, color, containerScale, opacity, productName, onHover 
 interface ContainerBoxProps {
     length: number; width: number; height: number;
     containerScale: number;
-    onHover: (info: HoverInfo | null) => void;
+    onHover: HoverSetter;
 }
 
 function ContainerBox({ length, width, height, containerScale, onHover }: ContainerBoxProps) {
@@ -349,13 +352,6 @@ const EXPORT_COLORS = [
     "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
     "#EC4899", "#14B8A6", "#F97316", "#06B6D4",
 ];
-const exportColorMap = new Map<string, string>();
-function getExportColor(exportId: string): string {
-    if (!exportColorMap.has(exportId)) {
-        exportColorMap.set(exportId, EXPORT_COLORS[exportColorMap.size % EXPORT_COLORS.length]);
-    }
-    return exportColorMap.get(exportId)!;
-}
 
 export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed, currentExportId, className = "" }: BinPackingViewerProps) {
     const { container, placed } = layoutJson;
@@ -367,15 +363,25 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
     const maxDim = Math.max(container.length, container.width, container.height);
     const containerScale = 4 / maxDim;
 
+    // Export color map — scoped to current placed[] to avoid cross-vehicle pollution
+    const exportColorMap = useMemo(() => {
+        const map = new Map<string, string>();
+        placed.forEach((item) => {
+            if (item.export_id && !map.has(item.export_id)) {
+                map.set(item.export_id, EXPORT_COLORS[map.size % EXPORT_COLORS.length]);
+            }
+        });
+        return map;
+    }, [placed]);
+
     // Color logic: multi-order → color by export, single → color by product
-    const colorMap = new Map<string, string>();
-    placed.forEach((item) => {
-        if (isMultiOrder && item.export_id) {
-            getExportColor(item.export_id);
-        } else {
-            getProductColor(item.product_id, colorMap);
+    const colorMap = useMemo(() => {
+        const map = new Map<string, string>();
+        if (!isMultiOrder) {
+            placed.forEach((item) => getProductColor(item.product_id, map));
         }
-    });
+        return map;
+    }, [placed, isMultiOrder]);
 
     const maxZ = placed.length > 0 ? Math.max(...placed.map((p) => p.z)) : 1;
 
@@ -429,7 +435,7 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                     {placed.map((item, idx) => {
                         // Multi-order: màu theo đơn hàng; single: màu theo sản phẩm
                         const baseColor = isMultiOrder && item.export_id
-                            ? getExportColor(item.export_id)
+                            ? (exportColorMap.get(item.export_id) ?? "#94A3B8")
                             : (colorMap.get(item.product_id) ?? "#94A3B8");
 
                         // Highlight logic

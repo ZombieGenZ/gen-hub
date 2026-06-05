@@ -296,7 +296,45 @@ export class BinPackingService {
       }
     }
 
-    const result = runExtremePointPacking(container, allItems);
+    // ── AI: sort items by priority score ─────────────────────────────────
+    let orderedItems: typeof allItems = allItems;
+    let vehicleAlgoUsed = 'extreme-point';
+
+    if (this.useAi) {
+      const aiResult = await this.aiService.optimize({
+        items: allItems.map((i) => ({
+          id: i.id,
+          product_id: i.product_id,
+          length: i.length,
+          width: i.width,
+          height: i.height,
+          weight: i.weight,
+          quantity: i.quantity,
+          stackable: i.stackable,
+          packaging_method: i.packaging_method,
+        })),
+        container,
+      });
+
+      if (aiResult) {
+        const scoreMap = new Map(
+          aiResult.items_with_priority.map((r) => [r.id, r.priority_score]),
+        );
+        orderedItems = [...allItems].sort(
+          (a, b) => (scoreMap.get(b.id) ?? 0) - (scoreMap.get(a.id) ?? 0),
+        );
+        vehicleAlgoUsed = `extreme-point+ai(${aiResult.model_used_vehicle}/${aiResult.model_used_packing})`;
+        this.logger.log(
+          `AI multi-order packing applied: vehicle=${fleetVehicleId} conf=${aiResult.confidence_vehicle.toFixed(2)}`,
+        );
+      } else {
+        this.logger.warn(
+          'BinPackingAI unavailable — vehicle packing fallback to deterministic',
+        );
+      }
+    }
+
+    const result = runExtremePointPacking(container, orderedItems);
 
     // Gắn export_id + export_code vào từng placed item
     const idToExport = new Map(
@@ -349,7 +387,7 @@ export class BinPackingService {
             space_utilization: result.space_utilization,
             total_weight_kg: result.total_weight,
             layout_json: layoutJson,
-            algorithm_used: this.useAi ? 'extreme-point+ai' : 'extreme-point',
+            algorithm_used: vehicleAlgoUsed,
             computed_at: new Date(),
             updated_at: new Date(),
           },
@@ -365,7 +403,7 @@ export class BinPackingService {
             space_utilization: result.space_utilization,
             total_weight_kg: result.total_weight,
             layout_json: layoutJson,
-            algorithm_used: this.useAi ? 'extreme-point+ai' : 'extreme-point',
+            algorithm_used: vehicleAlgoUsed,
             computed_at: new Date(),
           },
         });

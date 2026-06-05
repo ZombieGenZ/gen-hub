@@ -155,6 +155,20 @@ export function runExtremePointPacking(
     let bestScore = Infinity;
 
     for (const ep of extremePoints) {
+      // Skip points that have been enclosed by a previously placed item
+      let blocked = false;
+      for (const p of placed) {
+        if (
+          p.x <= ep.x && ep.x < p.x + p.placed_length &&
+          p.y <= ep.y && ep.y < p.y + p.placed_width &&
+          p.z <= ep.z && ep.z < p.z + p.placed_height
+        ) {
+          blocked = true;
+          break;
+        }
+      }
+      if (blocked) continue;
+
       for (let oriIdx = 0; oriIdx < ORIENTATIONS.length; oriIdx++) {
         const [pl, pw, ph] = ORIENTATIONS[oriIdx](item.length, item.width, item.height);
 
