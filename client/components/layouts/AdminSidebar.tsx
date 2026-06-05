@@ -24,6 +24,7 @@ import {
     RectangleGroupIcon,
     CpuChipIcon,
     StarIcon,
+    TruckIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -43,6 +44,7 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/warehouse-verification", icon: StarIcon, label: "Xác minh kho" },
             { href: "/dashboard/admin/approval", icon: ClipboardDocumentCheckIcon, label: "Duyệt phiếu PO/Xuất" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
+            { href: "/dashboard/admin/fleet", icon: TruckIcon, label: "Đội xe" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
         ]
     },
