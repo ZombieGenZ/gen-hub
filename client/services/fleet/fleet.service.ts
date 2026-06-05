@@ -85,4 +85,12 @@ export class FleetService {
         });
         if (!res.ok) throw new Error(await res.text());
     }
+
+    async listAllWarehouses(token: string): Promise<{ id: string; name: string; organization_id: string }[]> {
+        const res = await fetch(`${API}/warehouse-manager/fleet/warehouses`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json() as Promise<{ id: string; name: string; organization_id: string }[]>;
+    }
 }

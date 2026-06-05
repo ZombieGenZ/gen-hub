@@ -48,6 +48,10 @@ export class FleetService {
     return this.repo.findAvailable(warehouseId);
   }
 
+  async listAllWarehouses() {
+    return this.repo.findAllWarehouses();
+  }
+
   async update(id: string, dto: UpdateFleetVehicleDto, userId: string) {
     await this.findById(id);
     return this.repo.update(id, {

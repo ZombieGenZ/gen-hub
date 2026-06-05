@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { FleetService } from "@/services/fleet/fleet.service";
-import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type {
     FleetVehicle,
@@ -19,7 +18,6 @@ import {
 } from "@/services/fleet/fleet.types";
 
 const fleetService = new FleetService();
-const inventoryService = new InventoryService();
 
 const VEHICLE_TYPES: FleetVehicleType[] = [
     "MOTORBIKE",
@@ -89,13 +87,13 @@ export default function FleetPage() {
     // Delete confirm
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    // ── Fetch warehouses ──
+    // ── Fetch warehouses (admin: lấy tất cả kho hệ thống) ──
     useEffect(() => {
         void (async () => {
             try {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
-                const whs = await inventoryService.listWarehouses(token);
+                const whs = await fleetService.listAllWarehouses(token);
                 setWarehouses(whs);
                 if (whs.length > 0 && !filterWarehouseId) {
                     setFilterWarehouseId(whs[0].id);

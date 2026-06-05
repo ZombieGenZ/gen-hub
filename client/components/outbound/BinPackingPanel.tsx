@@ -39,6 +39,9 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
         const token = authStorage.getAccessToken();
         if (!token) return;
 
+        // warehouseId is required to fetch fleet vehicles
+        if (!warehouseId) return;
+
         setLoading(true);
         try {
             const [existingResult, vehicles] = await Promise.allSettled([
@@ -51,6 +54,8 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
             }
             if (vehicles.status === "fulfilled") {
                 setFleetVehicles(vehicles.value);
+            } else {
+                console.warn("[BinPackingPanel] Fleet vehicles fetch failed:", vehicles.reason);
             }
         } catch {
             // non-critical on first load
@@ -162,13 +167,24 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                             value={selectedVehicleId}
                             onChange={(e) => setSelectedVehicleId(e.target.value)}
                         >
-                            <option value="">-- Tự động chọn xe phù hợp --</option>
+                                <option value="">-- Tự động chọn xe phù hợp --</option>
                             {fleetVehicles.map((v) => (
                                 <option key={v.id} value={v.id}>
                                     {v.name} ({v.license_plate}) — {FLEET_VEHICLE_TYPE_LABELS[v.vehicle_type]} · {Number(v.max_weight_kg)}kg
                                 </option>
                             ))}
                         </select>
+                        {!loading && fleetVehicles.length === 0 && warehouseId && (
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Kho này chưa có xe nào. Liên hệ Admin để thêm xe vào đội.
+                            </p>
+                        )}
+                        {!warehouseId && (
+                            <p className="text-xs text-red-500 mt-1">Phiếu xuất chưa gắn kho — không thể tải danh sách xe.</p>
+                        )}
                     </div>
                     <button
                         onClick={handleCompute}

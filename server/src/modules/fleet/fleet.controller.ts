@@ -62,6 +62,12 @@ export class FleetController {
     return this.service.findAvailable(warehouseId);
   }
 
+  @Get('warehouses')
+  @ApiOperation({ summary: 'Danh sách tất cả kho trong hệ thống (dùng cho admin)' })
+  listAllWarehouses() {
+    return this.service.listAllWarehouses();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết xe' })
   findById(@Param('id', ParseUUIDPipe) id: string) {
