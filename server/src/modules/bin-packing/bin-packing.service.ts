@@ -246,6 +246,165 @@ export class BinPackingService {
     });
   }
 
+  // ── Multi-order: tính xếp hàng tổng hợp nhiều phiếu vào 1 xe ─────────────
+
+  async computeVehicle(fleetVehicleId: string, exportIds: string[]) {
+    const vehicle = await this.prisma.fleetVehicle.findFirst({
+      where: { id: fleetVehicleId, is_deleted: false },
+    });
+    if (!vehicle) throw new NotFoundException('Không tìm thấy xe');
+
+    if (!exportIds || exportIds.length === 0)
+      throw new BadRequestException('Cần ít nhất 1 phiếu xuất');
+
+    // Load tất cả exports với product details
+    const exports = await this.prisma.export.findMany({
+      where: { id: { in: exportIds }, is_deleted: false },
+      include: {
+        details: { where: { is_deleted: false }, include: { product: true } },
+      },
+    });
+    if (exports.length === 0)
+      throw new NotFoundException('Không tìm thấy phiếu xuất');
+
+    const container: Container = {
+      length: Number(vehicle.cargo_length),
+      width: Number(vehicle.cargo_width),
+      height: Number(vehicle.cargo_height),
+      max_weight: Number(vehicle.max_weight_kg),
+    };
+
+    // Gộp tất cả items, gắn export_id + export_code cho mỗi item
+    const allItems: (PackItem & { export_id: string; export_code: string })[] =
+      [];
+    for (const exp of exports) {
+      for (const detail of exp.details) {
+        const p = detail.product;
+        allItems.push({
+          id: detail.id,
+          product_id: p.id,
+          length: p.length ? Number(p.length) : 30,
+          width: p.width ? Number(p.width) : 30,
+          height: p.height ? Number(p.height) : 30,
+          weight: p.weight ? Number(p.weight) : 1,
+          quantity: Math.ceil(Number(detail.quantity)),
+          stackable: p.is_stackable ?? true,
+          packaging_method: p.packaging_method ?? 'STANDARD',
+          export_id: exp.id,
+          export_code: exp.code,
+        });
+      }
+    }
+
+    const result = runExtremePointPacking(container, allItems);
+
+    // Gắn export_id + export_code vào từng placed item
+    const idToExport = new Map(
+      allItems.map((i) => [
+        i.id,
+        { export_id: i.export_id, export_code: i.export_code },
+      ]),
+    );
+    const placedWithExport = result.packed.map((p) => ({
+      ...p,
+      ...(idToExport.get(p.item_id) ?? {}),
+    }));
+
+    const exportSummary = exports.map((exp) => {
+      const packed = result.packed.filter(
+        (p) => idToExport.get(p.item_id)?.export_id === exp.id,
+      ).length;
+      const unpacked = result.unpacked.filter(
+        (itemId) => idToExport.get(itemId)?.export_id === exp.id,
+      ).length;
+      return { export_id: exp.id, export_code: exp.code, packed, unpacked };
+    });
+
+    const layoutJson = JSON.parse(
+      JSON.stringify({
+        container: {
+          length: container.length,
+          width: container.width,
+          height: container.height,
+        },
+        placed: placedWithExport,
+        unpacked: result.unpacked,
+        export_summary: exportSummary,
+      }),
+    ) as object;
+
+    const existing = await this.prisma.vehiclePackingResult.findFirst({
+      where: { fleet_vehicle_id: fleetVehicleId, is_deleted: false },
+    });
+
+    const record = existing
+      ? await this.prisma.vehiclePackingResult.update({
+          where: { id: existing.id },
+          data: {
+            status: PackingStatus.COMPUTED,
+            export_ids: exportIds,
+            total_items: allItems.reduce((s, i) => s + i.quantity, 0),
+            packed_items: result.packed_count,
+            unpacked_items: result.unpacked_count,
+            space_utilization: result.space_utilization,
+            total_weight_kg: result.total_weight,
+            layout_json: layoutJson,
+            algorithm_used: this.useAi ? 'extreme-point+ai' : 'extreme-point',
+            computed_at: new Date(),
+            updated_at: new Date(),
+          },
+        })
+      : await this.prisma.vehiclePackingResult.create({
+          data: {
+            fleet_vehicle_id: fleetVehicleId,
+            status: PackingStatus.COMPUTED,
+            export_ids: exportIds,
+            total_items: allItems.reduce((s, i) => s + i.quantity, 0),
+            packed_items: result.packed_count,
+            unpacked_items: result.unpacked_count,
+            space_utilization: result.space_utilization,
+            total_weight_kg: result.total_weight,
+            layout_json: layoutJson,
+            algorithm_used: this.useAi ? 'extreme-point+ai' : 'extreme-point',
+            computed_at: new Date(),
+          },
+        });
+
+    return {
+      ...record,
+      vehicle: {
+        id: vehicle.id,
+        name: vehicle.name,
+        license_plate: vehicle.license_plate,
+      },
+    };
+  }
+
+  async getByVehicleId(fleetVehicleId: string) {
+    const record = await this.prisma.vehiclePackingResult.findFirst({
+      where: { fleet_vehicle_id: fleetVehicleId, is_deleted: false },
+      include: {
+        fleet_vehicle: {
+          select: {
+            id: true,
+            name: true,
+            license_plate: true,
+            cargo_length: true,
+            cargo_width: true,
+            cargo_height: true,
+            max_weight_kg: true,
+          },
+        },
+      },
+      orderBy: { computed_at: 'desc' },
+    });
+    if (!record)
+      throw new NotFoundException(
+        'Chưa có kết quả xếp hàng tổng hợp cho xe này',
+      );
+    return record;
+  }
+
   private async autoSelectVehicle(
     warehouseId: string,
     details: Array<{

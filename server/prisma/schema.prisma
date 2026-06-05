@@ -5114,9 +5114,10 @@ model FleetVehicle {
   updated_by String?
   deleted_by String?
 
-  warehouse       Warehouse          @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  packing_results BinPackingResult[]
-  exports         Export[]
+  warehouse              Warehouse              @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  packing_results        BinPackingResult[]
+  vehicle_packing_results VehiclePackingResult[]
+  exports                Export[]
 
   @@index([warehouse_id])
   @@index([status])
@@ -5162,6 +5163,36 @@ model BinPackingResult {
   @@index([export_id])
   @@index([fleet_vehicle_id])
   @@map("bin_packing_results")
+}
+
+// Kết quả xếp hàng tổng hợp nhiều phiếu xuất vào 1 xe
+model VehiclePackingResult {
+  id               String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fleet_vehicle_id String        @db.Uuid
+  status           PackingStatus @default(PENDING)
+
+  export_ids        String[]     // danh sách export_id tham gia
+  total_items       Int
+  packed_items      Int
+  unpacked_items    Int
+  space_utilization Decimal      @db.Decimal(5, 2)
+  total_weight_kg   Decimal      @db.Decimal(10, 2)
+
+  // layout_json: placed items có thêm export_id + export_code để phân biệt
+  layout_json Json
+
+  algorithm_used String   @default("extreme-point")
+  computed_at    DateTime @default(now())
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+
+  fleet_vehicle FleetVehicle @relation(fields: [fleet_vehicle_id], references: [id])
+
+  @@index([fleet_vehicle_id])
+  @@map("vehicle_packing_results")
 }
 
 // ─────────────────────────────────────────────────────────────

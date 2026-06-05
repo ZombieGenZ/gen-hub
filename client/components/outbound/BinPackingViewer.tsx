@@ -339,26 +339,63 @@ export interface BinPackingViewerProps {
     layoutJson: LayoutJson;
     productNames?: Record<string, string>;
     algorithmUsed?: string;
+    /** Khi xem chế độ xe tổng hợp: highlight đơn này, các đơn khác xám */
+    currentExportId?: string;
     className?: string;
 }
 
-export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed, className = "" }: BinPackingViewerProps) {
+// Export-level color palette (khi multi-order mode)
+const EXPORT_COLORS = [
+    "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
+    "#EC4899", "#14B8A6", "#F97316", "#06B6D4",
+];
+const exportColorMap = new Map<string, string>();
+function getExportColor(exportId: string): string {
+    if (!exportColorMap.has(exportId)) {
+        exportColorMap.set(exportId, EXPORT_COLORS[exportColorMap.size % EXPORT_COLORS.length]);
+    }
+    return exportColorMap.get(exportId)!;
+}
+
+export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed, currentExportId, className = "" }: BinPackingViewerProps) {
     const { container, placed } = layoutJson;
     const isAiOptimized = algorithmUsed?.includes("+ai") ?? false;
+    // Multi-order mode: khi các items có export_id
+    const isMultiOrder = placed.some((p) => p.export_id);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const maxDim = Math.max(container.length, container.width, container.height);
     const containerScale = 4 / maxDim;
 
+    // Color logic: multi-order → color by export, single → color by product
     const colorMap = new Map<string, string>();
-    placed.forEach((item) => getProductColor(item.product_id, colorMap));
+    placed.forEach((item) => {
+        if (isMultiOrder && item.export_id) {
+            getExportColor(item.export_id);
+        } else {
+            getProductColor(item.product_id, colorMap);
+        }
+    });
 
     const maxZ = placed.length > 0 ? Math.max(...placed.map((p) => p.z)) : 1;
 
-    const legendEntries = Array.from(colorMap.entries()).map(([productId, color]) => ({
-        productId, color,
-        name: productNames[productId] || productId.slice(0, 8),
-    }));
+    // Legend: multi-order → per export, single → per product
+    const legendEntries = isMultiOrder
+        ? Array.from(exportColorMap.entries()).map(([exportId, color]) => {
+            const summary = layoutJson.export_summary?.find((s) => s.export_id === exportId);
+            return {
+                key: exportId,
+                color,
+                name: summary?.export_code ?? exportId.slice(0, 8),
+                isCurrent: exportId === currentExportId,
+            };
+          })
+        : Array.from(colorMap.entries()).map(([productId, color]) => ({
+            key: productId,
+            color,
+            name: productNames[productId] || productId.slice(0, 8),
+            isCurrent: true,
+          }));
 
     const camDist = 4 * 2.5;
 
@@ -390,11 +427,25 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                     />
 
                     {placed.map((item, idx) => {
-                        const color = colorMap.get(item.product_id) ?? "#94A3B8";
+                        // Multi-order: màu theo đơn hàng; single: màu theo sản phẩm
+                        const baseColor = isMultiOrder && item.export_id
+                            ? getExportColor(item.export_id)
+                            : (colorMap.get(item.product_id) ?? "#94A3B8");
+
+                        // Highlight logic
+                        const isOtherExport = isMultiOrder && currentExportId && item.export_id !== currentExportId;
+                        const color = isOtherExport ? "#94A3B8" : baseColor;
+
                         const layerRatio = maxZ > 0 ? item.z / maxZ : 0;
-                        const opacity = isAiOptimized
+                        const baseOpacity = isAiOptimized
                             ? Math.max(0.60, 0.92 - layerRatio * 0.25)
                             : 0.85;
+                        const opacity = isOtherExport ? 0.25 : baseOpacity;
+
+                        const label = isMultiOrder && item.export_code
+                            ? `${item.export_code} — ${productNames[item.product_id] || item.product_id.slice(0, 8)}`
+                            : (productNames[item.product_id] || item.product_id.slice(0, 8));
+
                         return (
                             <CargoItem
                                 key={`${item.item_id}-${idx}`}
@@ -402,7 +453,7 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
                                 color={color}
                                 containerScale={containerScale}
                                 opacity={opacity}
-                                productName={productNames[item.product_id] || item.product_id.slice(0, 8)}
+                                productName={label}
                                 onHover={handleHover}
                             />
                         );
@@ -449,13 +500,37 @@ export function BinPackingViewer({ layoutJson, productNames = {}, algorithmUsed,
 
             {/* Legend */}
             {legendEntries.length > 0 && (
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[200px] max-h-[220px] overflow-y-auto shadow-sm">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Sản phẩm</p>
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border rounded-xl p-3 max-w-[210px] max-h-[240px] overflow-y-auto shadow-sm">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                        {isMultiOrder ? "Phiếu xuất" : "Sản phẩm"}
+                    </p>
                     <div className="space-y-1.5">
                         {legendEntries.map((entry) => (
-                            <div key={entry.productId} className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: entry.color }} />
-                                <span className="text-xs text-slate-700 truncate">{entry.name}</span>
+                            <div
+                                key={entry.key}
+                                className={`flex items-center gap-2 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors ${
+                                    entry.isCurrent && isMultiOrder
+                                        ? "bg-primary/8 ring-1 ring-primary/30"
+                                        : ""
+                                }`}
+                            >
+                                <div
+                                    className="w-3 h-3 rounded-sm shrink-0"
+                                    style={{
+                                        backgroundColor: entry.color,
+                                        opacity: (!isMultiOrder || entry.isCurrent) ? 1 : 0.35,
+                                    }}
+                                />
+                                <span className={`text-xs truncate ${
+                                    entry.isCurrent && isMultiOrder
+                                        ? "text-slate-900 font-semibold"
+                                        : "text-slate-500"
+                                }`}>
+                                    {entry.name}
+                                    {entry.isCurrent && isMultiOrder && (
+                                        <span className="ml-1 text-[9px] text-primary font-medium">(đang xem)</span>
+                                    )}
+                                </span>
                             </div>
                         ))}
                     </div>
