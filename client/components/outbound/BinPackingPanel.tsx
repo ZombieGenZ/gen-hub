@@ -42,6 +42,8 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
     const [error, setError] = useState<string | null>(null);
     const [fleetVehicles, setFleetVehicles] = useState<FleetVehicle[]>([]);
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
+    // Export IDs actually assigned to the vehicle (ground truth from fleet endpoint)
+    const [vehicleAssignedExportIds, setVehicleAssignedExportIds] = useState<string[]>([]);
 
     const loadData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -58,9 +60,15 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                 setResult(existingResult.value);
                 const vehicleId = existingResult.value.fleet_vehicle_id;
                 if (vehicleId) {
-                    binPackingService.getByVehicleId(token, vehicleId)
-                        .then(setVehicleResult)
-                        .catch(() => null);
+                    Promise.all([
+                        binPackingService.getByVehicleId(token, vehicleId).catch(() => null),
+                        fleetService.getById(token, vehicleId).catch(() => null),
+                    ]).then(([vr, vehicle]) => {
+                        if (vr) setVehicleResult(vr);
+                        if (vehicle?.exports && vehicle.exports.length > 0) {
+                            setVehicleAssignedExportIds(vehicle.exports.map((e) => e.id));
+                        }
+                    });
                 }
             }
             if (vehicles.status === "fulfilled") {
@@ -91,9 +99,15 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
             setResult(res);
             const vehicleId = res.fleet_vehicle_id ?? res.vehicle?.id;
             if (vehicleId) {
-                binPackingService.getByVehicleId(token, vehicleId)
-                    .then(setVehicleResult)
-                    .catch(() => null);
+                Promise.all([
+                    binPackingService.getByVehicleId(token, vehicleId).catch(() => null),
+                    fleetService.getById(token, vehicleId).catch(() => null),
+                ]).then(([vr, vehicle]) => {
+                    if (vr) setVehicleResult(vr);
+                    if (vehicle?.exports && vehicle.exports.length > 0) {
+                        setVehicleAssignedExportIds(vehicle.exports.map((e) => e.id));
+                    }
+                });
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Không thể tính toán";
@@ -117,8 +131,12 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
         setComputingVehicle(true);
         setError(null);
         try {
-            const otherExportIds = vehicleResult?.export_ids ?? [];
-            const allExportIds = Array.from(new Set([...otherExportIds, exportId]));
+            // Use ground-truth export list from fleet vehicle (fetched via fleet API)
+            // Falls back to vehicleResult.export_ids if fleet data not yet loaded
+            const assignedIds = vehicleAssignedExportIds.length > 0
+                ? vehicleAssignedExportIds
+                : (vehicleResult?.export_ids ?? []);
+            const allExportIds = Array.from(new Set([...assignedIds, exportId]));
 
             const res = await binPackingService.computeVehicle(token, {
                 fleet_vehicle_id: vehicleId,
@@ -174,10 +192,13 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
     const viewerCurrentExportId =
         vehicleResult && vehicleIncludesCurrentExport ? exportId : undefined;
 
-    // Number of other exports on the same vehicle (excluding current)
+    // Other exports on same vehicle: prefer ground-truth fleet data over stored vehicleResult
+    const assignedCount = vehicleAssignedExportIds.length > 0
+        ? vehicleAssignedExportIds.length
+        : (vehicleResult?.export_ids.length ?? 0);
     const otherExportCount = vehicleResult && vehicleIncludesCurrentExport
-        ? (vehicleResult.export_ids.length - 1)
-        : 0;
+        ? Math.max(0, assignedCount - 1)
+        : Math.max(0, assignedCount - 1);
 
     return (
         <div className="border rounded-2xl overflow-hidden bg-card">
@@ -298,7 +319,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                             >
                                 {computingVehicle
                                     ? <><svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Đang tổng hợp...</>
-                                    : <>🚛 Toàn bộ xe {vehicleResult ? `(${vehicleResult.export_ids.length} đơn)` : ""}</>
+                                    : <>🚛 Toàn bộ xe {assignedCount > 0 ? `(${assignedCount} đơn)` : ""}</>
                                 }
                             </button>
                         </div>
@@ -384,16 +405,16 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                             </div>
                         )}
 
-                        {/* Compute vehicle button (if not yet) */}
-                        {viewMode === "single" && !vehicleResult && (
+                        {/* Compute vehicle button: show when vehicle has multiple exports and no vehicle result yet */}
+                        {viewMode === "single" && !vehicleResult && otherExportCount > 0 && (
                             <button
                                 onClick={handleComputeVehicle}
                                 disabled={computingVehicle}
-                                className="w-full border-2 border-dashed border-muted-foreground/30 rounded-xl py-2.5 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                                className="w-full border-2 border-dashed border-amber-300 rounded-xl py-2.5 text-xs text-amber-700 hover:border-amber-500 hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 {computingVehicle
                                     ? "Đang tổng hợp..."
-                                    : "🚛 Tính toán & xem tất cả đơn hàng trên xe này"}
+                                    : `🚛 Xe này đang có ${otherExportCount + 1} phiếu xuất — Tính toán & xem tất cả trên 3D`}
                             </button>
                         )}
 
@@ -404,7 +425,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>
-                                    Mô hình 3D hiển thị toàn bộ {vehicleResult!.export_ids.length} phiếu xuất trên xe.
+                                    Mô hình 3D hiển thị toàn bộ {assignedCount} phiếu xuất trên xe.
                                     {" "}<span className="font-semibold text-amber-900">Màu = đơn này</span> · Xám = {otherExportCount} phiếu khác.
                                 </span>
                             </div>
