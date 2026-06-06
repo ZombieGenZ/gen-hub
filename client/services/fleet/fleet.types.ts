@@ -26,7 +26,7 @@ export interface FleetVehicle {
     is_active: boolean;
     created_at: string;
     updated_at?: string;
-    warehouse?: { id: string; name: string };
+    warehouse?: { id: string; name: string; latitude?: number | string | null; longitude?: number | string | null };
     exports?: AssignedExport[];
 }
 

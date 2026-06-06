@@ -28,11 +28,14 @@ type ViewMode = "single" | "vehicle";
 interface BinPackingPanelProps {
     exportId: string;
     warehouseId: string;
+    warehouseLat?: number | null;
+    warehouseLng?: number | null;
+    warehouseName?: string;
     productNames?: Record<string, string>;
     onApplied?: () => void;
 }
 
-export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onApplied }: BinPackingPanelProps) {
+export function BinPackingPanel({ exportId, warehouseId, warehouseLat, warehouseLng, warehouseName, productNames = {}, onApplied }: BinPackingPanelProps) {
     const [result, setResult] = useState<BinPackingResult | null>(null);
     const [vehicleResult, setVehicleResult] = useState<VehiclePackingResult | null>(null);
     const [viewMode, setViewMode] = useState<ViewMode>("single");
@@ -45,6 +48,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
     // Export IDs actually assigned to the vehicle (ground truth from fleet endpoint)
     const [vehicleAssignedExportIds, setVehicleAssignedExportIds] = useState<string[]>([]);
+    const [vehicleAssignedExports, setVehicleAssignedExports] = useState<{ id: string; status: string }[]>([]);
 
     const loadData = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -68,6 +72,7 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                         if (vr) setVehicleResult(vr);
                         if (vehicle?.exports && vehicle.exports.length > 0) {
                             setVehicleAssignedExportIds(vehicle.exports.map((e) => e.id));
+                            setVehicleAssignedExports(vehicle.exports.map((e) => ({ id: e.id, status: e.status })));
                         }
                     });
                 }
@@ -335,13 +340,29 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                                     {exportSummary.map((s) => {
                                         const isCurrent = s.export_id === exportId;
                                         return (
-                                            <div key={s.export_id} className={`flex items-center justify-between px-3 py-2 text-xs ${isCurrent ? "bg-primary/5" : ""}`}>
+                                            <div
+                                                key={s.export_id}
+                                                className={`flex items-center justify-between px-3 py-2.5 text-xs transition-all ${
+                                                    isCurrent
+                                                        ? "bg-primary/10 border-l-[3px] border-primary"
+                                                        : "hover:bg-muted/20 border-l-[3px] border-transparent"
+                                                }`}
+                                            >
                                                 <div className="flex items-center gap-2">
-                                                    {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                                                    <span className={`font-mono font-medium ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                                                    {isCurrent && (
+                                                        <span className="relative flex h-2 w-2 shrink-0">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                                        </span>
+                                                    )}
+                                                    <span className={`font-mono font-semibold ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
                                                         {s.export_code}
                                                     </span>
-                                                    {isCurrent && <span className="text-[10px] text-primary">(đang xem)</span>}
+                                                    {isCurrent && (
+                                                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                                                            đang xem
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-3 text-muted-foreground">
                                                     <span className="text-green-600 font-medium">{s.packed} xếp được</span>
@@ -456,6 +477,11 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                             <RoutePlanningPanel
                                 fleetVehicleId={result.fleet_vehicle_id}
                                 exportIds={vehicleAssignedExportIds}
+                                currentExportId={exportId}
+                                warehouseLat={warehouseLat}
+                                warehouseLng={warehouseLng}
+                                warehouseName={warehouseName}
+                                assignedExports={vehicleAssignedExports}
                             />
                         )}
 

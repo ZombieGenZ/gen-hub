@@ -29,7 +29,7 @@ export class FleetRepository {
         take: params.limit,
         skip: params.offset,
         include: {
-          warehouse: { select: { id: true, name: true } },
+          warehouse: { select: { id: true, name: true, latitude: true, longitude: true } },
           exports: {
             where: { is_deleted: false, status: { not: 'CANCELLED' } },
             select: {
@@ -54,7 +54,7 @@ export class FleetRepository {
     return this.prisma.fleetVehicle.findFirst({
       where: { id, is_deleted: false },
       include: {
-        warehouse: { select: { id: true, name: true } },
+        warehouse: { select: { id: true, name: true, latitude: true, longitude: true } },
         exports: {
           where: { is_deleted: false, status: { not: 'CANCELLED' } },
           select: {

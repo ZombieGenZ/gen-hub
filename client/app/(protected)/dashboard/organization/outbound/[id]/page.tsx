@@ -711,6 +711,9 @@ export default function OutboundDetailPage() {
                     <BinPackingPanel
                         exportId={data.id}
                         warehouseId={data.warehouse_id ?? data.warehouse?.id ?? ""}
+                        warehouseLat={data.warehouse?.latitude}
+                        warehouseLng={data.warehouse?.longitude}
+                        warehouseName={data.warehouse?.name}
                         productNames={Object.fromEntries(
                             (data.details ?? [])
                                 .filter((d) => d.product?.id)

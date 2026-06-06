@@ -51,6 +51,23 @@ export class RoutePlanningService {
     });
     if (!vehicle) throw new NotFoundException('Không tìm thấy xe');
 
+    // ── Guard: block planning khi xe đang giao hàng ─────────────────────────
+    const shippedExports = await this.prisma.export.findMany({
+      where: {
+        fleet_vehicle_id: vehicle.id,
+        status: 'SHIPPED',
+        is_deleted: false,
+      },
+      select: { id: true, code: true },
+    });
+    if (shippedExports.length > 0) {
+      const codes = shippedExports.map((e) => e.code).join(', ');
+      throw new BadRequestException(
+        `Xe ${vehicle.license_plate} đang giao hàng (${shippedExports.length} phiếu xuất SHIPPED: ${codes}). ` +
+          `Không thể tính lộ trình mới khi xe chưa về kho.`,
+      );
+    }
+
     // ── Resolve export IDs ──────────────────────────────────────────────────
     let exportIds = params.export_ids ?? [];
     if (exportIds.length === 0) {

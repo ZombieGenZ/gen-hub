@@ -1562,7 +1562,7 @@ export class WarehouseManagerInventoryService {
         }
       }
 
-      return tx.export.update({
+      const updatedExport = await tx.export.update({
         where: { id: exportId },
         data: {
           status: ExportStatus.SHIPPED,
@@ -1585,6 +1585,16 @@ export class WarehouseManagerInventoryService {
           },
         },
       });
+
+      // Auto-sync: nếu export được gắn xe thì set xe sang IN_USE
+      if (exportRecord.fleet_vehicle_id) {
+        await tx.fleetVehicle.update({
+          where: { id: exportRecord.fleet_vehicle_id },
+          data: { status: 'IN_USE', updated_at: new Date() },
+        });
+      }
+
+      return updatedExport;
     });
 
     // Invalidate cache
