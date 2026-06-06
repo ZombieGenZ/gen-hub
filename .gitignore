@@ -344,3 +344,5 @@ docs/INBOUND_MISMATCH_WORKFLOW.md
 .cursor/
 
 *.diff
+
+.VSCodeCounter/
