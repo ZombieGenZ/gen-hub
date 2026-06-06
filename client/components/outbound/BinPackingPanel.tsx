@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { BinPackingService } from "@/services/bin-packing/bin-packing.service";
 import { FleetService } from "@/services/fleet/fleet.service";
+import { RoutePlanningPanel } from "./RoutePlanningPanel";
 import type {
     BinPackingResult,
     VehiclePackingResult,
@@ -448,6 +449,14 @@ export function BinPackingPanel({ exportId, warehouseId, productNames = {}, onAp
                                 <p className="font-medium mb-1">Có {activeResult?.unpacked_items} mặt hàng không thể xếp vào xe này.</p>
                                 <p className="text-xs text-yellow-600">Cân nhắc chọn xe lớn hơn hoặc tách phiếu xuất.</p>
                             </div>
+                        )}
+
+                        {/* Route Planning — show when vehicle has assigned exports */}
+                        {vehicleAssignedExportIds.length > 0 && result.fleet_vehicle_id && (
+                            <RoutePlanningPanel
+                                fleetVehicleId={result.fleet_vehicle_id}
+                                exportIds={vehicleAssignedExportIds}
+                            />
                         )}
 
                         {/* Apply button */}

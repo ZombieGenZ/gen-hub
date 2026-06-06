@@ -10,6 +10,7 @@ export interface BinPackingAiItem {
   quantity: number;
   stackable: boolean;
   packaging_method: string;
+  delivery_sequence_rank?: number; // 0=first delivery (near exit), 1=last (deep in truck)
 }
 
 export interface BinPackingAiContainer {
@@ -30,6 +31,7 @@ export interface BinPackingAiResult {
   model_used_vehicle: string;
   model_used_packing: string;
   confidence_vehicle: number;
+  loading_time_minutes?: number;
 }
 
 @Injectable()

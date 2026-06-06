@@ -112,6 +112,7 @@ import { AdminPanelModule } from './modules/admin-panel/admin-panel.module';
 import { RedisAdminModule } from './modules/redis-admin/redis-admin.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { BinPackingModule } from './modules/bin-packing/bin-packing.module';
+import { RoutePlanningModule } from './modules/route-planning/route-planning.module';
 
 @Module({
   imports: [
@@ -230,9 +231,10 @@ import { BinPackingModule } from './modules/bin-packing/bin-packing.module';
     DockScheduleModule,
     GpsModule,
 
-    // Fleet Management & 3D Bin Packing
+    // Fleet Management & 3D Bin Packing & Route Planning
     FleetModule,
     BinPackingModule,
+    RoutePlanningModule,
 
     // Organization Update Request
     OrganizationUpdateRequestModule,

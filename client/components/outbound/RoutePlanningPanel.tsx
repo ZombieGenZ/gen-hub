@@ -1,0 +1,343 @@
+"use client";
+
+import React, { useState, useCallback } from "react";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { RoutePlanningService } from "@/services/route-planning/route-planning.service";
+import type { RoutePlanResult, RouteStop, DeadlineRisk } from "@/services/route-planning/route-planning.types";
+import {
+    DEADLINE_RISK_LABELS,
+    DEADLINE_RISK_COLORS,
+    DEADLINE_RISK_DOT,
+} from "@/services/route-planning/route-planning.types";
+
+const routePlanningService = new RoutePlanningService();
+
+interface RoutePlanningPanelProps {
+    fleetVehicleId: string;
+    exportIds?: string[];
+}
+
+function fmtTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    } catch {
+        return iso;
+    }
+}
+
+function fmtDateTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        return d.toLocaleString("vi-VN", {
+            day: "2-digit", month: "2-digit",
+            hour: "2-digit", minute: "2-digit",
+        });
+    } catch {
+        return iso;
+    }
+}
+
+function fmtMinutes(min: number): string {
+    if (min < 60) return `${Math.round(min)} phút`;
+    const h = Math.floor(min / 60);
+    const m = Math.round(min % 60);
+    return m > 0 ? `${h}h ${m}p` : `${h} giờ`;
+}
+
+function DeadlineBadge({ risk }: { risk: DeadlineRisk }) {
+    return (
+        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${DEADLINE_RISK_COLORS[risk]}`}>
+            {DEADLINE_RISK_LABELS[risk]}
+        </span>
+    );
+}
+
+function StopCard({ stop, isFirst, isLast }: { stop: RouteStop; isFirst: boolean; isLast: boolean }) {
+    const hasDeadline = Boolean(stop.required_date);
+    const isLate = stop.deadline_risk === "MISSED";
+    const isHigh = stop.deadline_risk === "HIGH";
+
+    return (
+        <div className="flex gap-3">
+            {/* Timeline connector */}
+            <div className="flex flex-col items-center">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 z-10 ${
+                    isLate ? "bg-red-100 text-red-700 ring-2 ring-red-400" :
+                    isHigh ? "bg-orange-100 text-orange-700 ring-2 ring-orange-400" :
+                    "bg-primary/10 text-primary"
+                }`}>
+                    {stop.sequence}
+                </div>
+                {!isLast && (
+                    <div className="w-0.5 bg-border flex-1 my-1 min-h-[28px]" />
+                )}
+            </div>
+
+            {/* Stop details */}
+            <div className={`flex-1 pb-4 rounded-xl border p-3 mb-1 ${
+                isLate ? "border-red-200 bg-red-50/40" :
+                isHigh ? "border-orange-200 bg-orange-50/40" :
+                "border-border bg-card"
+            }`}>
+                {/* Header row */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-primary">{stop.export_code}</span>
+                        {stop.partner_name && (
+                            <span className="text-xs text-muted-foreground">{stop.partner_name}</span>
+                        )}
+                    </div>
+                    <DeadlineBadge risk={stop.deadline_risk} />
+                </div>
+
+                {/* Address */}
+                {stop.delivery_address && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
+                        <svg className="w-3 h-3 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {stop.delivery_address}
+                    </p>
+                )}
+
+                {/* Time grid */}
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <div className="flex items-center gap-1">
+                        <svg className="w-3 h-3 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-muted-foreground">Di chuyển:</span>
+                        <span className="font-medium">{fmtMinutes(stop.travel_time_minutes)}</span>
+                        {stop.distance_km > 0 && (
+                            <span className="text-muted-foreground">({stop.distance_km.toFixed(1)} km)</span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <svg className="w-3 h-3 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-muted-foreground">Ước đến:</span>
+                        <span className={`font-semibold ${isLate ? "text-red-600" : isHigh ? "text-orange-600" : "text-foreground"}`}>
+                            {fmtTime(stop.estimated_arrival)}
+                        </span>
+                    </div>
+                    {hasDeadline && (
+                        <div className="flex items-center gap-1 col-span-2">
+                            <svg className="w-3 h-3 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-muted-foreground">Yêu cầu trước:</span>
+                            <span className="font-medium">{fmtDateTime(stop.required_date!)}</span>
+                            {stop.deadline_buffer_minutes != null && (
+                                <span className={`ml-1 ${
+                                    stop.deadline_buffer_minutes < 0 ? "text-red-600" :
+                                    stop.deadline_buffer_minutes < 30 ? "text-orange-600" :
+                                    "text-green-600"
+                                }`}>
+                                    ({stop.deadline_buffer_minutes < 0
+                                        ? `trễ ${Math.abs(stop.deadline_buffer_minutes).toFixed(0)} phút`
+                                        : `còn ${stop.deadline_buffer_minutes.toFixed(0)} phút`})
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function RoutePlanningPanel({ fleetVehicleId, exportIds }: RoutePlanningPanelProps) {
+    const [result, setResult] = useState<RoutePlanResult | null>(null);
+    const [computing, setComputing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [departureTime, setDepartureTime] = useState(() => {
+        const now = new Date();
+        now.setSeconds(0, 0);
+        return now.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+    });
+
+    const handlePlan = useCallback(async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        setComputing(true);
+        setError(null);
+        try {
+            const res = await routePlanningService.plan(token, {
+                fleet_vehicle_id: fleetVehicleId,
+                export_ids: exportIds,
+                departure_time: new Date(departureTime).toISOString(),
+            });
+            setResult(res);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Không thể tính lộ trình";
+            try { setError((JSON.parse(msg) as { message?: string }).message ?? msg); }
+            catch { setError(msg); }
+        } finally {
+            setComputing(false);
+        }
+    }, [fleetVehicleId, exportIds, departureTime]);
+
+    return (
+        <div className="border rounded-2xl overflow-hidden bg-card">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b bg-muted/20">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold">Lộ trình giao hàng thông minh</p>
+                        <p className="text-xs text-muted-foreground">
+                            {result ? `${result.route.length} điểm giao · AI: ${result.ai_available ? "✓" : "rule-based"}` : "Tính toán thứ tự giao hàng tối ưu"}
+                        </p>
+                    </div>
+                </div>
+                {result && (
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        result.deadline_warnings.length > 0 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                    }`}>
+                        {result.deadline_warnings.length > 0
+                            ? `${result.deadline_warnings.length} cảnh báo`
+                            : "Đúng hạn"}
+                    </span>
+                )}
+            </div>
+
+            <div className="p-5 space-y-4">
+                {/* Controls */}
+                <div className="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                            Giờ xuất phát dự kiến
+                        </label>
+                        <input
+                            type="datetime-local"
+                            className="border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                            value={departureTime}
+                            onChange={(e) => setDepartureTime(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        onClick={handlePlan}
+                        disabled={computing}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
+                    >
+                        {computing ? (
+                            <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Đang tính...</>
+                        ) : (
+                            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>Tính lộ trình</>
+                        )}
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">{error}</div>
+                )}
+
+                {result && (
+                    <>
+                        {/* Summary bar */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="bg-muted/30 rounded-xl p-3">
+                                <p className="text-xs text-muted-foreground">Bốc xếp hàng</p>
+                                <p className="text-lg font-bold text-primary mt-0.5">{fmtMinutes(result.loading_time_minutes)}</p>
+                            </div>
+                            <div className="bg-muted/30 rounded-xl p-3">
+                                <p className="text-xs text-muted-foreground">Xuất phát (sau bốc)</p>
+                                <p className="text-lg font-bold mt-0.5">{fmtTime(result.departure_after_loading)}</p>
+                            </div>
+                            <div className="bg-muted/30 rounded-xl p-3">
+                                <p className="text-xs text-muted-foreground">Tổng thời gian lộ trình</p>
+                                <p className="text-lg font-bold mt-0.5">{fmtMinutes(result.total_route_time_minutes)}</p>
+                            </div>
+                            <div className="bg-muted/30 rounded-xl p-3">
+                                <p className="text-xs text-muted-foreground">Số điểm giao</p>
+                                <p className="text-lg font-bold mt-0.5">{result.route.length}</p>
+                            </div>
+                        </div>
+
+                        {/* Deadline warnings */}
+                        {result.deadline_warnings.length > 0 && (
+                            <div className="space-y-2">
+                                {result.deadline_warnings.map((w) => (
+                                    <div key={w.export_id} className={`flex gap-2 rounded-xl p-3 text-xs ${
+                                        w.deadline_risk === "MISSED" ? "bg-red-50 border border-red-200 text-red-800" : "bg-orange-50 border border-orange-200 text-orange-800"
+                                    }`}>
+                                        <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.194-.833-2.964 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                        <span>{w.message}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Departure from warehouse */}
+                        <div className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                    <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                </div>
+                                <div className="w-0.5 bg-border flex-1 my-1 min-h-[20px]" />
+                            </div>
+                            <div className="pb-3 pt-1 flex-1">
+                                <p className="text-xs font-semibold text-blue-700">{result.warehouse_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Bốc xếp hàng {fmtMinutes(result.loading_time_minutes)} · Xuất phát {fmtTime(result.departure_after_loading)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Route stops */}
+                        <div>
+                            {result.route.map((stop, idx) => (
+                                <StopCard
+                                    key={stop.export_id}
+                                    stop={stop}
+                                    isFirst={idx === 0}
+                                    isLast={idx === result.route.length - 1}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Algorithm chip */}
+                        <div className={`text-xs rounded-xl px-3 py-2 flex items-center gap-2 ${
+                            result.ai_available
+                                ? "bg-blue-50 border border-blue-200 text-blue-700"
+                                : "bg-muted/30 text-muted-foreground"
+                        }`}>
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-mono">{result.algorithm_used}</span>
+                            {!result.ai_available && (
+                                <span className="text-muted-foreground">(AI không khả dụng — dùng rule-based)</span>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {/* Empty state */}
+                {!result && !computing && !error && (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-blue-50 flex items-center justify-center">
+                            <svg className="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                        </div>
+                        <p className="text-sm">Nhấn "Tính lộ trình" để tối ưu thứ tự giao hàng theo deadline.</p>
+                        <p className="text-xs mt-1">AI sẽ tính thời gian bốc xếp hàng + cảnh báo nếu có nguy cơ trễ hạn.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
