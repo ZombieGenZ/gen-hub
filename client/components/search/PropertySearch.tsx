@@ -759,8 +759,8 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                                                     </div>
                                                     <p className="text-xs text-muted-foreground italic line-clamp-2">{rec.match_reason}</p>
                                                     <div className="flex gap-2 pt-0.5">
-                                                        <Link href={`/warehouse/${rec.warehouse_id}`} className="flex-1 text-center text-xs py-1.5 border rounded-lg hover:bg-muted/50 transition-colors">Xem chi tiết</Link>
-                                                        <a href={rec.checkout_url} className="flex-1 text-center text-xs py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Thuê ngay</a>
+                                                        <Link href={`/kho-bai/${rec.warehouse_id}`} className="flex-1 text-center text-xs py-1.5 border rounded-lg hover:bg-muted/50 transition-colors">Xem chi tiết</Link>
+                                                        <Link href={`/kho-bai/${rec.warehouse_id}`} className="flex-1 text-center text-xs py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Thuê ngay</Link>
                                                     </div>
                                                 </div>
                                             ))}

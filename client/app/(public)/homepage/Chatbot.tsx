@@ -1436,8 +1436,8 @@ function ApiChatbot() {
                                         </div>
                                         <p className="text-[11px] text-slate-500 italic line-clamp-1">{rec.match_reason}</p>
                                         <div className="flex gap-1.5 pt-0.5">
-                                            <a href={`/warehouse/${rec.warehouse_id}`} className="flex-1 text-center text-[11px] py-1 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-slate-700">Xem kho</a>
-                                            <a href={rec.checkout_url} className="flex-1 text-center text-[11px] py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">Thuê ngay</a>
+                                            <a href={`/kho-bai/${rec.warehouse_id}`} className="flex-1 text-center text-[11px] py-1 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-slate-700">Xem kho</a>
+                                            <a href={`/kho-bai/${rec.warehouse_id}`} className="flex-1 text-center text-[11px] py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">Thuê ngay</a>
                                         </div>
                                     </div>
                                 ))}

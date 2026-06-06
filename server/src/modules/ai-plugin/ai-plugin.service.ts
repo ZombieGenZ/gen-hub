@@ -233,7 +233,7 @@ export class AiPluginService {
           match_score: r.match_score,
           match_reason: r.match_reason,
           highlights: r.highlights,
-          checkout_url: `${appBaseUrl}/warehouse/${w.id}`,
+          checkout_url: `${appBaseUrl}/kho-bai/${w.id}`,
         };
       });
 
