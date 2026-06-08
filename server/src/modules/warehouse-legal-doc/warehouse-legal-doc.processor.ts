@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeminiService } from '../ai-hub/services/gemini.service';
+import { LocalLegalDocService } from '../ai-hub/services/local-legal-doc.service';
 import { BackblazeB2Service } from '../backblaze-b2/backblaze-b2.service';
 import type { TrustBadgeLevel } from '@prisma/client';
 
@@ -27,6 +28,7 @@ export class WarehouseLegalDocProcessor {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: GeminiService,
+    private readonly localLegalDoc: LocalLegalDocService,
     private readonly b2: BackblazeB2Service,
   ) {}
 
@@ -62,11 +64,30 @@ export class WarehouseLegalDocProcessor {
       const base64Data = buffer.toString('base64');
 
       const docTypeLabel = DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type;
-      const result = await this.gemini.analyzeDocument(
+
+      // Try local AI first; fall back to Gemini if unavailable or low confidence
+      let result = await this.localLegalDoc.analyzeDocument(
         base64Data,
         doc.mime_type,
-        docTypeLabel,
+        doc.document_type,
       );
+
+      if (!result || result.confidence < 0.35) {
+        if (result) {
+          this.logger.log(
+            `Local AI confidence too low (${result.confidence}) for ${documentId} — using Gemini`,
+          );
+        }
+        result = await this.gemini.analyzeDocument(
+          base64Data,
+          doc.mime_type,
+          docTypeLabel,
+        );
+      } else {
+        this.logger.log(
+          `Local AI analysis success for ${documentId} (confidence=${result.confidence})`,
+        );
+      }
 
       await this.prisma.warehouseLegalDocument.update({
         where: { id: documentId },

@@ -68,8 +68,7 @@ export class RoutePlanningAiService {
   private readonly enabled: boolean;
 
   constructor() {
-    this.baseUrl =
-      process.env.ROUTE_PLANNER_AI_URL ?? 'http://localhost:8003';
+    this.baseUrl = process.env.ROUTE_PLANNER_AI_URL ?? 'http://localhost:8003';
     this.enabled = process.env.USE_ROUTE_PLANNING_AI !== 'false';
   }
 

@@ -710,6 +710,7 @@ export default function OutboundDetailPage() {
                 <TabsContent value="binpacking">
                     <BinPackingPanel
                         exportId={data.id}
+                        exportCode={data.code}
                         warehouseId={data.warehouse_id ?? data.warehouse?.id ?? ""}
                         warehouseLat={data.warehouse?.latitude}
                         warehouseLng={data.warehouse?.longitude}

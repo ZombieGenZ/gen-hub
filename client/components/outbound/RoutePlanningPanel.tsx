@@ -516,16 +516,16 @@ export function RoutePlanningPanel({
             </div>
 
             <div className="p-5 space-y-4">
-                {/* In-delivery guard banner */}
+                {/* In-delivery info banner */}
                 {isVehicleInDelivery && (
-                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-                        <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.194-.833-2.964 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800">
+                        <svg className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
                             <p className="font-semibold">Xe đang giao hàng</p>
-                            <p className="text-xs text-amber-700 mt-0.5">
-                                Có phiếu xuất đang ở trạng thái SHIPPED. Không thể tính lộ trình mới khi xe chưa về kho.
+                            <p className="text-xs text-blue-700 mt-0.5">
+                                Bạn vẫn có thể tính toán và xem lộ trình. Tuy nhiên nút <span className="font-medium">Áp dụng lộ trình</span> sẽ bị khóa cho đến khi xe hoàn tất chuyến hiện tại.
                             </p>
                         </div>
                     </div>
@@ -546,12 +546,8 @@ export function RoutePlanningPanel({
                     </div>
                     <button
                         onClick={handlePlan}
-                        disabled={computing} // || isVehicleInDelivery
-                        className={`px-4 py-2 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2 whitespace-nowrap ${
-                            isVehicleInDelivery
-                                ? "bg-amber-400 cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-700"
-                        }`}
+                        disabled={computing}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
                     >
                         {computing ? (
                             <>
@@ -669,6 +665,25 @@ export function RoutePlanningPanel({
                             {!result.ai_available && (
                                 <span className="text-muted-foreground">(AI không khả dụng — dùng rule-based)</span>
                             )}
+                        </div>
+
+                        {/* Apply route button */}
+                        <div className="flex justify-end">
+                            <button
+                                disabled={isVehicleInDelivery}
+                                title={isVehicleInDelivery ? "Xe đang giao hàng — hoàn tất chuyến hiện tại trước khi áp dụng lộ trình mới" : undefined}
+                                className="px-4 py-2 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed bg-green-600 hover:bg-green-700 disabled:bg-green-600"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Áp dụng lộ trình
+                                {isVehicleInDelivery && (
+                                    <svg className="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                )}
+                            </button>
                         </div>
                     </>
                 )}

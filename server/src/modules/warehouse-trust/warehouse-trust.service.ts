@@ -17,11 +17,10 @@ export class WarehouseTrustService {
   }
 
   async listPendingDocuments(reviewStatus?: string) {
-    const status = (reviewStatus ?? 'PENDING') as DocReviewStatus;
     return this.prisma.warehouseLegalDocument.findMany({
       where: {
         is_deleted: false,
-        review_status: status,
+        ...(reviewStatus ? { review_status: reviewStatus as DocReviewStatus } : {}),
       },
       include: {
         warehouse_template: {
@@ -29,7 +28,7 @@ export class WarehouseTrustService {
         },
       },
       orderBy: { created_at: 'desc' },
-      take: 100,
+      take: 200,
     });
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { BinPackingService } from "@/services/bin-packing/bin-packing.service";
@@ -27,6 +27,7 @@ type ViewMode = "single" | "vehicle";
 
 interface BinPackingPanelProps {
     exportId: string;
+    exportCode?: string;
     warehouseId: string;
     warehouseLat?: number | null;
     warehouseLng?: number | null;
@@ -35,7 +36,7 @@ interface BinPackingPanelProps {
     onApplied?: () => void;
 }
 
-export function BinPackingPanel({ exportId, warehouseId, warehouseLat, warehouseLng, warehouseName, productNames = {}, onApplied }: BinPackingPanelProps) {
+export function BinPackingPanel({ exportId, exportCode, warehouseId, warehouseLat, warehouseLng, warehouseName, productNames = {}, onApplied }: BinPackingPanelProps) {
     const [result, setResult] = useState<BinPackingResult | null>(null);
     const [vehicleResult, setVehicleResult] = useState<VehiclePackingResult | null>(null);
     const [viewMode, setViewMode] = useState<ViewMode>("single");
@@ -206,6 +207,39 @@ export function BinPackingPanel({ exportId, warehouseId, warehouseLat, warehouse
         ? Math.max(0, assignedCount - 1)
         : Math.max(0, assignedCount - 1);
 
+    // ── Item detail for current export being displayed ──────────────────────
+    // Groups placed items by product_id and counts quantities
+    const currentExportItems = useMemo(() => {
+        if (!viewerLayoutJson) return [];
+        const filtered = viewerCurrentExportId
+            ? viewerLayoutJson.placed.filter((p) => p.export_id === viewerCurrentExportId)
+            : viewerLayoutJson.placed;
+        const map = new Map<string, { name: string; count: number }>();
+        for (const item of filtered) {
+            const entry = map.get(item.product_id);
+            const name = productNames[item.product_id] ?? `SP #${item.product_id.slice(0, 8)}`;
+            if (entry) { entry.count++; }
+            else { map.set(item.product_id, { name, count: 1 }); }
+        }
+        return Array.from(map.values()).sort((a, b) => b.count - a.count);
+    }, [viewerLayoutJson, viewerCurrentExportId, productNames]);
+
+    // Items grouped per export in vehicle mode (for the enhanced summary panel)
+    const exportItemGroups = useMemo(() => {
+        if (viewMode !== "vehicle" || !viewerLayoutJson || !exportSummary.length) return [];
+        return exportSummary.map((s) => {
+            const placed = viewerLayoutJson.placed.filter((p) => p.export_id === s.export_id);
+            const map = new Map<string, { name: string; count: number }>();
+            for (const item of placed) {
+                const entry = map.get(item.product_id);
+                const name = productNames[item.product_id] ?? `SP #${item.product_id.slice(0, 8)}`;
+                if (entry) { entry.count++; }
+                else { map.set(item.product_id, { name, count: 1 }); }
+            }
+            return { ...s, items: Array.from(map.values()).sort((a, b) => b.count - a.count) };
+        });
+    }, [viewMode, viewerLayoutJson, exportSummary, productNames]);
+
     return (
         <div className="border rounded-2xl overflow-hidden bg-card">
             {/* Header */}
@@ -330,44 +364,57 @@ export function BinPackingPanel({ exportId, warehouseId, warehouseLat, warehouse
                             </button>
                         </div>
 
-                        {/* Export summary (vehicle mode) */}
-                        {viewMode === "vehicle" && exportSummary.length > 0 && (
+                        {/* Export summary (vehicle mode) — enhanced with item details */}
+                        {viewMode === "vehicle" && exportItemGroups.length > 0 && (
                             <div className="border rounded-xl overflow-hidden">
-                                <div className="bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                <div className="bg-muted/30 px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">
                                     Phiếu xuất trên xe
                                 </div>
                                 <div className="divide-y">
-                                    {exportSummary.map((s) => {
+                                    {exportItemGroups.map((s) => {
                                         const isCurrent = s.export_id === exportId;
                                         return (
-                                            <div
-                                                key={s.export_id}
-                                                className={`flex items-center justify-between px-3 py-2.5 text-xs transition-all ${
-                                                    isCurrent
-                                                        ? "bg-primary/10 border-l-[3px] border-primary"
-                                                        : "hover:bg-muted/20 border-l-[3px] border-transparent"
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    {isCurrent && (
-                                                        <span className="relative flex h-2 w-2 shrink-0">
-                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                            <div key={s.export_id} className={`border-l-[3px] transition-all ${isCurrent ? "border-primary bg-primary/5" : "border-transparent"}`}>
+                                                {/* Export header row */}
+                                                <div className={`flex items-center justify-between px-3 py-2.5 text-xs ${isCurrent ? "" : "hover:bg-muted/20"}`}>
+                                                    <div className="flex items-center gap-2">
+                                                        {isCurrent && (
+                                                            <span className="relative flex h-2 w-2 shrink-0">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                                                            </span>
+                                                        )}
+                                                        <span className={`font-mono font-semibold ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                                                            {s.export_code}
                                                         </span>
-                                                    )}
-                                                    <span className={`font-mono font-semibold ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
-                                                        {s.export_code}
-                                                    </span>
-                                                    {isCurrent && (
-                                                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                                                            đang xem
-                                                        </span>
-                                                    )}
+                                                        {isCurrent && (
+                                                            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                                                                đang xem
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                                        <span className="text-green-600 font-medium">{s.packed} xếp được</span>
+                                                        {s.unpacked > 0 && <span className="text-red-500">{s.unpacked} không xếp</span>}
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <span className="text-green-600 font-medium">{s.packed} xếp được</span>
-                                                    {s.unpacked > 0 && <span className="text-red-500">{s.unpacked} không xếp</span>}
-                                                </div>
+                                                {/* Item detail rows */}
+                                                {s.items.length > 0 && (
+                                                    <div className={`mx-3 mb-2.5 rounded-lg overflow-hidden border text-xs ${isCurrent ? "border-primary/20 bg-background" : "border-border bg-muted/10"}`}>
+                                                        <div className="grid grid-cols-[1fr_auto] divide-y">
+                                                            {s.items.map((item) => (
+                                                                <React.Fragment key={item.name}>
+                                                                    <div className="px-3 py-1.5 text-foreground font-medium truncate" title={item.name}>
+                                                                        {item.name}
+                                                                    </div>
+                                                                    <div className={`px-3 py-1.5 text-right font-semibold tabular-nums ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                                                                        {item.count}
+                                                                    </div>
+                                                                </React.Fragment>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -464,8 +511,53 @@ export function BinPackingPanel({ exportId, warehouseId, warehouseLat, warehouse
                             />
                         </div>
 
-                        {/* Unpacked warning */}
-                        {(activeResult?.unpacked_items ?? 0) > 0 && (
+                        {/* Item detail widget — shows for single mode; vehicle mode has inline items in export summary above */}
+                        {viewMode === "single" && currentExportItems.length > 0 && (
+                            <div className="border rounded-xl overflow-hidden">
+                                <div className="bg-muted/30 px-4 py-2.5 border-b flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                            Mặt hàng trong phiếu
+                                        </span>
+                                        {exportCode && (
+                                            <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                                {exportCode}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                        {currentExportItems.length} loại · {currentExportItems.reduce((s, i) => s + i.count, 0)} kiện xếp được
+                                    </span>
+                                </div>
+                                <div className="divide-y">
+                                    {currentExportItems.map((item) => (
+                                        <div key={item.name} className="grid grid-cols-[1fr_auto] items-center px-4 py-2 text-xs hover:bg-muted/20 transition-colors">
+                                            <span className="font-medium text-foreground truncate pr-3" title={item.name}>
+                                                {item.name}
+                                            </span>
+                                            <span className="font-bold text-primary tabular-nums text-sm">
+                                                {item.count}
+                                                <span className="text-[10px] font-normal text-muted-foreground ml-1">kiện</span>
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {(activeResult?.unpacked_items ?? 0) > 0 && (
+                                    <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-amber-700 bg-amber-50 border-t">
+                                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {activeResult?.unpacked_items} mặt hàng không thể xếp vào xe
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Unpacked warning (only in single mode without the item widget, or vehicle mode) */}
+                        {(viewMode === "vehicle") && (activeResult?.unpacked_items ?? 0) > 0 && (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800">
                                 <p className="font-medium mb-1">Có {activeResult?.unpacked_items} mặt hàng không thể xếp vào xe này.</p>
                                 <p className="text-xs text-yellow-600">Cân nhắc chọn xe lớn hơn hoặc tách phiếu xuất.</p>

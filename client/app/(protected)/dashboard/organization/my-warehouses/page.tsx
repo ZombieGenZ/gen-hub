@@ -9,6 +9,7 @@ import {
     ArrowRightIcon,
     ArrowPathIcon,
     ExclamationCircleIcon,
+    ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { orgHelper } from "@/lib/organization.utils";
@@ -176,9 +177,21 @@ export default function MyWarehousesPage() {
                                         </div>
                                     </div>
 
-                                    <button className="w-full flex items-center justify-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium mt-1">
-                                        Xem chi tiết <ArrowRightIcon className="h-3.5 w-3.5" />
-                                    </button>
+                                    <div className="flex gap-2 mt-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/dashboard/organization/my-warehouses/${wh.id}?tab=documents`);
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-200 rounded-lg py-1.5 hover:bg-emerald-50 transition-colors"
+                                        >
+                                            <ShieldCheckIcon className="h-3.5 w-3.5" />
+                                            Tài liệu pháp lý
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                            Xem chi tiết <ArrowRightIcon className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );

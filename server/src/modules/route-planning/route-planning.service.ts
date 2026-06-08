@@ -209,7 +209,9 @@ export class RoutePlanningService {
       if (!a.required_date) return 1;
       if (!b.required_date) return -1;
       return (
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         new Date(a.required_date).getTime() -
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         new Date(b.required_date).getTime()
       );
     });
@@ -239,6 +241,7 @@ export class RoutePlanningService {
                 idx * (TRAVEL_ESTIMATE + SERVICE_TIME) * 60_000,
             );
       const arrival = new Date(departFrom.getTime() + TRAVEL_ESTIMATE * 60_000);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const reqDt = exp.required_date ? new Date(exp.required_date) : null;
       const bufferMin = reqDt
         ? (reqDt.getTime() - arrival.getTime()) / 60_000
@@ -291,6 +294,7 @@ export class RoutePlanningService {
       vehicle_name: vehicle.name,
       vehicle_license_plate: vehicle.license_plate,
       warehouse_name: vehicle.warehouse.name,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       loading_time_minutes: Math.round(loadingMin),
       departure_time: departureIso,
       departure_after_loading: depAfterLoading.toISOString(),

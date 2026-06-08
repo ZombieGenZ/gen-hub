@@ -27,7 +27,7 @@ const PACKAGING_EDGE_COLORS: Record<string, string> = {
     OVERSIZED:     "#F59E0B",
     NON_STACKABLE: "#8B5CF6",
     STACKABLE:     "#10B981",
-    STANDARD:      "#1E293B",
+    STANDARD:      "#94A3B8",
 };
 
 const PACKAGING_LABELS: Record<string, string> = {
@@ -217,11 +217,11 @@ function ContainerBox({ length, width, height, containerScale, onHover }: Contai
 }
 
 // ── Hover Tooltip (DOM overlay) ────────────────────────────────────────────
-const TOOLTIP_W_ITEM = 272;
-const TOOLTIP_H_ITEM = 280;
-const TOOLTIP_W_CTR  = 208;
-const TOOLTIP_H_CTR  = 148;
-const CURSOR_OFFSET   = 14;
+const TOOLTIP_W_ITEM = 308;
+const TOOLTIP_H_ITEM = 310;
+const TOOLTIP_W_CTR  = 240;
+const TOOLTIP_H_CTR  = 160;
+const CURSOR_OFFSET   = 16;
 
 function useTooltipPos(
     screenX: number,
@@ -249,8 +249,21 @@ function useTooltipPos(
     return { left, top };
 }
 
+function DimBox({ label, value, unit = "cm", accent }: { label: string; value: number; unit?: string; accent?: "blue" }) {
+    const valColor = accent === "blue" ? "text-sky-300" : "text-white";
+    return (
+        <div className="bg-slate-800 rounded-lg px-2 py-2.5 text-center">
+            <p className="text-[11px] text-slate-300 uppercase tracking-wide leading-none mb-1.5">{label}</p>
+            <p className={`font-mono font-bold text-[14px] leading-none ${valColor}`}>
+                {value}
+                {unit && <span className="text-[10px] font-normal text-slate-300 ml-1">{unit}</span>}
+            </p>
+        </div>
+    );
+}
+
 function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: React.RefObject<HTMLDivElement | null> }) {
-    const ROTATION_LABELS = ["Ngang (L×W×H)", "Xoay 90° trục Z", "Xoay ngang (L×H×W)"];
+    const ROTATION_LABELS = ["Ngang (D×R×C)", "Xoay 90° trục Z", "Đứng (D×C×R)"];
     const isItem = info.kind === "item";
     const { left, top } = useTooltipPos(
         info.screenX, info.screenY,
@@ -259,132 +272,144 @@ function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: R
         containerRef,
     );
 
-    const baseClass = "absolute pointer-events-none bg-slate-900/97 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-slate-700/80 select-none";
+    const base = "absolute pointer-events-none bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 select-none z-50";
 
+    /* ── Container tooltip ── */
     if (info.kind === "container") {
         const vol = ((info.cL! * info.cW! * info.cH!) / 1_000_000).toFixed(3);
         return (
-            <div className={`${baseClass} z-50 p-4`} style={{ left, top, width: TOOLTIP_W_CTR }}>
-                <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-slate-700">
-                    <div className="w-7 h-7 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
-                        <svg className="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={`${base} overflow-hidden`} style={{ left, top, width: TOOLTIP_W_CTR }}>
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-sky-500/10 border-b border-slate-700">
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-sky-400 uppercase tracking-wider leading-none">Khoang xe</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Thùng chứa hàng</p>
+                        <p className="text-sm font-bold text-sky-300 leading-tight">Khoang xe</p>
+                        <p className="text-xs text-slate-300 mt-0.5">Thùng chứa hàng</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5 mb-3">
-                    <DimBox label="Dài" value={info.cL!} />
-                    <DimBox label="Rộng" value={info.cW!} />
-                    <DimBox label="Cao" value={info.cH!} />
-                </div>
-                <div className="flex justify-between items-center bg-emerald-500/10 rounded-lg px-2.5 py-1.5">
-                    <span className="text-[11px] text-slate-400">Tổng thể tích</span>
-                    <span className="text-[12px] font-bold font-mono text-emerald-400">{vol} m³</span>
+                <div className="p-4 space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                        <DimBox label="Dài" value={info.cL!} />
+                        <DimBox label="Rộng" value={info.cW!} />
+                        <DimBox label="Cao" value={info.cH!} />
+                    </div>
+                    <div className="flex justify-between items-center bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                        <span className="text-xs text-white">Tổng thể tích</span>
+                        <span className="text-sm font-bold font-mono text-emerald-400">{vol} m³</span>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    const vol = ((info.dimL! * info.dimW! * info.dimH!) / 1_000_000).toFixed(4);
+    /* ── Item tooltip ── */
     const volLiters = ((info.dimL! * info.dimW! * info.dimH!) / 1000).toFixed(1);
     const rotLabel = ROTATION_LABELS[info.rotation ?? 0] ?? "—";
     const pkgMethod = info.packagingMethod ?? "STANDARD";
-    const pkgLabel = PACKAGING_LABELS[pkgMethod] ?? pkgMethod;
-    const pkgEdgeColor = PACKAGING_EDGE_COLORS[pkgMethod] ?? PACKAGING_EDGE_COLORS.STANDARD;
-    const isOther = info.isCurrentExport === false;
+    const pkgLabel  = PACKAGING_LABELS[pkgMethod] ?? pkgMethod;
+    const pkgColor  = PACKAGING_EDGE_COLORS[pkgMethod] ?? PACKAGING_EDGE_COLORS.STANDARD;
+    const isOther   = info.isCurrentExport === false;
 
     return (
-        <div className={`${baseClass} z-50 overflow-hidden`} style={{ left, top, width: TOOLTIP_W_ITEM }}>
-            {/* Export order badge (only in multi-order mode) */}
+        <div className={`${base} overflow-hidden`} style={{ left, top, width: TOOLTIP_W_ITEM }}>
+
+            {/* ── Export badge (multi-order) ── */}
             {info.exportCode && (
-                <div className={`px-3 pt-2.5 pb-2 flex items-center gap-2 border-b border-slate-700/60 ${
-                    isOther ? "bg-slate-700/40" : "bg-violet-600/20"
+                <div className={`flex items-center gap-2 px-4 py-2.5 border-b border-slate-700 ${
+                    isOther ? "bg-slate-700/50" : "bg-violet-600/20"
                 }`}>
-                    <svg className="w-3 h-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 shrink-0 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className={`text-[11px] font-mono font-bold ${isOther ? "text-slate-400" : "text-violet-300"}`}>
+                    <span className={`text-xs font-mono font-bold ${isOther ? "text-slate-300" : "text-violet-300"}`}>
                         {info.exportCode}
                     </span>
-                    {!isOther && (
-                        <span className="ml-auto text-[9px] bg-violet-500/30 text-violet-300 px-1.5 py-0.5 rounded-full font-medium">
-                            Đơn này
-                        </span>
-                    )}
-                    {isOther && (
-                        <span className="ml-auto text-[9px] bg-slate-500/30 text-slate-400 px-1.5 py-0.5 rounded-full">
-                            Đơn khác
-                        </span>
-                    )}
+                    <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        isOther
+                            ? "bg-slate-600/60 text-slate-300"
+                            : "bg-violet-500/30 text-violet-200"
+                    }`}>
+                        {isOther ? "Đơn khác" : "Đơn này"}
+                    </span>
                 </div>
             )}
 
-            <div className="p-3.5 space-y-3">
-                {/* Product header */}
-                <div className="flex items-center gap-2.5">
+            <div className="p-4 space-y-3.5">
+
+                {/* ── Product name + color swatch ── */}
+                <div className="flex items-start gap-3">
                     <div
-                        className="w-8 h-8 rounded-lg shrink-0 shadow-inner ring-1 ring-white/10"
-                        style={{ backgroundColor: info.color, opacity: isOther ? 0.5 : 0.9 }}
+                        className="w-10 h-10 rounded-xl shrink-0 ring-1 ring-white/10 shadow-lg"
+                        style={{ backgroundColor: info.color, opacity: isOther ? 0.45 : 1 }}
                     />
-                    <div className="min-w-0">
-                        <p className={`text-[12px] font-bold truncate leading-tight ${isOther ? "text-slate-400" : "text-white"}`}>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                        <p className={`text-sm font-bold leading-snug ${isOther ? "text-slate-400" : "text-white"}`}>
                             {info.productName}
                         </p>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{info.itemId?.slice(0, 16)}…</p>
+                        {/* Packaging badge */}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <span
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
+                                style={{ backgroundColor: `${pkgColor}22`, color: pkgColor }}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-sm shrink-0" style={{ backgroundColor: pkgColor }} />
+                                {pkgLabel}
+                            </span>
+                            {info.stackable === false && (
+                                <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded font-medium">
+                                    Không xếp chồng
+                                </span>
+                            )}
+                            {info.stackable === true && pkgMethod !== "STANDARD" && (
+                                <span className="text-[10px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-medium">
+                                    Xếp chồng được
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Packaging method row */}
-                <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-2.5 py-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: pkgEdgeColor }} />
-                    <span className="text-[11px] font-semibold flex-1" style={{ color: pkgEdgeColor }}>{pkgLabel}</span>
-                    {info.stackable === false && (
-                        <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-medium">
-                            Không xếp chồng
-                        </span>
-                    )}
-                    {info.stackable === true && pkgMethod !== "STANDARD" && (
-                        <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-medium">
-                            Xếp được
-                        </span>
-                    )}
-                </div>
+                <div className="border-t border-slate-700/80" />
 
-                {/* Dimensions */}
+                {/* ── Dimensions ── */}
                 <div>
-                    <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Kích thước đặt (cm)</p>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-widest mb-2">
+                        Kích thước xếp (cm)
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
                         <DimBox label="Dài" value={info.dimL!} />
                         <DimBox label="Rộng" value={info.dimW!} />
                         <DimBox label="Cao" value={info.dimH!} />
                     </div>
                 </div>
 
-                {/* Position in container */}
+                {/* ── Position ── */}
                 <div>
-                    <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">Vị trí trong xe (cm)</p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                        <DimBox label="X" value={info.posX!} unit="" accent="blue" />
-                        <DimBox label="Y" value={info.posY!} unit="" accent="blue" />
+                    <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-widest mb-2">
+                        Vị trí trong xe (cm)
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                        <DimBox label="X →" value={info.posX!} unit="" accent="blue" />
+                        <DimBox label="Y →" value={info.posY!} unit="" accent="blue" />
                         <DimBox label="Z ↑" value={info.posZ!} unit="" accent="blue" />
                     </div>
                 </div>
 
-                {/* Stats row */}
-                <div className="grid grid-cols-2 gap-1.5 bg-slate-800/60 rounded-xl px-2.5 py-2">
-                    <div>
-                        <p className="text-[9px] text-slate-500 mb-0.5">Thể tích</p>
-                        <p className="text-[11px] font-mono font-bold text-emerald-400">
-                            {volLiters} <span className="text-[9px] font-normal text-slate-500">lít</span>
+                {/* ── Stats row ── */}
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-800 rounded-lg px-3 py-2.5">
+                        <p className="text-[11px] text-slate-300 mb-1">Thể tích</p>
+                        <p className="text-sm font-mono font-bold text-emerald-400">
+                            {volLiters}
+                            <span className="text-[10px] font-normal text-slate-300 ml-1">lít</span>
                         </p>
                     </div>
-                    <div>
-                        <p className="text-[9px] text-slate-500 mb-0.5">Hướng xếp</p>
-                        <p className="text-[10px] text-amber-300 font-medium leading-tight">{rotLabel}</p>
+                    <div className="bg-slate-800 rounded-lg px-3 py-2.5">
+                        <p className="text-[11px] text-slate-300 mb-1">Hướng xếp</p>
+                        <p className="text-xs text-amber-300 font-semibold leading-tight">{rotLabel}</p>
                     </div>
                 </div>
             </div>
@@ -395,18 +420,8 @@ function HoverTooltip({ info, containerRef }: { info: HoverInfo; containerRef: R
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
     return (
         <div className="flex justify-between items-center">
-            <span className="text-slate-400">{label}</span>
-            <span className={`font-mono font-medium ${highlight ? "text-emerald-400" : "text-white"}`}>{value}</span>
-        </div>
-    );
-}
-
-function DimBox({ label, value, unit = " cm", accent }: { label: string; value: number; unit?: string; accent?: "blue" }) {
-    const valColor = accent === "blue" ? "text-sky-300" : "text-white";
-    return (
-        <div className="bg-slate-800/80 rounded-lg px-1.5 py-2 text-center">
-            <p className="text-[9px] text-slate-500 uppercase tracking-wider leading-none mb-1">{label}</p>
-            <p className={`font-mono font-bold text-[12px] leading-none ${valColor}`}>{value}<span className="text-[9px] font-normal text-slate-500 ml-0.5">{unit}</span></p>
+            <span className="text-slate-300 text-xs">{label}</span>
+            <span className={`font-mono font-medium text-xs ${highlight ? "text-emerald-400" : "text-white"}`}>{value}</span>
         </div>
     );
 }

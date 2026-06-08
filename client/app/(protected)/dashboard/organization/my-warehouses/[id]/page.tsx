@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
     BuildingStorefrontIcon,
     UsersIcon,
@@ -18,8 +18,10 @@ import {
     ArrowPathIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
+    ShieldCheckIcon as ShieldCheckOutlineIcon,
 } from "@heroicons/react/24/outline";
 import { ShieldCheckIcon, StarIcon } from "@heroicons/react/24/solid";
+import { WarehouseDocumentsTab } from "@/components/warehouse-owner/WarehouseDocumentsTab";
 import {
     BarChart,
     Bar,
@@ -51,6 +53,7 @@ const TABS = [
     { id: "tenants", label: "Khách thuê", icon: UsersIcon },
     { id: "contracts", label: "Hợp đồng", icon: DocumentTextIcon },
     { id: "revenue", label: "Doanh thu", icon: CurrencyDollarIcon },
+    { id: "documents", label: "Tài liệu & Xác minh", icon: ShieldCheckOutlineIcon },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -95,10 +98,14 @@ function KpiCard({
 
 export default function MyWarehouseDetailPage() {
     const params = useParams<{ id: string }>();
+    const searchParams = useSearchParams();
     const templateId = params.id;
 
+    const initialTab = (searchParams.get("tab") as TabId | null) ?? "overview";
     const [orgId, setOrgId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<TabId>("overview");
+    const [activeTab, setActiveTab] = useState<TabId>(
+        TABS.some((t) => t.id === initialTab) ? initialTab : "overview"
+    );
 
     const [overview, setOverview] = useState<WarehouseOverviewData | null>(null);
     const [tenants, setTenants] = useState<TenantLease[]>([]);
@@ -553,6 +560,11 @@ export default function MyWarehouseDetailPage() {
                         </>
                     )}
                 </div>
+            )}
+
+            {/* ───────── TAB: DOCUMENTS ───────── */}
+            {activeTab === "documents" && (
+                <WarehouseDocumentsTab warehouseId={templateId} />
             )}
 
             {/* ───────── TAB: REVENUE ───────── */}
