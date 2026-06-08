@@ -6,18 +6,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  IsString,
-  IsArray,
-  IsOptional,
-  IsDateString,
-} from 'class-validator';
+import { IsString, IsArray, IsOptional, IsDateString } from 'class-validator';
 import { RoutePlanningService } from './route-planning.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 class PlanRouteDto {
   @IsString()
-  fleet_vehicle_id: string;
+  fleet_vehicle_id!: string;
 
   @IsOptional()
   @IsArray()

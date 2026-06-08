@@ -46,27 +46,29 @@ export class RoutePlanningService {
     const vehicle = await this.prisma.fleetVehicle.findFirst({
       where: { id: params.fleet_vehicle_id, is_deleted: false },
       include: {
-        warehouse: { select: { id: true, name: true, latitude: true, longitude: true } },
+        warehouse: {
+          select: { id: true, name: true, latitude: true, longitude: true },
+        },
       },
     });
     if (!vehicle) throw new NotFoundException('Không tìm thấy xe');
 
-    // ── Guard: block planning khi xe đang giao hàng ─────────────────────────
-    const shippedExports = await this.prisma.export.findMany({
-      where: {
-        fleet_vehicle_id: vehicle.id,
-        status: 'SHIPPED',
-        is_deleted: false,
-      },
-      select: { id: true, code: true },
-    });
-    if (shippedExports.length > 0) {
-      const codes = shippedExports.map((e) => e.code).join(', ');
-      throw new BadRequestException(
-        `Xe ${vehicle.license_plate} đang giao hàng (${shippedExports.length} phiếu xuất SHIPPED: ${codes}). ` +
-          `Không thể tính lộ trình mới khi xe chưa về kho.`,
-      );
-    }
+    // // ── Guard: block planning khi xe đang giao hàng ─────────────────────────
+    // const shippedExports = await this.prisma.export.findMany({
+    //   where: {
+    //     fleet_vehicle_id: vehicle.id,
+    //     status: 'SHIPPED',
+    //     is_deleted: false,
+    //   },
+    //   select: { id: true, code: true },
+    // });
+    // if (shippedExports.length > 0) {
+    //   const codes = shippedExports.map((e) => e.code).join(', ');
+    //   throw new BadRequestException(
+    //     `Xe ${vehicle.license_plate} đang giao hàng (${shippedExports.length} phiếu xuất SHIPPED: ${codes}). ` +
+    //       `Không thể tính lộ trình mới khi xe chưa về kho.`,
+    //   );
+    // }
 
     // ── Resolve export IDs ──────────────────────────────────────────────────
     let exportIds = params.export_ids ?? [];
@@ -130,7 +132,10 @@ export class RoutePlanningService {
         const p = d.product;
         item_count += qty;
         total_weight_kg += Number(p.weight ?? 1) * qty;
-        const vol = Number(p.length ?? 30) * Number(p.width ?? 30) * Number(p.height ?? 30);
+        const vol =
+          Number(p.length ?? 30) *
+          Number(p.width ?? 30) *
+          Number(p.height ?? 30);
         total_vol += vol * qty;
         const method = p.packaging_method ?? 'STANDARD';
         if (method === 'FRAGILE') fragile_count += qty;
@@ -150,7 +155,8 @@ export class RoutePlanningService {
           fragile_count,
           oversized_count,
           liquid_count,
-          avg_volume_cm3: item_count > 0 ? Math.round(total_vol / item_count) : 1000,
+          avg_volume_cm3:
+            item_count > 0 ? Math.round(total_vol / item_count) : 1000,
         },
       };
     });
@@ -192,32 +198,60 @@ export class RoutePlanningService {
     return this._fallbackPlan(vehicle, exports, departure);
   }
 
-  private _fallbackPlan(vehicle: any, exports: any[], departureIso: string): RoutePlanResult {
+  private _fallbackPlan(
+    vehicle: any,
+    exports: any[],
+    departureIso: string,
+  ): RoutePlanResult {
     // Sort by required_date ascending (EDF), nulls last
     const sorted = [...exports].sort((a, b) => {
       if (!a.required_date && !b.required_date) return 0;
       if (!a.required_date) return 1;
       if (!b.required_date) return -1;
-      return new Date(a.required_date).getTime() - new Date(b.required_date).getTime();
+      return (
+        new Date(a.required_date).getTime() -
+        new Date(b.required_date).getTime()
+      );
     });
 
     const dep = new Date(departureIso);
-    const loadingMin = 10 + sorted.reduce(
-      (s, e) => s + e.details.reduce((ds: number, d: any) => ds + Math.ceil(Number(d.quantity)) * 1.5, 0),
-      0,
-    );
+    const loadingMin =
+      10 +
+      sorted.reduce(
+        (s, e) =>
+          s +
+          e.details.reduce(
+            (ds: number, d: any) => ds + Math.ceil(Number(d.quantity)) * 1.5,
+            0,
+          ),
+        0,
+      );
     const depAfterLoading = new Date(dep.getTime() + loadingMin * 60_000);
     const TRAVEL_ESTIMATE = 20; // minutes per stop (fallback)
     const SERVICE_TIME = 15;
 
     const route = sorted.map((exp, idx) => {
-      const departFrom = idx === 0
-        ? depAfterLoading
-        : new Date(depAfterLoading.getTime() + idx * (TRAVEL_ESTIMATE + SERVICE_TIME) * 60_000);
+      const departFrom =
+        idx === 0
+          ? depAfterLoading
+          : new Date(
+              depAfterLoading.getTime() +
+                idx * (TRAVEL_ESTIMATE + SERVICE_TIME) * 60_000,
+            );
       const arrival = new Date(departFrom.getTime() + TRAVEL_ESTIMATE * 60_000);
       const reqDt = exp.required_date ? new Date(exp.required_date) : null;
-      const bufferMin = reqDt ? (reqDt.getTime() - arrival.getTime()) / 60_000 : null;
-      const risk = !reqDt ? 'LOW' : bufferMin! < 0 ? 'MISSED' : bufferMin! < 30 ? 'HIGH' : bufferMin! < 90 ? 'MEDIUM' : 'LOW';
+      const bufferMin = reqDt
+        ? (reqDt.getTime() - arrival.getTime()) / 60_000
+        : null;
+      const risk = !reqDt
+        ? 'LOW'
+        : bufferMin! < 0
+          ? 'MISSED'
+          : bufferMin! < 30
+            ? 'HIGH'
+            : bufferMin! < 90
+              ? 'MEDIUM'
+              : 'LOW';
 
       return {
         sequence: idx + 1,
@@ -231,8 +265,10 @@ export class RoutePlanningService {
         distance_km: 0,
         required_date: exp.required_date?.toISOString() ?? undefined,
         deadline_risk: risk as any,
-        deadline_buffer_minutes: bufferMin != null ? Math.round(bufferMin) : undefined,
-        delivery_sequence_rank: sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
+        deadline_buffer_minutes:
+          bufferMin != null ? Math.round(bufferMin) : undefined,
+        delivery_sequence_rank:
+          sorted.length > 1 ? idx / (sorted.length - 1) : 0.5,
       };
     });
 
@@ -244,9 +280,10 @@ export class RoutePlanningService {
         required_date: r.required_date ?? '',
         estimated_arrival: r.estimated_arrival,
         deadline_risk: r.deadline_risk,
-        message: r.deadline_risk === 'MISSED'
-          ? `Phiếu ${r.export_code} (${r.partner_name}): ước tính TRỄ hạn.`
-          : `Phiếu ${r.export_code} (${r.partner_name}): còn rất ít thời gian — cần xuất phát đúng giờ.`,
+        message:
+          r.deadline_risk === 'MISSED'
+            ? `Phiếu ${r.export_code} (${r.partner_name}): ước tính TRỄ hạn.`
+            : `Phiếu ${r.export_code} (${r.partner_name}): còn rất ít thời gian — cần xuất phát đúng giờ.`,
       }));
 
     return {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { FleetVehicleStatus } from '@prisma/client';
 import { FleetRepository } from './fleet.repository';
 import { CreateFleetVehicleDto } from './dto/create-fleet-vehicle.dto';
@@ -72,7 +72,12 @@ export class FleetService {
   }
 
   async updateStatus(id: string, status: FleetVehicleStatus, userId: string) {
-    await this.findById(id);
+    const vehicle = await this.findById(id);
+    if (vehicle.status === 'IN_USE') {
+      throw new BadRequestException(
+        'Không thể thay đổi trạng thái xe đang được sử dụng',
+      );
+    }
     return this.repo.update(id, {
       status,
       updated_by: userId,

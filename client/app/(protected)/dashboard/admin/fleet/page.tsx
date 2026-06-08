@@ -324,17 +324,29 @@ export default function FleetPage() {
                                         {fmtKg(v.max_weight_kg)}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <select
-                                            className={`text-xs px-2 py-1 rounded-full font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 ${FLEET_STATUS_COLORS[v.status]}`}
-                                            value={v.status}
-                                            onChange={(e) => handleStatusChange(v.id, e.target.value as FleetVehicleStatus)}
-                                        >
-                                            {(Object.keys(FLEET_STATUS_LABELS) as FleetVehicleStatus[]).map((s) => (
-                                                <option key={s} value={s} className="bg-background text-foreground">
-                                                    {FLEET_STATUS_LABELS[s]}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {v.status === "IN_USE" ? (
+                                            <span
+                                                title="Xe đang được sử dụng — không thể thay đổi trạng thái"
+                                                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium select-none ${FLEET_STATUS_COLORS[v.status]}`}
+                                            >
+                                                {FLEET_STATUS_LABELS[v.status]}
+                                                <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                </svg>
+                                            </span>
+                                        ) : (
+                                            <select
+                                                className={`text-xs px-2 py-1 rounded-full font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 ${FLEET_STATUS_COLORS[v.status]}`}
+                                                value={v.status}
+                                                onChange={(e) => handleStatusChange(v.id, e.target.value as FleetVehicleStatus)}
+                                            >
+                                                {(Object.keys(FLEET_STATUS_LABELS) as FleetVehicleStatus[]).map((s) => (
+                                                    <option key={s} value={s} className="bg-background text-foreground">
+                                                        {FLEET_STATUS_LABELS[s]}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3">
                                         {v.exports && v.exports.length > 0 ? (

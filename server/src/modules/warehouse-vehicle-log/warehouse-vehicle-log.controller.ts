@@ -14,7 +14,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { VehicleLogService } from './warehouse-vehicle-log.service';
 import { CreateVehicleLogDto } from './dto/create-vehicle-log.dto';
@@ -78,7 +84,9 @@ export class VehicleLogController {
   }
 
   @Post('ocr-plate/quick')
-  @ApiOperation({ summary: 'OCR nhanh biển số (không upload ảnh, dùng cho auto-scan)' })
+  @ApiOperation({
+    summary: 'OCR nhanh biển số (không upload ảnh, dùng cho auto-scan)',
+  })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }),

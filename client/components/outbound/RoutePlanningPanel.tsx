@@ -546,7 +546,7 @@ export function RoutePlanningPanel({
                     </div>
                     <button
                         onClick={handlePlan}
-                        disabled={computing || isVehicleInDelivery}
+                        disabled={computing} // || isVehicleInDelivery
                         className={`px-4 py-2 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2 whitespace-nowrap ${
                             isVehicleInDelivery
                                 ? "bg-amber-400 cursor-not-allowed"
