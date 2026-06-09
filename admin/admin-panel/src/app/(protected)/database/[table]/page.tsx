@@ -762,9 +762,9 @@ export default function TablePage() {
                     // Chỉ gửi các field đã thay đổi để tránh lỗi với Decimal/JSON fields
                     const modifiedData: Record<string, unknown> = {};
                     if (c.modifiedColumns && c.newData) {
-                        for (const col of c.modifiedColumns) {
-                            modifiedData[col] = c.newData[col];
-                        }
+                        Array.from(c.modifiedColumns).forEach(col => {
+                            modifiedData[col] = c.newData![col];
+                        });
                     } else {
                         // Fallback: gửi toàn bộ nếu không có modifiedColumns
                         Object.assign(modifiedData, c.newData);
