@@ -1023,10 +1023,33 @@ export class DatabaseAdminService implements OnModuleInit {
     delete cleaned.created_at;
     delete cleaned.updated_at;
 
-    // Chuyển đổi chuỗi rỗng thành null cho các trường DateTime
-    // Prisma yêu cầu DateTime phải là ISO-8601 hợp lệ hoặc null
+    // Lấy schema của table để biết kiểu dữ liệu từng field
+    const dmmf = Prisma.dmmf;
+    const modelName = this.tableNameToDmmfName.get(tableName) || tableName;
+    const dmmfModel = dmmf.datamodel.models.find((m) => m.name === modelName);
+    const fieldTypeMap = new Map<string, string>();
+    if (dmmfModel) {
+      dmmfModel.fields.forEach((f) => fieldTypeMap.set(f.name, f.type));
+    }
+
     for (const key in cleaned) {
-      if (cleaned[key] === '' || cleaned[key] === undefined) {
+      const value = cleaned[key];
+      const fieldType = fieldTypeMap.get(key);
+
+      // Xử lý Decimal field: nếu là Prisma Decimal object {s, e, d} thì convert về số
+      if (fieldType === 'Decimal' && value !== null && value !== undefined) {
+        if (typeof value === 'object' && 'd' in value && 'e' in value && 's' in value) {
+          // Đây là Prisma Decimal internal object - xóa bỏ để tránh lỗi
+          // Frontend không được gửi field này nếu không thay đổi
+          delete cleaned[key];
+          continue;
+        }
+        // Nếu là số hoặc string số, giữ nguyên (Prisma tự convert)
+      }
+
+      // Chuyển đổi chuỗi rỗng thành null cho các trường DateTime
+      // Prisma yêu cầu DateTime phải là ISO-8601 hợp lệ hoặc null
+      if (value === '' || value === undefined) {
         cleaned[key] = null;
       }
     }

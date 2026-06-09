@@ -757,15 +757,27 @@ export default function TablePage() {
             });
 
             const updated = Array.from(pendingChanges.values())
-                .filter((c) => c.type === 'update')
-                .map((c) => ({
-                    id: c.id,
-                    data: c.newData!,
-                }));
+                .filter((c): c is PendingChange => c.type === 'update')
+                .map((c: PendingChange) => {
+                    // Chỉ gửi các field đã thay đổi để tránh lỗi với Decimal/JSON fields
+                    const modifiedData: Record<string, unknown> = {};
+                    if (c.modifiedColumns && c.newData) {
+                        for (const col of c.modifiedColumns) {
+                            modifiedData[col] = c.newData[col];
+                        }
+                    } else {
+                        // Fallback: gửi toàn bộ nếu không có modifiedColumns
+                        Object.assign(modifiedData, c.newData);
+                    }
+                    return {
+                        id: c.id,
+                        data: modifiedData,
+                    };
+                });
 
             const deleted = Array.from(pendingChanges.values())
-                .filter((c) => c.type === 'delete')
-                .map((c) => c.id);
+                .filter((c): c is PendingChange => c.type === 'delete')
+                .map((c: PendingChange) => c.id);
 
             const result = await adminApi.batchUpdate(tableName, { created, updated, deleted });
 
@@ -781,7 +793,7 @@ export default function TablePage() {
                         .filter((e: { type: string }) => e.type === 'create')
                         .map((e: { index?: number }) => e.index)
                 );
-                const remainingNewRows = newRows.filter((_, index) => failedCreateIndices.has(index));
+                const remainingNewRows = newRows.filter((_: RecordData, index: number) => failedCreateIndices.has(index));
                 setNewRows(remainingNewRows);
 
                 // Remove successfully updated/deleted changes (those not in errors)
@@ -791,8 +803,8 @@ export default function TablePage() {
                         .map((e: { id?: string }) => e.id)
                         .filter(Boolean)
                 );
-                const remainingChanges = new Map(
-                    Array.from(pendingChanges.entries()).filter(([id]) => failedIds.has(id))
+                const remainingChanges = new Map<string, PendingChange>(
+                    Array.from(pendingChanges.entries()).filter(([id]: [string, PendingChange]) => failedIds.has(id))
                 );
                 setPendingChanges(remainingChanges);
 
