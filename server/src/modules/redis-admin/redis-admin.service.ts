@@ -57,9 +57,20 @@ export class RedisAdminService {
    * Lấy danh sách tất cả các cache keys (có thể filter theo pattern)
    */
   async getAllCache(pattern: string = '*') {
-    const keys = await this.redisService.getClient().keys(pattern);
+    const allKeys: string[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const stream = this.redisService.scanStream(pattern);
+      stream.on('data', (keys) => {
+        for (const key of keys) {
+          allKeys.push(key);
+        }
+      });
+      stream.on('end', () => resolve());
+      stream.on('error', (err) => reject(err));
+    });
+
     const result = await Promise.all(
-      keys.map(async (key) => {
+      allKeys.map(async (key) => {
         const value = await this.redisService.get(key);
         const ttl = await this.redisService.ttl(key);
         return { key, value, ttl };

@@ -97,6 +97,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client;
   }
 
+  scanStream(pattern: string = '*', count: number = 100) {
+    return this.client.scanStream({ match: pattern, count: count });
+  }
+
   async get(key: string): Promise<string | null> {
     return this.client.get(key);
   }
