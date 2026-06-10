@@ -1388,6 +1388,18 @@ export interface RedisApiResponse {
 
 // Redis Admin API functions
 export const redisAdminApi = {
+    getAllCache: async (pattern?: string): Promise<{ key: string; value: string; ttl: number }[]> => {
+        const params = new URLSearchParams();
+        if (pattern) params.append('pattern', pattern);
+        const { data } = await api.get(`/redis-admin/cache?${params.toString()}`);
+        return Array.isArray(data?.data) ? data.data : [];
+    },
+
+    getCacheByKey: async (key: string): Promise<{ key: string; value: string; ttl: number }> => {
+        const { data } = await api.get(`/redis-admin/cache/${encodeURIComponent(key)}`);
+        return data?.data;
+    },
+
     addCache: async (dto: CreateCacheDto): Promise<RedisApiResponse> => {
         const { data } = await api.post('/redis-admin/cache', dto);
         return data;
