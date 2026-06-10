@@ -303,6 +303,7 @@ export class RedisAdminController {
               key: { type: 'string', example: 'user:session:abc123' },
               value: { type: 'string', example: '{"userId":"123"}' },
               ttl: { type: 'number', example: 3600 },
+              type: { type: 'string', example: 'string', description: 'Kiểu dữ liệu của Redis key (string, hash, list, set, zset)' },
             },
           },
         },

@@ -71,9 +71,20 @@ export class RedisAdminService {
 
     const result = await Promise.all(
       allKeys.map(async (key) => {
-        const value = await this.redisService.get(key);
-        const ttl = await this.redisService.ttl(key);
-        return { key, value, ttl };
+        const keyType = await this.redisService.getClient().type(key);
+        let value = null;
+        let ttl = -3; // -3 could indicate "WRONGTYPE" or unhandled type
+
+        if (keyType === 'string') {
+          value = await this.redisService.get(key);
+          ttl = await this.redisService.ttl(key);
+        } else {
+          // For non-string types, you might want to fetch more info or just return type
+          // For now, we'll just indicate the type
+          value = `[${keyType.toUpperCase()} type]`;
+          ttl = await this.redisService.ttl(key); // Still try to get TTL, it should work for any key type
+        }
+        return { key, value, ttl, type: keyType };
       }),
     );
     return result;
