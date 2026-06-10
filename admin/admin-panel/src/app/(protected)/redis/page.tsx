@@ -405,7 +405,7 @@ export default function RedisPage() {
     const [copiedValue, setCopiedValue] = useState(false);
 
     // Search ref
-    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ─── Fetch keys ───
     const fetchKeys = useCallback(async (pattern?: string) => {
