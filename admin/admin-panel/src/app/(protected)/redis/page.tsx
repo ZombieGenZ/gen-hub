@@ -75,9 +75,9 @@ function buildTree(entries: CacheEntry[]): NamespaceNode {
     // Calculate total key counts
     function countKeys(node: NamespaceNode): number {
         let count = node.keys.length;
-        for (const child of node.children.values()) {
+        Array.from(node.children.values()).forEach(child => {
             count += countKeys(child);
-        }
+        });
         node.totalKeyCount = count;
         return count;
     }
@@ -250,7 +250,7 @@ function TreeNode({ node, depth, selectedKey, onSelectKey, expandedNodes, toggle
 }) {
     const isExpanded = expandedNodes.has(node.fullPath);
     const hasChildren = node.children.size > 0 || node.keys.length > 0;
-    const sortedChildren = useMemo(() => Array.from(node.children.values()).sort((a, b) => a.name.localeCompare(b.name)), [node.children]);
+    const sortedChildren = useMemo(() => { const arr: NamespaceNode[] = []; node.children.forEach(v => arr.push(v)); return arr.sort((a, b) => a.name.localeCompare(b.name)); }, [node.children]);
     const sortedKeys = useMemo(() => [...node.keys].sort((a, b) => a.key.localeCompare(b.key)), [node.keys]);
 
     return (
@@ -454,7 +454,7 @@ export default function RedisPage() {
         const allPaths = new Set<string>();
         function collect(node: NamespaceNode) {
             if (node.fullPath) allPaths.add(node.fullPath);
-            for (const child of node.children.values()) collect(child);
+            node.children.forEach(child => collect(child));
         }
         collect(tree);
         setExpandedNodes(allPaths);
