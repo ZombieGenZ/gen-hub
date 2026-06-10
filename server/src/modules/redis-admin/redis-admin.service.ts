@@ -72,7 +72,7 @@ export class RedisAdminService {
     const result = await Promise.all(
       allKeys.map(async (key) => {
         const keyType = await this.redisService.getClient().type(key);
-        let value = null;
+        let value: string | null = null;
         let ttl = -3; // -3 could indicate "WRONGTYPE" or unhandled type
 
         if (keyType === 'string') {
