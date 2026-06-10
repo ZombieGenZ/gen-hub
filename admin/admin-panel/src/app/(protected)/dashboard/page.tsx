@@ -51,7 +51,9 @@ export default function DashboardPage() {
         if (isAuthLoading) return;
 
         if (!hasPermission('database.admin')) {
-            if (hasPermission('backup.admin') || hasPermission('backup.list') || hasPermission('backup.trigger')) {
+            if (hasPermission('redis.manage')) {
+                router.replace('/redis');
+            } else if (hasPermission('backup.admin') || hasPermission('backup.list') || hasPermission('backup.trigger')) {
                 router.replace('/backups');
             } else if (hasPermission('featureflag.admin')) {
                 router.replace('/feature-flags');
