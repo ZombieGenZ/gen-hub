@@ -21,7 +21,6 @@ import {
     DatabaseBackup,
     Shield,
     Key,
-    Zap,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -163,21 +162,6 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <Terminal className="w-5 h-5" />
                                 <span className="font-medium">{t('query.title')}</span>
                             </Link>
-
-                            {/* Redis Manager Link */}
-                            {hasPermission('redis.manage') && (
-                                <Link
-                                    href="/redis"
-                                    onClick={handleLinkClick}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/redis'
-                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                                        : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                                        }`}
-                                >
-                                    <Zap className="w-5 h-5" />
-                                    <span className="font-medium">{t('sidebar.redisCache') || 'Redis Manager'}</span>
-                                </Link>
-                            )}
 
                             {/* Tables Header with Toggle */}
                             <div className="px-4 py-2 flex items-center justify-between mt-4">
