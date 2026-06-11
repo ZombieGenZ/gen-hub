@@ -46,6 +46,7 @@ export class DatabaseBackupService implements OnModuleInit {
   private readonly downloadUrlTtlSeconds: number;
   private readonly cacheTtl: number;
   private readonly listCacheTtl: number;
+  private readonly excludedModels: string[];
   private isBackupRunning = false;
 
   constructor(
@@ -89,6 +90,15 @@ export class DatabaseBackupService implements OnModuleInit {
       'REDIS_BACKUP_LIST_CACHE_TTL',
       60,
     );
+    // Đọc danh sách model bị loại trừ từ env (BACKUP_EXCLUDED_MODELS=systemLog,databaseLog)
+    const excludedModelsRaw = this.configService.get<string>(
+      'BACKUP_EXCLUDED_MODELS',
+      '',
+    );
+    this.excludedModels = excludedModelsRaw
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
 
     // Tạo thư mục backup nếu chưa tồn tại
     if (!fs.existsSync(this.backupDir)) {
@@ -272,11 +282,12 @@ export class DatabaseBackupService implements OnModuleInit {
    * Export tất cả tables qua Prisma thành JSON
    */
   private async exportAllTables(exportDir: string): Promise<void> {
-    // Lấy danh sách tất cả models từ Prisma
+    // Lấy danh sách tất cả models từ Prisma, loại trừ các model trong BACKUP_EXCLUDED_MODELS
     const models = Object.keys(this.prismaService).filter(
       (key) =>
         !key.startsWith('_') &&
         !key.startsWith('$') &&
+        !this.excludedModels.includes(key) &&
         typeof (this.prismaService as unknown as Record<string, unknown>)[
           key
         ] === 'object' &&
