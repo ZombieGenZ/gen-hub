@@ -30,7 +30,7 @@ try {
     archiver.registerFormat('zip-encrypted', zipEncryptedPlugin);
   }
 } catch {
-  this.logger.error('Failed to register zip-encrypted format');
+  console.error('❌ Failed to register zip-encrypted format');
 }
 
 /**
