@@ -433,8 +433,8 @@ export class DatabaseBackupService implements OnModuleInit {
         `╚══════════════════════════════════════════════════════════════╝`,
       ].join('\n');
 
-      // Thêm file BACKUP_INFO.txt vào archive
-      archive.append(metadataContent, { name: 'BACKUP_INFO.txt' });
+      // Thêm file !-BACKUP_INFO.txt vào archive
+      archive.append(metadataContent, { name: '!-BACKUP_INFO.txt' });
 
       archive.finalize();
     });
