@@ -570,6 +570,19 @@ export default function QueryPage() {
         URL.revokeObjectURL(url);
     };
 
+    const exportToJSON = () => {
+        if (!result?.data) return;
+
+        const json = JSON.stringify(result.data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `query_result_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     // Pagination calculations
     const totalRows = result?.data?.length || 0;
     const totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -813,6 +826,13 @@ export default function QueryPage() {
                                 >
                                     <Download className="w-3 h-3" />
                                     <span>CSV</span>
+                                </button>
+                                <button
+                                    onClick={exportToJSON}
+                                    className="btn btn-secondary text-xs py-1.5"
+                                >
+                                    <Download className="w-3 h-3" />
+                                    <span>JSON</span>
                                 </button>
                             </div>
                         )}
