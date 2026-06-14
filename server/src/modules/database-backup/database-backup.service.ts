@@ -22,8 +22,15 @@ import * as archiverZipEncrypted from 'archiver-zip-encrypted';
 import { DiscordService } from '../discord/discord.service';
 
 // Đăng ký format zip-encrypted cho mã hóa AES-256
-if (archiverZipEncrypted.default) {
-  archiver.registerFormat('zip-encrypted', archiverZipEncrypted.default);
+// Hỗ trợ cả CJS default export lẫn module trực tiếp
+try {
+  const zipEncryptedPlugin =
+    (archiverZipEncrypted as any).default ?? archiverZipEncrypted;
+  if (typeof zipEncryptedPlugin === 'function') {
+    archiver.registerFormat('zip-encrypted', zipEncryptedPlugin);
+  }
+} catch {
+  this.logger.error('Failed to register zip-encrypted format');
 }
 
 /**
@@ -352,15 +359,24 @@ export class DatabaseBackupService implements OnModuleInit {
       const createdAt = new Date().toISOString();
 
       // Tạo archive với mã hóa AES-256 nếu có password
-      const archive = this.backupPassword
-        ? (archiver as any).create('zip-encrypted', {
+      // Fallback sang zip thường nếu format zip-encrypted chưa được đăng ký
+      let archive: ReturnType<typeof archiver>;
+      if (this.backupPassword) {
+        try {
+          archive = (archiver as any).create('zip-encrypted', {
             zlib: { level: 9 },
             encryptionMethod: 'aes256',
             password: this.backupPassword,
-          })
-        : archiver('zip', {
-            zlib: { level: 9 },
           });
+        } catch (err) {
+          this.logger.warn(
+            '⚠️ zip-encrypted format not available, falling back to standard zip (no encryption). Install archiver-zip-encrypted to enable encryption.',
+          );
+          archive = archiver('zip', { zlib: { level: 9 } });
+        }
+      } else {
+        archive = archiver('zip', { zlib: { level: 9 } });
+      }
 
       output.on('close', () => {
         const encryptionStatus = this.backupPassword
