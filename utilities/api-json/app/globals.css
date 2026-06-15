@@ -1,40 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --background-elevated: rgba(248, 250, 252, 0.96);
-  --foreground: #1e293b;
+  /* Dark mode color tokens */
+  --background: #0b0f1a;
+  --background-elevated: rgba(13, 18, 30, 0.97);
+  --foreground: #e2e8f0;
   --muted: #64748b;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --panel: #ffffff;
-  --panel-strong: #ffffff;
-  --surface-muted: #f1f5f9;
-  --input-bg: #ffffff;
-  --sidebar-bg: #f1f5f9;
-  --accent: #0f766e;
-  --accent-light: #14b8a6;
-  --accent-hover: #0d5a52;
-  --accent-soft: rgba(15, 118, 110, 0.08);
-  --accent-border: rgba(15, 118, 110, 0.18);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --panel: rgba(15, 22, 36, 0.85);
+  --panel-strong: #0f1624;
+  --surface-muted: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --sidebar-bg: rgba(255, 255, 255, 0.03);
+  --accent: #14b8a6;
+  --accent-light: #2dd4bf;
+  --accent-hover: #0d9488;
+  --accent-soft: rgba(20, 184, 166, 0.12);
+  --accent-border: rgba(20, 184, 166, 0.25);
   --amber-soft: rgba(245, 158, 11, 0.14);
   --rose-soft: rgba(239, 68, 68, 0.12);
   --violet-soft: rgba(14, 165, 233, 0.12);
   --emerald-soft: rgba(16, 185, 129, 0.14);
-  --get: #10b981;
-  --post: #f59e0b;
-  --put: #0ea5e9;
-  --delete: #ef4444;
-  --patch: #0f766e;
-  --head: #334155;
-  --options: #14b8a6;
-  --json-key: #0f766e;
-  --json-string: #10b981;
-  --json-number: #0ea5e9;
-  --json-boolean: #f59e0b;
-  --json-null: #ef4444;
-  --json-brace: #334155;
-  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.04);
+  --get: #34d399;
+  --post: #fbbf24;
+  --put: #38bdf8;
+  --delete: #f87171;
+  --patch: #2dd4bf;
+  --head: #94a3b8;
+  --options: #a78bfa;
+  --json-key: #7dd3fc;
+  --json-string: #86efac;
+  --json-number: #fdba74;
+  --json-boolean: #f9a8d4;
+  --json-null: #f87171;
+  --json-brace: #94a3b8;
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 @theme inline {
@@ -59,8 +60,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.14), transparent 30%),
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    radial-gradient(ellipse at top left, rgba(20, 184, 166, 0.08), transparent 40%),
+    radial-gradient(ellipse at bottom right, rgba(99, 102, 241, 0.06), transparent 40%),
+    linear-gradient(180deg, #0b0f1a 0%, #080c16 100%);
 }
 
 a {
@@ -83,16 +85,16 @@ input {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(100, 116, 139, 0.22);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.34);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .hero-panel {

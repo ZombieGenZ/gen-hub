@@ -37,7 +37,7 @@ function ToolbarButton({
     variant === "primary"
       ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
       : variant === "danger"
-        ? "border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+        ? "border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
         : "border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]";
 
   return (

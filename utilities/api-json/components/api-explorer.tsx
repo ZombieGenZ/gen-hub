@@ -391,7 +391,7 @@ function SetupPanel({
           className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
         />
 
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
 
         <div className="flex flex-wrap gap-3">
           <button
