@@ -477,7 +477,9 @@ export const adminApi = {
 
     // Raw SQL Query Execution
     executeRawQuery: async (query: string) => {
-        const { data } = await api.post('/admin/query/execute', { query });
+        const { data } = await api.post('/admin/query/execute', { query }, {
+            timeout: 300000 
+        });
         return unwrapSuccessData<RawQueryResponse>(data);
     },
 };

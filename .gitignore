@@ -346,3 +346,6 @@ docs/INBOUND_MISMATCH_WORKFLOW.md
 *.diff
 
 .VSCodeCounter/
+
+server/yarn.lock
+.yarn.lock

@@ -55,7 +55,7 @@ export class TrackerService implements OnModuleInit {
     let errorMsg = '';
 
     try {
-      const response = await axios.get(target.url, { timeout: 10000 });
+      const response = await axios.get(target.url, { timeout: 60000 });
       pingMs = Date.now() - startTime;
       if (response.status >= 400) {
         status = 1; // down

@@ -50,6 +50,7 @@
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@scalar/nestjs-api-reference": "^1.0.17",
+    "@tiptap/pm": "^3.32.2",
     "@types/archiver": "^7.0.0",
     "@types/express-session": "^1.18.2",
     "@types/pg": "^8.16.0",
